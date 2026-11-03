@@ -1,0 +1,287 @@
+import { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+
+import { AppCanvas } from "../../../components/AppCanvas";
+
+export function VerificationHubScreen({
+  verified,
+  selfieUri,
+  verificationStatus,
+  onBack,
+  onVerify,
+}: {
+  verified: boolean;
+  selfieUri: string;
+  verificationStatus?: "none" | "pending" | "approved" | "rejected";
+  onBack: () => void;
+  onVerify: (uri: string) => Promise<void>;
+}) {
+  const [pickedUri, setPickedUri] = useState(selfieUri);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const takeSelfie = async () => {
+    setError(null);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setError("Please allow camera access to take a selfie.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+      cameraType: ImagePicker.CameraType.front, // Front camera
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPickedUri(result.assets[0].uri);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!pickedUri) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onVerify(pickedUri);
+    } catch (err: any) {
+      setError(err.message || "Could not submit verification.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <AppCanvas>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={{ padding: 22, flex: 1 }}>
+          {/* Back Button */}
+          <TouchableOpacity onPress={onBack} style={{ marginBottom: 24 }}>
+            <Ionicons name="arrow-back" size={24} color="#1A1416" />
+          </TouchableOpacity>
+
+          {/* Title Section */}
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: "#8A6722",
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Trust & Safety
+          </Text>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: "700",
+              color: "#1A1416",
+              marginBottom: 12,
+            }}
+          >
+            Verify your profile
+          </Text>
+          <Text
+            style={{
+              fontSize: 15,
+              color: "#635A5D",
+              lineHeight: 22,
+              marginBottom: 32,
+            }}
+          >
+            Take a clear selfie to get a verified badge. It builds trust with
+            your matches. Just one step.
+          </Text>
+
+          {/* Main Card */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "#E2D9CB",
+            }}
+          >
+            {/* Selfie Preview or Placeholder */}
+            {pickedUri ? (
+              <Image
+                source={{ uri: pickedUri }}
+                style={{
+                  width: 150,
+                  height: 150,
+                  borderRadius: 75,
+                  marginBottom: 20,
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 150,
+                  height: 150,
+                  borderRadius: 75,
+                  backgroundColor: "#F0F0F0",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <Ionicons name="person" size={60} color="#A0A0A0" />
+              </View>
+            )}
+
+            {/* Take Selfie Button */}
+            <TouchableOpacity
+              onPress={takeSelfie}
+              style={{
+                backgroundColor: "#FFF",
+                borderWidth: 1,
+                borderColor: "#1A1416",
+                width: "100%",
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text
+                style={{ color: "#1A1416", fontWeight: "600", fontSize: 15 }}
+              >
+                {pickedUri ? "Retake Selfie" : "Take Selfie"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Status / Submit Button */}
+            {verified ? (
+              <View
+                style={{
+                  backgroundColor: "#E8F5E9",
+                  padding: 12,
+                  borderRadius: 8,
+                  width: "100%",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "#2E7D32", fontWeight: "600", fontSize: 14 }}
+                >
+                  ✅ Your profile is verified
+                </Text>
+              </View>
+            ) : verificationStatus === "pending" ? (
+              <View
+                style={{
+                  backgroundColor: "#FFF3E0",
+                  padding: 12,
+                  borderRadius: 8,
+                  width: "100%",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#E65100",
+                    fontWeight: "600",
+                    fontSize: 14,
+                    textAlign: "center",
+                  }}
+                >
+                  ⏳ Verification pending. We'll review it shortly.
+                </Text>
+              </View>
+            ) : verificationStatus === "rejected" ? (
+              <View
+                style={{
+                  backgroundColor: "#FFEBEE",
+                  padding: 12,
+                  borderRadius: 8,
+                  width: "100%",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#B71C1C",
+                    fontWeight: "600",
+                    fontSize: 14,
+                    textAlign: "center",
+                  }}
+                >
+                  ❌ Your previous selfie was rejected. Please upload a clear
+                  selfie.
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={!pickedUri || isSubmitting}
+                style={{
+                  backgroundColor: pickedUri ? "#1A1416" : "#CCCCCC",
+                  width: "100%",
+                  padding: 16,
+                  borderRadius: 12,
+                  alignItems: "center",
+                }}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "600",
+                      fontSize: 16,
+                    }}
+                  >
+                    Submit for Verification
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Error Message */}
+            {error ? (
+              <Text
+                style={{
+                  marginTop: 16,
+                  color: "#B00020",
+                  textAlign: "center",
+                  fontSize: 13,
+                }}
+              >
+                {error}
+              </Text>
+            ) : null}
+
+            {/* Privacy Note */}
+            <Text
+              style={{
+                marginTop: 20,
+                fontSize: 12,
+                color: "#888",
+                textAlign: "center",
+                lineHeight: 18,
+              }}
+            >
+              Your selfie is only used for verification. It is never shown on
+              your public profile.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    </AppCanvas>
+  );
+}

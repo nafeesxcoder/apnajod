@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS posts (
+  id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  media_url TEXT NOT NULL,
+  caption TEXT,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_post_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

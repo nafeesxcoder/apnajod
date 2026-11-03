@@ -1,0 +1,34 @@
+import type { ChatMessage, CoupleChatSettings, DatePlanStatus, MatchFilters, ProfileDraft, RelationshipReflectionChoice } from '../../storage';
+import type { RelationshipJourneyEventName } from '../../domain/relationshipLearning';
+
+export type PersistenceResult<T = unknown> = { saved: boolean; reason: 'backend'|'preview_id'|'demo'|'error'; data?: T; error?: string };
+const preview = <T>(data?: T): PersistenceResult<T> => ({ saved: false, reason: 'preview_id', data });
+
+export const fetchPersistedChatMessages = async (_matchId: string): Promise<ChatMessage[]> => [];
+export const fetchPersistedRelationshipJourney = async (_matchId: string): Promise<null> => null;
+export const subscribePersistedChatMessages = (_matchId: string, _onMessage: (message: ChatMessage) => void) => () => undefined;
+export const persistBlock = async (_blockedId: string) => preview();
+export const persistChatMessage = async (_matchId: string, message: ChatMessage) => preview(message);
+export const persistChatSettings = async (_matchId: string, _settings: CoupleChatSettings) => preview();
+export const persistClearMatchingLearning = async () => preview();
+export const persistDatePlanStatus = async (_proposalId: string | undefined, _status: DatePlanStatus) => preview();
+export const persistDateProposal = async (_matchId: string, _date: NonNullable<ChatMessage['date']>) => preview();
+export const persistDateSafetyPlan = async (_input: { matchId?: string; checkInEnabled: boolean; checkInAt?: string; trustedContactLabel?: string }) => preview();
+export const persistDiscoverySignal = async (_targetId: string, _signal: 'view' | 'interested' | 'skip') => preview();
+export const persistIcebreakerAnswer = async (_matchId: string, _question: string, _answer: string) => preview();
+export const persistLiveLocationShare = async (_matchId: string, _location: NonNullable<ChatMessage['location']>, _clientActionId: string) => preview();
+export const persistMatchDecision = async (_targetId: string, _decision: 'interested' | 'pass') => preview();
+export const persistMatchFeedback = async (_matchId: string, _feedback: 'promising' | 'not_aligned' | 'met_in_person', _useForMatching: boolean) => preview();
+export const persistMatchingPreferences = async (_input: { filters: MatchFilters; profile: ProfileDraft; alignment: Record<string, string>; smartDiscovery: boolean }) => preview();
+export const persistMessageDelete = async (_matchId: string, _messageId: string) => preview();
+export const persistMessageEdit = async (_matchId: string, _messageId: string, _text: string) => preview();
+export const persistMessageUserState = async (_matchId: string, _messageId: string, _input: { starred?: boolean; pinned?: boolean; hidden?: boolean; reaction?: string | null }) => preview();
+export const persistOnboardingProfile = async (_input: { profile: ProfileDraft; photos: string[]; selfieUri: string; voiceIntroUri: string; vibes: string[]; intent: string; alignment: Record<string, string>; smartDiscovery: boolean; crossedPaths: boolean; lastSeenVisible: boolean; matchFilters: MatchFilters }) => preview();
+export const persistPrivacySettings = async (_settings: { lastSeenVisible?: boolean; onlineStatusVisible?: boolean; privateMode?: boolean; profileViewNotifications?: boolean; analyticsConsent?: boolean }) => preview();
+export const persistProfileView = async (_profileId: string, _durationSeconds = 5) => preview();
+export const persistRelationshipBlueprint = async (_input: { pace: string; family: string; home: string; future: string }) => preview();
+export const persistRelationshipJourneyEvent = async (_name: RelationshipJourneyEventName, _properties: Record<string, unknown>) => preview();
+export const persistRelationshipReflection = async (_proposalId: string | undefined, _choice: RelationshipReflectionChoice, _useForMatching = false) => preview();
+export const persistRelationshipReminder = async (_proposalId: string | undefined, _enabled: boolean) => preview();
+export const persistReport = async (_reportedId: string, _reason: string, _details: string | undefined, _clientActionId: string) => preview();
+export const persistUnmatch = async (_matchId: string, _clientActionId: string) => preview();

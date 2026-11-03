@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "Milaan",
+    "slug": "milaan",
+    "version": "1.0.0",
+    "description": "Serious, verified dating for India. Built for people looking for a real relationship, not casual swiping.",
+    "icon": "./assets/icon.png",
+    "scheme": "milaan",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "primaryColor": "#1A1416",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#F8F3E9"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.milaan.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.milaan.app",
+      "versionCode": 1,
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A1416"
+      },
+      "blockedPermissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png",
+      "name": "Milaan",
+      "shortName": "Milaan",
+      "themeColor": "#1A1416",
+      "backgroundColor": "#F8F3E9"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Milaan needs photo access so you can build your relationship profile.",
+          "cameraPermission": "Milaan uses the camera for profile photos and selfie verification."
+        }
+      ],
+      "expo-document-picker",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Milaan uses the microphone to record your optional voice introduction.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Milaan uses approximate location only when you enable Crossed Paths. Your exact location is never shown to other members.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
+    ],
+    "locales": {}
+  }
+}

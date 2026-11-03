@@ -1,0 +1,1 @@
+ALTER TABLE matching_preferences MODIFY COLUMN distance_preference VARCHAR(60) NULL;

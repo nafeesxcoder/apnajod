@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Web-only focus treatment.
+ *
+ * React Native has no concept of a focus ring, so on web the browser draws its
+ * default black outline — which looked like a bug on the sign-up screen, where
+ * the mobile field is autofocused. Replacing it rather than removing it keeps
+ * the app keyboard-navigable.
+ */
+:focus {
+  outline: none;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible,
+[role='button']:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #8A6722; /* colors.accent — gold */
+  outline-offset: 2px;
+}
