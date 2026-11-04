@@ -51,7 +51,8 @@ const updatePhotos = asyncHandler(async (req, res) => {
 });
 const uploadPhoto = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "No photo file was received");
-  const publicUrl = `${env.apiUrl}/uploads/photos/${req.file.filename}`;
+  const apiBase = /localhost|127\.0\.0\.1/.test(env.apiUrl || "") ? `${req.get("x-forwarded-proto") || req.protocol}://${req.get("host")}` : env.apiUrl;
+  const publicUrl = `${apiBase}/uploads/photos/${req.file.filename}`;
   res.json({ ok: true, url: publicUrl });
 });
 const updateVibes = asyncHandler(async (req, res) => {

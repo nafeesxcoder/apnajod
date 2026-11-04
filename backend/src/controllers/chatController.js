@@ -1,4 +1,4 @@
-﻿const asyncHandler = require('../utils/asyncHandler');
+const asyncHandler = require('../utils/asyncHandler');
 const { ApiError } = require('../middleware/errorHandler');
 const chatService = require('../services/chatService');
 const env = require('../config/env');
@@ -6,7 +6,8 @@ const gifService = require('../services/gifService');
 
 const uploadMedia = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, 'No file was received');
-  const publicUrl = `${env.apiUrl}/uploads/chat/${req.file.filename}`;
+  const apiBase = /localhost|127\.0\.0\.1/.test(env.apiUrl || "") ? `${req.get("x-forwarded-proto") || req.protocol}://${req.get("host")}` : env.apiUrl;
+  const publicUrl = `${apiBase}/uploads/chat/${req.file.filename}`;
   res.json({ ok: true, url: publicUrl, mimeType: req.file.mimetype });
 });
 
