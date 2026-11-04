@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Modal,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,15 +16,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { colors } from "../../../theme";
 
-// Server par photo upload karne ka function
 async function uploadPhotoAsset(
   uri: string,
   accessToken?: string,
 ): Promise<string> {
   if (!accessToken) return uri;
   try {
-    const API_URL =
-      process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109:4000";
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
     const formData = new FormData();
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -35,12 +34,40 @@ async function uploadPhotoAsset(
     });
     const data = await uploadResponse.json();
     if (!uploadResponse.ok) throw new Error(data.error || "Upload failed");
-    return data.url; // Server ka URL return karega
+    return data.url;
   } catch (e) {
-    console.log("Photo upload failed, using local URI", e);
-    return uri; // Agar fail ho toh local URI hi rakh lo
+    console.log("Photo upload failed", e);
+    return uri;
   }
 }
+
+// ✅ MASTER HOBBY LIST (Icons + Names)
+export const MASTER_HOBBIES = [
+  { label: "Travel", icon: "airplane" },
+  { label: "Music", icon: "musical-notes" },
+  { label: "Technology", icon: "laptop" },
+  { label: "Gaming", icon: "game-controller" },
+  { label: "Foodie", icon: "restaurant" },
+  { label: "Photography", icon: "camera" },
+  { label: "Fitness", icon: "barbell" },
+  { label: "Reading", icon: "book" },
+  { label: "Movies", icon: "film" },
+  { label: "Art", icon: "color-palette" },
+  { label: "Dancing", icon: "musical-note" },
+  { label: "Cooking", icon: "pizza" },
+  { label: "Gardening", icon: "leaf" },
+  { label: "Pets", icon: "paw" },
+  { label: "Yoga", icon: "body" },
+  { label: "Swimming", icon: "water" },
+  { label: "Hiking", icon: "trail-sign" },
+  { label: "Cycling", icon: "bicycle" },
+  { label: "Football", icon: "football" },
+  { label: "Cricket", icon: "baseball" },
+  { label: "Shopping", icon: "cart" },
+  { label: "Fashion", icon: "shirt" },
+  { label: "Writing", icon: "create" },
+  { label: "Astrology", icon: "star" },
+];
 
 export function ProfileSetupScreen({
   accessToken,
@@ -61,6 +88,24 @@ export function ProfileSetupScreen({
   onNext: (latest?: any) => void;
 }) {
   const [bio, setBio] = useState(profile.bio || "");
+  const [showHobbyPicker, setShowHobbyPicker] = useState(false);
+  const [hobbySearch, setHobbySearch] = useState("");
+
+  const selectedHobbies: string[] = profile.hobbies || [];
+
+  const toggleHobby = (hobby: string) => {
+    const updated = selectedHobbies.includes(hobby)
+      ? selectedHobbies.filter((h) => h !== hobby)
+      : [...selectedHobbies, hobby];
+    onProfileChange({ ...profile, hobbies: updated });
+  };
+
+  const filteredHobbies = useMemo(() => {
+    if (!hobbySearch.trim()) return MASTER_HOBBIES;
+    return MASTER_HOBBIES.filter((h) =>
+      h.label.toLowerCase().includes(hobbySearch.trim().toLowerCase()),
+    );
+  }, [hobbySearch]);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -74,7 +119,6 @@ export function ProfileSetupScreen({
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Photo ko server par upload karo, phir URL save karo
       const uploadedUrl = await uploadPhotoAsset(
         result.assets[0].uri,
         accessToken,
@@ -93,7 +137,6 @@ export function ProfileSetupScreen({
     <AppCanvas>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F3E9" }}>
         <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 100 }}>
-          {/* Header */}
           <Text
             style={{
               fontSize: 12,
@@ -127,7 +170,7 @@ export function ProfileSetupScreen({
             Add a clear photo and a short bio so people know who you are.
           </Text>
 
-          {/* Profile Photo (Sirf Ek) */}
+          {/* Profile Photo */}
           <View style={{ alignItems: "center", marginBottom: 24 }}>
             <TouchableOpacity
               onPress={pickImage}
@@ -183,7 +226,6 @@ export function ProfileSetupScreen({
             </Text>
           </View>
 
-          {/* Form Fields */}
           <View style={{ gap: 16 }}>
             {/* Name */}
             <View>
@@ -199,7 +241,7 @@ export function ProfileSetupScreen({
               />
             </View>
 
-            {/* Age & Gender Row */}
+            {/* Age & Gender */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Age</Text>
@@ -287,9 +329,89 @@ export function ProfileSetupScreen({
                 placeholderTextColor="#A0A0A0"
               />
             </View>
+
+            {/* Hobbies Dropdown Selector */}
+            <View>
+              <Text style={styles.label}>Hobbies</Text>
+              <Text style={{ fontSize: 12, color: "#635A5D", marginBottom: 8 }}>
+                Add hobbies that describe you (with icons!)
+              </Text>
+
+              {/* Display selected hobbies as chips */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 12,
+                }}
+              >
+                {selectedHobbies.map((hobbyLabel) => {
+                  const hobbyData = MASTER_HOBBIES.find(
+                    (h) => h.label === hobbyLabel,
+                  );
+                  return (
+                    <View
+                      key={hobbyLabel}
+                      style={{
+                        backgroundColor: "#FCE4EC",
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <Ionicons
+                        name={(hobbyData?.icon || "heart") as any}
+                        size={14}
+                        color="#E91E63"
+                      />
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: "#E91E63",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {hobbyLabel}
+                      </Text>
+                      <TouchableOpacity onPress={() => toggleHobby(hobbyLabel)}>
+                        <Ionicons
+                          name="close-circle"
+                          size={16}
+                          color="#E91E63"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Button to Open Dropdown */}
+              <TouchableOpacity
+                onPress={() => setShowHobbyPicker(true)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  backgroundColor: "#E91E63",
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#FFF" />
+                <Text
+                  style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}
+                >
+                  Add Hobbies
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Save Button */}
           <TouchableOpacity
             onPress={handleSave}
             style={{
@@ -305,6 +427,171 @@ export function ProfileSetupScreen({
             </Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Hobby Picker Modal */}
+        <Modal
+          visible={showHobbyPicker}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowHobbyPicker(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "flex-end",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#FFF",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                height: "80%",
+              }}
+            >
+              {/* Header */}
+              <View
+                style={{
+                  padding: 20,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#F0EAE0",
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "700",
+                      color: "#1A1416",
+                    }}
+                  >
+                    Select Hobbies
+                  </Text>
+                  <TouchableOpacity onPress={() => setShowHobbyPicker(false)}>
+                    <Ionicons name="close" size={24} color="#1A1416" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Search Bar */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#F8F3E9",
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    gap: 8,
+                  }}
+                >
+                  <Ionicons name="search" size={20} color="#635A5D" />
+                  <TextInput
+                    value={hobbySearch}
+                    onChangeText={setHobbySearch}
+                    placeholder="Search hobbies..."
+                    style={{ flex: 1, fontSize: 15, color: "#1A1416" }}
+                    placeholderTextColor="#A0A0A0"
+                  />
+                </View>
+              </View>
+
+              {/* Hobbies List */}
+              <ScrollView contentContainerStyle={{ padding: 20 }}>
+                {filteredHobbies.length === 0 ? (
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "#A0A0A0",
+                      marginTop: 20,
+                    }}
+                  >
+                    No hobby found. Try a different search.
+                  </Text>
+                ) : (
+                  <View
+                    style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
+                  >
+                    {filteredHobbies.map((hobby) => {
+                      const isSelected = selectedHobbies.includes(hobby.label);
+                      return (
+                        <TouchableOpacity
+                          key={hobby.label}
+                          onPress={() => toggleHobby(hobby.label)}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            paddingHorizontal: 14,
+                            paddingVertical: 10,
+                            borderRadius: 20,
+                            borderWidth: 1.5,
+                            borderColor: isSelected ? "#E91E63" : "#E2D9CB",
+                            backgroundColor: isSelected ? "#FCE4EC" : "#FFF",
+                          }}
+                        >
+                          <Ionicons
+                            name={hobby.icon as any}
+                            size={16}
+                            color={isSelected ? "#E91E63" : "#635A5D"}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: "600",
+                              color: isSelected ? "#E91E63" : "#1A1416",
+                            }}
+                          >
+                            {hobby.label}
+                          </Text>
+                          {isSelected && (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={16}
+                              color="#E91E63"
+                            />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Done Button */}
+              <View
+                style={{
+                  padding: 20,
+                  borderTopWidth: 1,
+                  borderTopColor: "#F0EAE0",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setShowHobbyPicker(false)}
+                  style={{
+                    backgroundColor: "#E91E63",
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}
+                  >
+                    Done ({selectedHobbies.length} selected)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </AppCanvas>
   );
@@ -336,16 +623,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     alignItems: "center",
   },
-  chipActive: {
-    backgroundColor: "#1A1416",
-    borderColor: "#1A1416",
-  },
-  chipText: {
-    fontSize: 13,
-    color: colors.text,
-    fontWeight: "500",
-  },
-  chipTextActive: {
-    color: "#FFFFFF",
-  },
+  chipActive: { backgroundColor: "#1A1416", borderColor: "#1A1416" },
+  chipText: { fontSize: 13, color: colors.text, fontWeight: "500" },
+  chipTextActive: { color: "#FFFFFF" },
 });

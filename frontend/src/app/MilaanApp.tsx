@@ -221,6 +221,21 @@ async function checkUsernameAvailable(username: string) {
 const readBio = (profile: any, fallback = ""): string =>
   profile?.about ?? profile?.bio ?? fallback;
 
+/** Hobbies may come back as an array or as a JSON string. */
+const readHobbies = (profile: any): string[] => {
+  const raw = profile?.hobbies;
+  if (Array.isArray(raw)) return raw.map(String);
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 /** Send both keys so it saves whichever one the backend expects. */
 const buildProfilePayload = (draft: any) => ({
   firstName: draft.firstName,
@@ -233,8 +248,8 @@ const buildProfilePayload = (draft: any) => ({
   community: draft.community,
   bio: draft.bio ?? "",
   about: draft.bio ?? "",
+  hobbies: draft.hobbies ?? [], // <-- YEH ADD KARO
 });
-
 // The signed-out policy. Used before there is a session, and by the showcase.
 const previewDataRuntime = evaluateMemberDataRuntime(backendRuntime.mode);
 function getPreviewScreen(): Screen | undefined {
@@ -680,9 +695,12 @@ function MilaanApp() {
     });
   };
   /** Saves the profile, re-reads it from the server and confirms the bio stuck. */
+  /** Saves the profile, re-reads it from the server and confirms bio + hobbies stuck. */
   const saveProfileAndSync = async (token: string, draft: any) => {
     await profileApi.updateProfile(token, buildProfilePayload(draft));
     const fresh = await profileApi.getMyProfile(token);
+
+    // Bio check
     const savedBio = String(readBio(fresh?.profile, "")).trim();
     const wantedBio = String(draft.bio ?? "").trim();
     if (savedBio !== wantedBio) {
@@ -690,7 +708,24 @@ function MilaanApp() {
         "Bio server par save nahi hua. Backend /profile update me bio/about field check karo.",
       );
     }
-    setProfileDraft((current: any) => ({ ...current, bio: savedBio }));
+
+    // Hobbies check
+    const savedHobbies = readHobbies(fresh?.profile);
+    const wantedHobbies = draft.hobbies || [];
+    const hobbiesMatch =
+      savedHobbies.length === wantedHobbies.length &&
+      wantedHobbies.every((h: string) => savedHobbies.includes(h));
+    if (!hobbiesMatch) {
+      throw new Error(
+        "Hobbies server par save nahi hui. Backend me hobbies column check karo.",
+      );
+    }
+
+    setProfileDraft((current: any) => ({
+      ...current,
+      bio: savedBio,
+      hobbies: savedHobbies,
+    }));
   };
   const refreshServerMatches = async () => {
     if (memberDataRuntime.source !== "server") return;
@@ -889,6 +924,7 @@ function MilaanApp() {
                 religion: profileData.profile.religion ?? current.religion,
                 community: profileData.profile.community ?? current.community,
                 bio: readBio(profileData.profile, (current as any).bio ?? ""),
+                hobbies: readHobbies(profileData.profile),
               }));
               setVerified(!!profileData.profile.verified);
             }
@@ -2736,6 +2772,7 @@ function MilaanApp() {
           religion: profileData.profile.religion ?? current.religion,
           community: profileData.profile.community ?? current.community,
           bio: readBio(profileData.profile, (current as any).bio ?? ""),
+          hobbies: readHobbies(profileData.profile), // <-- YEH ADD KARO
         }));
         setVerified(!!profileData.profile.verified);
         setQuickProfile({
@@ -3035,13 +3072,10 @@ function MilaanApp() {
         {screen === "detail" && hasSelected && (
           <MatchDetailScreen
             match={selected}
-            preferences={{ intent, vibes: vibeList, filters: matchFilters }}
-            alignment={alignment}
             back={() => setScreen("home")}
-            interested={() => chooseInterested(selected)}
-            onRose={() => openRose(selected)}
-            onProfileView={() => notifyProfileView(selected)}
-            onPrivateBlock={() => setDetailSafetyOpen(true)}
+            navigate={navigateTo}
+            accessToken={accessToken}
+            onStartChat={() => setScreen("chat")}
           />
         )}
         {screen === "mutual" && hasSelected && (

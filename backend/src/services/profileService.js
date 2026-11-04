@@ -25,8 +25,17 @@ async function getFullProfile(userId) {
     "SELECT mode FROM experience_mode WHERE user_id = ?",
     [userId],
   );
+
+  // Parse hobbies JSON
+  const hobbies = profile?.hobbies ? safeParseJson(profile.hobbies, []) : [];
+
   return {
-    profile: profile || null,
+    profile: profile
+      ? {
+          ...profile,
+          hobbies,
+        }
+      : null,
     photos: photos.map((p) => p.photo_url),
     vibes: vibes.map((v) => v.vibe),
     intent: intent || null,
@@ -64,19 +73,30 @@ async function upsertProfile(userId, input) {
     community,
     about,
     bio,
+    hobbies,
   } = input;
 
-  // Bio ko 'about' column mein save karenge. Agar bio nahi hai toh about use karenge.
+  // Bio ko 'about' column mein save karenge.
   const rawAbout = bio !== undefined ? bio : about;
-  const profileAbout = rawAbout === undefined || rawAbout === null ? null : String(rawAbout).trim();
+  const profileAbout =
+    rawAbout === undefined || rawAbout === null
+      ? null
+      : String(rawAbout).trim();
+
+  // Hobbies JSON string
+  const profileHobbies = Array.isArray(hobbies)
+    ? JSON.stringify(hobbies)
+    : null;
 
   await query(
-    `INSERT INTO profiles (user_id, first_name, gender, age, height, city, profession, religion, community, about)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO profiles (user_id, first_name, gender, age, height, city, profession, religion, community, about, hobbies)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        first_name = VALUES(first_name), gender = VALUES(gender), age = VALUES(age),
        height = VALUES(height), city = VALUES(city), profession = VALUES(profession),
-       religion = VALUES(religion), community = VALUES(community), about = COALESCE(VALUES(about), about)`,
+       religion = VALUES(religion), community = VALUES(community),
+       about = COALESCE(VALUES(about), about),
+       hobbies = COALESCE(VALUES(hobbies), hobbies)`,
     [
       userId,
       firstName || null,
@@ -88,12 +108,12 @@ async function upsertProfile(userId, input) {
       religion || null,
       community || null,
       profileAbout,
+      profileHobbies,
     ],
   );
 }
 
 async function submitVerification(userId, selfieUrl) {
-  // Ab seedha verified nahi karenge, status 'pending' karenge
   await query(
     `UPDATE profiles 
      SET selfie_uri = ?, 
@@ -116,10 +136,6 @@ async function replacePhotos(userId, photoUrls) {
 
 async function replaceVibes(userId, vibes) {
   await query("DELETE FROM profile_vibes WHERE user_id = ?", [userId]);
-  // De-dupe: the client can send the same vibe twice (e.g. a fast
-  // double-tap on the same chip before its selected state updates),
-  // which previously crashed this request with a duplicate-key error
-  // on (user_id, vibe) and left the update only partially applied.
   const uniqueVibes = [...new Set(vibes)];
   for (const vibe of uniqueVibes) {
     await query(
@@ -206,7 +222,7 @@ async function markOnboardingComplete(userId) {
   ]);
 }
 
-// ---------- Discovery: find real users matching preferences ----------
+// ---------- Discovery ----------
 async function findMatches(userId, limit = 20) {
   const [myPrefs] = await query(
     "SELECT * FROM matching_preferences WHERE user_id = ?",
@@ -226,7 +242,7 @@ async function findMatches(userId, limit = 20) {
     `SELECT
        u.id AS user_id,
        p.first_name, p.gender, p.age, p.height, p.city, p.profession,
-       p.religion, p.community, p.about, p.verified
+       p.religion, p.community, p.about, p.verified, p.hobbies
      FROM users u
      JOIN profiles p ON p.user_id = u.id
      WHERE u.id != ?
@@ -234,18 +250,12 @@ async function findMatches(userId, limit = 20) {
        AND p.onboarding_complete = 1
        AND p.age BETWEEN ? AND ?
        ${genderClause}
-       AND u.id NOT IN (
-         SELECT blocked_id FROM blocks WHERE blocker_id = ?
-       )
-       AND u.id NOT IN (
-         SELECT blocker_id FROM blocks WHERE blocked_id = ?
-       )
-       AND u.id NOT IN (
-         SELECT target_id FROM match_decisions WHERE actor_id = ?
-       )
+       AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
+       AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
+       AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ?)
      ORDER BY p.updated_at DESC
      LIMIT ${Number(limit)}`,
-    [userId, minAge, maxAge, userId, userId, userId], // <-- userId 3 baar add hua (2 block ke liye, 1 match_decisions ke liye)
+    [userId, minAge, maxAge, userId, userId, userId],
   );
 
   const results = [];
@@ -262,6 +272,9 @@ async function findMatches(userId, limit = 20) {
       "SELECT intent, timeline, children, family, relocation FROM profile_intent WHERE user_id = ?",
       [candidate.user_id],
     );
+    const hobbies = candidate.hobbies
+      ? safeParseJson(candidate.hobbies, [])
+      : [];
     results.push({
       id: candidate.user_id,
       profileId: candidate.user_id,
@@ -277,6 +290,7 @@ async function findMatches(userId, limit = 20) {
       photo: photos[0]?.photo_url || "",
       photos: photos.map((p) => p.photo_url),
       about: candidate.about || "",
+      hobbies,
       values: "",
       goals: "",
       timeline: intentRow?.timeline || "",

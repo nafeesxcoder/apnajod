@@ -1,61 +1,53 @@
-import { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   Image,
   ScrollView,
-  StyleSheet,
-  Modal,
-  TextInput,
-  ActivityIndicator,
+  TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav } from "../../../components/navigation/BottomNav";
-import { postApi } from "../../../api/postApi";
+import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 
-// Server par photo upload karne ka function
-async function uploadPhotoAsset(
-  uri: string,
-  accessToken?: string,
-): Promise<string> {
-  if (!accessToken) return uri;
-  try {
-    const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
-    const formData = new FormData();
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    formData.append("photo", blob, "photo.jpg");
-    const uploadResponse = await fetch(`${API_URL}/profile/upload-photo`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: formData,
-    });
-    const data = await uploadResponse.json();
-    if (!uploadResponse.ok) throw new Error(data.error || "Upload failed");
-    return data.url; // Server ka URL return karega
-  } catch (e) {
-    console.log("Photo upload failed, using local URI", e);
-    return uri; // Fallback (par yeh local URI refresh par kaam nahi karegi)
-  }
+const PINK = "#E91E63";
+const PINK_LIGHT = "#FCE4EC";
+const DARK = "#1A1416";
+const MUTED = "#635A5D";
+const WHITE = "#FFFFFF";
+const LINE = "#F0EAE0";
+
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
+const GRID_GAP = 8;
+const { width: WINDOW_WIDTH } = Dimensions.get("window");
+const CONTENT_WIDTH = Math.min(WINDOW_WIDTH, MAX_WIDTH);
+const POST_SIZE = (CONTENT_WIDTH - SIDE_PADDING * 2 - GRID_GAP * 2) / 3;
+
+const COVER_URI =
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80";
+
+// Demo posts. Replace with the member's real posts once the posts API is wired in.
+const DEMO_POSTS = [
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80",
+  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
+];
+
+function hobbyIcon(label: string) {
+  const wanted = String(label).trim().toLowerCase();
+  return MASTER_HOBBIES.find((h) => h.label.toLowerCase() === wanted)?.icon;
 }
-
-type Post = {
-  id: string;
-  media_url: string;
-  caption: string;
-};
 
 export function ProfileScreen({
   profile,
   verified,
   profilePhoto,
   navigate,
-  accessToken,
 }: {
   profile: any;
   verified: boolean;
@@ -63,409 +55,404 @@ export function ProfileScreen({
   navigate: (screen: any) => void;
   accessToken?: string;
 }) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [postModalVisible, setPostModalVisible] = useState(false);
-  const [newPostImage, setNewPostImage] = useState("");
-  const [newPostCaption, setNewPostCaption] = useState("");
-  const [uploading, setUploading] = useState(false);
-
-  // Posts fetch karo jab screen khule
-  useEffect(() => {
-    if (!accessToken) return;
-    postApi
-      .getMyPosts(accessToken)
-      .then((res) => setPosts(res.posts || []))
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, [accessToken]);
-
-  const pickPostImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setNewPostImage(result.assets[0].uri);
-    }
-  };
-
-  const handleCreatePost = async () => {
-    if (!accessToken || !newPostImage) return;
-    setUploading(true);
-    try {
-      // 1. Pehle photo server par upload karo
-      const uploadedUrl = await uploadPhotoAsset(newPostImage, accessToken);
-
-      // 2. Ab server ka URL database mein save karo
-      await postApi.create(accessToken, uploadedUrl, newPostCaption);
-
-      const res = await postApi.getMyPosts(accessToken);
-      setPosts(res.posts || []);
-      setPostModalVisible(false);
-      setNewPostImage("");
-      setNewPostCaption("");
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    if (!accessToken) return;
-    try {
-      await postApi.delete(accessToken, postId);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
+  const hobbies: string[] = Array.isArray(profile?.hobbies)
+    ? profile.hobbies
+    : [];
+  const name = String(profile?.firstName ?? "").trim();
+  const age = String(profile?.age ?? "").trim();
+  const bio = String(profile?.bio ?? "").trim();
+  const initial = name ? name.charAt(0).toUpperCase() : "";
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-          {/* Top Header - + icon left, Menu right */}
-          <View style={styles.header}>
-            {/* Left Side: + Icon */}
-            <TouchableOpacity onPress={() => setPostModalVisible(true)}>
-              <Ionicons name="add-circle-outline" size={32} color="#1A1416" />
-            </TouchableOpacity>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF5F9" }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 90 }}
+        >
+          <View
+            style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center" }}
+          >
+            {/* Cover Photo */}
+            <View style={{ position: "relative", height: 160 }}>
+              <Image
+                source={{ uri: COVER_URI }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={[
+                  "rgba(233,30,99,0.4)",
+                  "transparent",
+                  "rgba(255,245,249,1)",
+                ]}
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                }}
+              />
 
-            {/* Right Side: Menu Icon */}
-            <TouchableOpacity onPress={() => navigate("settings")}>
-              <Ionicons name="menu-outline" size={32} color="#1A1416" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Profile Info Section */}
-          <View style={styles.profileInfoContainer}>
-            {/* Bada Profile Picture */}
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarRing}>
-                {profilePhoto ? (
-                  <Image
-                    source={{ uri: profilePhoto }}
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={40} color="#A0A0A0" />
-                  </View>
-                )}
-              </View>
-              {verified && (
-                <View style={styles.verifiedBadge}>
-                  <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
+              {/* App Name */}
+              <View
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  left: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Ionicons name="heart" size={28} color={PINK} />
+                <View>
+                  <Text
+                    style={{ color: DARK, fontSize: 22, fontWeight: "700" }}
+                  >
+                    apnajod
+                  </Text>
+                  <Text style={{ color: MUTED, fontSize: 10 }}>
+                    Find Your Perfect Match ❤️
+                  </Text>
                 </View>
-              )}
-            </View>
-
-            {/* Stats */}
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{posts.length}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>5</Text>
-                <Text style={styles.statLabel}>Likes</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>10</Text>
-                <Text style={styles.statLabel}>Matches</Text>
-              </View>
-            </View>
-          </View>
 
-          {/* Bio Section */}
-          <View style={styles.bioContainer}>
-            <Text style={styles.nameText}>
-              {profile.firstName}
-              {profile.age ? `, ${profile.age}` : ""}
-            </Text>
-            <Text style={styles.professionText}>
-              {profile.profession || "Add profession"} ·{" "}
-              {profile.city || "Add city"}
-            </Text>
-            <Text style={styles.bioText}>
-              {profile.bio ||
-                "✨ Building my profile. Love exploring new places, good coffee, and meaningful conversations."}
-            </Text>
-          </View>
-
-          {/* Action Buttons (Instagram Style) */}
-          <View style={styles.actionButtonsRow}>
-            <TouchableOpacity
-              onPress={() => navigate("profileSetup")}
-              style={styles.actionButton}
-            >
-              <Text style={styles.actionButtonText}>Edit profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setPostModalVisible(true)}
-              style={styles.actionButton}
-            >
-              <Text style={styles.actionButtonText}>Share profile</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Posts Grid */}
-          {loading ? (
-            <ActivityIndicator style={{ marginTop: 20 }} color="#8A6722" />
-          ) : posts.length === 0 ? (
-            <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Ionicons name="images-outline" size={48} color="#E2D9CB" />
-              <Text style={{ color: "#A0A0A0", marginTop: 12 }}>
-                No posts yet
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.gridContainer}>
-              {posts.map((post) => (
-                <TouchableOpacity
-                  key={post.id}
-                  style={styles.gridItem}
-                  onLongPress={() => handleDeletePost(post.id)}
-                >
-                  <Image
-                    source={{ uri: post.media_url }}
-                    style={styles.gridImage}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Post Creation Modal */}
-        <Modal visible={postModalVisible} animationType="slide">
-          <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F3E9" }}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                padding: 20,
-                borderBottomWidth: 1,
-                borderBottomColor: "#E2D9CB",
-              }}
-            >
-              <TouchableOpacity onPress={() => setPostModalVisible(false)}>
-                <Text style={{ fontSize: 16, color: "#B00020" }}>Cancel</Text>
-              </TouchableOpacity>
-              <Text
-                style={{ fontSize: 18, fontWeight: "700", color: "#1A1416" }}
-              >
-                New Post
-              </Text>
+              {/* Settings Icon */}
               <TouchableOpacity
-                onPress={handleCreatePost}
-                disabled={uploading || !newPostImage}
+                onPress={() => navigate("settings")}
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  right: 16,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    color: uploading || !newPostImage ? "#A0A0A0" : "#8A6722",
-                  }}
-                >
-                  {uploading ? "Posting..." : "Share"}
-                </Text>
+                <Ionicons name="ellipsis-vertical" size={22} color={DARK} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
-              <TouchableOpacity
-                onPress={pickPostImage}
-                style={{ marginBottom: 20 }}
+            <View style={{ paddingHorizontal: SIDE_PADDING }}>
+              {/* Profile Photo + Verified */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-end",
+                  marginTop: -60,
+                }}
               >
-                {newPostImage ? (
-                  <Image
-                    source={{ uri: newPostImage }}
-                    style={{ width: "100%", height: 300, borderRadius: 12 }}
-                  />
-                ) : (
+                <View style={{ position: "relative" }}>
                   <View
                     style={{
-                      width: "100%",
-                      height: 300,
-                      borderRadius: 12,
-                      backgroundColor: "#E2D9CB",
-                      justifyContent: "center",
-                      alignItems: "center",
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      borderWidth: 4,
+                      borderColor: PINK,
+                      overflow: "hidden",
+                      backgroundColor: "#FFF",
                     }}
                   >
-                    <Ionicons name="camera" size={48} color="#A0A0A0" />
-                    <Text style={{ color: "#A0A0A0", marginTop: 8 }}>
-                      Tap to select a photo
+                    {profilePhoto ? (
+                      <Image
+                        source={{ uri: profilePhoto }}
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons name="person" size={50} color={PINK} />
+                      </View>
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      backgroundColor: PINK,
+                      borderRadius: 12,
+                      padding: 4,
+                    }}
+                  >
+                    <Ionicons name="checkmark" size={14} color="#FFF" />
+                  </View>
+                </View>
+
+                <View
+                  style={{
+                    backgroundColor: PINK_LIGHT,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Ionicons name="shield-checkmark" size={16} color={PINK} />
+                  <Text
+                    style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
+                  >
+                    Verified
+                  </Text>
+                </View>
+              </View>
+
+              {/* Name & Age */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 12,
+                }}
+              >
+                <Text style={{ fontSize: 24, fontWeight: "700", color: DARK }}>
+                  {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
+                </Text>
+                {verified && (
+                  <Ionicons name="checkmark-circle" size={24} color={PINK} />
+                )}
+              </View>
+
+              {/* City & Profession */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 12,
+                  marginTop: 6,
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
+                  <Ionicons name="location" size={16} color={MUTED} />
+                  <Text style={{ fontSize: 14, color: MUTED }}>
+                    {profile?.city || "Bareilly"}
+                  </Text>
+                </View>
+                <Text style={{ color: MUTED }}>|</Text>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
+                  <Ionicons name="briefcase" size={16} color={MUTED} />
+                  <Text style={{ fontSize: 14, color: MUTED }}>
+                    {profile?.profession || "Software Engineer"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Hobbies */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 14,
+                }}
+              >
+                {hobbies.length > 0 ? (
+                  hobbies.map((hobby) => {
+                    const icon = hobbyIcon(hobby);
+                    return (
+                      <View
+                        key={hobby}
+                        style={{
+                          backgroundColor: PINK_LIGHT,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 20,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        {!!icon && (
+                          <Ionicons name={icon as any} size={14} color={DARK} />
+                        )}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: DARK,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {hobby}
+                        </Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <TouchableOpacity onPress={() => navigate("profileSetup")}>
+                    <Text
+                      style={{ fontSize: 14, color: PINK, fontWeight: "600" }}
+                    >
+                      Add hobbies
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Edit Profile & Share Buttons */}
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+                <TouchableOpacity
+                  onPress={() => navigate("profileSetup")}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: PINK,
+                    paddingVertical: 14,
+                    borderRadius: 30,
+                    gap: 8,
+                  }}
+                >
+                  <Ionicons name="create-outline" size={20} color={WHITE} />
+                  <Text
+                    style={{ color: WHITE, fontWeight: "700", fontSize: 16 }}
+                  >
+                    Edit Profile
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: WHITE,
+                    borderWidth: 2,
+                    borderColor: PINK,
+                    paddingVertical: 14,
+                    borderRadius: 30,
+                    gap: 8,
+                  }}
+                >
+                  <Ionicons name="share-social" size={20} color={PINK} />
+                  <Text
+                    style={{ color: PINK, fontWeight: "700", fontSize: 16 }}
+                  >
+                    Share Profile
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* About Me */}
+              <View
+                style={{
+                  backgroundColor: WHITE,
+                  marginTop: 20,
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: LINE,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <Ionicons name="sparkles" size={20} color={PINK} />
+                  <Text
+                    style={{ fontSize: 16, fontWeight: "700", color: DARK }}
+                  >
+                    About Me
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: bio ? MUTED : "#A0A0A0",
+                    lineHeight: 22,
+                  }}
+                >
+                  {bio || "Add a short bio so people know the real you."}
+                </Text>
+              </View>
+
+              {/* Posts */}
+              <View style={{ marginTop: 20 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Ionicons name="images" size={20} color={PINK} />
+                    <Text
+                      style={{ fontSize: 16, fontWeight: "700", color: DARK }}
+                    >
+                      My Photos
                     </Text>
                   </View>
-                )}
-              </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text
+                      style={{ fontSize: 13, color: PINK, fontWeight: "600" }}
+                    >
+                      View All
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
-              <TextInput
-                value={newPostCaption}
-                onChangeText={setNewPostCaption}
-                placeholder="Write a caption..."
-                multiline
-                style={{
-                  backgroundColor: "#FFF",
-                  borderRadius: 12,
-                  padding: 16,
-                  fontSize: 15,
-                  borderWidth: 1,
-                  borderColor: "#E2D9CB",
-                  height: 100,
-                  textAlignVertical: "top",
-                }}
-                placeholderTextColor="#A0A0A0"
-              />
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: GRID_GAP,
+                  }}
+                >
+                  {DEMO_POSTS.map((photo, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri: photo }}
+                      style={{
+                        width: POST_SIZE,
+                        height: POST_SIZE,
+                        borderRadius: 12,
+                        backgroundColor: LINE,
+                      }}
+                      resizeMode="cover"
+                    />
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
 
         <BottomNav active="profile" navigate={navigate} />
       </SafeAreaView>
     </AppCanvas>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 22,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1A1416",
-  },
-  profileInfoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 22,
-    marginBottom: 20,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginRight: 24,
-  },
-  avatarRing: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    borderWidth: 2,
-    borderColor: "#8A6722",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 3,
-  },
-  avatarImage: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-  },
-  avatarPlaceholder: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: "#E2D9CB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  verifiedBadge: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 2,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    flex: 1,
-    justifyContent: "space-around",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: "#E2D9CB",
-  },
-  statItem: {
-    alignItems: "center",
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A1416",
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#635A5D",
-    marginTop: 2,
-    fontWeight: "500",
-  },
-  bioContainer: {
-    paddingHorizontal: 22,
-    marginBottom: 20,
-  },
-  nameText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A1416",
-  },
-  professionText: {
-    fontSize: 14,
-    color: "#635A5D",
-    marginTop: 4,
-    fontWeight: "500",
-  },
-  bioText: {
-    fontSize: 14,
-    color: "#3C3336",
-    marginTop: 10,
-    lineHeight: 22,
-  },
-  actionButtonsRow: {
-    flexDirection: "row",
-    paddingHorizontal: 22,
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: "#F8F3E9",
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2D9CB",
-  },
-  actionButtonText: {
-    color: "#1A1416",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  gridItem: {
-    width: "31.5%",
-    aspectRatio: 1,
-  },
-  gridImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 8,
-  },
-});

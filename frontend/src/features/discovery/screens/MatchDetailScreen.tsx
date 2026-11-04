@@ -1,436 +1,542 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
   View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Dimensions,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
-import { Button, Chip, shared } from "../../../components";
-import {
-  MiniPremiumIcon,
-  PremiumIcon,
-  type PremiumIconTone,
-} from "../../../components/premium/PremiumIcon";
-import type { Match } from "../../../data";
-import {
-  buildAlignmentBridge,
-  type AlignmentBridgeItem,
-  type IntentPassportInput,
-} from "../../../domain/intentPassport";
-import { matchReasons } from "../../../domain/matching";
-import type { MatchFilters } from "../../../storage";
-import { colors } from "../../../theme";
-import {
-  aiStyles,
-  circleStyles,
-  coachStyles,
-  passportStyles,
-  styles,
-} from "../../../theme/appStyles";
 import { AppCanvas } from "../../../components/AppCanvas";
+import type { Match } from "../../../data";
+import type { Screen } from "../../../app/navigation/types";
+import { socialApi } from "../../../api/socialApi";
+import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 
+const PINK = "#E91E63";
+const PINK_LIGHT = "#FCE4EC";
+const DARK = "#1A1416";
+const MUTED = "#635A5D";
+const WHITE = "#FFFFFF";
+const LINE = "#F0EAE0";
 
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
+const GRID_GAP = 8;
+const { width: WINDOW_WIDTH } = Dimensions.get("window");
+const CONTENT_WIDTH = Math.min(WINDOW_WIDTH, MAX_WIDTH);
+const POST_SIZE = (CONTENT_WIDTH - SIDE_PADDING * 2 - GRID_GAP * 2) / 3;
+
+const COVER_URI =
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80";
+
+function hobbyIcon(label: string) {
+  const wanted = String(label).trim().toLowerCase();
+  return MASTER_HOBBIES.find((h) => h.label.toLowerCase() === wanted)?.icon;
+}
 
 export function MatchDetailScreen({
   match,
-  preferences,
-  alignment,
   back,
-  interested,
-  onRose,
-  onProfileView,
-  onPrivateBlock,
+  navigate,
+  accessToken,
+  onStartChat,
 }: {
   match: Match;
-  preferences: { intent: string; vibes: string[]; filters: MatchFilters };
-  alignment: Record<string, string>;
   back: () => void;
-  interested: () => void;
-  onRose: () => void;
-  onProfileView: () => void;
-  onPrivateBlock: () => void;
+  navigate: (screen: Screen) => void;
+  accessToken?: string;
+  onStartChat: () => void;
 }) {
-  const reasons = match.reasons ?? matchReasons(match, preferences);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isRequested, setIsRequested] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [canMessage, setCanMessage] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(onProfileView, 5000);
-    return () => clearTimeout(timer);
-  }, [match.id, onProfileView]);
+    if (!accessToken) return;
+    socialApi
+      .person(accessToken, match.id)
+      .then((data) => {
+        setIsFollowing(!!data.state?.following);
+        setIsRequested(!!data.state?.requested);
+        setCanMessage(!!data.canMessage);
+      })
+      .catch(() => {});
+  }, [accessToken, match.id]);
+
+  const handleFollow = async () => {
+    if (!accessToken) return;
+    setLoading(true);
+    try {
+      const status = await socialApi.follow(accessToken, match.id);
+      if (status === "pending") {
+        setIsRequested(true);
+      } else {
+        setIsFollowing(true);
+        setCanMessage(true);
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Could not follow.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    if (!accessToken) return;
+    try {
+      await socialApi.unfollow(accessToken, match.id);
+      setIsFollowing(false);
+      setIsRequested(false);
+      setCanMessage(false);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Could not unfollow.");
+    }
+  };
+
+  const handleMessage = () => {
+    if (canMessage) {
+      onStartChat();
+    } else {
+      Alert.alert(
+        "Follow to Chat",
+        `Follow ${match.name} to start a conversation.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Follow", onPress: handleFollow },
+        ],
+      );
+    }
+  };
+
+  const photos = match.photos?.length
+    ? match.photos
+    : match.photo
+      ? [match.photo]
+      : [];
+
+  const hobbies: string[] = Array.isArray(match.hobbies) ? match.hobbies : [];
+  const age = String(match.age ?? "").trim();
+  const headline = [match.profession, match.city].filter(Boolean).join(" · ");
+  const bio = String(match.about ?? "").trim();
+
   return (
     <AppCanvas>
-      <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-          <View style={styles.hero}>
-            <Image source={{ uri: match.photo }} style={styles.fill} />
-            <LinearGradient
-              colors={["rgba(18,14,15,.35)", "transparent", colors.black]}
-              style={StyleSheet.absoluteFill}
-            />
-            <SafeAreaView>
-              <View style={shared.row}>
-                <Pressable onPress={back} style={styles.circleBtn}>
-                  <PremiumIcon
-                    name="arrow-back"
-                    tone="dark"
-                    size={44}
-                    iconSize={21}
-                  />
-                </Pressable>
-                <View style={shared.spacer} />
-                <Pressable
-                  onPress={onPrivateBlock}
-                  style={styles.detailBlockButton}
-                >
-                  <PremiumIcon
-                    name="ban-outline"
-                    tone="ruby"
-                    size={40}
-                    iconSize={18}
-                  />
-                </Pressable>
-              </View>
-            </SafeAreaView>
-            <View style={styles.heroText}>
-              <Chip label={match.match} gold />
-              <View style={shared.row}>
-                <Text style={styles.detailName}>
-                  {match.name}, {match.age}
-                </Text>
-                <MiniPremiumIcon
-                  name="shield-checkmark"
-                  tone="plum"
-                  size={34}
-                  iconSize={16}
-                />
-              </View>
-              <Text style={styles.matchMeta}>
-                {match.profession} · {match.city}
-              </Text>
-              <Chip label={match.intent} />
-            </View>
-          </View>
-          <View style={styles.detailBody}>
-            <AlignmentBridge
-              match={match}
-              input={{ intent: preferences.intent, alignment }}
-            />
-            {reasons.length > 0 && (
-              <View style={aiStyles.detailAi}>
-                <View style={shared.row}>
-                  <MiniPremiumIcon
-                    name="sparkles"
-                    tone="gold"
-                    size={38}
-                    iconSize={18}
-                  />
-                  <Text style={[styles.cardTitle, { marginLeft: 8 }]}>
-                    Why AI surfaced {match.name}
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF5F9" }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 90 }}
+        >
+          <View
+            style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center" }}
+          >
+            {/* Cover Photo */}
+            <View style={{ position: "relative", height: 160 }}>
+              <Image
+                source={{ uri: COVER_URI }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={[
+                  "rgba(233,30,99,0.4)",
+                  "transparent",
+                  "rgba(255,245,249,1)",
+                ]}
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                }}
+              />
+
+              {/* App Name */}
+              <View
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  left: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Ionicons name="heart" size={28} color={PINK} />
+                <View>
+                  <Text
+                    style={{ color: DARK, fontSize: 22, fontWeight: "700" }}
+                  >
+                    apnajod
+                  </Text>
+                  <Text style={{ color: MUTED, fontSize: 10 }}>
+                    Find Your Perfect Match ❤️
                   </Text>
                 </View>
-                <View style={aiStyles.reasonRow}>
-                  {reasons.map((reason) => (
-                    <View key={reason} style={aiStyles.reasonPill}>
-                      <Text style={aiStyles.reasonText}>{reason}</Text>
-                    </View>
-                  ))}
-                </View>
-                <Text style={styles.helper}>
-                  Based only on your Milaan answers and in-app activity.
-                </Text>
               </View>
-            )}
-            <View style={styles.profileViewNotice}>
-              <MiniPremiumIcon
-                name="eye-outline"
-                tone="gold"
-                size={36}
-                iconSize={17}
-              />
-              <Text style={[styles.helper, { flex: 1 }]}>
-                If you spend 5+ seconds here, {match.name} receives a tasteful
-                profile-view notification. Swipe previews stay private.
-              </Text>
-            </View>
-            <TrustBadges match={match} />
-            <View style={styles.voice}>
-              <PremiumIcon name="play" tone="ruby" size={42} iconSize={19} />
-              <View style={{ flex: 1 }}>
-                <Text style={shared.label}>Voice introduction</Text>
-                <View style={styles.wave}>
-                  {[8, 17, 12, 24, 15, 9, 20, 12, 6, 15, 20, 9].map((h, i) => (
-                    <View
-                      key={i}
-                      style={{
-                        height: h,
-                        width: 3,
-                        backgroundColor: colors.purpleLight,
-                        borderRadius: 2,
-                      }}
-                    />
-                  ))}
-                </View>
-              </View>
-              <Text style={styles.helper}>0:24</Text>
-            </View>
-            <Info title="About me" body={match.about} />
-            <Info title="What I value" body={match.values} />
-            <Info title="The future I’m building" body={match.goals} />
-            <LifeAlignment match={match} />
-            <View style={styles.privateBlockCard}>
-              <PremiumIcon name="shield" tone="ruby" size={44} iconSize={21} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Private block</Text>
-                <Text style={styles.helper}>
-                  If someone bothers you, block them quietly. They won’t be
-                  notified and they disappear from your app.
-                </Text>
-              </View>
-              <Pressable
-                onPress={onPrivateBlock}
-                style={styles.privateBlockAction}
+
+              {/* Back Button */}
+              <TouchableOpacity
+                onPress={back}
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  right: 16,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
-                <Text style={styles.privateBlockText}>Block</Text>
-              </Pressable>
+                <Ionicons name="arrow-back" size={22} color={DARK} />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.sectionLabel}>THEIR VIBE</Text>
-            <View style={styles.chipRow}>
-              {match.vibes.map((x) => (
-                <Chip key={x} label={x} selected />
-              ))}
+
+            <View style={{ paddingHorizontal: SIDE_PADDING }}>
+              {/* Profile Photo + Verified */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-end",
+                  marginTop: -60,
+                }}
+              >
+                <View style={{ position: "relative" }}>
+                  <View
+                    style={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      borderWidth: 4,
+                      borderColor: PINK,
+                      overflow: "hidden",
+                      backgroundColor: "#FFF",
+                    }}
+                  >
+                    {photos[0] ? (
+                      <Image
+                        source={{ uri: photos[0] }}
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons name="person" size={50} color={PINK} />
+                      </View>
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      backgroundColor: PINK,
+                      borderRadius: 12,
+                      padding: 4,
+                    }}
+                  >
+                    <Ionicons name="checkmark" size={14} color="#FFF" />
+                  </View>
+                </View>
+
+                <View
+                  style={{
+                    backgroundColor: PINK_LIGHT,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Ionicons name="shield-checkmark" size={16} color={PINK} />
+                  <Text
+                    style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
+                  >
+                    Verified
+                  </Text>
+                </View>
+              </View>
+
+              {/* Name & Age */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 12,
+                }}
+              >
+                <Text style={{ fontSize: 24, fontWeight: "700", color: DARK }}>
+                  {match.name}
+                  {age ? `, ${age}` : ""}
+                </Text>
+                <Ionicons name="checkmark-circle" size={24} color={PINK} />
+              </View>
+
+              {/* City & Profession */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 12,
+                  marginTop: 6,
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
+                  <Ionicons name="location" size={16} color={MUTED} />
+                  <Text style={{ fontSize: 14, color: MUTED }}>
+                    {match.city || "City not added"}
+                  </Text>
+                </View>
+                <Text style={{ color: MUTED }}>|</Text>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
+                  <Ionicons name="briefcase" size={16} color={MUTED} />
+                  <Text style={{ fontSize: 14, color: MUTED }}>
+                    {match.profession || "Profession not added"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Hobbies */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 14,
+                }}
+              >
+                {hobbies.length > 0 ? (
+                  hobbies.map((hobby) => {
+                    const icon = hobbyIcon(hobby);
+                    return (
+                      <View
+                        key={hobby}
+                        style={{
+                          backgroundColor: PINK_LIGHT,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 20,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        {!!icon && (
+                          <Ionicons name={icon as any} size={14} color={DARK} />
+                        )}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: DARK,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {hobby}
+                        </Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <Text style={{ fontSize: 13, color: MUTED }}>
+                    No hobbies added
+                  </Text>
+                )}
+              </View>
+
+              {/* Follow & Message Buttons */}
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+                <TouchableOpacity
+                  onPress={
+                    isFollowing || isRequested ? handleUnfollow : handleFollow
+                  }
+                  disabled={loading}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: isFollowing ? WHITE : PINK,
+                    borderWidth: isFollowing ? 2 : 0,
+                    borderColor: PINK,
+                    paddingVertical: 14,
+                    borderRadius: 30,
+                    gap: 8,
+                    opacity: loading ? 0.6 : 1,
+                  }}
+                >
+                  <Ionicons
+                    name={
+                      isFollowing
+                        ? "person-remove-outline"
+                        : isRequested
+                          ? "time-outline"
+                          : "person-add"
+                    }
+                    size={20}
+                    color={isFollowing ? PINK : WHITE}
+                  />
+                  <Text
+                    style={{
+                      color: isFollowing ? PINK : WHITE,
+                      fontWeight: "700",
+                      fontSize: 16,
+                    }}
+                  >
+                    {isFollowing
+                      ? "Following"
+                      : isRequested
+                        ? "Requested"
+                        : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleMessage}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: canMessage ? DARK : WHITE,
+                    borderWidth: canMessage ? 0 : 2,
+                    borderColor: PINK,
+                    paddingVertical: 14,
+                    borderRadius: 30,
+                    gap: 8,
+                  }}
+                >
+                  <Ionicons
+                    name="chatbubble-outline"
+                    size={20}
+                    color={canMessage ? WHITE : PINK}
+                  />
+                  <Text
+                    style={{
+                      color: canMessage ? WHITE : PINK,
+                      fontWeight: "700",
+                      fontSize: 16,
+                    }}
+                  >
+                    Message
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* About Me */}
+              <View
+                style={{
+                  backgroundColor: WHITE,
+                  marginTop: 20,
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: LINE,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <Ionicons name="sparkles" size={20} color={PINK} />
+                  <Text
+                    style={{ fontSize: 16, fontWeight: "700", color: DARK }}
+                  >
+                    About Me
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: bio ? MUTED : "#A0A0A0",
+                    lineHeight: 22,
+                  }}
+                >
+                  {bio || "No bio yet."}
+                </Text>
+              </View>
+
+              {/* Photos */}
+              {photos.length > 0 && (
+                <View style={{ marginTop: 20 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons name="images" size={20} color={PINK} />
+                      <Text
+                        style={{ fontSize: 16, fontWeight: "700", color: DARK }}
+                      >
+                        Photos
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: GRID_GAP,
+                    }}
+                  >
+                    {photos.map((photo, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri: photo }}
+                        style={{
+                          width: POST_SIZE,
+                          height: POST_SIZE,
+                          borderRadius: 12,
+                          backgroundColor: LINE,
+                        }}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         </ScrollView>
-        <View style={styles.fixedAction}>
-          <Pressable onPress={back} style={styles.nope}>
-            <PremiumIcon name="close" tone="dark" size={52} iconSize={24} />
-          </Pressable>
-          <Pressable onPress={onRose} style={aiStyles.fixedRose}>
-            <PremiumIcon name="sparkles" tone="gold" size={34} iconSize={16} />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Button
-              label="Explore a serious connection"
-              icon="heart"
-              onPress={interested}
-            />
-          </View>
-        </View>
-      </View>
+      </SafeAreaView>
     </AppCanvas>
-  );
-}
-
-function AlignmentBridge({
-  match,
-  input,
-}: {
-  match: Match;
-  input: IntentPassportInput;
-}) {
-  const bridge = buildAlignmentBridge(input, match);
-  return (
-    <View style={passportStyles.bridge}>
-      <View style={passportStyles.bridgeHeader}>
-        <PremiumIcon
-          name="git-compare-outline"
-          tone="gold"
-          size={44}
-          iconSize={20}
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.sectionLabel}>THE ALIGNMENT BRIDGE</Text>
-          <Text style={passportStyles.bridgeTitle}>
-            Clarity before chemistry.
-          </Text>
-        </View>
-        <View style={passportStyles.alignedPill}>
-          <Text style={passportStyles.alignedCount}>{bridge.alignedCount}</Text>
-          <Text style={passportStyles.alignedLabel}>clear</Text>
-        </View>
-      </View>
-      <Text style={passportStyles.bridgeIntro}>
-        Compare future essentials in plain language. Differences are
-        conversation topics, not rejection scores.
-      </Text>
-      <View style={passportStyles.bridgeList}>
-        {bridge.items.map((item) => (
-          <AlignmentBridgeRow
-            key={item.id}
-            item={item}
-            matchName={match.name}
-          />
-        ))}
-      </View>
-      <View style={passportStyles.promptCard}>
-        <MiniPremiumIcon
-          name="chatbubble-ellipses-outline"
-          tone="rose"
-          size={34}
-          iconSize={16}
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={passportStyles.promptLabel}>
-            A thoughtful first question
-          </Text>
-          <Text style={passportStyles.promptText}>
-            {bridge.conversationPrompt}
-          </Text>
-        </View>
-      </View>
-      {bridge.hasPrivateFields && (
-        <Text style={passportStyles.privacy}>
-          Unshared answers stay private. Complete your Intent Passport to
-          compare them.
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function AlignmentBridgeRow({
-  item,
-  matchName,
-}: {
-  item: AlignmentBridgeItem;
-  matchName: string;
-}) {
-  const icon =
-    item.status === "aligned"
-      ? "checkmark-circle"
-      : item.status === "discuss"
-        ? "chatbubble-ellipses"
-        : "lock-closed";
-  const tone: PremiumIconTone =
-    item.status === "aligned"
-      ? "gold"
-      : item.status === "discuss"
-        ? "rose"
-        : "dark";
-  return (
-    <View style={passportStyles.bridgeRow}>
-      <MiniPremiumIcon name={icon} tone={tone} size={30} iconSize={14} />
-      <View style={{ flex: 1 }}>
-        <Text style={passportStyles.bridgeLabel}>{item.label}</Text>
-        <Text style={passportStyles.bridgeValues} numberOfLines={2}>
-          You: {item.you}
-        </Text>
-        <Text style={passportStyles.bridgeValues} numberOfLines={2}>
-          {matchName}: {item.them}
-        </Text>
-      </View>
-      <Text
-        style={[
-          passportStyles.status,
-          item.status === "aligned" && passportStyles.statusAligned,
-        ]}
-      >
-        {item.status === "aligned"
-          ? "ALIGNED"
-          : item.status === "discuss"
-            ? "DISCUSS"
-            : "PRIVATE"}
-      </Text>
-    </View>
-  );
-}
-
-function TrustBadges({ match }: { match: Match }) {
-  const badges = [
-    "Selfie verified",
-    "Serious intent verified",
-    `${match.vouches.count} friend vouches`,
-  ];
-  return (
-    <View style={coachStyles.badgeCard}>
-      <View style={shared.row}>
-        <MiniPremiumIcon
-          name="shield-checkmark"
-          tone="gold"
-          size={38}
-          iconSize={18}
-        />
-        <Text style={[styles.cardTitle, { marginLeft: 8 }]}>Trust profile</Text>
-      </View>
-      <View style={coachStyles.badgeRow}>
-        {badges.map((badge) => (
-          <View key={badge} style={coachStyles.badgePill}>
-            <MiniPremiumIcon
-              name="checkmark-circle"
-              tone="rose"
-              size={22}
-              iconSize={10}
-            />
-            <Text style={coachStyles.badgeText}>{badge}</Text>
-          </View>
-        ))}
-      </View>
-      <Text style={styles.helper}>
-        Verification reduces fake profiles, but members should still meet
-        publicly and use their own judgment.
-      </Text>
-    </View>
-  );
-}
-
-function Info({ title, body }: { title: string; body: string }) {
-  return (
-    <View style={{ gap: 8 }}>
-      <Text style={styles.sectionLabel}>{title.toUpperCase()}</Text>
-      <Text style={[shared.body, { color: colors.muted }]}>{body}</Text>
-    </View>
-  );
-}
-function LifeAlignment({ match }: { match: Match }) {
-  const rows = [
-    ["diamond-outline", "Marriage outlook", match.timeline],
-    ["happy-outline", "Family plans", match.children],
-    ["people-outline", "Family involvement", match.family],
-    ["home-outline", "Relocation", match.relocation],
-    ["chatbubbles-outline", "Languages", match.languages.join(" · ")],
-  ] as const;
-  return (
-    <View style={{ gap: 10 }}>
-      <Text style={styles.sectionLabel}>LIFE ALIGNMENT</Text>
-      <View style={styles.alignmentCard}>
-        {rows.map(([icon, label, value]) => (
-          <View key={label} style={styles.alignmentRow}>
-            <MiniPremiumIcon name={icon} tone="rose" size={34} iconSize={16} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.alignmentRowLabel}>{label}</Text>
-              <Text style={styles.alignmentRowValue}>{value}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-      <Text style={styles.alignmentPrivacy}>
-        Shared to make intentions clear—not to reduce a person to a checklist.
-      </Text>
-      <View style={circleStyles.profileVouch}>
-        <PremiumIcon name="people" tone="gold" size={46} iconSize={22} />
-        <View style={{ flex: 1 }}>
-          <Text style={circleStyles.profileVouchTitle}>
-            Vouched for by {match.vouches.count} friends
-          </Text>
-          <Text style={circleStyles.profileVouchBody}>
-            People who know {match.name} describe them as:
-          </Text>
-          <View style={circleStyles.qualityWrap}>
-            {match.vouches.qualities.map((quality) => (
-              <View key={quality} style={circleStyles.qualityPill}>
-                <Text style={circleStyles.qualityText}>{quality}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-      <Text style={styles.alignmentPrivacy}>
-        Friend vouches confirm character, not identity or safety. Always use
-        your own judgment.
-      </Text>
-    </View>
   );
 }

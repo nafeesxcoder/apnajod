@@ -20,6 +20,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     community,
     about,
     bio,
+    hobbies,
   } = req.body;
   await profileService.upsertProfile(req.user.id, {
     firstName,
@@ -32,6 +33,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     community,
     about,
     bio,
+    hobbies,
   });
   res.json({ ok: true });
 });

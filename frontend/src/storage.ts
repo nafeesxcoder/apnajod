@@ -115,7 +115,8 @@ export type ProfileDraft = {
   profession: string;
   religion: string;
   community: string;
-  bio?: string; // <-- Yeh add karo
+  bio?: string; // <-- Bio added
+  hobbies?: string[]; // <-- Hobbies added
 };
 
 export type DiscoverySignal = {
@@ -165,9 +166,9 @@ export type PersistedAppState = {
 };
 
 export const defaultMatchFilters: MatchFilters = {
-  lookingFor: 'Everyone', // <-- CHANGED
-  minAge: 21,             // <-- CHANGED
-  maxAge: 45,             // <-- CHANGED
+  lookingFor: 'Everyone', // <-- Default Everyone
+  minAge: 21,             // <-- Default 21
+  maxAge: 45,             // <-- Default 45
   cities: [],
   intents: [],
   mustHaveVibes: [],
@@ -194,6 +195,8 @@ export const initialProfileDraft: ProfileDraft = {
   profession: '',
   religion: '',
   community: '',
+  bio: '',
+  hobbies: [],
 };
 
 export const initialPersistedState: PersistedAppState = {
@@ -262,10 +265,10 @@ export async function loadAppState(): Promise<PersistedAppState> {
       chats,
       profileDraft: hasLegacyDemoProfile ? initialProfileDraft : profileDraft,
       matchFilters: {
-  ...defaultMatchFilters,
-  ...(parsed.matchFilters ?? {}),
-  lookingFor: parsed.matchFilters?.lookingFor ?? 'Everyone',
-},
+        ...defaultMatchFilters,
+        ...(parsed.matchFilters ?? {}),
+        lookingFor: parsed.matchFilters?.lookingFor ?? 'Everyone',
+      },
       roseLedger: { ...initialRoseLedger, ...(parsed.roseLedger ?? {}) },
       relationshipReflections: Object.fromEntries(Object.entries(parsed.relationshipReflections ?? {}).map(([matchId,value])=>[
         matchId,
