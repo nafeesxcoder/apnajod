@@ -1,16 +1,9 @@
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Button, shared } from "../../../components";
+import { Button } from "../../../components";
 import {
   BottomNav,
   handleBottomNavScroll,
@@ -21,59 +14,9 @@ import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal, MatchFilters } from "../../../storage";
 import type { Screen } from "../../../app/navigation/types";
 import { colors } from "../../../theme";
-import { homeCleanStyles, styles } from "../../../theme/appStyles";
 import { IntentPassportCard } from "../components/IntentPassportCard";
 import { MatchCard } from "../components/MatchCard";
 import { AppCanvas } from "../../../components/AppCanvas";
-
-function GlowIcon({
-  icon,
-  size = 36,
-  color = "#FFFFFF",
-  glowColor = "#8A1B35",
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  size?: number;
-  color?: string;
-  glowColor?: string;
-}) {
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "rgba(19,15,16,.90)",
-        borderWidth: 1.5,
-        borderColor: "rgba(218,152,167,.72)",
-        shadowColor: glowColor,
-        shadowOpacity: 0.72,
-        shadowRadius: 13,
-        shadowOffset: { width: 0, height: 0 },
-        elevation: 5,
-      }}
-    >
-      <LinearGradient
-        colors={[
-          "rgba(255,255,255,.22)",
-          "rgba(138,27,53,.30)",
-          "rgba(23,18,19,.30)",
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          borderRadius: size / 2,
-        }}
-      />
-      <Ionicons name={icon} size={size * 0.48} color={color} />
-    </View>
-  );
-}
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
@@ -114,8 +57,6 @@ export function HomeScreen({
   onRose: (m: Match) => void;
   navigate: (s: Screen) => void;
 }) {
-  const { width } = useWindowDimensions();
-  const compactHome = width < 430;
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
   const passportInput = {

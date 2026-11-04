@@ -1,4 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109:4000";
 
 async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {

@@ -67,7 +67,8 @@ async function upsertProfile(userId, input) {
   } = input;
 
   // Bio ko 'about' column mein save karenge. Agar bio nahi hai toh about use karenge.
-  const profileAbout = bio || about || null;
+  const rawAbout = bio !== undefined ? bio : about;
+  const profileAbout = rawAbout === undefined || rawAbout === null ? null : String(rawAbout).trim();
 
   await query(
     `INSERT INTO profiles (user_id, first_name, gender, age, height, city, profession, religion, community, about)
@@ -75,7 +76,7 @@ async function upsertProfile(userId, input) {
      ON DUPLICATE KEY UPDATE
        first_name = VALUES(first_name), gender = VALUES(gender), age = VALUES(age),
        height = VALUES(height), city = VALUES(city), profession = VALUES(profession),
-       religion = VALUES(religion), community = VALUES(community), about = VALUES(about)`,
+       religion = VALUES(religion), community = VALUES(community), about = COALESCE(VALUES(about), about)`,
     [
       userId,
       firstName || null,

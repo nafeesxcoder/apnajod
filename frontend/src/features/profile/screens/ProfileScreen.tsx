@@ -18,6 +18,32 @@ import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav } from "../../../components/navigation/BottomNav";
 import { postApi } from "../../../api/postApi";
 
+// Server par photo upload karne ka function
+async function uploadPhotoAsset(
+  uri: string,
+  accessToken?: string,
+): Promise<string> {
+  if (!accessToken) return uri;
+  try {
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+    const formData = new FormData();
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    formData.append("photo", blob, "photo.jpg");
+    const uploadResponse = await fetch(`${API_URL}/profile/upload-photo`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: formData,
+    });
+    const data = await uploadResponse.json();
+    if (!uploadResponse.ok) throw new Error(data.error || "Upload failed");
+    return data.url; // Server ka URL return karega
+  } catch (e) {
+    console.log("Photo upload failed, using local URI", e);
+    return uri; // Fallback (par yeh local URI refresh par kaam nahi karegi)
+  }
+}
+
 type Post = {
   id: string;
   media_url: string;
@@ -70,7 +96,12 @@ export function ProfileScreen({
     if (!accessToken || !newPostImage) return;
     setUploading(true);
     try {
-      await postApi.create(accessToken, newPostImage, newPostCaption);
+      // 1. Pehle photo server par upload karo
+      const uploadedUrl = await uploadPhotoAsset(newPostImage, accessToken);
+
+      // 2. Ab server ka URL database mein save karo
+      await postApi.create(accessToken, uploadedUrl, newPostCaption);
+
       const res = await postApi.getMyPosts(accessToken);
       setPosts(res.posts || []);
       setPostModalVisible(false);
@@ -103,7 +134,7 @@ export function ProfileScreen({
             <TouchableOpacity onPress={() => setPostModalVisible(true)}>
               <Ionicons name="add-circle-outline" size={32} color="#1A1416" />
             </TouchableOpacity>
-            
+
             {/* Right Side: Menu Icon */}
             <TouchableOpacity onPress={() => navigate("settings")}>
               <Ionicons name="menu-outline" size={32} color="#1A1416" />

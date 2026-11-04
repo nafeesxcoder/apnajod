@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
 import { Platform, View } from "react-native";
@@ -216,6 +216,24 @@ async function checkUsernameAvailable(username: string) {
     return { available: true, reason: "" };
   }
 }
+
+/** Server may call this field `about` or `bio`; accept both. */
+const readBio = (profile: any, fallback = ""): string =>
+  profile?.about ?? profile?.bio ?? fallback;
+
+/** Send both keys so it saves whichever one the backend expects. */
+const buildProfilePayload = (draft: any) => ({
+  firstName: draft.firstName,
+  gender: draft.gender,
+  age: draft.age,
+  height: draft.height,
+  city: draft.city,
+  profession: draft.profession,
+  religion: draft.religion,
+  community: draft.community,
+  bio: draft.bio ?? "",
+  about: draft.bio ?? "",
+});
 
 // The signed-out policy. Used before there is a session, and by the showcase.
 const previewDataRuntime = evaluateMemberDataRuntime(backendRuntime.mode);
@@ -661,6 +679,19 @@ function MilaanApp() {
       });
     });
   };
+  /** Saves the profile, re-reads it from the server and confirms the bio stuck. */
+  const saveProfileAndSync = async (token: string, draft: any) => {
+    await profileApi.updateProfile(token, buildProfilePayload(draft));
+    const fresh = await profileApi.getMyProfile(token);
+    const savedBio = String(readBio(fresh?.profile, "")).trim();
+    const wantedBio = String(draft.bio ?? "").trim();
+    if (savedBio !== wantedBio) {
+      throw new Error(
+        "Bio server par save nahi hua. Backend /profile update me bio/about field check karo.",
+      );
+    }
+    setProfileDraft((current: any) => ({ ...current, bio: savedBio }));
+  };
   const refreshServerMatches = async () => {
     if (memberDataRuntime.source !== "server") return;
     setMatchLoadState("loading");
@@ -857,6 +888,7 @@ function MilaanApp() {
                   profileData.profile.profession ?? current.profession,
                 religion: profileData.profile.religion ?? current.religion,
                 community: profileData.profile.community ?? current.community,
+                bio: readBio(profileData.profile, (current as any).bio ?? ""),
               }));
               setVerified(!!profileData.profile.verified);
             }
@@ -2192,17 +2224,10 @@ function MilaanApp() {
     }
     if (accessToken) {
       try {
-        await profileApi.updateProfile(accessToken, {
-          firstName: profileDraft.firstName,
-          gender: profileDraft.gender,
-          age: profileDraft.age,
-          height: profileDraft.height,
-          city: profileDraft.city,
-          profession: profileDraft.profession,
-          religion: profileDraft.religion,
-          community: profileDraft.community,
-          bio: profileDraft.bio, // <-- Yeh add karo
-        });
+        await profileApi.updateProfile(
+          accessToken,
+          buildProfilePayload(profileDraft),
+        );
 
         await profileApi.updatePhotos(accessToken, profilePhotos);
         await profileApi.updateVibes(accessToken, vibeList);
@@ -2665,16 +2690,7 @@ function MilaanApp() {
     if (quickProfile.photoUri) setProfilePhotos(photos);
 
     if (accessToken) {
-      await profileApi.updateProfile(accessToken, {
-        firstName: next.firstName,
-        gender: next.gender,
-        age: next.age,
-        height: next.height,
-        city: next.city,
-        profession: next.profession,
-        religion: next.religion,
-        community: next.community,
-      });
+      await profileApi.updateProfile(accessToken, buildProfilePayload(next));
       if (quickProfile.photoUri) {
         await profileApi.updatePhotos(accessToken, photos);
       }
@@ -2719,6 +2735,7 @@ function MilaanApp() {
           profession: profileData.profile.profession ?? current.profession,
           religion: profileData.profile.religion ?? current.religion,
           community: profileData.profile.community ?? current.community,
+          bio: readBio(profileData.profile, (current as any).bio ?? ""),
         }));
         setVerified(!!profileData.profile.verified);
         setQuickProfile({
@@ -2902,19 +2919,12 @@ function MilaanApp() {
             voiceUri={voiceIntroUri}
             onVoiceChange={setVoiceIntroUri}
             allowPreviewContinue={isPreviewAccessMode}
-            onNext={async () => {
+            onNext={async (latest?: any) => {
+              const draftToSave = latest ?? profileDraft;
               if (onboardingComplete && accessToken) {
                 try {
-                  await profileApi.updateProfile(accessToken, {
-                    firstName: profileDraft.firstName,
-                    gender: profileDraft.gender,
-                    age: profileDraft.age,
-                    height: profileDraft.height,
-                    city: profileDraft.city,
-                    profession: profileDraft.profession,
-                    religion: profileDraft.religion,
-                    community: profileDraft.community,
-                  });
+                  await saveProfileAndSync(accessToken, draftToSave);
+
                   await profileApi.updatePhotos(accessToken, profilePhotos);
                   setAppNotice({
                     title: "Profile updated",

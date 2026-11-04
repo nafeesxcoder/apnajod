@@ -31,6 +31,7 @@ export const profileApi = {
       religion?: string;
       community?: string;
       about?: string;
+      bio?: string;
     },
   ) {
     return authFetch("/profile/profile", accessToken, {

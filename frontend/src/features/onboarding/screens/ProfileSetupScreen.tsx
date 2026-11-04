@@ -22,7 +22,8 @@ async function uploadPhotoAsset(
 ): Promise<string> {
   if (!accessToken) return uri;
   try {
-    const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+    const API_URL =
+      process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109:4000";
     const formData = new FormData();
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -57,7 +58,7 @@ export function ProfileSetupScreen({
   voiceUri: string;
   onVoiceChange: (uri: string) => void;
   allowPreviewContinue: boolean;
-  onNext: () => void;
+  onNext: (latest?: any) => void;
 }) {
   const [bio, setBio] = useState(profile.bio || "");
 
@@ -83,8 +84,9 @@ export function ProfileSetupScreen({
   };
 
   const handleSave = () => {
-    onProfileChange({ ...profile, bio });
-    onNext();
+    const latest = { ...profile, bio };
+    onProfileChange(latest);
+    onNext(latest);
   };
 
   return (
