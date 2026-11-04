@@ -1,7 +1,15 @@
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { Button } from "../../../components";
 import {
@@ -9,18 +17,30 @@ import {
   handleBottomNavScroll,
 } from "../../../components/navigation/BottomNav";
 import type { Match } from "../../../data";
-import { matchReasons } from "../../../domain/matching";
 import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal, MatchFilters } from "../../../storage";
 import type { Screen } from "../../../app/navigation/types";
 import { colors } from "../../../theme";
 import { IntentPassportCard } from "../components/IntentPassportCard";
-import { MatchCard } from "../components/MatchCard";
 import { AppCanvas } from "../../../components/AppCanvas";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
 type MatchingPoolStatusView = { status: string; suggestions: string[] };
+
+const GOLD = "#8A6722";
+const RUBY = "#8A1B35";
+const LINE = "#E2D9CB";
+const PAPER = "#FDFAF4";
+const MAX_WIDTH = 720;
+
+function greetingForNow() {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export function HomeScreen({
   preview,
@@ -30,12 +50,11 @@ export function HomeScreen({
   onRetryMatches,
   preferences,
   alignment,
-  firstName = "there",
+  firstName = "",
+  profilePhoto,
+  notificationCount = 0,
   crossedPaths,
   openDetail,
-  onInterested,
-  onSkip,
-  onRose,
   navigate,
 }: {
   preview: boolean;
@@ -45,20 +64,26 @@ export function HomeScreen({
   onRetryMatches: () => void;
   preferences: { intent: string; vibes: string[]; filters: MatchFilters };
   alignment: Record<string, string>;
-  signals: DiscoverySignal[];
-  dismissedCount: number;
-  profileGrowth: ProfileGrowthInput;
+  signals?: DiscoverySignal[];
+  dismissedCount?: number;
+  profileGrowth?: ProfileGrowthInput;
   firstName?: string;
-  roseAvailability: RoseAvailability;
+  profilePhoto?: string;
+  notificationCount?: number;
+  roseAvailability?: RoseAvailability;
   crossedPaths: boolean;
   openDetail: (m: Match) => void;
-  onInterested: (m: Match) => void;
-  onSkip: (m: Match) => void;
-  onRose: (m: Match) => void;
+  onInterested?: (m: Match) => void;
+  onSkip?: (m: Match) => void;
+  onRose?: (m: Match) => void;
   navigate: (s: Screen) => void;
 }) {
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
+  const others = swipeDeck.slice(1);
+  const name = firstName.trim();
+  const initial = name ? name.charAt(0).toUpperCase() : "";
+
   const passportInput = {
     intent: preferences.intent,
     alignment: preview
@@ -78,391 +103,503 @@ export function HomeScreen({
     matchingPoolStatus?.suggestions[0] ??
     "No verified profiles meet your preferences right now. We will refresh your introductions as the community grows.";
 
-  const profilePreviewPhoto = swipeDeck.find(
-    (match) => match.name === "Arjun",
-  )?.photo;
+  const loading = matchLoadState === "loading";
+
+  const summaryTitle = loading
+    ? "Finding your introductions"
+    : swipeDeck.length === 0
+      ? "No introductions yet"
+      : swipeDeck.length === 1
+        ? "1 introduction for you"
+        : `${swipeDeck.length} introductions for you`;
+  const summaryBody = loading
+    ? "Verified profiles are loading securely."
+    : swipeDeck.length === 0
+      ? "Check back soon. We refresh your list as new members join."
+      : "Each one is chosen for what you want from a relationship, so you can start with a real conversation.";
 
   return (
     <AppCanvas>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }}>
-        {/* Top Header - Mobile Style */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            padding: 20,
-            paddingBottom: 10,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{ fontSize: 22, fontWeight: "700", color: colors.text }}
-            >
-              Good evening, {firstName} 👋
-            </Text>
-            <Text style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}>
-              Thoughtful connections. Meaningful futures.
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => navigate("likes")}
-            style={{ marginRight: 12, position: "relative" }}
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={28}
-              color={colors.text}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: -2,
-                right: -2,
-                backgroundColor: "#8A1B35",
-                borderRadius: 10,
-                width: 16,
-                height: 16,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{ color: "white", fontSize: 10, fontWeight: "bold" }}
-              >
-                3
-              </Text>
-            </View>
-          </Pressable>
-          <Pressable onPress={() => navigate("profile")}>
-            {profilePreviewPhoto ? (
-              <Image
-                source={{ uri: profilePreviewPhoto }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  borderWidth: 2,
-                  borderColor: "#8A6722",
-                }}
-              />
-            ) : (
-              <Ionicons name="person-circle" size={40} color={colors.text} />
-            )}
-          </Pressable>
-        </View>
-
-        {/* Scrollable Content */}
         <ScrollView
           onScroll={handleBottomNavScroll}
           scrollEventThrottle={16}
-          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={onRetryMatches}
+              tintColor={GOLD}
+            />
+          }
         >
-          {/* Hero Card */}
-          <LinearGradient
-            colors={["#FFFFFF", "#FDFAF4", "#F8F3E9"]}
+          <View
             style={{
-              borderRadius: 24,
-              padding: 20,
-              marginBottom: 20,
-              borderWidth: 1,
-              borderColor: "#E2D9CB",
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              paddingHorizontal: 20,
             }}
           >
+            {/* Header */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
+                paddingTop: 20,
+                paddingBottom: 16,
+              }}
+            >
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 22,
+                    fontWeight: "700",
+                    color: colors.text,
+                  }}
+                >
+                  {name ? `${greetingForNow()}, ${name}` : greetingForNow()}
+                </Text>
+                <Text
+                  style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}
+                >
+                  Thoughtful connections. Meaningful futures.
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => navigate("likes")}
+                hitSlop={8}
+                style={{ marginRight: 14 }}
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={26}
+                  color={colors.text}
+                />
+                {notificationCount > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -6,
+                      minWidth: 18,
+                      height: 18,
+                      paddingHorizontal: 4,
+                      borderRadius: 9,
+                      backgroundColor: RUBY,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 10,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {notificationCount > 9 ? "9+" : notificationCount}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+
+              <Pressable onPress={() => navigate("profile")} hitSlop={8}>
+                {profilePhoto ? (
+                  <Image
+                    source={{ uri: profilePhoto }}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      borderWidth: 2,
+                      borderColor: GOLD,
+                      backgroundColor: LINE,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      borderWidth: 2,
+                      borderColor: GOLD,
+                      backgroundColor: PAPER,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    {initial ? (
+                      <Text
+                        style={{ fontSize: 17, fontWeight: "700", color: GOLD }}
+                      >
+                        {initial}
+                      </Text>
+                    ) : (
+                      <Ionicons name="person" size={20} color={GOLD} />
+                    )}
+                  </View>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Summary */}
+            <View
+              style={{
+                backgroundColor: PAPER,
+                borderRadius: 20,
+                padding: 18,
                 marginBottom: 16,
+                borderWidth: 1,
+                borderColor: LINE,
+                flexDirection: "row",
+                alignItems: "center",
               }}
             >
               <View
                 style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  borderWidth: 2,
-                  borderColor: "#8A1B35",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: "#F3E7E9",
                   justifyContent: "center",
                   alignItems: "center",
-                  marginRight: 16,
+                  marginRight: 14,
                 }}
               >
-                <Text
-                  style={{ fontSize: 24, fontWeight: "700", color: "#8A1B35" }}
-                >
-                  {swipeDeck.length}
-                </Text>
+                {loading ? (
+                  <ActivityIndicator color={RUBY} />
+                ) : (
+                  <Ionicons name="heart" size={22} color={RUBY} />
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: "#8A1B35",
-                    letterSpacing: 1,
-                    marginBottom: 4,
-                  }}
-                >
-                  INTRODUCTIONS
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: "700",
                     color: colors.text,
                   }}
                 >
-                  Chosen around your future.
+                  {summaryTitle}
                 </Text>
-              </View>
-            </View>
-            <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 20 }}>
-              {swipeDeck.length} thoughtful introductions. Clear intent before
-              chemistry, with room for a real conversation.
-            </Text>
-          </LinearGradient>
-
-          {/* Intent Passport */}
-          <IntentPassportCard
-            input={passportInput}
-            compact
-            onEdit={() => navigate("alignment")}
-          />
-
-          {crossedPaths && (
-            <Pressable
-              onPress={() => navigate("discovery")}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#FDFAF4",
-                padding: 16,
-                borderRadius: 16,
-                marginBottom: 20,
-                borderWidth: 1,
-                borderColor: "#E2D9CB",
-              }}
-            >
-              <Ionicons
-                name="location"
-                size={24}
-                color="#AA812A"
-                style={{ marginRight: 12 }}
-              />
-              <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>
-                Crossed paths is on — nearby profiles are included privately.
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color="#AA812A" />
-            </Pressable>
-          )}
-
-          {/* Featured Match */}
-          {featured && (
-            <View style={{ marginBottom: 20 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
-              >
                 <Text
                   style={{
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: "#8A1B35",
-                    letterSpacing: 1,
+                    fontSize: 13,
+                    color: colors.muted,
+                    lineHeight: 19,
+                    marginTop: 3,
                   }}
                 >
-                  YOUR TOP MATCH
+                  {summaryBody}
                 </Text>
-                <Pressable onPress={() => openDetail(featured)}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: "#8A6722",
-                      fontWeight: "600",
-                    }}
-                  >
-                    View full story →
-                  </Text>
-                </Pressable>
               </View>
-              <MatchCard
-                featuredHome
-                match={featured}
-                reasons={
-                  featured.reasons ?? matchReasons(featured, preferences)
-                }
-                onPress={() => openDetail(featured)}
-                onInterested={() => onInterested(featured)}
-                onSkip={() => onSkip(featured)}
-                onRose={() => onRose(featured)}
-              />
             </View>
-          )}
 
-          {/* Empty State */}
-          {!items.length && (
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                padding: 24,
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: "#E2D9CB",
-                marginBottom: 20,
-              }}
-            >
-              <Ionicons
-                name={
-                  matchLoadState === "error"
-                    ? "cloud-offline-outline"
-                    : matchLoadState === "loading"
-                      ? "hourglass-outline"
-                      : "heart-outline"
-                }
-                size={48}
-                color="#8A6722"
-                style={{ marginBottom: 16 }}
-              />
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: colors.text,
-                  textAlign: "center",
-                  marginBottom: 8,
-                }}
-              >
-                {matchLoadState === "error"
-                  ? "Could not load your matches"
-                  : matchLoadState === "loading"
-                    ? "Curating your matches…"
-                    : matchLoadState === "preview"
-                      ? "No profiles match these filters"
-                      : "Your next introduction is being curated"}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: colors.muted,
-                  textAlign: "center",
-                  marginBottom: 16,
-                }}
-              >
-                {matchLoadState === "error"
-                  ? "We will never replace unavailable member data with demo profiles. Check your connection and try again."
-                  : matchLoadState === "loading"
-                    ? "Verified profiles are loading securely."
-                    : matchLoadState === "preview"
-                      ? "Try widening age, city, vibe or family filters."
-                      : poolMessage}
-              </Text>
-              {matchLoadState === "error" ? (
-                <Button
-                  label="Try again"
-                  icon="refresh"
-                  onPress={onRetryMatches}
-                />
-              ) : matchLoadState === "preview" ? (
-                <Button
-                  label="Adjust filters"
-                  onPress={() => navigate("discovery")}
-                />
-              ) : poolNeedsVerification ? (
-                <Button
-                  label="Complete verification"
-                  icon="shield-checkmark-outline"
-                  onPress={() => navigate("verifyHub")}
-                />
-              ) : poolNeedsPreferences ? (
-                <Button
-                  label="Complete preferences"
-                  icon="options-outline"
-                  onPress={() => navigate("discovery")}
-                />
-              ) : matchLoadState === "ready" ? (
-                <Button
-                  label="Review preferences"
-                  icon="options-outline"
-                  onPress={() => navigate("discovery")}
-                />
-              ) : null}
-            </View>
-          )}
+            {/* Intent passport */}
+            <IntentPassportCard
+              input={passportInput}
+              compact
+              onEdit={() => navigate("alignment")}
+            />
 
-          {/* Trust Strip */}
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginTop: 10,
-            }}
-          >
-            {[
-              {
-                title: "Verified & Safe",
-                body: "Real people. Real intentions.",
-                icon: "shield-checkmark" as const,
-              },
-              {
-                title: "Curated Daily",
-                body: "Quality over quantity.",
-                icon: "sparkles" as const,
-              },
-              {
-                title: "Privacy First",
-                body: "You are in control.",
-                icon: "lock-closed" as const,
-              },
-              {
-                title: "Made for Serious",
-                body: "Connections with purpose.",
-                icon: "heart" as const,
-              },
-            ].map((item) => (
-              <View
-                key={item.title}
+            {crossedPaths && (
+              <Pressable
+                onPress={() => navigate("discovery")}
                 style={{
-                  width: "48%",
-                  backgroundColor: "#FFFFFF",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: PAPER,
                   padding: 16,
                   borderRadius: 16,
-                  marginBottom: 12,
+                  marginBottom: 20,
                   borderWidth: 1,
-                  borderColor: "#E2D9CB",
+                  borderColor: LINE,
                 }}
               >
                 <Ionicons
-                  name={item.icon}
-                  size={24}
-                  color="#8A6722"
-                  style={{ marginBottom: 8 }}
+                  name="location"
+                  size={22}
+                  color="#AA812A"
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>
+                  Crossed paths is on. Nearby profiles are included privately.
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color="#AA812A" />
+              </Pressable>
+            )}
+
+            {/* Top match - Simple Card with View Profile */}
+            {featured && (
+              <View style={{ marginBottom: 24 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 17,
+                      fontWeight: "700",
+                      color: colors.text,
+                    }}
+                  >
+                    Your top match
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => openDetail(featured)}
+                  style={{
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    backgroundColor: "#FFF",
+                    borderWidth: 1,
+                    borderColor: LINE,
+                  }}
+                >
+                  <View style={{ position: "relative" }}>
+                    <Image
+                      source={{ uri: featured.photo }}
+                      style={{ width: "100%", height: 380 }}
+                      resizeMode="cover"
+                    />
+                    <LinearGradient
+                      colors={["transparent", "rgba(0,0,0,0.85)"]}
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: 160,
+                        justifyContent: "flex-end",
+                        padding: 20,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 26,
+                          fontWeight: "700",
+                          color: "#FFF",
+                        }}
+                      >
+                        {featured.name}, {featured.age}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          color: "#E0E0E0",
+                          marginTop: 4,
+                        }}
+                      >
+                        {featured.profession} · {featured.city}
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                  <View style={{ padding: 16 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: RUBY,
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                      }}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={18}
+                        color="#FFF"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#FFF",
+                          fontWeight: "600",
+                          fontSize: 15,
+                        }}
+                      >
+                        View Profile
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+
+            {/* More introductions - Grid with View Profile */}
+            {others.length > 0 && (
+              <View style={{ marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontSize: 17,
+                    fontWeight: "700",
+                    color: colors.text,
+                    marginBottom: 12,
+                  }}
+                >
+                  More introductions
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  {others.map((match) => (
+                    <Pressable
+                      key={match.id}
+                      onPress={() => openDetail(match)}
+                      style={{
+                        width: "48%",
+                        marginBottom: 16,
+                        borderRadius: 16,
+                        overflow: "hidden",
+                        backgroundColor: "#FFF",
+                        borderWidth: 1,
+                        borderColor: LINE,
+                      }}
+                    >
+                      <View style={{ position: "relative" }}>
+                        <Image
+                          source={{ uri: match.photo }}
+                          style={{ width: "100%", height: 200 }}
+                          resizeMode="cover"
+                        />
+                        <LinearGradient
+                          colors={["transparent", "rgba(0,0,0,0.75)"]}
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 80,
+                            justifyContent: "flex-end",
+                            padding: 10,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: "700",
+                              color: "#FFF",
+                            }}
+                          >
+                            {match.name}, {match.age}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: "#E0E0E0",
+                            }}
+                          >
+                            {match.city}
+                          </Text>
+                        </LinearGradient>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Empty state */}
+            {!items.length && !loading && (
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  padding: 24,
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: LINE,
+                  marginBottom: 20,
+                }}
+              >
+                <Ionicons
+                  name={
+                    matchLoadState === "error"
+                      ? "cloud-offline-outline"
+                      : "heart-outline"
+                  }
+                  size={44}
+                  color={GOLD}
+                  style={{ marginBottom: 14 }}
                 />
                 <Text
                   style={{
-                    fontSize: 14,
-                    fontWeight: "600",
+                    fontSize: 16,
+                    fontWeight: "700",
                     color: colors.text,
-                    marginBottom: 4,
+                    textAlign: "center",
+                    marginBottom: 8,
                   }}
                 >
-                  {item.title}
+                  {matchLoadState === "error"
+                    ? "Could not load your matches"
+                    : matchLoadState === "preview"
+                      ? "No profiles match these filters"
+                      : "Your next introduction is being curated"}
                 </Text>
-                <Text style={{ fontSize: 12, color: colors.muted }}>
-                  {item.body}
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.muted,
+                    textAlign: "center",
+                    lineHeight: 20,
+                    marginBottom: 16,
+                  }}
+                >
+                  {matchLoadState === "error"
+                    ? "Check your connection and try again. We never replace missing member data with demo profiles."
+                    : matchLoadState === "preview"
+                      ? "Try widening age, city, vibe or family filters."
+                      : poolMessage}
                 </Text>
+                {matchLoadState === "error" ? (
+                  <Button
+                    label="Try again"
+                    icon="refresh"
+                    onPress={onRetryMatches}
+                  />
+                ) : matchLoadState === "preview" ? (
+                  <Button
+                    label="Adjust filters"
+                    onPress={() => navigate("discovery")}
+                  />
+                ) : poolNeedsVerification ? (
+                  <Button
+                    label="Complete verification"
+                    icon="shield-checkmark-outline"
+                    onPress={() => navigate("verifyHub")}
+                  />
+                ) : poolNeedsPreferences ? (
+                  <Button
+                    label="Complete preferences"
+                    icon="options-outline"
+                    onPress={() => navigate("discovery")}
+                  />
+                ) : matchLoadState === "ready" ? (
+                  <Button
+                    label="Review preferences"
+                    icon="options-outline"
+                    onPress={() => navigate("discovery")}
+                  />
+                ) : null}
               </View>
-            ))}
+            )}
           </View>
         </ScrollView>
 
-        {/* Bottom Navbar */}
         <BottomNav active="home" navigate={navigate} />
       </SafeAreaView>
     </AppCanvas>

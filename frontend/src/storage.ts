@@ -165,9 +165,9 @@ export type PersistedAppState = {
 };
 
 export const defaultMatchFilters: MatchFilters = {
-  lookingFor: 'Women',
-  minAge: 25,
-  maxAge: 35,
+  lookingFor: 'Everyone', // <-- CHANGED
+  minAge: 21,             // <-- CHANGED
+  maxAge: 45,             // <-- CHANGED
   cities: [],
   intents: [],
   mustHaveVibes: [],
@@ -261,7 +261,11 @@ export async function loadAppState(): Promise<PersistedAppState> {
       ...parsed,
       chats,
       profileDraft: hasLegacyDemoProfile ? initialProfileDraft : profileDraft,
-      matchFilters: { ...defaultMatchFilters, ...(parsed.matchFilters ?? {}) },
+      matchFilters: {
+  ...defaultMatchFilters,
+  ...(parsed.matchFilters ?? {}),
+  lookingFor: parsed.matchFilters?.lookingFor ?? 'Everyone',
+},
       roseLedger: { ...initialRoseLedger, ...(parsed.roseLedger ?? {}) },
       relationshipReflections: Object.fromEntries(Object.entries(parsed.relationshipReflections ?? {}).map(([matchId,value])=>[
         matchId,

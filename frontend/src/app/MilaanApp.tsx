@@ -2985,6 +2985,7 @@ function MilaanApp() {
             signals={discoverySignals}
             dismissedCount={dismissedIds.length}
             firstName={profileDraft.firstName}
+            profilePhoto={profilePhotos[0]}
             profileGrowth={{
               hasPhoto: profilePhotos.length > 0,
               verified,

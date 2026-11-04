@@ -2305,14 +2305,16 @@ export function ChatScreen({
           ]}
         >
           <View
-            style={[
-              styles.chatHead,
-              chatPremiumStyles.chatHead,
-              {
-                backgroundColor: "rgba(254,253,252,.98)",
-                borderBottomColor: "#E9E1D3",
-              },
-            ]}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              backgroundColor: "#FFFFFF",
+              borderBottomWidth: 1,
+              borderBottomColor: "#E2D9CB",
+              gap: 12,
+            }}
           >
             <Pressable
               accessibilityRole="button"
@@ -2321,9 +2323,7 @@ export function ChatScreen({
               }
               hitSlop={accessibilityHitSlop}
               onPress={() => {
-                // A call is on screen full-screen -- minimize it instead of
-                // leaving (same as the browser/gesture back-press guard),
-                // so it doesn't silently hang up when someone taps this.
+                // A full-screen call minimizes instead of hanging up.
                 if (callMode && !callMinimized) {
                   callSession.setMinimized(true);
                   return;
@@ -2331,13 +2331,9 @@ export function ChatScreen({
                 navigate("home");
               }}
             >
-              <PremiumIcon
-                name="arrow-back"
-                tone="dark"
-                size={35}
-                iconSize={17}
-              />
+              <Ionicons name="arrow-back" size={24} color="#1A1416" />
             </Pressable>
+
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`View ${match.name}'s profile`}
@@ -2349,74 +2345,76 @@ export function ChatScreen({
                   accessible
                   accessibilityLabel={`${match.name} profile photo`}
                   source={{ uri: match.photo }}
-                  style={[
-                    styles.chatAvatar,
-                    chatPremiumStyles.chatAvatar,
-                    { borderWidth: 1, borderColor: activeTheme.accent },
-                  ]}
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
+                    borderWidth: 2,
+                    borderColor: "#8A6722",
+                  }}
                 />
               ) : (
                 <View
-                  style={[
-                    styles.chatAvatar,
-                    chatPremiumStyles.chatAvatar,
-                    chatStyles.initialAvatar,
-                    { borderColor: activeTheme.accent },
-                  ]}
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
+                    backgroundColor: "#8A6722",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
-                  <Text style={chatStyles.initialAvatarText}>
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "700", color: "#FFFFFF" }}
+                  >
                     {match.name[0]?.toUpperCase()}
                   </Text>
                 </View>
               )}
             </Pressable>
-            <View accessibilityRole="header" style={{ flex: 1 }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Conversation with ${displayName}`}
-                accessibilityHint="Edit chat nickname"
-                hitSlop={accessibilityHitSlop}
-                onPress={() => setSettingsOpen(true)}
-                style={{ flex: 1 }}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Conversation with ${displayName}`}
+              accessibilityHint="Edit chat nickname"
+              hitSlop={accessibilityHitSlop}
+              onPress={() => setSettingsOpen(true)}
+              style={{ flex: 1 }}
+            >
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 17, fontWeight: "700", color: "#1A1416" }}
               >
-                <Text
-                  numberOfLines={1}
-                  style={[shared.label, chatStyles.chatName]}
-                >
-                  {displayName}
+                {displayName}
+              </Text>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: partnerTyping
+                      ? "#AA812A"
+                      : partnerIsOnline
+                        ? "#2E7D32"
+                        : "#A0A0A0",
+                  }}
+                />
+                <Text numberOfLines={1} style={{ fontSize: 12, color: "#635A5D" }}>
+                  {presenceLabel || "Online"}
                 </Text>
-                <View style={chatStyles.onlineRow}>
-                  <View
-                    style={[
-                      chatStyles.onlineDot,
-                      {
-                        backgroundColor: partnerTyping
-                          ? colors.gold
-                          : partnerIsOnline
-                            ? "#285F42"
-                            : colors.muted,
-                      },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.onlineText,
-                      partnerTyping && chatStyles.typingStatus,
-                    ]}
-                  >
-                    {presenceLabel}
-                  </Text>
-                </View>
-              </Pressable>
-            </View>
+              </View>
+            </Pressable>
+
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Audio call"
               hitSlop={accessibilityHitSlop}
               onPress={() => void startRealCall("audio")}
-              style={chatStyles.headerAction}
             >
-              <Ionicons name="call-outline" size={20} color={colors.wine} />
+              <Ionicons name="call-outline" size={22} color="#8A1B35" />
             </Pressable>
             {chatWidth >= 340 && (
               <Pressable
@@ -2424,13 +2422,8 @@ export function ChatScreen({
                 accessibilityLabel="Video call"
                 hitSlop={accessibilityHitSlop}
                 onPress={() => void startRealCall("video")}
-                style={chatStyles.headerAction}
               >
-                <Ionicons
-                  name="videocam-outline"
-                  size={21}
-                  color={colors.wine}
-                />
+                <Ionicons name="videocam-outline" size={24} color="#8A1B35" />
               </Pressable>
             )}
             <Pressable
@@ -2438,13 +2431,8 @@ export function ChatScreen({
               accessibilityLabel="Chat options"
               hitSlop={accessibilityHitSlop}
               onPress={() => setOptionsOpen(true)}
-              style={chatStyles.headerAction}
             >
-              <Ionicons
-                name="ellipsis-vertical"
-                size={20}
-                color={colors.muted}
-              />
+              <Ionicons name="ellipsis-vertical" size={22} color="#635A5D" />
             </Pressable>
           </View>
           {searchOpen && (
@@ -2536,7 +2524,7 @@ export function ChatScreen({
           )}
           <View style={chatStyles.contextBar}>
             <View style={shared.spacer} />
-            {chatWidth >= 520 && (
+            {false && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Reply coach"
@@ -2991,152 +2979,142 @@ export function ChatScreen({
                 </Pressable>
               </View>
             )}
-            <View style={[styles.composer, chatPremiumStyles.composer]}>
-              {!connectionOnline && (
-                <View accessibilityRole="alert" style={chatStyles.offlinePill}>
+            {recordingUiActive ? (
+              <VoiceRecordingComposer
+                durationMs={recordingDurationMs}
+                onCancel={() => {
+                  setRecordingPreviewVisible(false);
+                  void cancelVoiceNote();
+                }}
+                onSend={() => {
+                  if (recordingPreviewVisible) {
+                    setRecordingPreviewVisible(false);
+                    return;
+                  }
+                  void sendVoiceNote();
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  backgroundColor: "#FFFFFF",
+                  borderTopWidth: 1,
+                  borderTopColor: "#E2D9CB",
+                  gap: 10,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showEmoji ? "Show keyboard" : "Emoji, GIFs and stickers"
+                  }
+                  hitSlop={accessibilityHitSlop}
+                  onPress={() => {
+                    setShowAttachments(false);
+                    setAttachmentPage("main");
+                    if (showEmoji) {
+                      setShowEmoji(false);
+                      chatInputRef.current?.focus();
+                    } else {
+                      chatInputRef.current?.blur();
+                      setShowEmoji(true);
+                    }
+                  }}
+                >
                   <Ionicons
-                    name="cloud-offline-outline"
-                    size={12}
-                    color={colors.muted}
+                    name={showEmoji ? "keypad-outline" : "happy-outline"}
+                    size={24}
+                    color="#8A6722"
                   />
-                  <Text style={chatStyles.offlineText}>
-                    Offline · message will send when connected
-                  </Text>
-                </View>
-              )}
-              {recordingUiActive ? (
-                <VoiceRecordingComposer
-                  durationMs={recordingDurationMs}
-                  onCancel={() => {
-                    if (recordingPreviewVisible) {
-                      setRecordingPreviewVisible(false);
-                      return;
-                    }
-                    void cancelVoiceNote();
+                </Pressable>
+
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#F8F3E9",
+                    borderWidth: 1,
+                    borderColor: "#E2D9CB",
+                    borderRadius: 24,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    gap: 8,
                   }}
-                  onSend={() => {
-                    if (recordingPreviewVisible) {
-                      setRecordingPreviewVisible(false);
-                      return;
-                    }
-                    void sendVoiceNote();
-                  }}
-                />
-              ) : (
-                <>
-                  <View
+                >
+                  <TextInput
+                    ref={chatInputRef}
+                    accessibilityLabel="Type a message"
+                    value={text}
+                    onChangeText={updateText}
+                    onSelectionChange={(event) => {
+                      textSelectionRef.current = event.nativeEvent.selection;
+                    }}
+                    onFocus={() => {
+                      setShowEmoji(false);
+                      setShowAttachments(false);
+                      setAttachmentPage("main");
+                    }}
+                    placeholder="Message…"
+                    placeholderTextColor="#A0A0A0"
+                    multiline
+                    maxLength={4000}
                     style={[
-                      chatStyles.inputWrap,
                       {
-                        backgroundColor: "#FEFDFC",
-                        borderWidth: 1,
-                        borderColor: "#E3DACC",
+                        flex: 1,
+                        fontSize: 15,
+                        color: "#1A1416",
+                        maxHeight: 110,
+                        paddingVertical: 0,
                       },
+                      Platform.OS === "web"
+                        ? ({ outlineStyle: "none" } as never)
+                        : null,
                     ]}
-                  >
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        showEmoji ? "Close emoji picker" : "Open emoji picker"
-                      }
-                      accessibilityState={{ expanded: showEmoji }}
-                      hitSlop={accessibilityHitSlop}
-                      onPress={() => {
-                        // Close the keyboard before the emoji panel opens, and
-                        // bring it back when the panel closes.
-                        if (showEmoji) chatInputRef.current?.focus();
-                        else chatInputRef.current?.blur();
-                        setShowEmoji((value) => !value);
-                        setShowAttachments(false);
-                      }}
-                    >
-                      <Ionicons
-                        name={showEmoji ? "close" : "happy-outline"}
-                        size={22}
-                        color={showEmoji ? colors.gold : "#8C837E"}
-                      />
-                    </Pressable>
-                    <TextInput
-                      ref={chatInputRef}
-                      accessibilityLabel="Message"
-                      accessibilityHint="Type a message to this mutual match"
-                      value={text}
-                      onChangeText={updateText}
-                      onSubmitEditing={() => void sendText()}
-                      returnKeyType="send"
-                      // Keep the keyboard open after sending so chatting is not
-                      // interrupted (single-line inputs blur on submit by default).
-                      blurOnSubmit={false}
-                      onFocus={() => {
-                        setShowEmoji(false);
-                        setShowAttachments(false);
-                      }}
-                      placeholder="Message…"
-                      placeholderTextColor="#982540"
-                      editable
-                      onSelectionChange={(event) => {
-                        textSelectionRef.current = event.nativeEvent.selection;
-                      }}
-                      style={[
-                        styles.chatInput,
-                        chatPremiumStyles.chatInput,
-                        chatStyles.chatInputInline,
-                      ]}
-                    />
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        showAttachments ? "Close attachments" : "Add attachment"
-                      }
-                      accessibilityState={{ expanded: showAttachments }}
-                      hitSlop={accessibilityHitSlop}
-                      onPress={() => {
-                        setShowAttachments((value) => {
-                          if (!value) setAttachmentPage("main");
-                          return !value;
-                        });
-                        setShowEmoji(false);
-                      }}
-                    >
-                      <Ionicons
-                        name={showAttachments ? "close" : "attach"}
-                        size={22}
-                        color={showAttachments ? colors.gold : "#8C837E"}
-                      />
-                    </Pressable>
-                    {!text.trim() && (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Take a photo"
-                        hitSlop={accessibilityHitSlop}
-                        onPress={() => openAttachment("camera")}
-                      >
-                        <Ionicons
-                          name="camera-outline"
-                          size={22}
-                          color="#8C837E"
-                        />
-                      </Pressable>
-                    )}
-                  </View>
+                  />
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={
-                      text.trim() ? "Send message" : "Record voice note"
-                    }
+                    accessibilityLabel="Attach"
+                    accessibilityState={{ expanded: showAttachments }}
                     hitSlop={accessibilityHitSlop}
-                    onPress={sendOrRecord}
-                    style={chatStyles.sendButton}
+                    onPress={() => {
+                      setShowEmoji(false);
+                      setAttachmentPage("main");
+                      setShowAttachments((value) => !value);
+                    }}
                   >
-                    <Ionicons
-                      name={text.trim() ? "send" : "mic"}
-                      size={20}
-                      color={colors.textInverse}
-                    />
+                    <Ionicons name="attach" size={22} color="#8A6722" />
                   </Pressable>
-                </>
-              )}
-            </View>
+                </View>
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    text.trim() ? "Send message" : "Record voice message"
+                  }
+                  onPress={sendOrRecord}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: "#8A1B35",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons
+                    name={text.trim() ? "send" : "mic"}
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                </Pressable>
+              </View>
+            )}
+            
           </KeyboardAvoidingView>
           {/* No bottom tab bar inside an open chat — matches WhatsApp, where
               being in a conversation replaces the app's main navigation with
@@ -3520,6 +3498,47 @@ function ChatBubble({
     }
     void Linking.openURL(message.uri).catch(() => undefined);
   };
+  const isMediaBubble =
+    message.type === "image" ||
+    message.type === "gif" ||
+    message.type === "snap";
+  const bubbleStyle = [
+    {
+      maxWidth: "80%" as const,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 18,
+      marginBottom: 8,
+      alignSelf: mine ? ("flex-end" as const) : ("flex-start" as const),
+    },
+    mine
+      ? { backgroundColor: "#8A1B35", borderBottomRightRadius: 4 }
+      : {
+          backgroundColor: "#FFFFFF",
+          borderWidth: 1,
+          borderColor: "#E2D9CB",
+          borderBottomLeftRadius: 4,
+        },
+    !!gamePayload && chatStyles.gameMessageBubble,
+    !!gamePayload && !mine && chatStyles.gameMessageBubbleTheirs,
+    message.type === "sticker" && chatStyles.stickerBubble,
+    message.type === "date" && dateStyles.dateBubble,
+    message.type === "voice" && chatStyles.voiceBubble,
+    message.type === "voice" && !mine && chatStyles.voiceBubbleTheirs,
+    message.type === "location" && chatStyles.locationBubble,
+    message.type === "document" && chatStyles.documentBubble,
+    message.type === "document" && !mine && chatStyles.documentBubbleTheirs,
+    isMediaBubble && { padding: 6 },
+    (emojiOnly || isJustEmoji) && {
+      backgroundColor: "transparent",
+      borderWidth: 0,
+      borderColor: "transparent",
+      elevation: 0,
+      shadowOpacity: 0,
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+    },
+  ];
   if (message.deletedForEveryone) return null;
   return (
     <View style={chatStyles.swipeReplyWrap}>
@@ -3587,53 +3606,7 @@ function ChatBubble({
             gamePayload ? undefined : (event) => onQuickReact?.(event)
           }
           delayLongPress={280}
-          style={[
-            mine ? styles.myBubble : styles.theirBubble,
-            message.type === "text" &&
-              !gamePayload &&
-              !emojiOnly &&
-              (mine ? chatStyles.textBubbleMine : chatStyles.textBubbleTheirs),
-            emojiOnly && {
-              backgroundColor: "transparent",
-              borderWidth: 0,
-              elevation: 0,
-              shadowOpacity: 0,
-              paddingHorizontal: 8,
-              paddingVertical: 8,
-            },
-            isJustEmoji && {
-              backgroundColor: "transparent",
-              borderColor: "transparent",
-              elevation: 0,
-              shadowOpacity: 0,
-            },
-            isJustEmoji && {
-              backgroundColor: "transparent",
-              borderColor: "transparent",
-              elevation: 0,
-              shadowOpacity: 0,
-            },
-            !!gamePayload && chatStyles.gameMessageBubble,
-            !!gamePayload && !mine && chatStyles.gameMessageBubbleTheirs,
-            (message.type === "image" ||
-              message.type === "gif" ||
-              message.type === "snap") &&
-              chatStyles.mediaBubble,
-            (message.type === "image" ||
-              message.type === "gif" ||
-              message.type === "snap") &&
-              !mine &&
-              chatStyles.mediaBubbleTheirs,
-            message.type === "sticker" && chatStyles.stickerBubble,
-            message.type === "date" && dateStyles.dateBubble,
-            message.type === "voice" && chatStyles.voiceBubble,
-            message.type === "voice" && !mine && chatStyles.voiceBubbleTheirs,
-            message.type === "location" && chatStyles.locationBubble,
-            message.type === "document" && chatStyles.documentBubble,
-            message.type === "document" &&
-              !mine &&
-              chatStyles.documentBubbleTheirs,
-          ]}
+          style={bubbleStyle}
         >
           {selected && (
             <View pointerEvents="none" style={chatStyles.selectedMessageCheck}>
@@ -3660,7 +3633,7 @@ function ChatBubble({
           {message.type === "text" &&
             !gamePayload &&
             !emojiOnly &&
-            !isJustEmoji && (
+            false && (
               <View
                 pointerEvents="none"
                 style={[
@@ -3971,8 +3944,7 @@ function ChatBubble({
             {pinned && <Ionicons name="pin" size={10} color={colors.gold} />}{" "}
             {starred && <Ionicons name="star" size={10} color={colors.gold} />}
             <Text
-              style={[
-                styles.time,
+              style={[styles.time, { fontSize: 11 },
                 {
                   color:
                     mine && !emojiOnly ? "rgba(255,255,255,.78)" : "#8A1B35",

@@ -4,6 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 
+const GOLD = "#8A6722";
+// const RUBY = "#8A1B35";
+const LINE = "#E2D9CB";
+const PAPER = "#F8F3E9";
+const DANGER = "#B00020";
+
 export function SettingsScreen({
   navigate,
   onLogout,
@@ -15,98 +21,212 @@ export function SettingsScreen({
   onDeactivate: () => void;
   onDeletePermanently: () => void;
 }) {
-  const MenuItem = ({ icon, title, onPress, color = "#1A1416" }: any) => (
+  const Row = ({
+    icon,
+    label,
+    onPress,
+    danger = false,
+    isLast = false,
+  }: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    onPress: () => void;
+    danger?: boolean;
+    isLast?: boolean;
+  }) => (
     <TouchableOpacity
       onPress={onPress}
       style={{
         flexDirection: "row",
         alignItems: "center",
+        paddingHorizontal: 20,
         paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#E2D9CB",
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: "#F0EAE0",
       }}
     >
       <Ionicons
         name={icon}
         size={22}
-        color={color}
-        style={{ marginRight: 12 }}
+        color={danger ? DANGER : GOLD}
+        style={{ marginRight: 16 }}
       />
-      <Text style={{ fontSize: 16, color, fontWeight: "500" }}>{title}</Text>
+      <Text
+        style={{
+          flex: 1,
+          fontSize: 16,
+          fontWeight: "500",
+          color: danger ? DANGER : "#1A1416",
+        }}
+      >
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={18} color="#A0A0A0" />
     </TouchableOpacity>
+  );
+
+  const SectionHeader = ({ title }: { title: string }) => (
+    <Text
+      style={{
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#635A5D",
+        letterSpacing: 1,
+        textTransform: "uppercase",
+        marginLeft: 24,
+        marginTop: 24,
+        marginBottom: 8,
+      }}
+    >
+      {title}
+    </Text>
+  );
+
+  const Card = ({ children }: { children: React.ReactNode }) => (
+    <View
+      style={{
+        backgroundColor: "#FFFFFF",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: LINE,
+        marginHorizontal: 20,
+        marginBottom: 12,
+        overflow: "hidden",
+      }}
+    >
+      {children}
+    </View>
   );
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ padding: 22, flex: 1 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 24,
-            }}
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAPER }}>
+        {/* Header */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            backgroundColor: "#FFFFFF",
+            borderBottomWidth: 1,
+            borderBottomColor: LINE,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => navigate("profile")}
+            style={{ marginRight: 16 }}
           >
-            <TouchableOpacity
-              onPress={() => navigate("profile")}
-              style={{ marginRight: 16 }}
+            <Ionicons name="arrow-back" size={24} color="#1A1416" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontWeight: "700", color: "#1A1416" }}>
+            Settings
+          </Text>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* App Info */}
+          <View style={{ alignItems: "center", paddingVertical: 24 }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: GOLD,
+                letterSpacing: 1,
+              }}
             >
-              <Ionicons name="arrow-back" size={24} color="#1A1416" />
-            </TouchableOpacity>
-            <Text style={{ fontSize: 24, fontWeight: "700", color: "#1A1416" }}>
-              Settings
+              APNAJOD
+            </Text>
+            <Text style={{ fontSize: 12, color: "#635A5D", marginTop: 4 }}>
+              Version 1.0.0
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                color: "#635A5D",
+                fontStyle: "italic",
+                marginTop: 4,
+              }}
+            >
+              Meaningful connections. Meaningful futures.
             </Text>
           </View>
 
-          <ScrollView>
-            <MenuItem
+          {/* Section: Account */}
+          <SectionHeader title="Account" />
+          <Card>
+            <Row
+              icon="person-outline"
+              label="Edit Profile"
+              onPress={() => navigate("profileSetup")}
+            />
+            <Row
               icon="shield-checkmark-outline"
-              title="Trust Hub & Verification"
+              label="Trust Hub & Verification"
               onPress={() => navigate("verifyHub")}
             />
-            <MenuItem
+            <Row
               icon="options-outline"
-              title="Match Filters & Preferences"
+              label="Match Filters & Preferences"
               onPress={() => navigate("discovery")}
+              isLast
             />
-            <MenuItem
+          </Card>
+
+          {/* Section: Discover */}
+          <SectionHeader title="Discover" />
+          <Card>
+            <Row
               icon="heart-outline"
-              title="Who Chose You"
+              label="Who Chose You"
               onPress={() => navigate("likes")}
             />
-            <MenuItem
+            <Row
               icon="search-outline"
-              title="Find Someone"
+              label="Find Someone"
               onPress={() => navigate("find")}
+              isLast
             />
-            <MenuItem
+          </Card>
+
+          {/* Section: Privacy & Safety */}
+          <SectionHeader title="Privacy & Safety" />
+          <Card>
+            <Row
               icon="shield-outline"
-              title="Safety & Privacy"
+              label="Safety & Privacy"
               onPress={() => navigate("safety")}
+              isLast
             />
+          </Card>
 
-            <View style={{ height: 40 }} />
-
-            <MenuItem
+          {/* Section: Danger Zone */}
+          <SectionHeader title="Danger Zone" />
+          <Card>
+            <Row
               icon="log-out-outline"
-              title="Log out"
+              label="Log out"
               onPress={onLogout}
-              color="#B00020"
+              danger
             />
-            <MenuItem
+            <Row
               icon="pause-circle-outline"
-              title="Deactivate Account"
+              label="Deactivate Account"
               onPress={onDeactivate}
-              color="#B00020"
+              danger
             />
-            <MenuItem
+            <Row
               icon="trash-outline"
-              title="Delete Account Permanently"
+              label="Delete Account Permanently"
               onPress={onDeletePermanently}
-              color="#B00020"
+              danger
+              isLast
             />
-          </ScrollView>
-        </View>
+          </Card>
+        </ScrollView>
       </SafeAreaView>
     </AppCanvas>
   );

@@ -58,9 +58,9 @@ export function BottomNav({
       ]}
     >
       <NavItem
-        icon="heart-outline"
-        activeIcon="heart"
-        label="Matches"
+        icon="home-outline"
+        activeIcon="home"
+        label="Home"
         screen="home"
       />
       <NavItem
@@ -102,5 +102,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

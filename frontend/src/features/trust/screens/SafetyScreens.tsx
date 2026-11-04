@@ -16,11 +16,13 @@ import { chatStyles, discoveryStyles, safetyStyles, styles } from '../../../them
 
 const reportReasons=['Fake or misleading profile','Harassment or disrespect','Asked for money','Inappropriate content','Safety concern','Something else'];
 
-export function SafetyActions({mode='seeking',visible,match,isBlocked=false,onClose,onSafetyCenter,onReport,onBlock,onUnblock,onUnmatch}:{mode?:ExperienceMode;visible:boolean;match:Match;isBlocked?:boolean;onClose:()=>void;onSafetyCenter:()=>void;onReport:(reason:string,details?:string)=>void;onBlock:()=>void;onUnblock:()=>void;onUnmatch:()=>void}){
+export function SafetyActions({mode='seeking',visible,match:matchProp,isBlocked=false,onClose,onSafetyCenter,onReport,onBlock,onUnblock,onUnmatch}:{mode?:ExperienceMode;visible:boolean;match?:Match|null;isBlocked?:boolean;onClose:()=>void;onSafetyCenter:()=>void;onReport:(reason:string,details?:string)=>void;onBlock:()=>void;onUnblock:()=>void;onUnmatch:()=>void}){
   const [reportMode,setReportMode]=useState(false);
   const [confirmAction,setConfirmAction]=useState<'block'|'unblock'|'unmatch'|null>(null);
   const [reason,setReason]=useState('');
   const [details,setDetails]=useState('');
+  if(!matchProp) return null;
+  const match=matchProp;
   const close=()=>{setReportMode(false);setConfirmAction(null);setReason('');setDetails('');onClose()};
   const confirmCopy=confirmAction==='block'
     ? {title:`Block ${match.name}?`,body:mode==='couple'?'This hides the shared conversation on this account. They are not notified by this preview.':'You will no longer see each other in matches, likes or chats. They are not notified.',icon:'ban-outline' as const,label:'Block privately',action:onBlock}
