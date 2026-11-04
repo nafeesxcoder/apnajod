@@ -8,6 +8,7 @@ export type Match = {
   vouches: { count: number; qualities: string[] };
   reasons?: string[];
   modelVersion?: string;
+  hobbies?: string[]; // <-- YEH ADD KARO
 };
 
 export const matches: Match[] = [

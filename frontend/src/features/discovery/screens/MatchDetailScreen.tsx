@@ -42,13 +42,13 @@ function hobbyIcon(label: string) {
 
 export function MatchDetailScreen({
   match,
-  back,
   navigate,
   accessToken,
   onStartChat,
 }: {
   match: Match;
-  back: () => void;
+  /** Passed by the app shell; the back button below navigates home itself. */
+  back?: () => void;
   navigate: (screen: Screen) => void;
   accessToken?: string;
   onStartChat: () => void;
@@ -123,7 +123,6 @@ export function MatchDetailScreen({
 
   const hobbies: string[] = Array.isArray(match.hobbies) ? match.hobbies : [];
   const age = String(match.age ?? "").trim();
-  const headline = [match.profession, match.city].filter(Boolean).join(" · ");
   const bio = String(match.about ?? "").trim();
 
   return (
@@ -184,7 +183,9 @@ export function MatchDetailScreen({
 
               {/* Back Button */}
               <TouchableOpacity
-                onPress={back}
+                onPress={() => navigate("home")}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
                 style={{
                   position: "absolute",
                   top: 14,

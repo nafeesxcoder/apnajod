@@ -61,7 +61,7 @@ export function ProfileScreen({
   const name = String(profile?.firstName ?? "").trim();
   const age = String(profile?.age ?? "").trim();
   const bio = String(profile?.bio ?? "").trim();
-  const initial = name ? name.charAt(0).toUpperCase() : "";
+  // const initial = name ? name.charAt(0).toUpperCase() : "";
 
   return (
     <AppCanvas>
