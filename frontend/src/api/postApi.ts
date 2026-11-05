@@ -1,6 +1,17 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
-async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
+export type Post = {
+  id: string;
+  media_url: string;
+  caption: string;
+  created_at: string;
+};
+
+async function authFetch(
+  path: string,
+  accessToken: string,
+  options: RequestInit = {},
+) {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
@@ -9,22 +20,39 @@ async function authFetch(path: string, accessToken: string, options: RequestInit
       ...(options.headers || {}),
     },
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Request failed");
   return data;
 }
 
 export const postApi = {
+  /** The photo must already be uploaded; pass the URL the upload returned. */
   async create(accessToken: string, mediaUrl: string, caption: string) {
     return authFetch("/posts", accessToken, {
       method: "POST",
       body: JSON.stringify({ mediaUrl, caption }),
     });
   },
-  async getMyPosts(accessToken: string) {
-    return authFetch("/posts", accessToken);
+
+  async mine(accessToken: string): Promise<Post[]> {
+    const data = await authFetch("/posts", accessToken);
+    return (data.posts as Post[]) || [];
   },
-  async delete(accessToken: string, postId: string) {
+
+  async of(accessToken: string, userId: string): Promise<Post[]> {
+    const data = await authFetch(`/posts/user/${userId}`, accessToken);
+    return (data.posts as Post[]) || [];
+  },
+
+  /** Only the words change; the photo stays as posted. */
+  async updateCaption(accessToken: string, postId: string, caption: string) {
+    return authFetch(`/posts/${postId}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify({ caption }),
+    });
+  },
+
+  async remove(accessToken: string, postId: string) {
     return authFetch(`/posts/${postId}`, accessToken, { method: "DELETE" });
   },
 };

@@ -22,7 +22,34 @@ function touchLastActive(userId) {
   );
 }
 
-function requireAuth(req, res, next) {
+// A suspension has to bite while the member is still holding a valid access
+// token, or suspending someone means nothing for the next fifteen minutes -
+// which is the whole window that matters in a harassment case. Reading the
+// account on every request would be a query per poll, so this caches the
+// answer briefly, the same way last-seen is throttled above.
+const statusCache = new Map();
+const STATUS_TTL_MS = 30 * 1000;
+
+async function isSuspended(userId) {
+  const cached = statusCache.get(userId);
+  if (cached && Date.now() - cached.at < STATUS_TTL_MS) return cached.suspended;
+  try {
+    const [account] = await query('SELECT status FROM users WHERE id = ?', [userId]);
+    const suspended = account?.status === 'suspended';
+    statusCache.set(userId, { suspended, at: Date.now() });
+    return suspended;
+  } catch {
+    // A database hiccup must not lock everyone out.
+    return false;
+  }
+}
+
+/** Called when an account is suspended so the next request sees it at once. */
+function forgetAccountStatus(userId) {
+  statusCache.delete(userId);
+}
+
+async function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
 
@@ -30,14 +57,20 @@ function requireAuth(req, res, next) {
     return next(new ApiError(401, 'Missing or invalid Authorization header'));
   }
 
+  let payload;
   try {
-    const payload = verifyAccessToken(token);
-    req.user = { id: payload.sub };
-    touchLastActive(payload.sub);
-    next();
+    payload = verifyAccessToken(token);
   } catch {
-    next(new ApiError(401, 'Invalid or expired access token'));
+    return next(new ApiError(401, 'Invalid or expired access token'));
   }
+
+  if (await isSuspended(payload.sub)) {
+    return next(new ApiError(403, 'This account has been suspended.'));
+  }
+
+  req.user = { id: payload.sub };
+  touchLastActive(payload.sub);
+  next();
 }
 
-module.exports = { requireAuth };
+module.exports = { requireAuth, forgetAccountStatus };

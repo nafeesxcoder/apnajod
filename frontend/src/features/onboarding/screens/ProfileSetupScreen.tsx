@@ -15,31 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { colors } from "../../../theme";
-
-async function uploadPhotoAsset(
-  uri: string,
-  accessToken?: string,
-): Promise<string> {
-  if (!accessToken) return uri;
-  try {
-    const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
-    const formData = new FormData();
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    formData.append("photo", blob, "photo.jpg");
-    const uploadResponse = await fetch(`${API_URL}/profile/upload-photo`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: formData,
-    });
-    const data = await uploadResponse.json();
-    if (!uploadResponse.ok) throw new Error(data.error || "Upload failed");
-    return data.url;
-  } catch (e) {
-    console.log("Photo upload failed", e);
-    return uri;
-  }
-}
+import { uploadPhotoOrKeepLocal as uploadPhotoAsset } from "../../../api/uploadPhoto";
 
 // ✅ MASTER HOBBY LIST (Icons + Names)
 export const MASTER_HOBBIES = [

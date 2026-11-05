@@ -8,7 +8,7 @@ const completeRouteInventory = [
   'home','discovery','detail','mutual','icebreaker','likes',
   // The follow graph alongside it.
   'chats','find','requests','person','followers','following','chat',
-  'profile','safety','verifyHub',
+  'profile','settings','safety','verifyHub',
 ] as const;
 
 describe('complete route inventory', () => {

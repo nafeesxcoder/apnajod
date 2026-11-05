@@ -23,6 +23,20 @@ async function recordDecision(actorId, targetId, decision) {
         [crypto.randomUUID(), userA, userB],
       );
       mutual = true;
+      // The other person liked first and has been waiting; they are the one
+      // who needs telling. Push is best-effort - it does nothing without
+      // VAPID keys - and the match is in their Chats either way.
+      const [actor] = await query(
+        "SELECT first_name FROM profiles WHERE user_id = ?",
+        [actorId],
+      );
+      pushService
+        .notifyUser(targetId, {
+          title: "It's a match",
+          body: `${actor?.first_name || "Someone"} liked you back. You can message each other now.`,
+          data: { type: "match", userId: actorId },
+        })
+        .catch(() => undefined);
     }
   }
 
@@ -51,6 +65,12 @@ async function getMutualMatches(userId) {
       "SELECT first_name, age, city, profession, gender FROM profiles WHERE user_id = ?",
       [row.other_user_id],
     );
+    const [account] = await query(
+      "SELECT username FROM users WHERE id = ? AND deleted_at IS NULL",
+      [row.other_user_id],
+    );
+    // A match with a deleted account is not a match any more.
+    if (!account) continue;
     const photos = await query(
       "SELECT photo_url FROM profile_photos WHERE user_id = ? ORDER BY position ASC",
       [row.other_user_id],
@@ -59,6 +79,7 @@ async function getMutualMatches(userId) {
       id: row.other_user_id,
       profileId: row.other_user_id,
       matchId: row.other_user_id,
+      username: account.username,
       name: profile?.first_name || "Member",
       age: profile?.age || 0,
       city: profile?.city || "",

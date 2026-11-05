@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -12,15 +13,20 @@ const DANGER = "#B00020";
 
 export function SettingsScreen({
   navigate,
+  isPrivate,
+  onPrivacyChange,
   onLogout,
   onDeactivate,
   onDeletePermanently,
 }: {
   navigate: (screen: any) => void;
+  isPrivate: boolean;
+  onPrivacyChange: (next: boolean) => Promise<void>;
   onLogout: () => void;
   onDeactivate: () => void;
   onDeletePermanently: () => void;
 }) {
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
   const Row = ({
     icon,
     label,
@@ -195,6 +201,48 @@ export function SettingsScreen({
           {/* Section: Privacy & Safety */}
           <SectionHeader title="Privacy & Safety" />
           <Card>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: "#F0EAE0",
+              }}
+            >
+              <Ionicons
+                name={isPrivate ? "lock-closed-outline" : "lock-open-outline"}
+                size={22}
+                color={GOLD}
+                style={{ marginRight: 16 }}
+              />
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: "500", color: "#1A1416" }}>
+                  Private account
+                </Text>
+                <Text style={{ fontSize: 12, color: "#635A5D", marginTop: 3 }}>
+                  {isPrivate
+                    ? "Nobody can find you by username. You still appear to people browsing."
+                    : "Anyone can find you by searching your username."}
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel="Private account"
+                value={isPrivate}
+                disabled={savingPrivacy}
+                onValueChange={async (next) => {
+                  setSavingPrivacy(true);
+                  try {
+                    await onPrivacyChange(next);
+                  } finally {
+                    setSavingPrivacy(false);
+                  }
+                }}
+                trackColor={{ false: "#E2D9CB", true: "#C9A227" }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
             <Row
               icon="shield-outline"
               label="Safety & Privacy"

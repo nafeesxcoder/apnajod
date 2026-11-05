@@ -1,5 +1,7 @@
 ﻿const crypto = require('crypto');
 const { query } = require('../config/db');
+const sessionService = require('./sessionService');
+const { forgetAccountStatus } = require('../middleware/auth');
 
 async function submitReport(reporterId, reportedId, reason, details, reportId) {
   await query(
@@ -40,4 +42,88 @@ async function unmatchUser(userId, targetId) {
   return { ok: true };
 }
 
-module.exports = { submitReport, blockUser, unblockUser, isBlocked, unmatchUser };
+/**
+ * The moderation queue, grouped by the person reported rather than by
+ * report, because three complaints about one account is the thing that
+ * matters and a flat list buries it.
+ */
+async function listOpenReports(limit = 50) {
+  return query(
+    `SELECT reported.id          AS reported_id,
+            reported.username    AS reported_username,
+            profile.first_name   AS reported_name,
+            profile.city         AS reported_city,
+            reported.status      AS account_status,
+            COUNT(*)             AS report_count,
+            GROUP_CONCAT(DISTINCT r.reason ORDER BY r.created_at SEPARATOR ' | ') AS reasons,
+            MIN(r.created_at)    AS first_reported_at,
+            MAX(r.created_at)    AS last_reported_at
+       FROM reports r
+       JOIN users reported ON reported.id = r.reported_id
+       LEFT JOIN profiles profile ON profile.user_id = reported.id
+      WHERE r.review_status = 'open'
+        AND reported.deleted_at IS NULL
+      GROUP BY reported.id, reported.username, profile.first_name,
+               profile.city, reported.status
+      ORDER BY report_count DESC, last_reported_at DESC
+      LIMIT ${Number(limit)}`,
+  );
+}
+
+/** What each complaint actually said, for one account. */
+async function listReportsAbout(reportedId) {
+  return query(
+    `SELECT r.id, r.reason, r.details, r.created_at, r.review_status,
+            reporter.username AS reporter_username
+       FROM reports r
+       JOIN users reporter ON reporter.id = r.reporter_id
+      WHERE r.reported_id = ?
+      ORDER BY r.created_at DESC`,
+    [reportedId],
+  );
+}
+
+/** Close every open report about someone, once a decision has been made. */
+async function resolveReportsAbout(reportedId, reviewStatus) {
+  if (!["actioned", "dismissed"].includes(reviewStatus)) {
+    throw new Error(`Unknown review status: ${reviewStatus}`);
+  }
+  const result = await query(
+    `UPDATE reports
+        SET review_status = ?, reviewed_at = NOW(6)
+      WHERE reported_id = ? AND review_status = 'open'`,
+    [reviewStatus, reportedId],
+  );
+  return { closed: result.affectedRows ?? 0 };
+}
+
+/**
+ * Suspend or restore an account.
+ *
+ * Suspending also drops their refresh tokens: without that they would keep
+ * working until the refresh happened to fail, and a harassment case is not
+ * something to leave running.
+ */
+async function setAccountStatus(userId, status) {
+  if (!["active", "suspended"].includes(status)) {
+    throw new Error(`Unknown account status: ${status}`);
+  }
+  await query("UPDATE users SET status = ? WHERE id = ?", [status, userId]);
+  forgetAccountStatus(userId);
+  if (status === "suspended") {
+    await sessionService.revokeAllSessions(userId);
+  }
+  return { userId, status };
+}
+
+module.exports = {
+  submitReport,
+  blockUser,
+  unblockUser,
+  isBlocked,
+  unmatchUser,
+  listOpenReports,
+  listReportsAbout,
+  resolveReportsAbout,
+  setAccountStatus,
+};

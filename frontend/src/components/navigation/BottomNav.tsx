@@ -64,8 +64,8 @@ export function BottomNav({
         screen="home"
       />
       <NavItem
-        icon="sparkles-outline"
-        activeIcon="sparkles"
+        icon="heart-outline"
+        activeIcon="heart"
         label="Likes"
         screen="likes"
       />

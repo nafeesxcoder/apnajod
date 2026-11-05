@@ -5,7 +5,8 @@ import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi, AuthRequestError, isSessionRejected } from "../api/authApi";
 import { profileApi } from "../api/profileApi";
-import { matchApi } from "../api/matchApi";
+import { uploadPhoto } from "../api/uploadPhoto";
+import { matchApi, type MutualMatchSummary } from "../api/matchApi";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -523,6 +524,9 @@ function MilaanApp() {
     userId?: string;
   } | null>(null);
   const [requestCount, setRequestCount] = useState(0);
+  // Private until the server says otherwise: guessing "public" for a moment
+  // would show the wrong switch to someone who never chose it.
+  const [isPrivateAccount, setIsPrivateAccount] = useState(true);
   const [vibeList, setVibeList] = useState<string[]>([]);
   const [intent, setIntent] = useState("Long-term, leading to Marriage");
   const [alignment, setAlignment] = useState<Record<string, string>>({});
@@ -530,6 +534,30 @@ function MilaanApp() {
   const [verificationStatus, setVerificationStatus] = useState<
     "none" | "pending" | "approved" | "rejected"
   >("none");
+  /**
+   * The server owns both of these. Reading only `verified` left the hub
+   * showing "not started" to someone whose selfie was already waiting in the
+   * review queue, because the status was set locally on submit and never
+   * loaded back.
+   */
+  const applyAccountPrivacyFrom = (account: unknown) => {
+    const row = (account ?? {}) as { is_private?: unknown; isPrivate?: unknown };
+    const value = row.is_private ?? row.isPrivate;
+    if (value !== undefined) setIsPrivateAccount(value === true || value === 1);
+  };
+  const applyVerificationFrom = (profile: unknown) => {
+    const row = (profile ?? {}) as {
+      verified?: unknown;
+      verification_status?: unknown;
+    };
+    setVerified(row.verified === true || row.verified === 1);
+    const status = row.verification_status;
+    setVerificationStatus(
+      status === "pending" || status === "approved" || status === "rejected"
+        ? status
+        : "none",
+    );
+  };
   const [authDestination, setAuthDestination] = useState("");
   // Held only while the member is on the OTP screen: the server needs the
   // username and password again on the verify call so the account is created
@@ -843,7 +871,7 @@ function MilaanApp() {
                 ? "profileSetup"
                 : "home";
             setOnboardingComplete(Boolean(member && !needsOnboarding));
-            setVerified(member?.profile?.verified === true);
+            applyVerificationFrom(member?.profile);
             if (!member) setAuthDestination("");
             if (member?.profile) {
               setProfileDraft((current) => ({
@@ -949,7 +977,7 @@ function MilaanApp() {
                 bio: readBio(profileData.profile, (current as any).bio ?? ""),
                 hobbies: readHobbies(profileData.profile),
               }));
-              setVerified(!!profileData.profile.verified);
+              applyVerificationFrom(profileData.profile);
             }
             if (profileData.photos?.length)
               setProfilePhotos(profileData.photos);
@@ -2769,12 +2797,17 @@ function MilaanApp() {
   const adoptSession = async (session: {
     accessToken: string;
     refreshToken: string;
-    user?: { phone?: string | null; username?: string | null };
+    user?: {
+      phone?: string | null;
+      username?: string | null;
+      isPrivate?: boolean;
+    };
   }): Promise<Screen> => {
     await AsyncStorage.setItem("milaan_access_token", session.accessToken);
     await AsyncStorage.setItem("milaan_refresh_token", session.refreshToken);
     setAccessToken(session.accessToken);
     setAuthDestination(session.user?.phone || session.user?.username || "");
+    applyAccountPrivacyFrom(session.user);
 
     // A member who already has a profile goes straight in; a brand-new one
     // sees the short profile screen. If the profile call fails we send them
@@ -2797,7 +2830,7 @@ function MilaanApp() {
           bio: readBio(profileData.profile, (current as any).bio ?? ""),
           hobbies: readHobbies(profileData.profile), // <-- YEH ADD KARO
         }));
-        setVerified(!!profileData.profile.verified);
+        applyVerificationFrom(profileData.profile);
         setQuickProfile({
           firstName: profileData.profile.first_name ?? "",
           age: profileData.profile.age ? String(profileData.profile.age) : "",
@@ -2832,6 +2865,48 @@ function MilaanApp() {
   const openConversationWith = (user: SocialUser) => {
     setSelected(matchFromSocialUser(user));
     setScreen("chat");
+  };
+
+  /**
+   * What the Chats tab shows: conversations, plus matches nobody has written
+   * to yet.
+   *
+   * The server builds the conversation list out of chat_messages, so a brand
+   * new match appeared nowhere until one of the two sent something — and
+   * neither could, because there was no thread to open. A match with no
+   * messages is listed as an empty conversation; the row already reads
+   * "Say hello".
+   */
+  const loadChatsAndMatches = async (
+    token: string,
+  ): Promise<ConversationSummary[]> => {
+    void refreshRequestCount();
+    const conversations = await chatApi.fetchConversations(token);
+    let matches: MutualMatchSummary[] = [];
+    try {
+      const result = await matchApi.getMatches(token);
+      matches = (result.matches as MutualMatchSummary[]) || [];
+    } catch {
+      // A match list that will not load must not empty the chat list.
+      return conversations;
+    }
+    const alreadyListed = new Set(conversations.map((c) => c.conversationId));
+    const waiting: ConversationSummary[] = matches
+      .filter((match) => !alreadyListed.has(match.id))
+      .map((match) => ({
+        conversationId: match.id,
+        user: {
+          userId: match.id,
+          username: match.username ?? "",
+          name: match.name,
+          avatarUrl: match.photo || null,
+          isPrivate: false,
+        },
+        lastMessage: null,
+        lastAt: new Date(match.matchedAt ?? Date.now()).getTime(),
+        unread: 0,
+      }));
+    return [...waiting, ...conversations].sort((a, b) => b.lastAt - a.lastAt);
   };
 
   /** The badge on the chats header. Silent when it cannot be read. */
@@ -3035,6 +3110,7 @@ function MilaanApp() {
         )}
         {screen === "home" && (
           <HomeScreen
+            accessToken={accessToken}
             preview={isPreviewAccessMode}
             items={visibleMatches}
             matchLoadState={matchLoadState}
@@ -3079,8 +3155,13 @@ function MilaanApp() {
                 });
                 throw new Error("Sign in required");
               }
-              await profileApi.submitVerification(accessToken, uri);
-              setSelfieUri(uri);
+              // The picker hands back a device-local reference. Sending it
+              // as-is stored a path only that handset could resolve, so the
+              // review queue had nothing anyone could open — a selfie was
+              // "submitted" without ever leaving the phone.
+              const selfieUrl = await uploadPhoto(uri, accessToken);
+              await profileApi.submitVerification(accessToken, selfieUrl);
+              setSelfieUri(selfieUrl);
               setVerificationStatus("pending");
               setVerified(false);
               setAppNotice({
@@ -3118,10 +3199,7 @@ function MilaanApp() {
         {screen === "chats" && accessToken && (
           <ChatsScreen
             requestCount={requestCount}
-            onLoad={async () => {
-              void refreshRequestCount();
-              return chatApi.fetchConversations(accessToken);
-            }}
+            onLoad={() => loadChatsAndMatches(accessToken)}
             onOpenConversation={(conversation) =>
               openConversationWith(conversation.user)
             }
@@ -3370,6 +3448,24 @@ function MilaanApp() {
             navigate={navigateTo}
             accessToken={accessToken}
             openDetail={openDetail}
+            onMatched={(person) => {
+              // Accepting made it mutual, so the thread exists now. Open it
+              // rather than leaving them to find it: this is the moment the
+              // whole app is built around.
+              openConversationWith({
+                userId: person.userId,
+                username: person.username,
+                name: person.name,
+                avatarUrl: person.photo || null,
+                isPrivate: false,
+              });
+              setAppNotice({
+                title: `You matched with ${person.name}`,
+                body: "You can both message each other now.",
+                icon: "heart",
+                tone: "gold",
+              });
+            }}
           />
         )}
         {screen === "profile" && (
@@ -3405,6 +3501,23 @@ function MilaanApp() {
         {screen === "settings" && (
           <SettingsScreen
             navigate={navigateTo}
+            isPrivate={isPrivateAccount}
+            onPrivacyChange={async (next) => {
+              if (!accessToken) return;
+              const previous = isPrivateAccount;
+              setIsPrivateAccount(next);
+              try {
+                await socialApi.setPrivacy(accessToken, next);
+              } catch {
+                setIsPrivateAccount(previous);
+                setAppNotice({
+                  title: "Could not change that",
+                  body: "Your privacy setting was not saved. Please try again.",
+                  icon: "cloud-offline-outline",
+                  tone: "ruby",
+                });
+              }
+            }}
             onLogout={() => void logout()}
             onDeactivate={() => void deactivateAccount()}
             onDeletePermanently={() => setScreen("safety")}

@@ -36,7 +36,7 @@ app.use("/push", pushRoutes);
 app.use("/calls", callRoutes);
 app.use("/safety", safetyRoutes);
 app.use("/social", followRoutes);
-app.use("/posts", postRoutes); // <-- YEH 404 HANDLER KE PEHLE HONA CHAHIYE
+app.use("/posts", postRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

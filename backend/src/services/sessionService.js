@@ -68,6 +68,14 @@ async function rotateSession(oldRefreshToken) {
     await query('UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = ?', [matched.id]);
   }
 
+  // A suspension taken out while a session was alive must not be renewable.
+  const [account] = await query('SELECT status FROM users WHERE id = ?', [payload.sub]);
+  if (account?.status === 'suspended') {
+    const err = new Error('This account has been suspended.');
+    err.statusCode = 403;
+    throw err;
+  }
+
   return issueSession(payload.sub);
 }
 

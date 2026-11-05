@@ -14,6 +14,18 @@ async function authFetch(path: string, accessToken: string, options: RequestInit
   return data;
 }
 
+/** A mutual match, as GET /matches returns it. */
+export type MutualMatchSummary = {
+  id: string;
+  username?: string;
+  name: string;
+  age: number;
+  city: string;
+  photo: string;
+  photos: string[];
+  matchedAt?: string;
+};
+
 export const matchApi = {
   async decide(accessToken: string, targetId: string, decision: "interested" | "pass") {
     return authFetch("/matches/decide", accessToken, {

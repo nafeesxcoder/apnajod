@@ -11,6 +11,9 @@
     "db:check": "node src/migrations/check.js",
     "migrate": "node src/migrations/run.js",
     "seed:dev": "node src/scripts/seed-dev-users.js",
+    "verify": "node src/scripts/review-verifications.js",
+    "reports": "node src/scripts/review-reports.js",
+    "seed:likes": "node src/scripts/seed-likes.js",
     "cleanup": "node src/jobs/cleanupDeletedUsers.js",
     "test": "node --test --test-concurrency=1 test/*.test.js"
   },

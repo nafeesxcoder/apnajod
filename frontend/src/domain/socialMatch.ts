@@ -23,6 +23,7 @@ export function matchFromSocialUser(user: SocialUser): Match {
     gender: 'nonbinary',
     intent: '',
     match: 'Great Match',
+    verified: false,
     vibes: [],
     photo: user.avatarUrl || '',
     photos: user.avatarUrl ? [user.avatarUrl] : [],

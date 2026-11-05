@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +13,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav } from "../../../components/navigation/BottomNav";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
-import { PhotoGrid } from "../components/PhotoGrid";
+import { PostsSection } from "../components/PostsSection";
+import { AddPostButton } from "../components/AddPostButton";
 
 const PINK = "#E91E63";
 const PINK_LIGHT = "#FCE4EC";
@@ -24,15 +26,6 @@ const LINE = "#F0EAE0";
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
 
-const COVER_URI =
-  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80";
-
-// Demo posts. Replace with the member's real posts once the posts API is wired in.
-const DEMO_POSTS = [
-  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80",
-  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
-];
 
 function hobbyIcon(label: string) {
   const wanted = String(label).trim().toLowerCase();
@@ -44,6 +37,7 @@ export function ProfileScreen({
   verified,
   profilePhoto,
   navigate,
+  accessToken,
 }: {
   profile: any;
   verified: boolean;
@@ -51,6 +45,8 @@ export function ProfileScreen({
   navigate: (screen: any) => void;
   accessToken?: string;
 }) {
+  // Bumped after posting from the cover, so the list below reloads.
+  const [postsReloadKey, setPostsReloadKey] = useState(0);
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
     : [];
@@ -71,11 +67,18 @@ export function ProfileScreen({
           >
             {/* Cover Photo */}
             <View style={{ position: "relative", height: 160 }}>
-              <Image
-                source={{ uri: COVER_URI }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="cover"
-              />
+              {/* The member's own first photo, or a plain band. A stock
+                  picture of a stranger used to sit here on every profile. */}
+              {profilePhoto ? (
+                <Image
+                  source={{ uri: profilePhoto }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="cover"
+                  blurRadius={18}
+                />
+              ) : (
+                <View style={{ width: "100%", height: "100%", backgroundColor: "#F6D9E4" }} />
+              )}
               <LinearGradient
                 colors={[
                   "rgba(233,30,99,0.4)",
@@ -115,7 +118,14 @@ export function ProfileScreen({
                 </View>
               </View>
 
-              {/* Settings Icon */}
+              {/* Add a post, and settings */}
+              <View style={{ position: "absolute", top: 14, right: 60 }}>
+                <AddPostButton
+                  accessToken={accessToken}
+                  onPosted={() => setPostsReloadKey((key) => key + 1)}
+                />
+              </View>
+
               <TouchableOpacity
                 onPress={() => navigate("settings")}
                 style={{
@@ -174,39 +184,43 @@ export function ProfileScreen({
                       </View>
                     )}
                   </View>
-                  <View
-                    style={{
-                      position: "absolute",
-                      bottom: 4,
-                      right: 4,
-                      backgroundColor: PINK,
-                      borderRadius: 12,
-                      padding: 4,
-                    }}
-                  >
-                    <Ionicons name="checkmark" size={14} color="#FFF" />
-                  </View>
+                  {verified && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: 4,
+                        right: 4,
+                        backgroundColor: PINK,
+                        borderRadius: 12,
+                        padding: 4,
+                      }}
+                    >
+                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                    </View>
+                  )}
                 </View>
 
-                <View
-                  style={{
-                    backgroundColor: PINK_LIGHT,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Ionicons name="shield-checkmark" size={16} color={PINK} />
-                  <Text
-                    style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
+                {verified && (
+                  <View
+                    style={{
+                      backgroundColor: PINK_LIGHT,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      marginBottom: 12,
+                    }}
                   >
-                    Verified
-                  </Text>
-                </View>
+                    <Ionicons name="shield-checkmark" size={16} color={PINK} />
+                    <Text
+                      style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
+                    >
+                      Verified
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Name & Age */}
@@ -409,19 +423,16 @@ export function ProfileScreen({
                     <Text
                       style={{ fontSize: 16, fontWeight: "700", color: DARK }}
                     >
-                      My Photos
+                      My Posts
                     </Text>
                   </View>
-                  <TouchableOpacity>
-                    <Text
-                      style={{ fontSize: 13, color: PINK, fontWeight: "600" }}
-                    >
-                      View All
-                    </Text>
-                  </TouchableOpacity>
                 </View>
 
-                <PhotoGrid photos={DEMO_POSTS} />
+                <PostsSection
+                  accessToken={accessToken}
+                  isOwner
+                  reloadKey={postsReloadKey}
+                />
               </View>
             </View>
           </View>

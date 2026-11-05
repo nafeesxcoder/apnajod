@@ -245,6 +245,15 @@ const login = asyncHandler(async (req, res) => {
     throw wrong();
   }
 
+  // Checked after the password so a wrong password and a suspension are
+  // not distinguishable to someone guessing their way in.
+  if (user.status === "suspended") {
+    throw new ApiError(
+      403,
+      "This account has been suspended. Contact support if you believe this is a mistake.",
+    );
+  }
+
   await userService.clearFailedLogins(user.id);
   const { accountRestored, accountReactivated } = await resolveAccountState(user);
   const tokens = await sessionService.issueSession(user.id);
@@ -466,6 +475,7 @@ function publicUser(user) {
     emailVerified: !!user.email_verified_at,
     hasPassword: !!user.password_hash,
     mustChangePassword: !!user.must_change_password,
+    isPrivate: user.is_private === 1 || user.is_private === true,
   };
 }
 module.exports = {

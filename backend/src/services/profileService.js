@@ -124,6 +124,45 @@ async function submitVerification(userId, selfieUrl) {
   );
 }
 
+/**
+ * The pending queue a human works through.
+ *
+ * Submitting a selfie sets 'pending' and nothing else moves it, so without
+ * this pair a member could never actually become verified — and the verified
+ * badge is the one thing this app is really selling.
+ */
+async function listPendingVerifications(limit = 50) {
+  return query(
+    `SELECT u.id AS user_id, u.username, u.phone,
+            p.first_name, p.age, p.city, p.gender, p.selfie_uri,
+            p.verification_status, p.updated_at
+       FROM profiles p
+       JOIN users u ON u.id = p.user_id
+      WHERE p.verification_status = 'pending'
+        AND u.deleted_at IS NULL
+      ORDER BY p.updated_at ASC
+      LIMIT ${Number(limit)}`,
+  );
+}
+
+/**
+ * Approve or reject one selfie. `verified` stays a plain boolean for everything
+ * that reads it, and only an approval ever sets it.
+ */
+async function setVerificationStatus(userId, status) {
+  if (!["none", "pending", "approved", "rejected"].includes(status)) {
+    throw new Error(`Unknown verification status: ${status}`);
+  }
+  await query(
+    `UPDATE profiles
+        SET verification_status = ?,
+            verified = ?
+      WHERE user_id = ?`,
+    [status, status === "approved" ? 1 : 0, userId],
+  );
+  return { userId, status };
+}
+
 async function replacePhotos(userId, photoUrls) {
   await query("DELETE FROM profile_photos WHERE user_id = ?", [userId]);
   for (let i = 0; i < photoUrls.length; i += 1) {
@@ -286,6 +325,7 @@ async function findMatches(userId, limit = 20) {
       gender: candidate.gender || "nonbinary",
       intent: intentRow?.intent || "",
       match: "Great Match",
+      verified: candidate.verified === 1,
       vibes: vibes.map((v) => v.vibe),
       photo: photos[0]?.photo_url || "",
       photos: photos.map((p) => p.photo_url),
@@ -310,6 +350,8 @@ module.exports = {
   getFullProfile,
   upsertProfile,
   submitVerification,
+  listPendingVerifications,
+  setVerificationStatus,
   replacePhotos,
   replaceVibes,
   upsertIntent,

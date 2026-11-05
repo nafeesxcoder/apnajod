@@ -16,6 +16,7 @@ import {
   BottomNav,
   handleBottomNavScroll,
 } from "../../../components/navigation/BottomNav";
+import { AddPostButton } from "../../profile/components/AddPostButton";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal, MatchFilters } from "../../../storage";
@@ -53,6 +54,7 @@ export function HomeScreen({
   firstName = "",
   profilePhoto,
   notificationCount = 0,
+  accessToken,
   crossedPaths,
   openDetail,
   navigate,
@@ -70,6 +72,7 @@ export function HomeScreen({
   firstName?: string;
   profilePhoto?: string;
   notificationCount?: number;
+  accessToken?: string;
   roseAvailability?: RoseAvailability;
   crossedPaths: boolean;
   openDetail: (m: Match) => void;
@@ -153,20 +156,43 @@ export function HomeScreen({
             >
               <View style={{ flex: 1, paddingRight: 12 }}>
                 <Text
-                  numberOfLines={1}
                   style={{
-                    fontSize: 22,
-                    fontWeight: "700",
-                    color: colors.text,
+                    fontSize: 12,
+                    color: colors.muted,
+                    letterSpacing: 0.6,
+                    textTransform: "uppercase",
                   }}
                 >
-                  {name ? `${greetingForNow()}, ${name}` : greetingForNow()}
+                  {greetingForNow()}
                 </Text>
                 <Text
-                  style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 26,
+                    fontWeight: "700",
+                    color: colors.text,
+                    marginTop: 1,
+                  }}
                 >
-                  Thoughtful connections. Meaningful futures.
+                  {name || "Welcome"}
                 </Text>
+                {items.length > 0 && (
+                  <Text
+                    style={{ fontSize: 12, color: GOLD, marginTop: 3, fontWeight: "600" }}
+                  >
+                    {items.length} {items.length === 1 ? "person" : "people"} to see
+                  </Text>
+                )}
+              </View>
+
+              <View style={{ marginRight: 12 }}>
+                <AddPostButton
+                  accessToken={accessToken}
+                  size={34}
+                  iconSize={22}
+                  color={colors.text}
+                  background="transparent"
+                />
               </View>
 
               <Pressable

@@ -222,6 +222,7 @@ async function searchByUsername(viewerId, term, limit = 20) {
       WHERE u.deleted_at IS NULL
         AND u.deactivated_at IS NULL
         AND u.username IS NOT NULL
+        AND u.is_private = 0
         AND u.id != ?
         AND LOWER(u.username) LIKE ?
         AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)

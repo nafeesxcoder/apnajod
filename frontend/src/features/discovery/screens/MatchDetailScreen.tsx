@@ -16,6 +16,8 @@ import { AppCanvas } from "../../../components/AppCanvas";
 import type { Match } from "../../../data";
 import type { Screen } from "../../../app/navigation/types";
 import { socialApi } from "../../../api/socialApi";
+import { matchApi } from "../../../api/matchApi";
+import { PostsSection } from "../../profile/components/PostsSection";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 
 const PINK = "#E91E63";
@@ -31,9 +33,6 @@ const GRID_GAP = 8;
 const { width: WINDOW_WIDTH } = Dimensions.get("window");
 const CONTENT_WIDTH = Math.min(WINDOW_WIDTH, MAX_WIDTH);
 const POST_SIZE = (CONTENT_WIDTH - SIDE_PADDING * 2 - GRID_GAP * 2) / 3;
-
-const COVER_URI =
-  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80";
 
 function hobbyIcon(label: string) {
   const wanted = String(label).trim().toLowerCase();
@@ -53,66 +52,56 @@ export function MatchDetailScreen({
   accessToken?: string;
   onStartChat: () => void;
 }) {
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isRequested, setIsRequested] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [liked, setLiked] = useState(false);
   const [canMessage, setCanMessage] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
+    // canMessage comes from the server and now means "you two matched",
+    // which is the only thing that opens a thread.
     socialApi
       .person(accessToken, match.id)
-      .then((data) => {
-        setIsFollowing(!!data.state?.following);
-        setIsRequested(!!data.state?.requested);
-        setCanMessage(!!data.canMessage);
-      })
+      .then((data) => setCanMessage(!!data.canMessage))
       .catch(() => {});
   }, [accessToken, match.id]);
 
-  const handleFollow = async () => {
-    if (!accessToken) return;
+  const handleLike = async () => {
+    if (!accessToken || liked) return;
     setLoading(true);
     try {
-      const status = await socialApi.follow(accessToken, match.id);
-      if (status === "pending") {
-        setIsRequested(true);
-      } else {
-        setIsFollowing(true);
+      const result = await matchApi.decide(accessToken, match.id, "interested");
+      setLiked(true);
+      if (result?.mutual) {
         setCanMessage(true);
+        onStartChat();
       }
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not follow.");
+      Alert.alert("Error", err.message || "Could not send that.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleUnfollow = async () => {
-    if (!accessToken) return;
-    try {
-      await socialApi.unfollow(accessToken, match.id);
-      setIsFollowing(false);
-      setIsRequested(false);
-      setCanMessage(false);
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not unfollow.");
     }
   };
 
   const handleMessage = () => {
     if (canMessage) {
       onStartChat();
-    } else {
-      Alert.alert(
-        "Follow to Chat",
-        `Follow ${match.name} to start a conversation.`,
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Follow", onPress: handleFollow },
-        ],
-      );
+      return;
     }
+    // Following used to be offered here, and it would not have worked: a
+    // conversation opens on a mutual match and on nothing else.
+    Alert.alert(
+      "Not matched yet",
+      liked
+        ? `You have liked ${match.name}. If they like you back, the chat opens for both of you.`
+        : `Like ${match.name} first. If they like you back, you can message each other.`,
+      liked
+        ? [{ text: "OK" }]
+        : [
+            { text: "Cancel", style: "cancel" },
+            { text: "Like", onPress: handleLike },
+          ],
+    );
   };
 
   const photos = match.photos?.length
@@ -137,11 +126,18 @@ export function MatchDetailScreen({
           >
             {/* Cover Photo */}
             <View style={{ position: "relative", height: 160 }}>
-              <Image
-                source={{ uri: COVER_URI }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="cover"
-              />
+              {/* Their own first photo, blurred. A stock picture of a
+                  stranger used to sit here on everybody's profile. */}
+              {photos[0] ? (
+                <Image
+                  source={{ uri: photos[0] }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="cover"
+                  blurRadius={18}
+                />
+              ) : (
+                <View style={{ width: "100%", height: "100%", backgroundColor: "#F6D9E4" }} />
+              )}
               <LinearGradient
                 colors={[
                   "rgba(233,30,99,0.4)",
@@ -242,39 +238,43 @@ export function MatchDetailScreen({
                       </View>
                     )}
                   </View>
-                  <View
-                    style={{
-                      position: "absolute",
-                      bottom: 4,
-                      right: 4,
-                      backgroundColor: PINK,
-                      borderRadius: 12,
-                      padding: 4,
-                    }}
-                  >
-                    <Ionicons name="checkmark" size={14} color="#FFF" />
-                  </View>
+                  {match.verified && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: 4,
+                        right: 4,
+                        backgroundColor: PINK,
+                        borderRadius: 12,
+                        padding: 4,
+                      }}
+                    >
+                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                    </View>
+                  )}
                 </View>
 
-                <View
-                  style={{
-                    backgroundColor: PINK_LIGHT,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Ionicons name="shield-checkmark" size={16} color={PINK} />
-                  <Text
-                    style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
+                {match.verified && (
+                  <View
+                    style={{
+                      backgroundColor: PINK_LIGHT,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      marginBottom: 12,
+                    }}
                   >
-                    Verified
-                  </Text>
-                </View>
+                    <Ionicons name="shield-checkmark" size={16} color={PINK} />
+                    <Text
+                      style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
+                    >
+                      Verified
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Name & Age */}
@@ -290,7 +290,9 @@ export function MatchDetailScreen({
                   {match.name}
                   {age ? `, ${age}` : ""}
                 </Text>
-                <Ionicons name="checkmark-circle" size={24} color={PINK} />
+                {match.verified && (
+                  <Ionicons name="checkmark-circle" size={24} color={PINK} />
+                )}
               </View>
 
               {/* City & Profession */}
@@ -371,17 +373,17 @@ export function MatchDetailScreen({
               {/* Follow & Message Buttons */}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                 <TouchableOpacity
-                  onPress={
-                    isFollowing || isRequested ? handleUnfollow : handleFollow
-                  }
-                  disabled={loading}
+                  accessibilityRole="button"
+                  accessibilityLabel={liked ? `You liked ${match.name}` : `Like ${match.name}`}
+                  onPress={handleLike}
+                  disabled={loading || liked}
                   style={{
                     flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: isFollowing ? WHITE : PINK,
-                    borderWidth: isFollowing ? 2 : 0,
+                    backgroundColor: liked ? WHITE : PINK,
+                    borderWidth: liked ? 2 : 0,
                     borderColor: PINK,
                     paddingVertical: 14,
                     borderRadius: 30,
@@ -390,28 +392,18 @@ export function MatchDetailScreen({
                   }}
                 >
                   <Ionicons
-                    name={
-                      isFollowing
-                        ? "person-remove-outline"
-                        : isRequested
-                          ? "time-outline"
-                          : "person-add"
-                    }
+                    name={liked ? "heart" : "heart-outline"}
                     size={20}
-                    color={isFollowing ? PINK : WHITE}
+                    color={liked ? PINK : WHITE}
                   />
                   <Text
                     style={{
-                      color: isFollowing ? PINK : WHITE,
+                      color: liked ? PINK : WHITE,
                       fontWeight: "700",
                       fontSize: 16,
                     }}
                   >
-                    {isFollowing
-                      ? "Following"
-                      : isRequested
-                        ? "Requested"
-                        : "Follow"}
+                    {liked ? "Liked" : "Like"}
                   </Text>
                 </TouchableOpacity>
 
@@ -534,6 +526,29 @@ export function MatchDetailScreen({
                   </View>
                 </View>
               )}
+
+              {/* Their posts: the pictures with something to say about them,
+                  which is what gives a first message somewhere to start. */}
+              <View style={{ marginTop: 20 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Ionicons name="albums" size={20} color={PINK} />
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: DARK }}>
+                    Posts
+                  </Text>
+                </View>
+                <PostsSection
+                  accessToken={accessToken}
+                  userId={match.id}
+                  isOwner={false}
+                />
+              </View>
             </View>
           </View>
         </ScrollView>

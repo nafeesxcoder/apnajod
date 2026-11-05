@@ -40,14 +40,45 @@ export function LikesScreen({
   navigate,
   accessToken,
   openDetail,
+  onMatched,
 }: {
   navigate: (screen: Screen) => void;
   accessToken?: string;
   openDetail: (match: Match) => void;
+  /** Called when accepting made it mutual, so the thread can be opened. */
+  onMatched: (like: { userId: string; username: string; name: string; photo: string }) => void;
 }) {
   const [likes, setLikes] = useState<IncomingLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deciding, setDeciding] = useState<string | null>(null);
+
+  /**
+   * Accepting is liking them back: the server turns two 'interested'
+   * decisions into a mutual match, which is the only thing that opens a
+   * conversation. Passing removes them from this list for good.
+   */
+  const decide = async (like: IncomingLike, decision: "interested" | "pass") => {
+    if (!accessToken || deciding) return;
+    setDeciding(like.userId);
+    setError(null);
+    try {
+      const result = await matchApi.decide(accessToken, like.userId, decision);
+      setLikes((current) => current.filter((row) => row.userId !== like.userId));
+      if (decision === "interested" && result?.mutual) {
+        onMatched({
+          userId: like.userId,
+          username: like.username || "",
+          name: like.name,
+          photo: like.photo,
+        });
+      }
+    } catch (err: any) {
+      setError(err.message || "That did not go through. Try again.");
+    } finally {
+      setDeciding(null);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -259,14 +290,25 @@ export function LikesScreen({
                     }}
                   >
                     <View style={{ position: "relative" }}>
-                      <Image
-                        source={{
-                          uri:
-                            like.photo || "https://via.placeholder.com/300x360",
-                        }}
-                        style={{ width: "100%", height: 220 }}
-                        resizeMode="cover"
-                      />
+                      {like.photo ? (
+                        <Image
+                          source={{ uri: like.photo }}
+                          style={{ width: "100%", height: 220 }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View
+                          style={{
+                            width: "100%",
+                            height: 220,
+                            backgroundColor: "#F6D9E4",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Ionicons name="person" size={44} color="#C9849F" />
+                        </View>
+                      )}
                       <LinearGradient
                         colors={["transparent", "rgba(0,0,0,0.75)"]}
                         style={{
@@ -315,6 +357,55 @@ export function LikesScreen({
                       >
                         <Ionicons name="heart" size={16} color="#FFFFFF" />
                       </View>
+                    </View>
+
+                    <View style={{ flexDirection: "row", gap: 8, padding: 10 }}>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Pass on ${like.name}`}
+                        disabled={deciding === like.userId}
+                        onPress={() => decide(like, "pass")}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 9,
+                          borderRadius: 20,
+                          borderWidth: 1,
+                          borderColor: LINE,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: "#635A5D" }}>
+                          Pass
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Accept ${like.name} and open a chat`}
+                        disabled={deciding === like.userId}
+                        onPress={() => decide(like, "interested")}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 9,
+                          borderRadius: 20,
+                          backgroundColor: RUBY,
+                          alignItems: "center",
+                          flexDirection: "row",
+                          justifyContent: "center",
+                          gap: 5,
+                          opacity: deciding === like.userId ? 0.6 : 1,
+                        }}
+                      >
+                        {deciding === like.userId ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Ionicons name="heart" size={14} color="#FFFFFF" />
+                            <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF" }}>
+                              Accept
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
                 ))}
