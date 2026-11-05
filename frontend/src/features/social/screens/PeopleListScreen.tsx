@@ -57,7 +57,7 @@ export function PeopleListScreen({
         ),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not follow.");
+      setError(e instanceof Error ? e.message : "Could not send that like.");
     } finally {
       setBusy((b) => ({ ...b, [user.userId]: false }));
     }

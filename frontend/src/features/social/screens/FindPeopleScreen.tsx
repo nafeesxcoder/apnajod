@@ -107,7 +107,7 @@ export function FindPeopleScreen({
       setResults(patch);
       setContacts((c) => (c ? patch(c) : c));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not follow.");
+      setError(e instanceof Error ? e.message : "Could not send that like.");
     } finally {
       setPending((p) => ({ ...p, [user.userId]: false }));
     }
@@ -251,10 +251,10 @@ export function PersonRow({
   onFollow?: () => void;
 }) {
   const label = user.following
-    ? "Following"
+    ? "Liked"
     : user.requested
-      ? "Requested"
-      : "Follow";
+      ? "Liked"
+      : "Like";
   const settled = user.following || user.requested;
   return (
     <View style={social.row}>

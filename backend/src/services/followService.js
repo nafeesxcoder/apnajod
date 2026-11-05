@@ -210,7 +210,15 @@ async function canMessage(viewerId, otherId) {
     : { allowed: false, reason: "no_match" };
 }
 
-/** Username search. Exact matches first, then prefix, then anywhere. */
+/**
+ * Username search. Exact matches first, then prefix, then anywhere.
+ *
+ * Every account is findable, private ones included. Hiding private accounts
+ * here, with sign-up making every account private, meant the search returned
+ * nothing at all - on a dating app, where finding somebody is the whole point.
+ * Privacy is enforced where it belongs instead: messaging needs a mutual
+ * like, so being found costs nothing.
+ */
 async function searchByUsername(viewerId, term, limit = 20) {
   const q = String(term || "")
     .trim()
@@ -222,7 +230,6 @@ async function searchByUsername(viewerId, term, limit = 20) {
       WHERE u.deleted_at IS NULL
         AND u.deactivated_at IS NULL
         AND u.username IS NOT NULL
-        AND u.is_private = 0
         AND u.id != ?
         AND LOWER(u.username) LIKE ?
         AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)

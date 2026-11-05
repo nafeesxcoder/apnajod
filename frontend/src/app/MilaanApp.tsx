@@ -1864,6 +1864,31 @@ function MilaanApp() {
     setSelected(m);
     setScreen("detail");
   };
+  /**
+   * Like somebody found by searching, rather than met in the deck.
+   *
+   * The same decision the deck records, so it lands in their Likes tab and
+   * they can accept it. This used to call socialApi.follow, which wrote a
+   * follow row that the Likes tab never reads and that messaging - gated on
+   * a mutual like - never unlocks: the like went nowhere.
+   */
+  const likeFromSearch = async (
+    userId: string,
+  ): Promise<"accepted" | "pending"> => {
+    if (!accessToken) return "pending";
+    const result = await matchApi.decide(accessToken, userId, "interested");
+    if (result?.mutual) {
+      await loadChatsAndMatches(accessToken);
+      return "accepted";
+    }
+    setAppNotice({
+      title: "Like sent",
+      body: "They will see it in their Likes. If they like you back, the chat opens.",
+      icon: "heart-outline",
+    });
+    return "pending";
+  };
+
   const chooseInterested = async (match: Match) => {
     if (accessToken) {
       try {
@@ -3218,7 +3243,7 @@ function MilaanApp() {
             // does not exist yet, so the contacts tab stays off.
             onMatchContacts={async () => []}
             onOpenPerson={openPerson}
-            onFollow={(userId) => socialApi.follow(accessToken, userId)}
+            onFollow={(userId) => likeFromSearch(userId)}
           />
         )}
 
@@ -3227,7 +3252,7 @@ function MilaanApp() {
             userId={personId}
             onBack={() => setScreen("find")}
             onLoad={(userId) => socialApi.person(accessToken, userId)}
-            onFollow={(userId) => socialApi.follow(accessToken, userId)}
+            onFollow={(userId) => likeFromSearch(userId)}
             onUnfollow={(userId) => socialApi.unfollow(accessToken, userId)}
             onMessage={(page) => openConversationWith(page.user)}
             onOpenFollowers={(userId) => {
@@ -3268,7 +3293,7 @@ function MilaanApp() {
                 : socialApi.following(accessToken, peopleList?.userId)
             }
             onOpenPerson={openPerson}
-            onFollow={(userId) => socialApi.follow(accessToken, userId)}
+            onFollow={(userId) => likeFromSearch(userId)}
           />
         )}
 

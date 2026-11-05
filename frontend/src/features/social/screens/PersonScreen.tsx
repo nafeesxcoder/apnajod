@@ -100,10 +100,10 @@ export function PersonScreen({
 
   const { user, counts, state } = page;
   const followLabel = state.following
-    ? "Following"
+    ? "Liked"
     : state.requested
-      ? "Requested"
-      : "Follow";
+      ? "Liked"
+      : "Like";
 
   return (
     <Shell onBack={onBack} title={user.username} onBlock={onBlock ? () => onBlock(userId) : undefined}>
@@ -196,8 +196,8 @@ export function PersonScreen({
               {page.messageBlockedReason === "blocked"
                 ? "Messaging is unavailable between your accounts."
                 : state.requested
-                  ? `${user.username} has your follow request. You can message once it is accepted.`
-                  : `Follow ${user.username} and wait to be accepted. Then you can message each other.`}
+                  ? `${user.username} has your like. The chat opens if they like you back.`
+                  : `Like ${user.username}. If they like you back, the chat opens for both of you.`}
             </Text>
           </View>
         )}
