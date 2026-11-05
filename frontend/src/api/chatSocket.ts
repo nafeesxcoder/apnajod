@@ -6,6 +6,24 @@ import { io, type Socket } from "socket.io-client";
 // so a failed websocket never breaks chat.
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
+/**
+ * Where the socket actually connects, given the API may sit behind a path
+ * prefix such as http://host/api when a reverse proxy serves it on port 80.
+ *
+ * socket.io reads a path in the URL as a *namespace*, not a prefix, so
+ * io("http://host/api") asks for a namespace the server does not have and
+ * the connection is refused. The prefix belongs in the `path` option.
+ */
+export function socketTarget(apiUrl: string) {
+  try {
+    const url = new URL(apiUrl);
+    const prefix = url.pathname.replace(/\/+$/, "");
+    return { origin: url.origin, path: `${prefix}/socket.io` };
+  } catch {
+    return { origin: apiUrl, path: "/socket.io" };
+  }
+}
+
 let socket: Socket | null = null;
 // Read on every (re)connect so a token refreshed in the background is used
 // without tearing the connection down.
@@ -15,7 +33,9 @@ export function connectChatSocket(accessToken: string): Socket | null {
   if (!accessToken) return null;
   latestToken = accessToken;
   if (socket) return socket;
-  socket = io(API_URL, {
+  const target = socketTarget(API_URL);
+  socket = io(target.origin, {
+    path: target.path,
     auth: (cb) => cb({ token: latestToken }),
     reconnection: true,
     reconnectionDelay: 800,
