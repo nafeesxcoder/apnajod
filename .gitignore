@@ -2,3 +2,8 @@ backend/.env
 frontend/.env
 .env
 node_modules/
+
+# Expo loads .env.local ahead of .env, so a committed one silently
+# overrides every deployment. It is a local-only file by definition.
+frontend/.env.local
+.env.local
