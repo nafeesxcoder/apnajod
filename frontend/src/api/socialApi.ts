@@ -5,7 +5,7 @@
  * in the app arrives either from a username search or from the member's own
  * contacts, and whether they can be messaged depends on the follow graph.
  */
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
 
 async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {

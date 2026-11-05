@@ -1,4 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
 
 /**
  * Put an image the member picked onto the server and return its public URL.

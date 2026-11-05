@@ -4,7 +4,7 @@ import { io, type Socket } from "socket.io-client";
 // messages, delivered/read ticks, edits, typing and online/offline presence.
 // REST stays as the fallback: if the socket is down the app keeps polling,
 // so a failed websocket never breaks chat.
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
 
 /**
  * Where the socket actually connects, given the API may sit behind a path

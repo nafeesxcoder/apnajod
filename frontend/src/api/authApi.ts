@@ -19,7 +19,7 @@ export const isSessionRejected = (error: unknown) =>
   error instanceof AuthRequestError &&
   (error.status === 401 || error.status === 403);
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
 export type AuthSession = {
   ok: true;
   user: {

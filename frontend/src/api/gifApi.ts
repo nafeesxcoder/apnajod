@@ -1,7 +1,7 @@
 import type { GifSearchPage } from "../features/chat/contracts/ChatRuntimePorts";
 import type { ChatGifCatalogItem } from "../domain/chatMediaCatalog";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
 
 async function authGet(path: string, accessToken: string) {
   const response = await fetch(`${API_URL}${path}`, {
