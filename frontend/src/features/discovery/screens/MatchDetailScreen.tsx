@@ -25,7 +25,7 @@ const MUTED = "#635A5D";
 const WHITE = "#FFFFFF";
 const LINE = "#F0EAE0";
 
-const MAX_WIDTH = 720;
+const MAX_WIDTH = 430;
 const SIDE_PADDING = 16;
 const GRID_GAP = 8;
 const { width: WINDOW_WIDTH } = Dimensions.get("window");

@@ -4,7 +4,6 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav } from "../../../components/navigation/BottomNav";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
+import { PhotoGrid } from "../components/PhotoGrid";
 
 const PINK = "#E91E63";
 const PINK_LIGHT = "#FCE4EC";
@@ -23,10 +23,6 @@ const LINE = "#F0EAE0";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
-const GRID_GAP = 8;
-const { width: WINDOW_WIDTH } = Dimensions.get("window");
-const CONTENT_WIDTH = Math.min(WINDOW_WIDTH, MAX_WIDTH);
-const POST_SIZE = (CONTENT_WIDTH - SIDE_PADDING * 2 - GRID_GAP * 2) / 3;
 
 const COVER_URI =
   "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80";
@@ -425,27 +421,7 @@ export function ProfileScreen({
                   </TouchableOpacity>
                 </View>
 
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: GRID_GAP,
-                  }}
-                >
-                  {DEMO_POSTS.map((photo, index) => (
-                    <Image
-                      key={index}
-                      source={{ uri: photo }}
-                      style={{
-                        width: POST_SIZE,
-                        height: POST_SIZE,
-                        borderRadius: 12,
-                        backgroundColor: LINE,
-                      }}
-                      resizeMode="cover"
-                    />
-                  ))}
-                </View>
+                <PhotoGrid photos={DEMO_POSTS} />
               </View>
             </View>
           </View>

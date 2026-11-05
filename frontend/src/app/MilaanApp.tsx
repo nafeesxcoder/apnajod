@@ -126,8 +126,8 @@ import {
   type Screen,
 } from "../app/navigation/types";
 import { SplashScreen } from "../features/launch/screens/LaunchScreens";
+import { AccessWelcomeScreen } from "../features/access/screens/WelcomeScreen";
 import {
-  AccessWelcomeScreen,
   ForgotPasswordScreen,
   LogInScreen,
   NewPasswordScreen,
@@ -194,7 +194,30 @@ import {
  */
 function AppCanvas({ children }: { children: ReactNode }) {
   return (
-    <View style={{ flex: 1, backgroundColor: colors.canvas }}>{children}</View>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: Platform.OS === "web" ? "#E9E2D3" : colors.canvas,
+        alignItems: "center",
+      }}
+    >
+      <View
+        style={[
+          {
+            flex: 1,
+            width: "100%",
+            backgroundColor: colors.canvas,
+            overflow: "hidden",
+          },
+          // On a desktop browser, keep the app phone-sized and centred.
+          Platform.OS === "web"
+            ? { maxWidth: 430, boxShadow: "0 0 40px rgba(26,20,22,0.14)" }
+            : null,
+        ]}
+      >
+        {children}
+      </View>
+    </View>
   );
 }
 
