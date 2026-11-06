@@ -35,13 +35,10 @@ export type Screen =
   | "mutual"
   | "icebreaker"
   | "likes"
-  // The follow graph: your threads, finding people, requests, their page.
+  // Your threads, finding people, their page.
   | "chats"
   | "find"
-  | "requests"
   | "person"
-  | "followers"
-  | "following"
   | "chat"
   // Your own account, and the two things that keep it safe.
   | "profile"
@@ -97,10 +94,7 @@ export const previewScreens: readonly Screen[] = [
   "likes",
   "chats",
   "find",
-  "requests",
   "person",
-  "followers",
-  "following",
   "chat",
   "profile",
   "settings",

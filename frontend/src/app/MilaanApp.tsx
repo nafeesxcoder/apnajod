@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
 import { Platform, View } from "react-native";
@@ -51,7 +50,7 @@ import {
   requestAccountDeletion,
   type MatchingPoolStatus,
 } from "./adapters/previewMemberRuntime";
-import { rankMatches } from "../domain/matching";
+import { deckCandidates, rankMatches } from "../domain/matching";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { configureAnalyticsConsent, track } from "../lib/telemetry";
 import { CallHost } from "../features/chat/CallHost";
@@ -72,19 +71,20 @@ import {
   persistMessageEdit as persistMessageEditPreview,
   persistMessageUserState as persistMessageUserStatePreview,
   persistOnboardingProfile,
-  persistPrivacySettings,
   // persistProfileView,
   persistReport as persistReportPreview,
   persistUnmatch as persistUnmatchPreview,
   subscribePersistedChatMessages as subscribePersistedChatMessagesPreview,
 } from "./adapters/previewPersistence";
-import { chatApi } from "../api/chatApi";
+import { chatApi, type ConversationSummary } from "../api/chatApi";
+import { callApi } from "../api/callApi";
 import {
   connectChatSocket,
   disconnectChatSocket,
   emitChatRead,
   emitChatTyping,
   getChatSocket,
+  isChatSocketConnected,
 } from "../api/chatSocket";
 import { minimizeActiveCallIfAny } from "../features/chat/activeCallBackGuard";
 import { pushApi } from "../api/pushApi";
@@ -100,7 +100,6 @@ import {
   type MemberMutationResult,
 } from "../domain/memberDataRuntime";
 import {
-  buildCoupleModeAccess,
   coupleModeRoutes,
   guardCoupleModeRoute,
   initialCoupleModeState,
@@ -153,8 +152,6 @@ import { VerificationHubScreen } from "../features/trust/screens/VerificationHub
 import { ChatsScreen } from "../features/social/screens/ChatsScreen";
 import { FindPeopleScreen } from "../features/social/screens/FindPeopleScreen";
 import { PersonScreen } from "../features/social/screens/PersonScreen";
-import { RequestsScreen } from "../features/social/screens/RequestsScreen";
-import { PeopleListScreen } from "../features/social/screens/PeopleListScreen";
 import { socialApi, type SocialUser } from "../api/socialApi";
 import { matchFromSocialUser } from "../domain/socialMatch";
 import { DiscoveryCenterScreen } from "../features/discovery/screens/DiscoveryCenterScreen";
@@ -517,13 +514,8 @@ function MilaanApp() {
   });
   const [selected, setSelected] = useState<Match>(noPartner);
   const hasSelected = !!selected.id;
-  // --- follow graph ---
+  // --- finding people ---
   const [personId, setPersonId] = useState<string | null>(null);
-  const [peopleList, setPeopleList] = useState<{
-    mode: "followers" | "following";
-    userId?: string;
-  } | null>(null);
-  const [requestCount, setRequestCount] = useState(0);
   // Private until the server says otherwise: guessing "public" for a moment
   // would show the wrong switch to someone who never chose it.
   const [isPrivateAccount, setIsPrivateAccount] = useState(true);
@@ -702,7 +694,6 @@ function MilaanApp() {
   };
   const conversationPartner =
     coupleMode.experienceMode === "couple" ? couplePartner : selected;
-  const coupleAccess = buildCoupleModeAccess(coupleMode);
   const applyCoupleHub = (hub: CoupleConnectionHub) => {
     setCoupleHub(hub);
     if (!hub.connection) {
@@ -2053,12 +2044,15 @@ function MilaanApp() {
   const answerIcebreaker = async (_answer: string) => {
     setScreen("chat");
   };
-  const notifyProfileView = async (_match: Match) => {
-    // Disabled for now to prevent annoyance
-    return;
-  };
+  // A signed-in member only ever sees real people; the samples stay in the
+  // signed-out showcase. See deckCandidates for why this is not a `??`.
+  const candidates = deckCandidates({
+    serverDiscovered: serverDiscoveredMatches,
+    samples: matches,
+    signedIn: memberDataRuntime.source === "server",
+  });
   const localRankedMatches = rankMatches(
-    serverDiscoveredMatches ?? matches,
+    candidates,
     { intent, vibes: vibeList, filters: matchFilters },
     discoverySignals,
     blockedIds,
@@ -2972,7 +2966,6 @@ function MilaanApp() {
   const loadChatsAndMatches = async (
     token: string,
   ): Promise<ConversationSummary[]> => {
-    void refreshRequestCount();
     const conversations = await chatApi.fetchConversations(token);
     let matches: MutualMatchSummary[] = [];
     try {
@@ -2999,16 +2992,6 @@ function MilaanApp() {
         unread: 0,
       }));
     return [...waiting, ...conversations].sort((a, b) => b.lastAt - a.lastAt);
-  };
-
-  /** The badge on the chats header. Silent when it cannot be read. */
-  const refreshRequestCount = async () => {
-    if (!accessToken) return;
-    try {
-      setRequestCount((await socialApi.requests(accessToken)).length);
-    } catch {
-      /* the badge is not worth an error */
-    }
   };
 
   return (
@@ -3290,13 +3273,11 @@ function MilaanApp() {
         )}
         {screen === "chats" && accessToken && (
           <ChatsScreen
-            requestCount={requestCount}
             onLoad={() => loadChatsAndMatches(accessToken)}
             onOpenConversation={(conversation) =>
               openConversationWith(conversation.user)
             }
             onFind={() => setScreen("find")}
-            onRequests={() => setScreen("requests")}
             navigate={navigateTo}
           />
         )}
@@ -3321,37 +3302,6 @@ function MilaanApp() {
             onLoad={(userId) => socialApi.person(accessToken, userId)}
             onFollow={(userId) => likeFromSearch(userId)}
             onMessage={(page) => openConversationWith(page.user)}
-          />
-        )}
-
-        {screen === "requests" && accessToken && (
-          <RequestsScreen
-            onBack={() => setScreen("chats")}
-            onLoad={() => socialApi.requests(accessToken)}
-            onRespond={async (userId, accept) => {
-              await socialApi.respond(accessToken, userId, accept);
-              await refreshRequestCount();
-            }}
-            onOpenPerson={openPerson}
-          />
-        )}
-
-        {(screen === "followers" || screen === "following") && accessToken && (
-          <PeopleListScreen
-            title={screen === "followers" ? "Followers" : "Following"}
-            emptyMessage={
-              screen === "followers"
-                ? "No followers yet."
-                : "Not following anyone yet."
-            }
-            onBack={() => setScreen(personId ? "person" : "chats")}
-            onLoad={() =>
-              screen === "followers"
-                ? socialApi.followers(accessToken, peopleList?.userId)
-                : socialApi.following(accessToken, peopleList?.userId)
-            }
-            onOpenPerson={openPerson}
-            onFollow={(userId) => likeFromSearch(userId)}
           />
         )}
 
@@ -3608,6 +3558,8 @@ function MilaanApp() {
         )}
         {selected.id ? (
           <SafetyActions
+            visible={detailSafetyOpen}
+            match={selected}
             isBlocked={blockedIds.includes(selected.id)}
             onClose={() => setDetailSafetyOpen(false)}
             onSafetyCenter={() => {

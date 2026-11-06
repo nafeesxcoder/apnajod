@@ -30,17 +30,9 @@ router.get("/search", lookupLimiter, followController.search);
 router.post("/contacts", contactsLimiter, followController.contacts);
 
 // ---- my own lists ----
-router.get("/requests", followController.requests);
-router.get("/followers", followController.followers);
-router.get("/following", followController.following);
 router.put("/privacy", followController.privacy);
 
 // ---- someone else ----
 router.get("/users/:userId", followController.userProfile);
-router.get("/users/:userId/followers", followController.followers);
-router.get("/users/:userId/following", followController.following);
-router.post("/users/:userId/follow", followController.follow);
-router.delete("/users/:userId/follow", followController.unfollow);
-router.post("/users/:userId/respond", followController.respond);
 
 module.exports = router;

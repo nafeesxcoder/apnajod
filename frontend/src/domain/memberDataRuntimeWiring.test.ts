@@ -41,7 +41,23 @@ describe('member data runtime wiring', () => {
     // ranked from what the server returned, never from the samples.
     wired('profileApi.discoverMatches(');
     wired('rankMatches(');
-    wired('serverDiscoveredMatches ?? matches');
+  });
+
+  it('never falls back to the sample deck for a signed-in member', () => {
+    // `serverDiscoveredMatches ?? matches` was the fallback, and the client
+    // filters cut the samples out by accident. Once the deck stopped cutting
+    // rows — so that every real account shows — the samples reached a live
+    // deck, and liking one wrote a match decision against a user id that is
+    // not in `users`: a foreign key failure, a 500, a crashed screen.
+    // The rule itself lives in domain/matching and is tested for behaviour in
+    // deckCandidates.test.ts. This only checks the shell still goes through it.
+    expect(shell).not.toContain('serverDiscoveredMatches ?? matches');
+    wired(`const candidates = deckCandidates({
+    serverDiscovered: serverDiscoveredMatches,
+    samples: matches,
+    signedIn: memberDataRuntime.source === "server",
+  })`);
+    wired('rankMatches(\n    candidates,');
   });
 
   it('keeps the sample people inside the signed-out showcase only', () => {

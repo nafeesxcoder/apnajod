@@ -8,3 +8,5 @@ node_modules/
 frontend/.env.local
 .env.local
 backend/node_modules
+
+*.ps1

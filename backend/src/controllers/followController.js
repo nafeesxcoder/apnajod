@@ -26,65 +26,12 @@ const contacts = asyncHandler(async (req, res) => {
   res.json({ ok: true, results });
 });
 
-// ---------- the follow edge ----------
-
-const follow = asyncHandler(async (req, res) => {
-  try {
-    const result = await followService.follow(req.user.id, req.params.userId);
-    res.json({ ok: true, ...result });
-  } catch (error) {
-    rethrow(error);
-  }
-});
-
-const unfollow = asyncHandler(async (req, res) => {
-  await followService.unfollow(req.user.id, req.params.userId);
-  res.json({ ok: true });
-});
-
-const respond = asyncHandler(async (req, res) => {
-  const { accept } = req.body;
-  if (typeof accept !== "boolean") throw new ApiError(400, "accept must be true or false");
-  try {
-    const result = await followService.respond(req.user.id, req.params.userId, accept);
-    res.json({ ok: true, ...result });
-  } catch (error) {
-    rethrow(error);
-  }
-});
-
-const requests = asyncHandler(async (req, res) => {
-  const rows = await followService.listRequests(req.user.id);
-  res.json({
-    ok: true,
-    requests: rows.map((r) => ({
-      userId: r.user_id,
-      username: r.username,
-      name: r.full_name || r.username,
-      avatarUrl: r.avatar_url,
-      requestedAt: r.created_at,
-    })),
-  });
-});
-
-const followers = asyncHandler(async (req, res) => {
-  const rows = await followService.listFollowers(req.params.userId || req.user.id);
-  res.json({ ok: true, users: rows.map(shape) });
-});
-
-const following = asyncHandler(async (req, res) => {
-  const rows = await followService.listFollowing(req.params.userId || req.user.id);
-  res.json({ ok: true, users: rows.map(shape) });
-});
-
 // ---------- a person's page ----------
 
 const userProfile = asyncHandler(async (req, res) => {
   const user = await followService.getUser(req.params.userId);
   if (!user) throw new ApiError(404, "That account is not available.");
-  const [state, count, permission, profile, like] = await Promise.all([
-    followService.followState(req.user.id, user.id),
-    followService.counts(user.id),
+  const [permission, profile, like] = await Promise.all([
     followService.canMessage(req.user.id, user.id),
     followService.getProfileCard(user.id),
     followService.likeState(req.user.id, user.id),
@@ -102,8 +49,9 @@ const userProfile = asyncHandler(async (req, res) => {
     },
     profile,
     like,
-    counts: count,
-    state,
+    // `self` is all the old follow `state` object still carried that
+    // anything reads; the rest described a graph this app no longer has.
+    state: { self: req.user.id === user.id },
     canMessage: permission.allowed,
     messageBlockedReason: permission.allowed ? null : permission.reason,
   });
@@ -129,12 +77,6 @@ function shape(r) {
 module.exports = {
   search,
   contacts,
-  follow,
-  unfollow,
-  respond,
-  requests,
-  followers,
-  following,
   userProfile,
   privacy,
 };

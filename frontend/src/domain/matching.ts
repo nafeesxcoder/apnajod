@@ -125,3 +125,29 @@ export function publicMatchLabel(score: number): Match['match'] {
   if (score >= 60) return 'Great Match';
   return 'Strong Match';
 }
+
+/**
+ * Which people may appear in the deck at all.
+ *
+ * The app ships sample people for the signed-out showcase. They used to be
+ * the fallback while the server's deck was still in flight, and the client
+ * filters cut them out by accident. Once the deck stopped cutting rows - so
+ * that every real account shows - those samples reached a live deck, and
+ * liking one wrote a match decision against a user id that is not in the
+ * users table: a foreign key failure, a 500, a crashed screen.
+ *
+ * A signed-in member therefore waits on an empty deck rather than being
+ * shown invented people.
+ */
+export function deckCandidates({
+  serverDiscovered,
+  samples,
+  signedIn,
+}: {
+  serverDiscovered: Match[] | null;
+  samples: Match[];
+  signedIn: boolean;
+}): Match[] {
+  if (serverDiscovered) return serverDiscovered;
+  return signedIn ? [] : samples;
+}

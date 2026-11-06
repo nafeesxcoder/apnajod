@@ -1,8 +1,21 @@
 ﻿const crypto = require("crypto");
 const { query } = require("../config/db");
+const { ApiError } = require("../middleware/errorHandler");
 const pushService = require("./pushService");
 
 async function recordDecision(actorId, targetId, decision) {
+  // Nothing is written against an id that is not a member. Without this the
+  // id reached the foreign key, MySQL raised ER_NO_REFERENCED_ROW_2 and the
+  // request came back a 500 - which the app shows as a crash rather than as
+  // one unavailable profile. A deleted account lands here too.
+  const [target] = await query(
+    "SELECT id FROM users WHERE id = ? AND deleted_at IS NULL",
+    [targetId],
+  );
+  if (!target) {
+    throw new ApiError(404, "That profile is no longer available");
+  }
+
   await query(
     `INSERT INTO match_decisions (id, actor_id, target_id, decision)
      VALUES (?, ?, ?, ?)

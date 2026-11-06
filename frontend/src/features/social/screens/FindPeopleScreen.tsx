@@ -101,7 +101,11 @@ export function FindPeopleScreen({
       const patch = (list: SocialUser[]) =>
         list.map((u) =>
           u.userId === user.userId
-            ? { ...u, following: status === "accepted", requested: status === "pending" }
+            ? {
+                ...u,
+                likeStatus: (status === "accepted" ? "accepted" : "pending") as
+                  SocialUser["likeStatus"],
+              }
             : u,
         );
       setResults(patch);
@@ -250,12 +254,17 @@ export function PersonRow({
   onOpen: () => void;
   onFollow?: () => void;
 }) {
-  const label = user.following
-    ? "Liked"
-    : user.requested
-      ? "Liked"
-      : "Like";
-  const settled = user.following || user.requested;
+  const status = user.likeStatus ?? "none";
+  const label =
+    status === "accepted"
+      ? "Matched"
+      : status === "pending"
+        ? "Liked"
+        : status === "likes_you"
+          ? "Accept"
+          : "Like";
+  // Only a decision already made is settled. "Accept" is still a button.
+  const settled = status === "accepted" || status === "pending";
   return (
     <View style={social.row}>
       <Pressable
@@ -275,7 +284,7 @@ export function PersonRow({
             )}
           </View>
           <Text numberOfLines={1} style={social.rowSub}>
-            {user.followsYou ? `${user.name} · follows you` : user.name}
+            {status === "likes_you" ? `${user.name} · likes you` : user.name}
           </Text>
         </View>
       </Pressable>

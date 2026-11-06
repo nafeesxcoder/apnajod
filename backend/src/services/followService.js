@@ -32,30 +32,6 @@ async function isBlockedEitherWay(a, b) {
   return rows.length > 0;
 }
 
-async function edge(followerId, followingId) {
-  const [row] = await query(
-    "SELECT * FROM follows WHERE follower_id = ? AND following_id = ?",
-    [followerId, followingId],
-  );
-  return row || null;
-}
-
-/** What the viewer sees on someone else's profile. */
-async function followState(viewerId, otherId) {
-  if (viewerId === otherId) return { self: true };
-  const [outgoing, incoming] = await Promise.all([
-    edge(viewerId, otherId),
-    edge(otherId, viewerId),
-  ]);
-  return {
-    self: false,
-    following: outgoing?.status === "accepted",
-    requested: outgoing?.status === "pending",
-    followsYou: incoming?.status === "accepted",
-    requestsYou: incoming?.status === "pending",
-  };
-}
-
 async function setPrivacy(userId, isPrivate) {
   await query("UPDATE users SET is_private = ? WHERE id = ?", [
     isPrivate ? 1 : 0,
@@ -69,117 +45,6 @@ async function setPrivacy(userId, isPrivate) {
       [userId],
     );
   }
-}
-
-/**
- * Follow someone. A public account is followed immediately; a private one
- * records a request. Calling it twice is not an error, so a double tap on a
- * slow connection does not produce a confusing failure.
- */
-async function follow(followerId, followingId) {
-  if (followerId === followingId) {
-    const err = new Error(SELF_FOLLOW);
-    err.status = 400;
-    throw err;
-  }
-  const target = await getUser(followingId);
-  if (!target) {
-    const err = new Error("That account is not available.");
-    err.status = 404;
-    throw err;
-  }
-  if (await isBlockedEitherWay(followerId, followingId)) {
-    const err = new Error("That account is not available.");
-    err.status = 404;
-    throw err;
-  }
-
-  const existing = await edge(followerId, followingId);
-  if (existing) return { status: existing.status, alreadyExisted: true };
-
-  const status = target.is_private ? "pending" : "accepted";
-  await query(
-    `INSERT INTO follows (id, follower_id, following_id, status, responded_at)
-     VALUES (?, ?, ?, ?, ${status === "accepted" ? "NOW(6)" : "NULL"})`,
-    [crypto.randomUUID(), followerId, followingId, status],
-  );
-  return { status, alreadyExisted: false };
-}
-
-async function unfollow(followerId, followingId) {
-  await query(
-    "DELETE FROM follows WHERE follower_id = ? AND following_id = ?",
-    [followerId, followingId],
-  );
-}
-
-/** The owner of a private account answers a pending request. */
-async function respond(ownerId, followerId, accept) {
-  const existing = await edge(followerId, ownerId);
-  if (!existing || existing.status !== "pending") {
-    const err = new Error("There is no pending request from that account.");
-    err.status = 404;
-    throw err;
-  }
-  if (accept) {
-    await query(
-      "UPDATE follows SET status = 'accepted', responded_at = NOW(6) WHERE id = ?",
-      [existing.id],
-    );
-    return { status: "accepted" };
-  }
-  await query("DELETE FROM follows WHERE id = ?", [existing.id]);
-  return { status: "declined" };
-}
-
-async function listRequests(ownerId) {
-  return query(
-    `SELECT f.id, f.created_at, u.id AS user_id, u.username, u.full_name, u.avatar_url
-       FROM follows f
-       JOIN users u ON u.id = f.follower_id
-      WHERE f.following_id = ? AND f.status = 'pending' AND u.deleted_at IS NULL
-      ORDER BY f.created_at DESC
-      LIMIT 100`,
-    [ownerId],
-  );
-}
-
-async function listFollowers(userId) {
-  return query(
-    `SELECT u.id AS user_id, u.username, u.full_name, u.avatar_url, u.is_private
-       FROM follows f
-       JOIN users u ON u.id = f.follower_id
-      WHERE f.following_id = ? AND f.status = 'accepted' AND u.deleted_at IS NULL
-      ORDER BY f.responded_at DESC
-      LIMIT 500`,
-    [userId],
-  );
-}
-
-async function listFollowing(userId) {
-  return query(
-    `SELECT u.id AS user_id, u.username, u.full_name, u.avatar_url, u.is_private
-       FROM follows f
-       JOIN users u ON u.id = f.following_id
-      WHERE f.follower_id = ? AND f.status = 'accepted' AND u.deleted_at IS NULL
-      ORDER BY f.responded_at DESC
-      LIMIT 500`,
-    [userId],
-  );
-}
-
-async function counts(userId) {
-  const [[followers], [following]] = await Promise.all([
-    query(
-      "SELECT COUNT(*) AS n FROM follows WHERE following_id = ? AND status = 'accepted'",
-      [userId],
-    ),
-    query(
-      "SELECT COUNT(*) AS n FROM follows WHERE follower_id = ? AND status = 'accepted'",
-      [userId],
-    ),
-  ]);
-  return { followers: followers?.n ?? 0, following: following?.n ?? 0 };
 }
 
 /**
@@ -277,42 +142,75 @@ async function matchContacts(viewerId, phones, limit = 200) {
 }
 
 /** Attach the viewer's relationship to each row so the UI can label buttons. */
+/**
+ * Add where the like stands to a row of people.
+ *
+ * This used to read the `follows` table and return following / requested /
+ * followsYou. There is no following on this app any more - the only edge
+ * between two members is a like - so a search result labelled itself from
+ * a graph nothing writes to, and always said "Like" even to somebody you
+ * had already matched with.
+ */
 async function decorate(viewerId, rows) {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.user_id);
   const placeholders = ids.map(() => "?").join(",");
-  const edges = await query(
-    `SELECT follower_id, following_id, status FROM follows
-      WHERE (follower_id = ? AND following_id IN (${placeholders}))
-         OR (following_id = ? AND follower_id IN (${placeholders}))`,
-    [viewerId, ...ids, viewerId, ...ids],
+
+  const [decisions, matches] = await Promise.all([
+    query(
+      `SELECT actor_id, target_id FROM match_decisions
+        WHERE decision = 'interested'
+          AND ((actor_id = ? AND target_id IN (${placeholders}))
+            OR (target_id = ? AND actor_id IN (${placeholders})))`,
+      [viewerId, ...ids, viewerId, ...ids],
+    ),
+    query(
+      `SELECT user_a_id, user_b_id FROM mutual_matches
+        WHERE (user_a_id = ? AND user_b_id IN (${placeholders}))
+           OR (user_b_id = ? AND user_a_id IN (${placeholders}))`,
+      [viewerId, ...ids, viewerId, ...ids],
+    ),
+  ]);
+
+  const state = new Map(
+    ids.map((id) => [id, { iLiked: false, theyLiked: false, matched: false }]),
   );
-  const out = new Map(
-    ids.map((id) => [
-      id,
-      { following: false, requested: false, followsYou: false },
-    ]),
-  );
-  for (const e of edges) {
-    if (e.follower_id === viewerId) {
-      const s = out.get(e.following_id);
-      if (s) {
-        s.following = e.status === "accepted";
-        s.requested = e.status === "pending";
-      }
+  for (const row of decisions) {
+    if (row.actor_id === viewerId) {
+      const s = state.get(row.target_id);
+      if (s) s.iLiked = true;
     } else {
-      const s = out.get(e.follower_id);
-      if (s) s.followsYou = e.status === "accepted";
+      const s = state.get(row.actor_id);
+      if (s) s.theyLiked = true;
     }
   }
-  return rows.map((r) => ({
-    userId: r.user_id,
-    username: r.username,
-    name: r.full_name || r.username,
-    avatarUrl: r.avatar_url,
-    isPrivate: !!r.is_private,
-    ...out.get(r.user_id),
-  }));
+  for (const row of matches) {
+    const other = row.user_a_id === viewerId ? row.user_b_id : row.user_a_id;
+    const s = state.get(other);
+    if (s) s.matched = true;
+  }
+
+  return rows.map((r) => {
+    const s = state.get(r.user_id) ?? {
+      iLiked: false,
+      theyLiked: false,
+      matched: false,
+    };
+    return {
+      userId: r.user_id,
+      username: r.username,
+      name: r.full_name || r.username,
+      avatarUrl: r.avatar_url,
+      isPrivate: !!r.is_private,
+      likeStatus: s.matched
+        ? "accepted"
+        : s.iLiked
+          ? "pending"
+          : s.theyLiked
+            ? "likes_you"
+            : "none",
+    };
+  });
 }
 
 /**
@@ -407,15 +305,7 @@ module.exports = {
   getUser,
   getProfileCard,
   likeState,
-  followState,
   setPrivacy,
-  follow,
-  unfollow,
-  respond,
-  listRequests,
-  listFollowers,
-  listFollowing,
-  counts,
   canMessage,
   searchByUsername,
   matchContacts,

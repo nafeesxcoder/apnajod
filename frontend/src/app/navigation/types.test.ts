@@ -7,7 +7,7 @@ const completeRouteInventory = [
   // The dating product.
   'home','discovery','detail','mutual','icebreaker','likes',
   // The follow graph alongside it.
-  'chats','find','requests','person','followers','following','chat',
+  'chats','find','person','chat',
   'profile','settings','safety','verifyHub',
 ] as const;
 

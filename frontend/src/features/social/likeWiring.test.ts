@@ -21,11 +21,11 @@ describe('liking from search', () => {
   });
 
   it('wires every onFollow to that one handler', () => {
-    // Three screens offer the button: search results, a person's page and the
-    // followers/following lists. Any one left on socialApi.follow is a like
-    // that silently disappears.
+    // Two screens offer the button now: search results and a person's page.
+    // The followers/following lists went with the follow system. Any one
+    // left on socialApi.follow is a like that silently disappears.
     const handlers = app.match(/onFollow=\{[^}]*\}/g) ?? [];
-    expect(handlers.length).toBeGreaterThanOrEqual(3);
+    expect(handlers.length).toBeGreaterThanOrEqual(2);
     for (const handler of handlers) {
       expect(handler, `still follows: ${handler}`).not.toContain('socialApi.follow');
       expect(handler).toContain('likeFromSearch');
@@ -38,8 +38,22 @@ describe('liking from search', () => {
       'src/features/social/screens/PersonScreen.tsx',
     ]) {
       const source = read(path);
-      expect(source, `${path} offers a Like`).toMatch(/\?\s*'Like'|:\s*"Like"/);
+      expect(source, `${path} offers a Like`).toMatch(/'Like'|"Like"/);
       expect(source, `${path} should not label it Follow`).not.toContain('"Follow"');
+    }
+  });
+
+  it('has no follow system left to drift back to', () => {
+    const api = read('src/api/socialApi.ts');
+    for (const gone of ['async follow(', 'async unfollow(', 'async requests(', 'async respond(']) {
+      expect(api, `socialApi still has ${gone}`).not.toContain(gone);
+    }
+    // The two screens that existed only to work the follow graph.
+    for (const path of [
+      'src/features/social/screens/RequestsScreen.tsx',
+      'src/features/social/screens/PeopleListScreen.tsx',
+    ]) {
+      expect(() => read(path), `${path} is back`).toThrow();
     }
   });
 });

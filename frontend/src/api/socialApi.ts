@@ -28,17 +28,13 @@ export type SocialUser = {
   name: string;
   avatarUrl: string | null;
   isPrivate: boolean;
-  following?: boolean;
-  requested?: boolean;
-  followsYou?: boolean;
-};
-
-export type FollowRequest = {
-  userId: string;
-  username: string;
-  name: string;
-  avatarUrl: string | null;
-  requestedAt: string;
+  /**
+   * Where the like between you stands. This replaced following /
+   * requested / followsYou: there is no following on this app, so a row
+   * labelled itself from a graph nothing writes to and said "Like" even
+   * to somebody already matched with.
+   */
+  likeStatus?: "none" | "pending" | "likes_you" | "accepted";
 };
 
 /** The dating profile behind a person page: what you decide from. */
@@ -124,44 +120,6 @@ export const socialApi = {
       canMessage: !!data.canMessage,
       messageBlockedReason: data.messageBlockedReason ?? null,
     };
-  },
-
-  /** Returns 'accepted' for a public account, 'pending' for a private one. */
-  async follow(accessToken: string, userId: string): Promise<"accepted" | "pending"> {
-    const data = await authFetch(`/social/users/${userId}/follow`, accessToken, {
-      method: "POST",
-    });
-    return data.status;
-  },
-
-  async unfollow(accessToken: string, userId: string) {
-    return authFetch(`/social/users/${userId}/follow`, accessToken, {
-      method: "DELETE",
-    });
-  },
-
-  async respond(accessToken: string, userId: string, accept: boolean) {
-    return authFetch(`/social/users/${userId}/respond`, accessToken, {
-      method: "POST",
-      body: JSON.stringify({ accept }),
-    });
-  },
-
-  async requests(accessToken: string): Promise<FollowRequest[]> {
-    const data = await authFetch("/social/requests", accessToken);
-    return data.requests ?? [];
-  },
-
-  async followers(accessToken: string, userId?: string): Promise<SocialUser[]> {
-    const path = userId ? `/social/users/${userId}/followers` : "/social/followers";
-    const data = await authFetch(path, accessToken);
-    return data.users ?? [];
-  },
-
-  async following(accessToken: string, userId?: string): Promise<SocialUser[]> {
-    const path = userId ? `/social/users/${userId}/following` : "/social/following";
-    const data = await authFetch(path, accessToken);
-    return data.users ?? [];
   },
 
   async setPrivacy(accessToken: string, isPrivate: boolean) {

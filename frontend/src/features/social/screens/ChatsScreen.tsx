@@ -88,15 +88,11 @@ export function ChatsScreen({
   onLoad,
   onOpenConversation,
   onFind,
-  onRequests,
-  requestCount,
   navigate,
 }: {
   onLoad: () => Promise<ConversationSummary[]>;
   onOpenConversation: (conversation: ConversationSummary) => void;
   onFind: () => void;
-  onRequests: () => void;
-  requestCount: number;
   navigate: (screen: Screen) => void;
 }) {
   const [items, setItems] = useState<ConversationSummary[] | null>(null);
@@ -129,26 +125,6 @@ export function ChatsScreen({
         <View style={social.header}>
           <Text style={social.headerTitle}>Chats</Text>
           <View style={social.headerSpacer} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              requestCount
-                ? `Requests, ${requestCount} waiting`
-                : 'Follow requests'
-            }
-            hitSlop={10}
-            onPress={onRequests}
-            style={social.back}
-          >
-            <Ionicons name="person-add-outline" size={20} color={colors.text} />
-            {requestCount > 0 && (
-              <View style={social.headerBadge}>
-                <Text style={social.headerBadgeText}>
-                  {requestCount > 9 ? '9+' : requestCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Find people"
