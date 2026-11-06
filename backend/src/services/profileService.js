@@ -270,31 +270,47 @@ async function findMatches(userId, limit = 20) {
   const minAge = myPrefs?.min_age ?? 21;
   const maxAge = myPrefs?.max_age ?? 45;
   const lookingFor = myPrefs?.looking_for || "everyone";
-  let genderClause = "";
-  if (lookingFor === "women") {
-    genderClause = "AND p.gender = 'woman'";
-  } else if (lookingFor === "men") {
-    genderClause = "AND p.gender = 'man'";
-  }
+  const wantGender =
+    lookingFor === "women" ? "woman" : lookingFor === "men" ? "man" : null;
 
+  // Everybody with an account is in the deck. Preferences ORDER it, they do
+  // not cut it: age, gender and "onboarding_complete" used to be WHERE
+  // clauses, so a member who had not finished setup, or who sat a year
+  // outside a default 21-45 range nobody had chosen, simply did not exist to
+  // anyone. On a young app that is most of the deck, and an empty deck is
+  // the one thing a dating app cannot survive.
+  //
+  // Private accounts were never filtered here and still are not: private
+  // governs who may message, not who may be seen, and messaging stays shut
+  // until both sides have liked each other.
+  //
+  // What still cuts: blocks both ways, people already decided on, and
+  // accounts that are gone. Those are correctness, not taste.
   const candidates = await query(
     `SELECT
-       u.id AS user_id,
+       u.id AS user_id, u.username,
        p.first_name, p.gender, p.age, p.height, p.city, p.profession,
-       p.religion, p.community, p.about, p.verified, p.hobbies
+       p.religion, p.community, p.about, p.verified, p.hobbies,
+       CASE
+         WHEN (? IS NULL OR p.gender = ?)
+          AND (p.age IS NULL OR p.age BETWEEN ? AND ?)
+         THEN 0 ELSE 1
+       END AS off_preference
      FROM users u
-     JOIN profiles p ON p.user_id = u.id
+     LEFT JOIN profiles p ON p.user_id = u.id
      WHERE u.id != ?
        AND u.deleted_at IS NULL
-       AND p.onboarding_complete = 1
-       AND p.age BETWEEN ? AND ?
-       ${genderClause}
+       AND u.deactivated_at IS NULL
        AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
        AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
        AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ?)
-     ORDER BY p.updated_at DESC
+     ORDER BY
+       off_preference ASC,
+       (p.first_name IS NULL OR p.first_name = '') ASC,
+       p.updated_at DESC,
+       u.created_at DESC
      LIMIT ${Number(limit)}`,
-    [userId, minAge, maxAge, userId, userId, userId],
+    [wantGender, wantGender, minAge, maxAge, userId, userId, userId, userId],
   );
 
   const results = [];
@@ -318,7 +334,9 @@ async function findMatches(userId, limit = 20) {
       id: candidate.user_id,
       profileId: candidate.user_id,
       matchId: candidate.user_id,
-      name: candidate.first_name || "Member",
+      // A member who has not filled the form in yet still has a username,
+      // which is a real name on the card instead of "Member".
+      name: candidate.first_name || candidate.username || "Member",
       age: candidate.age || 0,
       city: candidate.city || "",
       profession: candidate.profession || "",
