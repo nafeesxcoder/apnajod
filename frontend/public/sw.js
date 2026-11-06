@@ -5,7 +5,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = {};
   }
-  const title = data.title || "Milaan";
+  const title = data.title || "Apnajoda";
   const body = data.body || "You have a new notification";
   event.waitUntil(
     self.registration.showNotification(title, {

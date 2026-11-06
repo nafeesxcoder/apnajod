@@ -485,31 +485,31 @@ const isAnimatedEmojiText = (value = "") => {
   );
 };
 const snapFilters = [
-  { name: "Ruby Glow", color: "rgba(138,27,53,.24)" },
-  { name: "Golden Hour", color: "rgba(170,129,42,.18)" },
+  { name: "Ruby Glow", color: "rgba(31,82,134,.24)" },
+  { name: "Golden Hour", color: "rgba(170,42,68,.18)" },
   { name: "Noir", color: "rgba(0,0,0,.38)" },
-  { name: "Rose Film", color: "rgba(218,152,167,.18)" },
-  { name: "Cool Date", color: "rgba(140,28,54,.18)" },
-  { name: "Velvet Crush", color: "rgba(94,12,31,.32)" },
-  { name: "Bollywood Sparkle", color: "rgba(201,106,128,.22)" },
-  { name: "Chai Warmth", color: "rgba(132,99,33,.22)" },
-  { name: "Dream Home", color: "rgba(247,242,232,.13)" },
-  { name: "Moonlit Date", color: "rgba(131,22,47,.25)" },
-  { name: "Rose Petal", color: "rgba(207,122,141,.28)" },
-  { name: "Cinema Night", color: "rgba(19,15,16,.48)" },
-  { name: "Soft Blush", color: "rgba(224,215,201,.22)" },
-  { name: "Royal Ruby", color: "rgba(115,15,38,.3)" },
-  { name: "Shaadi Glow", color: "rgba(210,177,100,.2)" },
-  { name: "Meme Pop", color: "rgba(51,114,79,.16)" },
+  { name: "Rose Film", color: "rgba(163,185,207,.18)" },
+  { name: "Cool Date", color: "rgba(32,84,136,.18)" },
+  { name: "Velvet Crush", color: "rgba(19,53,87,.32)" },
+  { name: "Bollywood Sparkle", color: "rgba(113,153,194,.22)" },
+  { name: "Chai Warmth", color: "rgba(132,33,53,.22)" },
+  { name: "Dream Home", color: "rgba(238,239,241,.13)" },
+  { name: "Moonlit Date", color: "rgba(28,76,125,.25)" },
+  { name: "Rose Petal", color: "rgba(131,164,198,.28)" },
+  { name: "Cinema Night", color: "rgba(15,17,19,.48)" },
+  { name: "Soft Blush", color: "rgba(209,212,216,.22)" },
+  { name: "Royal Ruby", color: "rgba(24,65,106,.3)" },
+  { name: "Shaadi Glow", color: "rgba(205,105,125,.2)" },
+  { name: "Meme Pop", color: "rgba(51,114,93,.16)" },
   { name: "Funny Face", color: "rgba(255,255,255,.18)" },
-  { name: "Desi Drama", color: "rgba(161,122,40,.20)" },
-  { name: "Puppy Mood", color: "rgba(108,78,26,.18)" },
-  { name: "Cartoon Crush", color: "rgba(138,129,124,.18)" },
-  { name: "Retro VHS", color: "rgba(148,33,60,.16)" },
-  { name: "Neon Club", color: "rgba(148,33,60,.22)" },
-  { name: "Soft Focus", color: "rgba(237,229,216,.18)" },
-  { name: "Laugh Track", color: "rgba(161,122,40,.16)" },
-  { name: "Crown Mode", color: "rgba(170,129,42,.22)" },
+  { name: "Desi Drama", color: "rgba(161,40,64,.20)" },
+  { name: "Puppy Mood", color: "rgba(108,26,42,.18)" },
+  { name: "Cartoon Crush", color: "rgba(125,130,137,.18)" },
+  { name: "Retro VHS", color: "rgba(35,90,146,.16)" },
+  { name: "Neon Club", color: "rgba(35,90,146,.22)" },
+  { name: "Soft Focus", color: "rgba(224,226,229,.18)" },
+  { name: "Laugh Track", color: "rgba(161,40,64,.16)" },
+  { name: "Crown Mode", color: "rgba(170,42,68,.22)" },
 ];
 const faceEmojiOptions = [
   "😂",
@@ -702,83 +702,83 @@ const coupleGames: CoupleGame[] = [
 const coupleThemes = [
   {
     name: "Ruby Velvet",
-    accent: "#8A1B35",
-    soft: "rgba(138,27,53,.12)",
-    panel: "#120E0F",
-    bg: "#100C0D",
-    border: "#660D22",
+    accent: "#1F5286",
+    soft: "rgba(31,82,134,.12)",
+    panel: "#0F1011",
+    bg: "#0D0E0F",
+    border: "#15395E",
   },
   {
     name: "Champagne Night",
-    accent: "#AA812A",
-    soft: "rgba(170,129,42,.13)",
-    panel: "#45320E",
-    bg: "#161113",
-    border: "#684C19",
+    accent: "#AA2A44",
+    soft: "rgba(170,42,68,.13)",
+    panel: "#450E19",
+    bg: "#121315",
+    border: "#681929",
   },
   {
     name: "Royal Plum",
-    accent: "#8C837E",
-    soft: "rgba(140,131,126,.13)",
-    panel: "#130F10",
-    bg: "#100C0D",
-    border: "#720F25",
+    accent: "#7F848B",
+    soft: "rgba(127,132,139,.13)",
+    panel: "#0F1113",
+    bg: "#0D0E0F",
+    border: "#17406A",
   },
   {
     name: "Moonlit Noir",
-    accent: "#E6DED0",
-    soft: "rgba(230,222,208,.12)",
-    panel: "#120E0F",
-    bg: "#110D0E",
-    border: "#5B0B1E",
+    accent: "#D8DBDE",
+    soft: "rgba(216,219,222,.12)",
+    panel: "#0F1011",
+    bg: "#0E0F10",
+    border: "#123354",
   },
   {
     name: "Rose Gold",
-    accent: "#E4B1BD",
-    soft: "rgba(228,177,189,.13)",
-    panel: "#130F10",
-    bg: "#100C0D",
-    border: "#690D23",
+    accent: "#BCCBD9",
+    soft: "rgba(188,203,217,.13)",
+    panel: "#0F1113",
+    bg: "#0D0E0F",
+    border: "#153B61",
   },
   {
     name: "Emerald Promise",
-    accent: "#468B63",
-    soft: "rgba(70,139,99,.12)",
-    panel: "#141011",
-    bg: "#120E0F",
-    border: "#173A29",
+    accent: "#468B74",
+    soft: "rgba(70,139,116,.12)",
+    panel: "#101214",
+    bg: "#0F1011",
+    border: "#173A2E",
   },
   {
     name: "Desert Chai",
-    accent: "#BB8F2F",
-    soft: "rgba(187,143,47,.13)",
-    panel: "#45320F",
-    bg: "#161213",
-    border: "#684C19",
+    accent: "#BB2F4B",
+    soft: "rgba(187,47,75,.13)",
+    panel: "#450F1A",
+    bg: "#121416",
+    border: "#681929",
   },
   {
     name: "Bollywood Glow",
-    accent: "#C0566F",
-    soft: "rgba(192,86,111,.13)",
-    panel: "#120E0F",
-    bg: "#100C0D",
-    border: "#6D0E24",
+    accent: "#578BBF",
+    soft: "rgba(87,139,191,.13)",
+    panel: "#0F1011",
+    bg: "#0D0E0F",
+    border: "#163D65",
   },
   {
     name: "Ocean Drive",
-    accent: "#C25C74",
-    soft: "rgba(194,92,116,.12)",
-    panel: "#120E0F",
-    bg: "#110D0E",
-    border: "#650D21",
+    accent: "#5E8FC0",
+    soft: "rgba(94,143,192,.12)",
+    panel: "#0F1011",
+    bg: "#0E0F10",
+    border: "#14395E",
   },
   {
     name: "Ivory Calm",
-    accent: "#EDE5D8",
-    soft: "rgba(237,229,216,.10)",
-    panel: "#47340F",
-    bg: "#161213",
-    border: "#76571D",
+    accent: "#E0E2E5",
+    soft: "rgba(224,226,229,.10)",
+    panel: "#470F1A",
+    bg: "#121416",
+    border: "#761D2F",
   },
 ];
 
@@ -1774,7 +1774,7 @@ export function ChatScreen({
       }
       const name =
         asset.fileName?.trim() ||
-        `Milaan-media-${Date.now()}.${asset.type === "video" ? "mp4" : "jpg"}`;
+        `Apnajoda-media-${Date.now()}.${asset.type === "video" ? "mp4" : "jpg"}`;
       // Don't upload/send yet -- open the WhatsApp-style preview so the user
       // can add a caption (or just tap send to share it as-is).
       setPendingCaption("");
@@ -1818,7 +1818,7 @@ export function ChatScreen({
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      const name = asset.fileName?.trim() || `Milaan-photo-${Date.now()}.jpg`;
+      const name = asset.fileName?.trim() || `Apnajoda-photo-${Date.now()}.jpg`;
       setPendingCaption("");
       setPendingMediaError("");
       setPendingMedia({
@@ -1886,7 +1886,7 @@ export function ChatScreen({
         // instantly with no way to add text.
         const name =
           asset.name?.trim() ||
-          `Milaan-media-${Date.now()}.${isVideo ? "mp4" : "jpg"}`;
+          `Apnajoda-media-${Date.now()}.${isVideo ? "mp4" : "jpg"}`;
         setPendingCaption("");
         setPendingMediaError("");
         setPendingMedia({
@@ -2023,7 +2023,7 @@ export function ChatScreen({
     }
     if (id === "contact") {
       sendQuickShare(
-        `👤 Trusted contact card\n${match.name} · Milaan verified match`,
+        `👤 Trusted contact card\n${match.name} · Apnajoda verified match`,
       );
       return;
     }
@@ -2312,7 +2312,7 @@ export function ChatScreen({
               paddingVertical: 12,
               backgroundColor: "#FFFFFF",
               borderBottomWidth: 1,
-              borderBottomColor: "#E2D9CB",
+              borderBottomColor: "#D3D6DA",
               gap: 12,
             }}
           >
@@ -2331,7 +2331,7 @@ export function ChatScreen({
                 navigate("home");
               }}
             >
-              <Ionicons name="arrow-back" size={24} color="#1A1416" />
+              <Ionicons name="arrow-back" size={24} color="#151719" />
             </Pressable>
 
             <Pressable
@@ -2350,7 +2350,7 @@ export function ChatScreen({
                     height: 42,
                     borderRadius: 21,
                     borderWidth: 2,
-                    borderColor: "#8A6722",
+                    borderColor: "#8A2237",
                   }}
                 />
               ) : (
@@ -2359,7 +2359,7 @@ export function ChatScreen({
                     width: 42,
                     height: 42,
                     borderRadius: 21,
-                    backgroundColor: "#8A6722",
+                    backgroundColor: "#8A2237",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -2383,7 +2383,7 @@ export function ChatScreen({
             >
               <Text
                 numberOfLines={1}
-                style={{ fontSize: 17, fontWeight: "700", color: "#1A1416" }}
+                style={{ fontSize: 17, fontWeight: "700", color: "#151719" }}
               >
                 {displayName}
               </Text>
@@ -2396,13 +2396,13 @@ export function ChatScreen({
                     height: 6,
                     borderRadius: 3,
                     backgroundColor: partnerTyping
-                      ? "#AA812A"
+                      ? "#AA2A44"
                       : partnerIsOnline
-                        ? "#2E7D32"
-                        : "#A0A0A0",
+                        ? "#1F7A5A"
+                        : "#9AA4AF",
                   }}
                 />
-                <Text numberOfLines={1} style={{ fontSize: 12, color: "#635A5D" }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, color: "#5A5E63" }}>
                   {presenceLabel || "Online"}
                 </Text>
               </View>
@@ -2414,7 +2414,7 @@ export function ChatScreen({
               hitSlop={accessibilityHitSlop}
               onPress={() => void startRealCall("audio")}
             >
-              <Ionicons name="call-outline" size={22} color="#8A1B35" />
+              <Ionicons name="call-outline" size={22} color="#1F5286" />
             </Pressable>
             {chatWidth >= 340 && (
               <Pressable
@@ -2423,7 +2423,7 @@ export function ChatScreen({
                 hitSlop={accessibilityHitSlop}
                 onPress={() => void startRealCall("video")}
               >
-                <Ionicons name="videocam-outline" size={24} color="#8A1B35" />
+                <Ionicons name="videocam-outline" size={24} color="#1F5286" />
               </Pressable>
             )}
             <Pressable
@@ -2432,7 +2432,7 @@ export function ChatScreen({
               hitSlop={accessibilityHitSlop}
               onPress={() => setOptionsOpen(true)}
             >
-              <Ionicons name="ellipsis-vertical" size={22} color="#635A5D" />
+              <Ionicons name="ellipsis-vertical" size={22} color="#5A5E63" />
             </Pressable>
           </View>
           {searchOpen && (
@@ -2444,7 +2444,7 @@ export function ChatScreen({
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search this conversation"
-                placeholderTextColor="#8A1B35"
+                placeholderTextColor="#1F5286"
                 style={chatStyles.searchInput}
               />
               <Text
@@ -2590,7 +2590,7 @@ export function ChatScreen({
                     style={[
                       coachStyles.suggestionChip,
                       {
-                        borderColor: "#E2D9CB",
+                        borderColor: "#D3D6DA",
                         backgroundColor: "rgba(255,255,255,.045)",
                       },
                     ]}
@@ -2632,7 +2632,7 @@ export function ChatScreen({
                   {messageSummary(pinnedMessages[0]!)}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#70521B" />
+              <Ionicons name="chevron-forward" size={16} color="#701B2C" />
             </Pressable>
           )}
           {multiSelectMode && (
@@ -2643,7 +2643,7 @@ export function ChatScreen({
                 onPress={stopMultiSelect}
                 style={chatStyles.multiSelectButton}
               >
-                <Ionicons name="close" size={18} color="#791028" />
+                <Ionicons name="close" size={18} color="#194470" />
               </Pressable>
               <Text
                 accessibilityLiveRegion="polite"
@@ -2669,7 +2669,7 @@ export function ChatScreen({
           )}
           {!!pendingDelete && (
             <View accessibilityRole="alert" style={chatStyles.undoBanner}>
-              <Ionicons name="trash-outline" size={17} color="#6D0E24" />
+              <Ionicons name="trash-outline" size={17} color="#163D65" />
               <Text style={chatStyles.undoText}>Message deleted</Text>
               <Pressable
                 accessibilityRole="button"
@@ -3003,7 +3003,7 @@ export function ChatScreen({
                   paddingVertical: 10,
                   backgroundColor: "#FFFFFF",
                   borderTopWidth: 1,
-                  borderTopColor: "#E2D9CB",
+                  borderTopColor: "#D3D6DA",
                   gap: 10,
                 }}
               >
@@ -3028,7 +3028,7 @@ export function ChatScreen({
                   <Ionicons
                     name={showEmoji ? "keypad-outline" : "happy-outline"}
                     size={24}
-                    color="#8A6722"
+                    color="#8A2237"
                   />
                 </Pressable>
 
@@ -3037,9 +3037,9 @@ export function ChatScreen({
                     flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#F8F3E9",
+                    backgroundColor: "#EFF0F2",
                     borderWidth: 1,
-                    borderColor: "#E2D9CB",
+                    borderColor: "#D3D6DA",
                     borderRadius: 24,
                     paddingHorizontal: 16,
                     paddingVertical: 8,
@@ -3060,14 +3060,14 @@ export function ChatScreen({
                       setAttachmentPage("main");
                     }}
                     placeholder="Message…"
-                    placeholderTextColor="#A0A0A0"
+                    placeholderTextColor="#9AA4AF"
                     multiline
                     maxLength={4000}
                     style={[
                       {
                         flex: 1,
                         fontSize: 15,
-                        color: "#1A1416",
+                        color: "#151719",
                         maxHeight: 110,
                         paddingVertical: 0,
                       },
@@ -3087,7 +3087,7 @@ export function ChatScreen({
                       setShowAttachments((value) => !value);
                     }}
                   >
-                    <Ionicons name="attach" size={22} color="#8A6722" />
+                    <Ionicons name="attach" size={22} color="#8A2237" />
                   </Pressable>
                 </View>
 
@@ -3101,7 +3101,7 @@ export function ChatScreen({
                     width: 44,
                     height: 44,
                     borderRadius: 22,
-                    backgroundColor: "#8A1B35",
+                    backgroundColor: "#1F5286",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -3227,7 +3227,7 @@ export function ChatScreen({
                       }}
                       style={chatStyles.floatReactMoreButton}
                     >
-                      <Ionicons name="add" size={20} color="#6B0E23" />
+                      <Ionicons name="add" size={20} color="#163C63" />
                     </Pressable>
                   </View>
                 </Modal>
@@ -3389,7 +3389,7 @@ function MessageReceipt({ status }: { status: ChatMessage["status"] }) {
       <Ionicons
         name={status === "sent" ? "checkmark" : "checkmark-done"}
         size={14}
-        color={read ? "#978E88" : "rgba(255,255,255,.78)"}
+        color={read ? "#898F96" : "rgba(255,255,255,.78)"}
       />
     </View>
   );
@@ -3512,11 +3512,11 @@ function ChatBubble({
       alignSelf: mine ? ("flex-end" as const) : ("flex-start" as const),
     },
     mine
-      ? { backgroundColor: "#8A1B35", borderBottomRightRadius: 4 }
+      ? { backgroundColor: "#1F5286", borderBottomRightRadius: 4 }
       : {
           backgroundColor: "#FFFFFF",
           borderWidth: 1,
-          borderColor: "#E2D9CB",
+          borderColor: "#D3D6DA",
           borderBottomLeftRadius: 4,
         },
     !!gamePayload && chatStyles.gameMessageBubble,
@@ -3618,7 +3618,7 @@ function ChatBubble({
               <Ionicons
                 name="arrow-redo-outline"
                 size={10}
-                color={mine ? "#ECE4D7" : "#96233E"}
+                color={mine ? "#DFE1E4" : "#245C95"}
               />
               <Text
                 style={[
@@ -3679,7 +3679,7 @@ function ChatBubble({
               <Ionicons
                 name="arrow-up"
                 size={13}
-                color={mine ? "#D5B56D" : "#6B0E23"}
+                color={mine ? "#CE7486" : "#163C63"}
               />
             </Pressable>
           )}
@@ -3947,7 +3947,7 @@ function ChatBubble({
               style={[styles.time, { fontSize: 11 },
                 {
                   color:
-                    mine && !emojiOnly ? "rgba(255,255,255,.78)" : "#8A1B35",
+                    mine && !emojiOnly ? "rgba(255,255,255,.78)" : "#1F5286",
                 },
               ]}
             >
@@ -4010,7 +4010,7 @@ function LinkPreviewCard({
         <Ionicons
           name={risky ? "warning-outline" : "link-outline"}
           size={17}
-          color={risky ? "#710F25" : mine ? "#6B0E23" : "#FFFFFF"}
+          color={risky ? "#174069" : mine ? "#163C63" : "#FFFFFF"}
         />
       </View>
       <View style={{ flex: 1 }}>
@@ -4041,7 +4041,7 @@ function LinkPreviewCard({
       <Ionicons
         name={confirmOpen ? "shield-outline" : "open-outline"}
         size={16}
-        color={risky ? "#710F25" : mine ? "#D6B76F" : "#6B0E23"}
+        color={risky ? "#174069" : mine ? "#CE7788" : "#163C63"}
       />
     </Pressable>
   );
@@ -4050,7 +4050,7 @@ function LinkPreviewCard({
 function IncomingMessageSafety({ scan }: { scan: MessageSafetyScan }) {
   return (
     <View accessibilityRole="alert" style={chatStyles.incomingSafety}>
-      <Ionicons name="shield-outline" size={15} color="#76571D" />
+      <Ionicons name="shield-outline" size={15} color="#761D2F" />
       <View style={{ flex: 1 }}>
         <Text style={chatStyles.incomingSafetyTitle}>{scan.nudgeTitle}</Text>
         <Text style={chatStyles.incomingSafetyBody}>
@@ -4358,7 +4358,7 @@ function CatalogGifMessage({ gif }: { gif: ChatGifCatalogItem }) {
         height: 200,
         borderRadius: 12,
         overflow: "hidden",
-        backgroundColor: "#F6F0E5",
+        backgroundColor: "#ECEDEF",
       }}
     >
       <ExpoImage
@@ -4411,7 +4411,7 @@ function GameChatCard({
           <Ionicons
             name="game-controller"
             size={16}
-            color={mine ? "#FFFFFF" : "#690D23"}
+            color={mine ? "#FFFFFF" : "#153B61"}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -4460,7 +4460,7 @@ function GameChatCard({
               <Ionicons
                 name={replyMine ? "person" : "heart"}
                 size={11}
-                color={replyMine ? "#650D21" : "#76571D"}
+                color={replyMine ? "#14395E" : "#761D2F"}
               />
               <Text style={chatStyles.gameNestedName}>
                 {replyMine ? "You" : "Your match"} answered
@@ -4490,7 +4490,7 @@ function GameChatCard({
             onSubmitEditing={send}
             returnKeyType="send"
             placeholder="Type your answer inside this round…"
-            placeholderTextColor={mine ? "rgba(255,255,255,.65)" : "#9B2843"}
+            placeholderTextColor={mine ? "rgba(255,255,255,.65)" : "#28619B"}
             style={[
               chatStyles.gameReplyInput,
               !mine && chatStyles.gameReplyInputTheirs,
@@ -4522,7 +4522,7 @@ function GameChatCard({
           <Ionicons
             name="chatbubble-ellipses-outline"
             size={12}
-            color={mine ? "#D6B76F" : "#690D23"}
+            color={mine ? "#CE7788" : "#153B61"}
           />
           <Text
             style={[
@@ -4630,7 +4630,7 @@ function MediaCaptionPreview({
                   numberOfLines={1}
                   style={[
                     chatStyles.documentFine,
-                    { color: "#191315", marginTop: 8 },
+                    { color: "#141618", marginTop: 8 },
                   ]}
                 >
                   {fallbackName}
@@ -4730,7 +4730,7 @@ function DocumentChatCard({
           <Ionicons
             name={document.kind === "video" ? "play" : "document-text"}
             size={22}
-            color={mine ? "#FFFFFF" : "#710F25"}
+            color={mine ? "#FFFFFF" : "#174069"}
           />
           <Text
             style={[
@@ -4780,7 +4780,7 @@ function DocumentChatCard({
             <Ionicons
               name="shield-checkmark"
               size={11}
-              color={mine ? "#D6B76F" : "#75561D"}
+              color={mine ? "#CE7788" : "#751D2F"}
             />
             <Text
               style={[
@@ -4798,7 +4798,7 @@ function DocumentChatCard({
           <Ionicons
             name={document.kind === "video" ? "play" : "open-outline"}
             size={17}
-            color={mine ? "#FFFFFF" : "#6D0E24"}
+            color={mine ? "#FFFFFF" : "#163D65"}
           />
         </View>
       </View>
@@ -4902,7 +4902,7 @@ function VoiceNote({
           <Ionicons
             name={status.playing ? "pause" : "play"}
             size={17}
-            color={mine ? "#680D22" : "#FFFFFF"}
+            color={mine ? "#153A60" : "#FFFFFF"}
           />
         </Pressable>
         <View style={chatStyles.voiceTrack}>
@@ -4972,7 +4972,7 @@ function VoiceNote({
               <Ionicons
                 name="text-outline"
                 size={11}
-                color={mine ? "#D6B76F" : "#710F25"}
+                color={mine ? "#CE7788" : "#174069"}
               />
             </Pressable>
           </View>
@@ -5060,7 +5060,7 @@ function VoiceRecordingComposer({
         onPress={onCancel}
         style={chatStyles.recordingCancel}
       >
-        <Ionicons name="trash-outline" size={18} color="#6B0E23" />
+        <Ionicons name="trash-outline" size={18} color="#163C63" />
       </Pressable>
       <View style={chatStyles.recordingMain}>
         <View style={chatStyles.recordingTop}>
@@ -5126,7 +5126,7 @@ function LiveLocationCard({
     <View style={{ gap: 8 }}>
       <Pressable onPress={openMap} style={chatStyles.locationCard}>
         <LinearGradient
-          colors={["rgba(170,129,42,.24)", "rgba(105,13,35,.52)"]}
+          colors={["rgba(170,42,68,.24)", "rgba(21,59,97,.52)"]}
           style={chatStyles.locationMap}
         >
           <View style={chatStyles.locationGrid} />
@@ -5214,7 +5214,7 @@ function Attachment({
   onPress: () => void;
 }) {
   const tone: PremiumIconTone =
-    color === "#AA812A" ||
+    color === "#AA2A44" ||
     ["Spark", "Location", "Date Market", "Poll"].includes(label)
       ? "gold"
       : ["Games", "More", "Back", "Document"].includes(label)
@@ -5371,7 +5371,7 @@ export function RoseComposer({
           onClose={onClose}
         />
         <LinearGradient
-          colors={["#4F3911", "#110D0E"]}
+          colors={["#4F111D", "#0E0F10"]}
           style={aiStyles.roseComposerHero}
         >
           <PremiumIcon name="sparkles" tone="gold" size={76} iconSize={35} />
@@ -5391,7 +5391,7 @@ export function RoseComposer({
           multiline
           maxLength={120}
           placeholder="Write a short note…"
-          placeholderTextColor="#982540"
+          placeholderTextColor="#265E97"
           style={aiStyles.roseNote}
         />
         <Button
@@ -5453,7 +5453,7 @@ export function RoseReceivedPopup({
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={rosePopupStyles.backdrop}>
         <LinearGradient
-          colors={["#171213", "#F4EEE2"]}
+          colors={["#131416", "#E9EBED"]}
           style={rosePopupStyles.card}
         >
           <Pressable onPress={onClose} style={rosePopupStyles.close}>
@@ -5637,7 +5637,7 @@ function GifResultTile({
       )}
       {!failed && (
         <LinearGradient
-          colors={["transparent", "rgba(17,13,14,.88)"]}
+          colors={["transparent", "rgba(14,15,16,.88)"]}
           style={StyleSheet.absoluteFill}
         />
       )}{" "}
@@ -5656,7 +5656,7 @@ function GifResultTile({
           <Ionicons
             name={favourite ? "star" : "star-outline"}
             size={14}
-            color={favourite ? "#D6B76F" : "#FFFFFF"}
+            color={favourite ? "#CE7788" : "#FFFFFF"}
           />
         </Pressable>
       )}
@@ -5721,11 +5721,11 @@ function CatalogGifArtwork({
   const tone = catalogGifTone(gif);
   const palette: Record<CustomChatSticker["tone"], readonly [string, string]> =
     {
-      ruby: ["#5F0C1F", "#BD516A"],
-      rose: ["#E8E0D2", "#FCF9F2"],
-      gold: ["#7A5A1E", "#D5B66D"],
-      plum: ["#590B1D", "#AF3A56"],
-      cocoa: ["#660D22", "#C4993B"],
+      ruby: ["#133558", "#5187BD"],
+      rose: ["#DADDE0", "#F6F7F8"],
+      gold: ["#7A1E30", "#CE7486"],
+      plum: ["#123252", "#3A74AF"],
+      cocoa: ["#15395E", "#C43B56"],
     };
   const scale = motion.interpolate({
     inputRange: [0, 1],
@@ -5839,7 +5839,7 @@ function CatalogGifTile({
     >
       <CatalogGifArtwork gif={gif} compact={compact} />
       <LinearGradient
-        colors={["transparent", "rgba(17,13,14,.82)"]}
+        colors={["transparent", "rgba(14,15,16,.82)"]}
         style={StyleSheet.absoluteFill}
       />
       {!!onToggleFavourite && (
@@ -5857,7 +5857,7 @@ function CatalogGifTile({
           <Ionicons
             name={favourite ? "star" : "star-outline"}
             size={14}
-            color={favourite ? "#D6B76F" : "#FFFFFF"}
+            color={favourite ? "#CE7788" : "#FFFFFF"}
           />
         </Pressable>
       )}
@@ -5906,7 +5906,7 @@ function CatalogGifPager({
           offset === 0 && chatStyles.catalogGifPageButtonDisabled,
         ]}
       >
-        <Ionicons name="chevron-back" size={15} color="#6B0E23" />
+        <Ionicons name="chevron-back" size={15} color="#163C63" />
       </Pressable>
       <Text style={chatStyles.catalogGifPageText}>
         {offset + 1}–{end} of {total.toLocaleString()}
@@ -5921,7 +5921,7 @@ function CatalogGifPager({
           end >= total && chatStyles.catalogGifPageButtonDisabled,
         ]}
       >
-        <Ionicons name="chevron-forward" size={15} color="#6B0E23" />
+        <Ionicons name="chevron-forward" size={15} color="#163C63" />
       </Pressable>
     </View>
   );
@@ -5941,7 +5941,7 @@ function GifProviderLine({ live, error }: { live: boolean; error?: string }) {
           error ? "cloud-offline-outline" : live ? "flash" : "sparkles-outline"
         }
         size={13}
-        color={error ? "#710F25" : live ? "#6F511B" : "#6B0E23"}
+        color={error ? "#174069" : live ? "#6F1B2C" : "#163C63"}
       />
       <Text
         style={[
@@ -6105,7 +6105,7 @@ function GifPicker({
               <Ionicons
                 name={item.icon}
                 size={14}
-                color={libraryMode === item.id ? "#FFFFFF" : "#81142D"}
+                color={libraryMode === item.id ? "#FFFFFF" : "#1C4A79"}
               />
               <Text
                 style={[
@@ -6121,14 +6121,14 @@ function GifPicker({
         {libraryMode === "all" && (
           <>
             <View style={chatStyles.gifSearchWrap}>
-              <Ionicons name="search-outline" size={17} color="#8A1B35" />
+              <Ionicons name="search-outline" size={17} color="#1F5286" />
               <TextInput
                 accessibilityLabel="Search GIF catalog"
                 autoFocus
                 value={query}
                 onChangeText={setQuery}
                 placeholder="Try good morning, hug, kiss, love…"
-                placeholderTextColor="#61585B"
+                placeholderTextColor="#585C61"
                 style={chatStyles.gifSearchInput}
               />
               {!!query && (
@@ -6137,7 +6137,7 @@ function GifPicker({
                   accessibilityLabel="Clear GIF search"
                   onPress={() => setQuery("")}
                 >
-                  <Ionicons name="close-circle" size={18} color="#B13C58" />
+                  <Ionicons name="close-circle" size={18} color="#3C76B1" />
                 </Pressable>
               )}
             </View>
@@ -6218,7 +6218,7 @@ function GifPicker({
               onPress={() => void provider.loadMore()}
               style={chatStyles.gifLoadMore}
             >
-              <Ionicons name="add-circle-outline" size={17} color="#710F25" />
+              <Ionicons name="add-circle-outline" size={17} color="#174069" />
               <Text style={chatStyles.gifLoadMoreText}>
                 {provider.loadingMore ? "Loading…" : "Load 36 more"}
               </Text>
@@ -6349,21 +6349,21 @@ function EmojiMediaPanel({
         {
           height: panelHeight,
           borderTopWidth: 1,
-          borderTopColor: "#E9E1D3",
-          backgroundColor: "#FEFDFC",
+          borderTopColor: "#DBDEE1",
+          backgroundColor: "#FDFDFD",
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
         },
       ]}
     >
       <View style={chatStyles.emojiSearchWrap}>
-        <Ionicons name="search-outline" size={17} color="#8A1B35" />
+        <Ionicons name="search-outline" size={17} color="#1F5286" />
         <TextInput
           accessibilityLabel={modeLabel}
           value={query}
           onChangeText={setQuery}
           placeholder={modeLabel}
-          placeholderTextColor="#61585B"
+          placeholderTextColor="#585C61"
           style={chatStyles.emojiSearchInput}
         />
         {!!query && (
@@ -6373,7 +6373,7 @@ function EmojiMediaPanel({
             hitSlop={accessibilityHitSlop}
             onPress={() => setQuery("")}
           >
-            <Ionicons name="close-circle" size={18} color="#B13C58" />
+            <Ionicons name="close-circle" size={18} color="#3C76B1" />
           </Pressable>
         )}
       </View>
@@ -6402,7 +6402,7 @@ function EmojiMediaPanel({
               <Ionicons
                 name={item.icon as keyof typeof Ionicons.glyphMap}
                 size={17}
-                color={category === item.id ? "#710F25" : "#82152E"}
+                color={category === item.id ? "#174069" : "#1C4B7B"}
               />
             </Pressable>
           ))}
@@ -6564,12 +6564,12 @@ function EmojiMediaPanel({
                 <LinearGradient
                   colors={
                     sticker.tone === "gold"
-                      ? ["#F7F2E8", "#E4CD98"]
+                      ? ["#EEEFF1", "#D7A5AF"]
                       : sticker.tone === "plum"
-                        ? ["#FBF7EF", "#ECE4D7"]
+                        ? ["#F4F5F6", "#DFE1E4"]
                         : sticker.tone === "cocoa"
-                          ? ["#F7F2E8", "#E4CE99"]
-                          : ["#FDFBF6", "#EFE8DB"]
+                          ? ["#EEEFF1", "#D7A6B0"]
+                          : ["#F9F9FA", "#E3E5E7"]
                   }
                   style={chatStyles.customStickerInner}
                 >
@@ -6624,7 +6624,7 @@ function EmojiMediaPanel({
             <Ionicons
               name={item.icon}
               size={16}
-              color={mode === item.id ? "#FFFFFF" : "#7F132C"}
+              color={mode === item.id ? "#FFFFFF" : "#1B4977"}
             />
             <Text
               style={[
@@ -6783,7 +6783,7 @@ function MessageActionSheet({
             hitSlop={accessibilityHitSlop}
             onPress={onClose}
           >
-            <Ionicons name="close" size={20} color="#81152D" />
+            <Ionicons name="close" size={20} color="#1C4B7A" />
           </Pressable>
         </View>
         <View style={chatStyles.quickReactionRow}>
@@ -6811,7 +6811,7 @@ function MessageActionSheet({
             <Ionicons
               name="information-circle-outline"
               size={15}
-              color="#76571D"
+              color="#761D2F"
             />
             <Text style={chatStyles.actionNoticeText}>
               {notice ||
@@ -6832,13 +6832,13 @@ function MessageActionSheet({
               style={chatStyles.actionRow}
             >
               <View style={chatStyles.actionIcon}>
-                <Ionicons name={action.icon} size={18} color="#6B0E23" />
+                <Ionicons name={action.icon} size={18} color="#163C63" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={chatStyles.actionTitle}>{action.label}</Text>
                 <Text style={chatStyles.actionBody}>{action.body}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={15} color="#8A817D" />
+              <Ionicons name="chevron-forward" size={15} color="#7E8389" />
             </Pressable>
           ))}
           {message?.mine !== false &&
@@ -6878,7 +6878,7 @@ function MessageActionSheet({
                 style={[chatStyles.actionRow, chatStyles.deleteAction]}
               >
                 <View style={[chatStyles.actionIcon, chatStyles.deleteIcon]}>
-                  <Ionicons name="trash-outline" size={18} color="#781027" />
+                  <Ionicons name="trash-outline" size={18} color="#19446F" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={chatStyles.deleteTitle}>
@@ -6897,7 +6897,7 @@ function MessageActionSheet({
             style={[chatStyles.actionRow, chatStyles.deleteAction]}
           >
             <View style={[chatStyles.actionIcon, chatStyles.deleteIcon]}>
-              <Ionicons name="trash-outline" size={18} color="#781027" />
+              <Ionicons name="trash-outline" size={18} color="#19446F" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={chatStyles.deleteTitle}>Delete for me</Text>
@@ -6967,7 +6967,7 @@ function EditMessageSheet({
             onChangeText={setValue}
             maxLength={2000}
             placeholder="Update your message"
-            placeholderTextColor="#94213C"
+            placeholderTextColor="#235A92"
             style={chatStyles.editMessageInput}
           />
           <Text style={chatStyles.editMessageCount}>{value.length}/2,000</Text>
@@ -7050,13 +7050,13 @@ function ForwardSelectorSheet({
           onClose={onClose}
         />
         <View style={chatStyles.gifSearchWrap}>
-          <Ionicons name="search-outline" size={17} color="#8A1B35" />
+          <Ionicons name="search-outline" size={17} color="#1F5286" />
           <TextInput
             accessibilityLabel="Search forwarding recipients"
             value={query}
             onChangeText={setQuery}
             placeholder="Search conversations"
-            placeholderTextColor="#61585B"
+            placeholderTextColor="#585C61"
             style={chatStyles.gifSearchInput}
           />
         </View>
@@ -7166,7 +7166,7 @@ function PinnedMessagesSheet({
                 onPress={() => onUnpin(message.id)}
                 style={chatStyles.unpinButton}
               >
-                <Ionicons name="pin-outline" size={16} color="#6B0E23" />
+                <Ionicons name="pin-outline" size={16} color="#163C63" />
               </Pressable>
             </View>
           ))}
@@ -7277,13 +7277,13 @@ function ConversationInboxSheet({
           ))}
         </View>
         <View style={chatStyles.gifSearchWrap}>
-          <Ionicons name="search-outline" size={17} color="#8A1B35" />
+          <Ionicons name="search-outline" size={17} color="#1F5286" />
           <TextInput
             accessibilityLabel={`Search ${tab} conversations`}
             value={query}
             onChangeText={setQuery}
             placeholder={`Search ${tab}`}
-            placeholderTextColor="#61585B"
+            placeholderTextColor="#585C61"
             style={chatStyles.gifSearchInput}
           />
         </View>
@@ -7327,13 +7327,13 @@ function ConversationInboxSheet({
                       {preference.nickname || person.name}
                     </Text>
                     {preference.conversationPinned && (
-                      <Ionicons name="pin" size={12} color="#79591E" />
+                      <Ionicons name="pin" size={12} color="#791E30" />
                     )}
                     {preference.notificationMode === "muted" && (
                       <Ionicons
                         name="notifications-off"
                         size={12}
-                        color="#93203B"
+                        color="#225991"
                       />
                     )}
                   </View>
@@ -7344,7 +7344,7 @@ function ConversationInboxSheet({
                       : "Verified conversation"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#BA4A65" />
+                <Ionicons name="chevron-forward" size={17} color="#4A82BA" />
               </Pressable>
             );
           })}
@@ -7444,11 +7444,11 @@ function GameSheet({
               onPress={() => setSelectedId(null)}
               style={gameStyles.backButton}
             >
-              <Ionicons name="arrow-back" size={16} color="#690D23" />
+              <Ionicons name="arrow-back" size={16} color="#153B61" />
               <Text style={gameStyles.backText}>All games</Text>
             </Pressable>
             <LinearGradient
-              colors={["#FAF6EE", "#EEDFBA"]}
+              colors={["#F3F4F5", "#E1C7CC"]}
               style={gameStyles.detailHero}
             >
               <PremiumIcon
@@ -7483,7 +7483,7 @@ function GameSheet({
                   ROUND {promptIndex + 1} OF {selected.prompts.length}
                 </Text>
                 <View style={gameStyles.privatePill}>
-                  <Ionicons name="lock-closed" size={10} color="#75561D" />
+                  <Ionicons name="lock-closed" size={10} color="#751D2F" />
                   <Text style={gameStyles.privateText}>MUTUAL CHAT</Text>
                 </View>
               </View>
@@ -7498,7 +7498,7 @@ function GameSheet({
                 onPress={nextPrompt}
                 style={gameStyles.secondaryButton}
               >
-                <Ionicons name="refresh" size={17} color="#690D23" />
+                <Ionicons name="refresh" size={17} color="#153B61" />
                 <Text style={gameStyles.secondaryText}>New prompt</Text>
               </Pressable>
               <Pressable
@@ -7538,7 +7538,7 @@ function GameSheet({
               <Ionicons
                 name={customOpen ? "chevron-up" : "chevron-down"}
                 size={17}
-                color="#700E25"
+                color="#173F67"
               />
             </Pressable>
             {customOpen && (
@@ -7561,7 +7561,7 @@ function GameSheet({
                   multiline
                   maxLength={220}
                   placeholder="Example: What tiny tradition would you love us to create together?"
-                  placeholderTextColor="#A12D49"
+                  placeholderTextColor="#2D67A1"
                   style={gameStyles.customInput}
                 />
                 <Pressable
@@ -7844,7 +7844,7 @@ function CoupleSettingsSheet({
                 value={nickname}
                 onChangeText={setNickname}
                 placeholder={`Nickname for ${match.name}`}
-                placeholderTextColor="#8A1B35"
+                placeholderTextColor="#1F5286"
                 style={coupleStyles.nicknameInput}
               />
               <Pressable onPress={saveNickname} style={coupleStyles.saveButton}>
@@ -7943,7 +7943,7 @@ function CoupleSettingsSheet({
                     color={
                       settings.notificationMode === item.id
                         ? "#FFFFFF"
-                        : "#80142C"
+                        : "#1B4A79"
                     }
                   />
                   <Text
@@ -7988,7 +7988,7 @@ function CoupleSettingsSheet({
               contentContainerStyle={{ gap: 7 }}
             >
               {(
-                ["Milaan Chime", "Soft Rose", "Classic", "Silent"] as const
+                ["Apnajoda Chime", "Soft Rose", "Classic", "Silent"] as const
               ).map((sound) => (
                 <Pressable
                   accessibilityRole="radio"
@@ -8016,7 +8016,7 @@ function CoupleSettingsSheet({
                     color={
                       settings.notificationSound === sound
                         ? "#FFFFFF"
-                        : "#80142C"
+                        : "#1B4A79"
                     }
                   />
                   <Text
@@ -8125,7 +8125,7 @@ function CoupleSettingsSheet({
                   Notify both people
                 </Text>
                 <Text style={coupleStyles.privacyBody}>
-                  When a supported native device reports a capture, Milaan
+                  When a supported native device reports a capture, Apnajoda
                   records the event and alerts the other person.
                 </Text>
               </View>
@@ -8152,7 +8152,7 @@ function CoupleSettingsSheet({
               />
               <Text style={coupleStyles.limitText}>
                 Web browsers and some operating-system capture methods cannot be
-                detected reliably. Milaan will never show a false “screenshot
+                detected reliably. Apnajoda will never show a false “screenshot
                 taken” alert.
               </Text>
             </View>
@@ -8295,7 +8295,7 @@ function SnapStudio({
           <Pressable onPress={onClose} style={chatStyles.sheetClose}>
             <PremiumIcon name="close" tone="dark" size={38} iconSize={18} />
           </Pressable>
-          <Text style={snapStyles.headerTitle}>Milaan Snap</Text>
+          <Text style={snapStyles.headerTitle}>Apnajoda Snap</Text>
           <Pressable
             disabled={!uri}
             onPress={() => onSend(uri, filter, sticker, viewOnce)}
@@ -8334,7 +8334,7 @@ function SnapStudio({
           </View>
         ) : (
           <LinearGradient
-            colors={["#130F10", "#100C0D"]}
+            colors={["#0F1113", "#0D0E0F"]}
             style={snapStyles.empty}
           >
             <PremiumIcon name="camera" tone="ruby" size={74} iconSize={34} />
@@ -8557,7 +8557,7 @@ function FaceEmojiStudio({
           </View>
         ) : (
           <LinearGradient
-            colors={["#141011", "#100C0D"]}
+            colors={["#101214", "#0D0E0F"]}
             style={snapStyles.empty}
           >
             <PremiumIcon name="camera" tone="ruby" size={76} iconSize={35} />

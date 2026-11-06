@@ -1,34 +1,34 @@
 {
   "expo": {
-    "name": "Milaan",
-    "slug": "milaan",
+    "name": "Apnajoda",
+    "slug": "apnajoda",
     "version": "1.0.0",
     "description": "Serious, verified dating for India. Built for people looking for a real relationship, not casual swiping.",
     "icon": "./assets/icon.png",
-    "scheme": "milaan",
+    "scheme": "apnajoda",
     "orientation": "default",
     "userInterfaceStyle": "light",
-    "primaryColor": "#1A1416",
+    "primaryColor": "#1F4D7A",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#F8F3E9"
+      "backgroundColor": "#F5F6F8"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.milaan.app",
+      "bundleIdentifier": "com.apnajoda.app",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.milaan.app",
+      "package": "com.apnajoda.app",
       "versionCode": 1,
       "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1A1416"
+        "backgroundColor": "#F5F6F8"
       },
       "blockedPermissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -38,24 +38,24 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png",
-      "name": "Milaan",
-      "shortName": "Milaan",
-      "themeColor": "#1A1416",
-      "backgroundColor": "#F8F3E9"
+      "name": "Apnajoda",
+      "shortName": "Apnajoda",
+      "themeColor": "#1F4D7A",
+      "backgroundColor": "#F5F6F8"
     },
     "plugins": [
       [
         "expo-image-picker",
         {
-          "photosPermission": "Milaan needs photo access so you can build your relationship profile.",
-          "cameraPermission": "Milaan uses the camera for profile photos and selfie verification."
+          "photosPermission": "Apnajoda needs photo access so you can build your relationship profile.",
+          "cameraPermission": "Apnajoda uses the camera for profile photos and selfie verification."
         }
       ],
       "expo-document-picker",
       [
         "expo-audio",
         {
-          "microphonePermission": "Milaan uses the microphone to record your optional voice introduction.",
+          "microphonePermission": "Apnajoda uses the microphone to record your optional voice introduction.",
           "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false
         }
@@ -63,7 +63,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Milaan uses approximate location only when you enable Crossed Paths. Your exact location is never shown to other members.",
+          "locationWhenInUsePermission": "Apnajoda uses approximate location only when you enable Crossed Paths. Your exact location is never shown to other members.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
           "isIosBackgroundLocationEnabled": false,

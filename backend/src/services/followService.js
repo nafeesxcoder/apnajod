@@ -1,7 +1,7 @@
 /**
  * Follows and account privacy.
  *
- * Messaging is NOT decided here by follow state. Milaan is a dating app: the
+ * Messaging is NOT decided here by follow state. Apnajoda is a dating app: the
  * only thing that unlocks a conversation is a mutual match (see
  * canMessage() below, which checks the mutual_matches table). Follows still
  * power requests, followers/following lists, and the "follow" affordance on

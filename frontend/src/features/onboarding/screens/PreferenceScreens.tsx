@@ -26,7 +26,7 @@ function GlowIcon({
   icon,
   size = 36,
   color = "#FFFFFF",
-  glowColor = "#8A1B35",
+  glowColor = "#1F5286",
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   size?: number;
@@ -41,9 +41,9 @@ function GlowIcon({
         borderRadius: size / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "rgba(19,15,16,.90)",
+        backgroundColor: "rgba(15,17,19,.90)",
         borderWidth: 1.5,
-        borderColor: "rgba(218,152,167,.72)",
+        borderColor: "rgba(163,185,207,.72)",
         shadowColor: glowColor,
         shadowOpacity: 0.72,
         shadowRadius: 13,
@@ -54,8 +54,8 @@ function GlowIcon({
       <LinearGradient
         colors={[
           "rgba(255,255,255,.22)",
-          "rgba(138,27,53,.30)",
-          "rgba(23,18,19,.30)",
+          "rgba(31,82,134,.30)",
+          "rgba(19,20,22,.30)",
         ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -170,7 +170,7 @@ export function VibesScreen({
                 icon={vibeIcons[index] ?? "heart"}
                 size={32}
                 color="#FFFFFF"
-                glowColor="#8A1B35"
+                glowColor="#1F5286"
               />
               <View style={vibeStyles.copy}>
                 <Text
@@ -210,7 +210,7 @@ export function VibesScreen({
             icon="sparkles"
             size={30}
             color="#FFFFFF"
-            glowColor="#8A1B35"
+            glowColor="#1F5286"
           />
           <Text
             style={[
@@ -235,7 +235,7 @@ export function VibesScreen({
           }}
         >
           <LinearGradient
-            colors={["#151112", "#5C0C1E", "#161113", "#130F10"]}
+            colors={["#111315", "#123456", "#121315", "#0F1113"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -246,8 +246,8 @@ export function VibesScreen({
               flexDirection: "row",
               gap: 12,
               borderWidth: 1.5,
-              borderColor: "rgba(200,103,125,.62)",
-              shadowColor: "#8A1B35",
+              borderColor: "rgba(110,151,193,.62)",
+              shadowColor: "#1F5286",
               shadowOpacity: 0.58,
               shadowRadius: 24,
               shadowOffset: { width: 0, height: 9 },
@@ -255,7 +255,7 @@ export function VibesScreen({
           >
             <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             <Text
-              style={{ color: "#191315", fontWeight: "bold", fontSize: 16 }}
+              style={{ color: "#141618", fontWeight: "bold", fontSize: 16 }}
             >
               {value.length === 5 ? "Lock in my five" : "Choose 5 to continue"}
             </Text>
@@ -309,10 +309,10 @@ export function IntentScreen({
             icon="shield-checkmark"
             size={33}
             color="#FFFFFF"
-            glowColor="#8A1B35"
+            glowColor="#1F5286"
           />
           <Text style={styles.seriousPromiseText}>
-            Milaan is for commitment, not casual dating.
+            Apnajoda is for commitment, not casual dating.
           </Text>
         </View>
         <View style={{ gap: 12 }}>
@@ -328,7 +328,7 @@ export function IntentScreen({
                   icon={option.icon}
                   size={38}
                   color="#FFFFFF"
-                  glowColor="#8A1B35"
+                  glowColor="#1F5286"
                 />
                 <View style={{ flex: 1 }}>
                   <Text
@@ -369,7 +369,7 @@ export function IntentScreen({
           }}
         >
           <LinearGradient
-            colors={["#151112", "#5C0C1E", "#161113", "#130F10"]}
+            colors={["#111315", "#123456", "#121315", "#0F1113"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -380,8 +380,8 @@ export function IntentScreen({
               flexDirection: "row",
               gap: 12,
               borderWidth: 1.5,
-              borderColor: "rgba(200,103,125,.62)",
-              shadowColor: "#8A1B35",
+              borderColor: "rgba(110,151,193,.62)",
+              shadowColor: "#1F5286",
               shadowOpacity: 0.58,
               shadowRadius: 24,
               shadowOffset: { width: 0, height: 9 },
@@ -389,7 +389,7 @@ export function IntentScreen({
           >
             <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             <Text
-              style={{ color: "#191315", fontWeight: "bold", fontSize: 16 }}
+              style={{ color: "#141618", fontWeight: "bold", fontSize: 16 }}
             >
               Next
             </Text>
@@ -475,7 +475,7 @@ export function AlignmentScreen({
             }
             size={44}
             color="#FFFFFF"
-            glowColor="#8A1B35"
+            glowColor="#1F5286"
           />
           <Text style={styles.kicker}>{current.eyebrow}</Text>
           <Text style={[shared.h1, { textAlign: "center" }]}>
@@ -529,7 +529,7 @@ export function AlignmentScreen({
                   }
                   size={31}
                   color="#FFFFFF"
-                  glowColor="#8A1B35"
+                  glowColor="#1F5286"
                 />
                 <Text
                   style={[
@@ -574,7 +574,7 @@ export function AlignmentScreen({
           }}
         >
           <LinearGradient
-            colors={["#151112", "#5C0C1E", "#161113", "#130F10"]}
+            colors={["#111315", "#123456", "#121315", "#0F1113"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -585,8 +585,8 @@ export function AlignmentScreen({
               flexDirection: "row",
               gap: 12,
               borderWidth: 1.5,
-              borderColor: "rgba(200,103,125,.62)",
-              shadowColor: "#8A1B35",
+              borderColor: "rgba(110,151,193,.62)",
+              shadowColor: "#1F5286",
               shadowOpacity: 0.58,
               shadowRadius: 24,
               shadowOffset: { width: 0, height: 9 },
@@ -594,7 +594,7 @@ export function AlignmentScreen({
           >
             <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             <Text
-              style={{ color: "#191315", fontWeight: "bold", fontSize: 16 }}
+              style={{ color: "#141618", fontWeight: "bold", fontSize: 16 }}
             >
               {question === alignmentQuestions.length - 1
                 ? "See my introductions"

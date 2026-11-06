@@ -1,9 +1,9 @@
 import { Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-const PINK = "#E6286F";
-const DARK = "#1A1416";
-const MUTED = "#635A5D";
-const LINE = "#E2D9CB";
+const PINK = "#5087BE";
+const DARK = "#151719";
+const MUTED = "#5A5E63";
+const LINE = "#D3D6DA";
 
 export const MAX_CAPTION = 300;
 
@@ -49,7 +49,7 @@ export function CaptionEditor({
             value={value}
             onChangeText={onChange}
             placeholder="Say something about this photo"
-            placeholderTextColor="#A0A0A0"
+            placeholderTextColor="#9AA4AF"
             multiline
             maxLength={MAX_CAPTION}
             style={{

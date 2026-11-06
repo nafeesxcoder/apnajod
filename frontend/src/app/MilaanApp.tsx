@@ -198,7 +198,7 @@ function AppCanvas({ children }: { children: ReactNode }) {
     <View
       style={{
         flex: 1,
-        backgroundColor: Platform.OS === "web" ? "#E9E2D3" : colors.canvas,
+        backgroundColor: Platform.OS === "web" ? "#DBDEE1" : colors.canvas,
         alignItems: "center",
       }}
     >
@@ -212,7 +212,7 @@ function AppCanvas({ children }: { children: ReactNode }) {
           },
           // On a desktop browser, keep the app phone-sized and centred.
           Platform.OS === "web"
-            ? { maxWidth: 430, boxShadow: "0 0 40px rgba(26,20,22,0.14)" }
+            ? { maxWidth: 430, boxShadow: "0 0 40px rgba(21,23,25,0.14)" }
             : null,
         ]}
       >
@@ -996,7 +996,7 @@ function MilaanApp() {
             body:
               error instanceof Error
                 ? error.message
-                : "Could not reach the Milaan server.",
+                : "Could not reach the Apnajoda server.",
             icon: "cloud-offline-outline",
             tone: "ruby",
           });
@@ -1906,7 +1906,7 @@ function MilaanApp() {
         }
         setAppNotice({
           title: "Interest sent privately",
-          body: `If ${match.name} chooses you too, Milaan will open a mutual match and icebreaker.`,
+          body: `If ${match.name} chooses you too, Apnajoda will open a mutual match and icebreaker.`,
           icon: "heart-outline",
           tone: "gold",
         });
@@ -1947,7 +1947,7 @@ function MilaanApp() {
     setDismissedIds((current) => [...new Set([...current, match.id])]);
     setAppNotice({
       title: "Interest sent privately",
-      body: `If ${match.name} chooses you too, Milaan will open a mutual match and icebreaker.`,
+      body: `If ${match.name} chooses you too, Apnajoda will open a mutual match and icebreaker.`,
       icon: "heart-outline",
       tone: "gold",
     });

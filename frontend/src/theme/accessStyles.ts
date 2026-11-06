@@ -46,12 +46,9 @@ export const access = StyleSheet.create({
   },
   backSpacer: { height: 14 },
 
-  wordmark: {
-    fontFamily: font.semibold,
-    fontSize: 15,
-    letterSpacing: 2.4,
-    color: colors.accent,
-  },
+  // The wordmark is artwork now, so these are box sizes, not type sizes.
+  // 1200x293 is the asset's ratio; keep the pairs in step with it.
+  wordmark: { width: 139, height: 34 },
 
   // ---- Headings: the scale jump is the personality ----
   heading: { gap: 8 },
@@ -111,7 +108,7 @@ export const access = StyleSheet.create({
     gap: 10,
   },
   inputNarrow: { width: 104 },
-  inputBad: { borderColor: colors.danger, backgroundColor: '#FDFBF6' },
+  inputBad: { borderColor: colors.danger, backgroundColor: '#F9F9FA' },
   input: {
     flex: 1,
     minWidth: 0,
@@ -190,7 +187,7 @@ export const access = StyleSheet.create({
     paddingHorizontal: 24,
   },
   actionPressed: { backgroundColor: colors.wineDeep },
-  actionOff: { backgroundColor: '#635A5D' },
+  actionOff: { backgroundColor: '#5A5E63' },
   actionText: {
     fontFamily: font.semibold,
     fontSize: 16,
@@ -247,13 +244,7 @@ export const access = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  welcomeArtMark: {
-    fontFamily: font.bold,
-    fontSize: 64,
-    lineHeight: 86,
-    // The tint was too pale to read against the card it sits on.
-    color: colors.accent,
-  },
+  welcomeArtMark: { width: 286, height: 70 },
 
   // ---- Quick profile ----
   photoRow: {

@@ -7,7 +7,7 @@ import { postApi } from "../../../api/postApi";
 import { uploadPhoto } from "../../../api/uploadPhoto";
 import { CaptionEditor } from "./CaptionEditor";
 
-const DANGER = "#B00020";
+const DANGER = "#B3261E";
 
 /**
  * The + that adds a post, wherever it is put.
@@ -21,7 +21,7 @@ export function AddPostButton({
   onPosted,
   size = 36,
   iconSize = 24,
-  color = "#1A1416",
+  color = "#151719",
   background = "rgba(255,255,255,0.9)",
 }: {
   accessToken?: string;

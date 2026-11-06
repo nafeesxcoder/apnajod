@@ -7,3 +7,4 @@ node_modules/
 # overrides every deployment. It is a local-only file by definition.
 frontend/.env.local
 .env.local
+backend/node_modules

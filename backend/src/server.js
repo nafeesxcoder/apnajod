@@ -7,5 +7,5 @@ const server = http.createServer(app);
 realtime.init(server);
 
 server.listen(env.port, () => {
-  console.log(`Milaan backend running on http://localhost:${env.port}`);
+  console.log(`Apnajoda backend running on http://localhost:${env.port}`);
 });

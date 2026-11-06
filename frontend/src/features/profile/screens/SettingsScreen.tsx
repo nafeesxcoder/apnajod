@@ -5,11 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 
-const GOLD = "#8A6722";
-// const RUBY = "#8A1B35";
-const LINE = "#E2D9CB";
-const PAPER = "#F8F3E9";
-const DANGER = "#B00020";
+const GOLD = "#8A2237";
+// const RUBY = "#1F5286";
+const LINE = "#D3D6DA";
+const PAPER = "#EFF0F2";
+const DANGER = "#B3261E";
 
 export function SettingsScreen({
   navigate,
@@ -48,7 +48,7 @@ export function SettingsScreen({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: "#F0EAE0",
+        borderBottomColor: "#E6E8EA",
       }}
     >
       <Ionicons
@@ -62,12 +62,12 @@ export function SettingsScreen({
           flex: 1,
           fontSize: 16,
           fontWeight: "500",
-          color: danger ? DANGER : "#1A1416",
+          color: danger ? DANGER : "#151719",
         }}
       >
         {label}
       </Text>
-      <Ionicons name="chevron-forward" size={18} color="#A0A0A0" />
+      <Ionicons name="chevron-forward" size={18} color="#9AA4AF" />
     </TouchableOpacity>
   );
 
@@ -76,7 +76,7 @@ export function SettingsScreen({
       style={{
         fontSize: 12,
         fontWeight: "700",
-        color: "#635A5D",
+        color: "#5A5E63",
         letterSpacing: 1,
         textTransform: "uppercase",
         marginLeft: 24,
@@ -123,9 +123,9 @@ export function SettingsScreen({
             onPress={() => navigate("profile")}
             style={{ marginRight: 16 }}
           >
-            <Ionicons name="arrow-back" size={24} color="#1A1416" />
+            <Ionicons name="arrow-back" size={24} color="#151719" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontWeight: "700", color: "#1A1416" }}>
+          <Text style={{ fontSize: 24, fontWeight: "700", color: "#151719" }}>
             Settings
           </Text>
         </View>
@@ -146,13 +146,13 @@ export function SettingsScreen({
             >
               APNAJOD
             </Text>
-            <Text style={{ fontSize: 12, color: "#635A5D", marginTop: 4 }}>
+            <Text style={{ fontSize: 12, color: "#5A5E63", marginTop: 4 }}>
               Version 1.0.0
             </Text>
             <Text
               style={{
                 fontSize: 12,
-                color: "#635A5D",
+                color: "#5A5E63",
                 fontStyle: "italic",
                 marginTop: 4,
               }}
@@ -208,7 +208,7 @@ export function SettingsScreen({
                 paddingHorizontal: 20,
                 paddingVertical: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: "#F0EAE0",
+                borderBottomColor: "#E6E8EA",
               }}
             >
               <Ionicons
@@ -218,10 +218,10 @@ export function SettingsScreen({
                 style={{ marginRight: 16 }}
               />
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: "500", color: "#1A1416" }}>
+                <Text style={{ fontSize: 16, fontWeight: "500", color: "#151719" }}>
                   Private account
                 </Text>
-                <Text style={{ fontSize: 12, color: "#635A5D", marginTop: 3 }}>
+                <Text style={{ fontSize: 12, color: "#5A5E63", marginTop: 3 }}>
                   {isPrivate
                     ? "Nobody can find you by username. You still appear to people browsing."
                     : "Anyone can find you by searching your username."}
@@ -239,7 +239,7 @@ export function SettingsScreen({
                     setSavingPrivacy(false);
                   }
                 }}
-                trackColor={{ false: "#E2D9CB", true: "#C9A227" }}
+                trackColor={{ false: "#D3D6DA", true: "#C32D4B" }}
                 thumbColor="#FFFFFF"
               />
             </View>

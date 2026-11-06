@@ -265,7 +265,7 @@ export function buildNetworkEffectPlan(input: {
     inviteChallenge,
     loops: loops.sort((a, b) => b.priority - a.priority),
     successStoryPrompts: [
-      'We met at a Milaan chai mixer and planned a second date safely.',
+      'We met at a Apnajoda chai mixer and planned a second date safely.',
       'A friend vouch helped me feel comfortable enough to start the conversation.',
       'Our families aligned naturally because intent was clear from day one.',
     ],

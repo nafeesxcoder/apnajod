@@ -1,240 +1,183 @@
 import { useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  Animated,
-  Easing,
-  StyleSheet,
-} from "react-native";
+import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
-const PINK = "#E91E63";
-const PINK_LIGHT = "#FCE4EC";
-const PINK_DARK = "#880E4F";
-const WHITE = "#FFFFFF";
+const brandMark = require("../../../../assets/apnajoda-mark.png");
+const brandWordmark = require("../../../../assets/apnajoda-wordmark.png");
 
+const NAVY = "#1F4D7A";
+const CRIMSON = "#A8243A";
+const PAPER = "#F5F6F8";
+const MUTED = "#5A6878";
+
+const RING = 148;
+const JOIN_MS = 900;
+const PART_MS = 700;
+
+/**
+ * The launch screen.
+ *
+ * Two half-rings — one navy, one crimson — swing toward each other, close
+ * into a single ring around the mark, hold, and drift apart again. That is
+ * the name: "jod", two halves meeting. A spinning circle would have said
+ * nothing, and the app would have looked like every other app for the three
+ * seconds a person spends deciding what it is.
+ *
+ * The ground is the same #F5F6F8 as the native splash in app.json, so the
+ * handover from the OS splash to this screen has no flash of another colour.
+ * The artwork is the two-colour mark, not the white one: on paper the white
+ * version is invisible, which is exactly how the first version of this
+ * screen shipped.
+ *
+ * Every animated property is a transform or an opacity, so the whole thing
+ * runs on the native driver and does not stutter while the app boots behind
+ * it.
+ */
 export function SplashScreen() {
-  // Animation Values
-  const ringOpacity = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textSlide = useRef(new Animated.Value(20)).current;
-  const sparkleOpacity = useRef(new Animated.Value(0)).current;
+  // 0 = apart, 1 = joined.
+  const join = useRef(new Animated.Value(0)).current;
+  const markIn = useRef(new Animated.Value(0)).current;
+  const wordIn = useRef(new Animated.Value(0)).current;
+  const wordSlide = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
-    // 1. Ring fades in
-    Animated.timing(ringOpacity, {
+    Animated.spring(markIn, {
       toValue: 1,
-      duration: 800,
+      friction: 6,
+      tension: 70,
       useNativeDriver: true,
     }).start();
 
-    // 2. Ring pulse loop (dhak-dhak)
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-
-    // 3. Logo pops in
-    Animated.spring(logoScale, {
-      toValue: 1,
-      friction: 4,
-      tension: 60,
-      delay: 300,
-      useNativeDriver: true,
-    }).start();
-
-    // 4. Text fades in
     Animated.parallel([
-      Animated.timing(textOpacity, {
+      Animated.timing(wordIn, {
         toValue: 1,
-        duration: 800,
-        delay: 800,
+        duration: 700,
+        delay: 450,
         useNativeDriver: true,
       }),
-      Animated.timing(textSlide, {
+      Animated.timing(wordSlide, {
         toValue: 0,
-        duration: 800,
-        delay: 800,
-        easing: Easing.out(Easing.ease),
+        duration: 700,
+        delay: 450,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
 
-    // 5. Sparkles fade in
-    Animated.timing(sparkleOpacity, {
-      toValue: 1,
-      duration: 1200,
-      delay: 1000,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(join, {
+          toValue: 1,
+          duration: JOIN_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.delay(420),
+        Animated.timing(join, {
+          toValue: 0,
+          duration: PART_MS,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.delay(160),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [join, markIn, wordIn, wordSlide]);
+
+  const navySpin = join.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["-152deg", "0deg"],
+  });
+  const crimsonSpin = join.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["152deg", "0deg"],
+  });
+  // The mark leans in a touch as the ring closes, so the two read as one
+  // movement rather than a logo sitting inside an unrelated animation.
+  const markBreath = join.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.05],
+  });
 
   return (
-    <LinearGradient
-      colors={["#FFF0F5", PINK_LIGHT, "#FFF5F9"]}
-      style={{ flex: 1 }}
-    >
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.container}>
-          {/* Decorative Sparkles (Background) */}
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.centre}>
+        <View style={styles.ringBox}>
+          <Animated.View
+            style={[styles.arc, styles.arcNavy, { transform: [{ rotate: navySpin }] }]}
+          />
           <Animated.View
             style={[
-              styles.sparkle,
-              { top: 100, left: 60, opacity: sparkleOpacity },
+              styles.arc,
+              styles.arcCrimson,
+              { transform: [{ rotate: crimsonSpin }] },
             ]}
-          >
-            <Ionicons name="sparkles" size={20} color={PINK} />
-          </Animated.View>
-          <Animated.View
+          />
+          <Animated.Image
+            source={brandMark}
+            resizeMode="contain"
+            accessibilityLabel="Apnajoda"
             style={[
-              styles.sparkle,
-              { top: 160, right: 80, opacity: sparkleOpacity },
+              styles.mark,
+              { opacity: markIn, transform: [{ scale: Animated.multiply(markIn, markBreath) }] },
             ]}
-          >
-            <Ionicons name="sparkles" size={16} color={PINK} />
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.sparkle,
-              { bottom: 220, left: 100, opacity: sparkleOpacity },
-            ]}
-          >
-            <Ionicons name="star" size={14} color={PINK} />
-          </Animated.View>
-          <Animated.View
-            style={[
-              styles.sparkle,
-              { bottom: 180, right: 60, opacity: sparkleOpacity },
-            ]}
-          >
-            <Ionicons name="sparkles" size={22} color={PINK} />
-          </Animated.View>
-
-          {/* Center Content */}
-          <View style={styles.centerContent}>
-            {/* Pulsing Ring with Logo inside */}
-            <Animated.View
-              style={[
-                styles.ringContainer,
-                {
-                  opacity: ringOpacity,
-                  transform: [{ scale: pulseAnim }],
-                },
-              ]}
-            >
-              {/* Outer ring (glow) */}
-              <View style={styles.ringOuter} />
-              {/* Inner ring (border) */}
-              <View style={styles.ringInner} />
-              {/* Logo Circle */}
-              <Animated.View
-                style={[
-                  styles.logoCircle,
-                  { transform: [{ scale: logoScale }] },
-                ]}
-              >
-                <Ionicons name="heart" size={56} color={WHITE} />
-              </Animated.View>
-            </Animated.View>
-
-            {/* Text Area */}
-            <Animated.View
-              style={[
-                styles.textArea,
-                {
-                  opacity: textOpacity,
-                  transform: [{ translateY: textSlide }],
-                },
-              ]}
-            >
-              <Text style={styles.appName}>ApnaJod</Text>
-              <Text style={styles.tagline}>Find Your Perfect Match</Text>
-            </Animated.View>
-          </View>
+          />
         </View>
-      </SafeAreaView>
-    </LinearGradient>
+
+        <Animated.View
+          style={{ opacity: wordIn, transform: [{ translateY: wordSlide }] }}
+        >
+          <Image
+            source={brandWordmark}
+            resizeMode="contain"
+            accessibilityLabel="Apnajoda"
+            style={styles.wordmark}
+          />
+          <Text style={styles.tagline}>Find Your Perfect Match</Text>
+        </Animated.View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
+  screen: { flex: 1, backgroundColor: PAPER },
+  centre: { flex: 1, alignItems: "center", justifyContent: "center" },
+
+  ringBox: {
+    width: RING,
+    height: RING,
     alignItems: "center",
-  },
-  centerContent: {
-    alignItems: "center",
     justifyContent: "center",
+    marginBottom: 44,
   },
-  ringContainer: {
-    width: 200,
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  ringOuter: {
+  // A circle with two of its four borders coloured is a half ring, and
+  // rotating it costs nothing: no SVG, no layout work, native driver.
+  arc: {
     position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "rgba(233, 30, 99, 0.08)",
+    width: RING,
+    height: RING,
+    borderRadius: RING / 2,
+    borderWidth: 3,
+    borderTopColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "transparent",
+    borderLeftColor: "transparent",
   },
-  ringInner: {
-    position: "absolute",
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 2,
-    borderColor: "rgba(233, 30, 99, 0.25)",
-  },
-  logoCircle: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: PINK,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: PINK,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  textArea: {
-    alignItems: "center",
-  },
-  appName: {
-    fontSize: 42,
-    fontWeight: "800",
-    color: PINK_DARK,
-    letterSpacing: 2,
-    marginBottom: 8,
-  },
+  arcNavy: { borderTopColor: NAVY, borderRightColor: NAVY },
+  arcCrimson: { borderBottomColor: CRIMSON, borderLeftColor: CRIMSON },
+
+  mark: { width: 78, height: 78 },
+
+  // 1200x293 is the wordmark asset's own ratio.
+  wordmark: { width: 244, height: 60, alignSelf: "center" },
   tagline: {
-    fontSize: 15,
-    color: "#635A5D",
-    letterSpacing: 1,
-    fontWeight: "500",
-  },
-  sparkle: {
-    position: "absolute",
+    marginTop: 10,
+    fontSize: 14,
+    letterSpacing: 1.2,
+    color: MUTED,
+    textAlign: "center",
   },
 });

@@ -14,10 +14,10 @@ import { AppCanvas } from "../../../components/AppCanvas";
 import { colors } from "../../../theme";
 import type { MatchFilters } from "../../../storage";
 
-const GOLD = "#8A6722";
-const RUBY = "#8A1B35";
-const LINE = "#E2D9CB";
-const PAPER = "#F8F3E9";
+const GOLD = "#8A2237";
+const RUBY = "#1F5286";
+const LINE = "#D3D6DA";
+const PAPER = "#EFF0F2";
 
 // List of Indian cities for suggestions
 const INDIAN_CITIES = [
@@ -464,9 +464,9 @@ export function DiscoveryCenterScreen({
           }}
         >
           <TouchableOpacity onPress={onBack} style={{ marginRight: 16 }}>
-            <Ionicons name="arrow-back" size={24} color="#1A1416" />
+            <Ionicons name="arrow-back" size={24} color="#151719" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 22, fontWeight: "700", color: "#1A1416" }}>
+          <Text style={{ fontSize: 22, fontWeight: "700", color: "#151719" }}>
             Match Filters
           </Text>
         </View>
@@ -539,7 +539,7 @@ export function DiscoveryCenterScreen({
                 }}
                 placeholder="Search city..."
                 style={styles.input}
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#9AA4AF"
                 onFocus={() => setShowSuggestions(true)}
               />
               <TouchableOpacity
@@ -600,7 +600,7 @@ export function DiscoveryCenterScreen({
                   {city}
                 </Text>
                 <TouchableOpacity onPress={() => removeCity(city)}>
-                  <Ionicons name="close-circle" size={18} color="#A0A0A0" />
+                  <Ionicons name="close-circle" size={18} color="#9AA4AF" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -694,6 +694,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0EAE0",
+    borderBottomColor: "#E6E8EA",
   },
 });

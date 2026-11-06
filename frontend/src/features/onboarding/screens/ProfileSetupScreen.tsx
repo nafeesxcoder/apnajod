@@ -111,13 +111,13 @@ export function ProfileSetupScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F3E9" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#EFF0F2" }}>
         <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 100 }}>
           <Text
             style={{
               fontSize: 12,
               fontWeight: "700",
-              color: "#8A6722",
+              color: "#8A2237",
               letterSpacing: 1,
               textTransform: "uppercase",
               marginBottom: 8,
@@ -160,7 +160,7 @@ export function ProfileSetupScreen({
                     height: 120,
                     borderRadius: 60,
                     borderWidth: 3,
-                    borderColor: "#8A6722",
+                    borderColor: "#8A2237",
                   }}
                 />
               ) : (
@@ -169,14 +169,14 @@ export function ProfileSetupScreen({
                     width: 120,
                     height: 120,
                     borderRadius: 60,
-                    backgroundColor: "#E2D9CB",
+                    backgroundColor: "#D3D6DA",
                     justifyContent: "center",
                     alignItems: "center",
                     borderWidth: 3,
-                    borderColor: "#8A6722",
+                    borderColor: "#8A2237",
                   }}
                 >
-                  <Ionicons name="camera" size={40} color="#A0A0A0" />
+                  <Ionicons name="camera" size={40} color="#9AA4AF" />
                 </View>
               )}
               <View
@@ -184,7 +184,7 @@ export function ProfileSetupScreen({
                   position: "absolute",
                   bottom: 0,
                   right: 0,
-                  backgroundColor: "#1A1416",
+                  backgroundColor: "#151719",
                   width: 32,
                   height: 32,
                   borderRadius: 16,
@@ -213,7 +213,7 @@ export function ProfileSetupScreen({
                 }
                 placeholder="Enter your first name"
                 style={styles.input}
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#9AA4AF"
               />
             </View>
 
@@ -227,7 +227,7 @@ export function ProfileSetupScreen({
                   placeholder="25"
                   keyboardType="numeric"
                   style={styles.input}
-                  placeholderTextColor="#A0A0A0"
+                  placeholderTextColor="#9AA4AF"
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -271,7 +271,7 @@ export function ProfileSetupScreen({
                 onChangeText={(v) => onProfileChange({ ...profile, city: v })}
                 placeholder="e.g. Mumbai, MH"
                 style={styles.input}
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#9AA4AF"
               />
             </View>
 
@@ -285,7 +285,7 @@ export function ProfileSetupScreen({
                 }
                 placeholder="e.g. Product Designer"
                 style={styles.input}
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#9AA4AF"
               />
             </View>
 
@@ -302,14 +302,14 @@ export function ProfileSetupScreen({
                   styles.input,
                   { height: 100, textAlignVertical: "top" },
                 ]}
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#9AA4AF"
               />
             </View>
 
             {/* Hobbies Dropdown Selector */}
             <View>
               <Text style={styles.label}>Hobbies</Text>
-              <Text style={{ fontSize: 12, color: "#635A5D", marginBottom: 8 }}>
+              <Text style={{ fontSize: 12, color: "#5A5E63", marginBottom: 8 }}>
                 Add hobbies that describe you (with icons!)
               </Text>
 
@@ -330,7 +330,7 @@ export function ProfileSetupScreen({
                     <View
                       key={hobbyLabel}
                       style={{
-                        backgroundColor: "#FCE4EC",
+                        backgroundColor: "#EFF0F1",
                         paddingHorizontal: 12,
                         paddingVertical: 8,
                         borderRadius: 20,
@@ -342,12 +342,12 @@ export function ProfileSetupScreen({
                       <Ionicons
                         name={(hobbyData?.icon || "heart") as any}
                         size={14}
-                        color="#E91E63"
+                        color="#4983BE"
                       />
                       <Text
                         style={{
                           fontSize: 13,
-                          color: "#E91E63",
+                          color: "#4983BE",
                           fontWeight: "600",
                         }}
                       >
@@ -357,7 +357,7 @@ export function ProfileSetupScreen({
                         <Ionicons
                           name="close-circle"
                           size={16}
-                          color="#E91E63"
+                          color="#4983BE"
                         />
                       </TouchableOpacity>
                     </View>
@@ -373,7 +373,7 @@ export function ProfileSetupScreen({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
-                  backgroundColor: "#E91E63",
+                  backgroundColor: "#4983BE",
                   paddingVertical: 12,
                   borderRadius: 12,
                 }}
@@ -391,7 +391,7 @@ export function ProfileSetupScreen({
           <TouchableOpacity
             onPress={handleSave}
             style={{
-              backgroundColor: "#1A1416",
+              backgroundColor: "#151719",
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: "center",
@@ -431,7 +431,7 @@ export function ProfileSetupScreen({
                 style={{
                   padding: 20,
                   borderBottomWidth: 1,
-                  borderBottomColor: "#F0EAE0",
+                  borderBottomColor: "#E6E8EA",
                 }}
               >
                 <View
@@ -446,13 +446,13 @@ export function ProfileSetupScreen({
                     style={{
                       fontSize: 20,
                       fontWeight: "700",
-                      color: "#1A1416",
+                      color: "#151719",
                     }}
                   >
                     Select Hobbies
                   </Text>
                   <TouchableOpacity onPress={() => setShowHobbyPicker(false)}>
-                    <Ionicons name="close" size={24} color="#1A1416" />
+                    <Ionicons name="close" size={24} color="#151719" />
                   </TouchableOpacity>
                 </View>
 
@@ -461,20 +461,20 @@ export function ProfileSetupScreen({
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#F8F3E9",
+                    backgroundColor: "#EFF0F2",
                     borderRadius: 12,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     gap: 8,
                   }}
                 >
-                  <Ionicons name="search" size={20} color="#635A5D" />
+                  <Ionicons name="search" size={20} color="#5A5E63" />
                   <TextInput
                     value={hobbySearch}
                     onChangeText={setHobbySearch}
                     placeholder="Search hobbies..."
-                    style={{ flex: 1, fontSize: 15, color: "#1A1416" }}
-                    placeholderTextColor="#A0A0A0"
+                    style={{ flex: 1, fontSize: 15, color: "#151719" }}
+                    placeholderTextColor="#9AA4AF"
                   />
                 </View>
               </View>
@@ -485,7 +485,7 @@ export function ProfileSetupScreen({
                   <Text
                     style={{
                       textAlign: "center",
-                      color: "#A0A0A0",
+                      color: "#9AA4AF",
                       marginTop: 20,
                     }}
                   >
@@ -509,20 +509,20 @@ export function ProfileSetupScreen({
                             paddingVertical: 10,
                             borderRadius: 20,
                             borderWidth: 1.5,
-                            borderColor: isSelected ? "#E91E63" : "#E2D9CB",
-                            backgroundColor: isSelected ? "#FCE4EC" : "#FFF",
+                            borderColor: isSelected ? "#4983BE" : "#D3D6DA",
+                            backgroundColor: isSelected ? "#EFF0F1" : "#FFF",
                           }}
                         >
                           <Ionicons
                             name={hobby.icon as any}
                             size={16}
-                            color={isSelected ? "#E91E63" : "#635A5D"}
+                            color={isSelected ? "#4983BE" : "#5A5E63"}
                           />
                           <Text
                             style={{
                               fontSize: 14,
                               fontWeight: "600",
-                              color: isSelected ? "#E91E63" : "#1A1416",
+                              color: isSelected ? "#4983BE" : "#151719",
                             }}
                           >
                             {hobby.label}
@@ -531,7 +531,7 @@ export function ProfileSetupScreen({
                             <Ionicons
                               name="checkmark-circle"
                               size={16}
-                              color="#E91E63"
+                              color="#4983BE"
                             />
                           )}
                         </TouchableOpacity>
@@ -546,13 +546,13 @@ export function ProfileSetupScreen({
                 style={{
                   padding: 20,
                   borderTopWidth: 1,
-                  borderTopColor: "#F0EAE0",
+                  borderTopColor: "#E6E8EA",
                 }}
               >
                 <TouchableOpacity
                   onPress={() => setShowHobbyPicker(false)}
                   style={{
-                    backgroundColor: "#E91E63",
+                    backgroundColor: "#4983BE",
                     paddingVertical: 14,
                     borderRadius: 12,
                     alignItems: "center",
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E2D9CB",
+    borderColor: "#D3D6DA",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -595,11 +595,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E2D9CB",
+    borderColor: "#D3D6DA",
     backgroundColor: "#FFFFFF",
     alignItems: "center",
   },
-  chipActive: { backgroundColor: "#1A1416", borderColor: "#1A1416" },
+  chipActive: { backgroundColor: "#151719", borderColor: "#151719" },
   chipText: { fontSize: 13, color: colors.text, fontWeight: "500" },
   chipTextActive: { color: "#FFFFFF" },
 });

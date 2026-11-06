@@ -343,7 +343,7 @@ export function buildRetentionPlan(input: {
       title: 'Date plan reminders',
       body: interested
         ? 'You have intent signals ready — suggest a safe café, time and check-in.'
-        : 'When you choose someone, Milaan can nudge a safe first-date plan.',
+        : 'When you choose someone, Apnajoda can nudge a safe first-date plan.',
       icon: 'calendar-outline',
       actionLabel: 'Plan date',
       actionScreen: 'datePlan',

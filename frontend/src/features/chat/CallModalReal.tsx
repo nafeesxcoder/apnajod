@@ -170,7 +170,7 @@ function CircleButton({
       <Ionicons
         name={icon}
         size={danger ? 28 : 24}
-        color={danger ? "#FEFDFC" : active ? "#E0C78E" : "#FEFDFC"}
+        color={danger ? "#FDFDFD" : active ? "#D49AA6" : "#FDFDFD"}
       />
     </Pressable>
   );
@@ -524,7 +524,7 @@ export function CallModal({
           </View>
         ) : (
           <LinearGradient
-            colors={["#161113", "#120E0F", "#100C0D"]}
+            colors={["#121315", "#0F1011", "#0D0E0F"]}
             style={StyleSheet.absoluteFill}
           />
         )}
@@ -533,10 +533,10 @@ export function CallModal({
             busy video, without fully darkening the middle of the frame. */}
         <LinearGradient
           colors={[
-            "rgba(16,12,13,.6)",
+            "rgba(13,14,15,.6)",
             "transparent",
             "transparent",
-            "rgba(16,12,13,.7)",
+            "rgba(13,14,15,.7)",
           ]}
           locations={[0, 0.22, 0.6, 1]}
           style={StyleSheet.absoluteFill}
@@ -572,16 +572,16 @@ export function CallModal({
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: "#564D50", fontSize: 11 }}>
+              <Text style={{ color: "#4D5156", fontSize: 11 }}>
                 {`BT debug · bluetoothAvailable=${bluetoothAvailable} · android=${IS_ANDROID}`}
               </Text>
               {deviceDebugLines.length === 0 ? (
-                <Text style={{ color: "#191315", fontSize: 11 }}>
+                <Text style={{ color: "#141618", fontSize: 11 }}>
                   no audio devices reported
                 </Text>
               ) : (
                 deviceDebugLines.map((line, index) => (
-                  <Text key={index} style={{ color: "#191315", fontSize: 11 }}>
+                  <Text key={index} style={{ color: "#141618", fontSize: 11 }}>
                     {line}
                   </Text>
                 ))
@@ -636,7 +636,7 @@ export function CallModal({
                   <Ionicons
                     name="lock-closed-outline"
                     size={18}
-                    color="#E6DED0"
+                    color="#D8DBDE"
                   />
                   <Text style={callStyles.permissionText}>
                     {engine.error || "Calling is unavailable right now."}
@@ -674,7 +674,7 @@ export function CallModal({
                   volume={pipIsSelf ? undefined : remoteVolume}
                 />
               ) : (
-                <Ionicons name="person" size={28} color="#FEFDFC" />
+                <Ionicons name="person" size={28} color="#FDFDFD" />
               )}
             </Pressable>
           )}

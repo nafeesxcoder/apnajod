@@ -71,7 +71,7 @@ function inviteLink(senderName?: string) {
 
 export function inviteMessage(senderName?: string) {
   const who = senderName?.trim() ? `${senderName.trim()} invited you to` : "Join me on";
-  return `${who} Milaan, a private space for serious, family-minded matches. Create your account here: ${inviteLink(senderName)}`;
+  return `${who} Apnajoda, a private space for serious, family-minded matches. Create your account here: ${inviteLink(senderName)}`;
 }
 
 // Opens the phone's own messaging / share sheet, so the invite goes out from
@@ -87,7 +87,7 @@ export async function sendInvite(
   }
   if (target.email) {
     await Linking.openURL(
-      `mailto:${target.email}?subject=${encodeURIComponent("Join me on Milaan")}&body=${encodeURIComponent(body)}`,
+      `mailto:${target.email}?subject=${encodeURIComponent("Join me on Apnajoda")}&body=${encodeURIComponent(body)}`,
     );
     return;
   }
@@ -96,7 +96,7 @@ export async function sendInvite(
     typeof navigator !== "undefined" &&
     typeof navigator.share === "function"
   ) {
-    await navigator.share({ title: "Milaan", text: body });
+    await navigator.share({ title: "Apnajoda", text: body });
     return;
   }
   await Share.share({ message: body });

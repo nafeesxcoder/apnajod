@@ -67,7 +67,7 @@ export function VerificationHubScreen({
         <View style={{ padding: 22, flex: 1 }}>
           {/* Back Button */}
           <TouchableOpacity onPress={onBack} style={{ marginBottom: 24 }}>
-            <Ionicons name="arrow-back" size={24} color="#1A1416" />
+            <Ionicons name="arrow-back" size={24} color="#151719" />
           </TouchableOpacity>
 
           {/* Title Section */}
@@ -75,7 +75,7 @@ export function VerificationHubScreen({
             style={{
               fontSize: 12,
               fontWeight: "600",
-              color: "#8A6722",
+              color: "#8A2237",
               letterSpacing: 1,
               textTransform: "uppercase",
               marginBottom: 8,
@@ -87,7 +87,7 @@ export function VerificationHubScreen({
             style={{
               fontSize: 28,
               fontWeight: "700",
-              color: "#1A1416",
+              color: "#151719",
               marginBottom: 12,
             }}
           >
@@ -96,7 +96,7 @@ export function VerificationHubScreen({
           <Text
             style={{
               fontSize: 15,
-              color: "#635A5D",
+              color: "#5A5E63",
               lineHeight: 22,
               marginBottom: 32,
             }}
@@ -113,7 +113,7 @@ export function VerificationHubScreen({
               padding: 24,
               alignItems: "center",
               borderWidth: 1,
-              borderColor: "#E2D9CB",
+              borderColor: "#D3D6DA",
             }}
           >
             {/* Selfie Preview or Placeholder */}
@@ -133,13 +133,13 @@ export function VerificationHubScreen({
                   width: 150,
                   height: 150,
                   borderRadius: 75,
-                  backgroundColor: "#F0F0F0",
+                  backgroundColor: "#F0F2F5",
                   justifyContent: "center",
                   alignItems: "center",
                   marginBottom: 20,
                 }}
               >
-                <Ionicons name="person" size={60} color="#A0A0A0" />
+                <Ionicons name="person" size={60} color="#9AA4AF" />
               </View>
             )}
 
@@ -149,7 +149,7 @@ export function VerificationHubScreen({
               style={{
                 backgroundColor: "#FFF",
                 borderWidth: 1,
-                borderColor: "#1A1416",
+                borderColor: "#151719",
                 width: "100%",
                 padding: 14,
                 borderRadius: 12,
@@ -158,7 +158,7 @@ export function VerificationHubScreen({
               }}
             >
               <Text
-                style={{ color: "#1A1416", fontWeight: "600", fontSize: 15 }}
+                style={{ color: "#151719", fontWeight: "600", fontSize: 15 }}
               >
                 {pickedUri ? "Retake Selfie" : "Take Selfie"}
               </Text>
@@ -168,7 +168,7 @@ export function VerificationHubScreen({
             {verified ? (
               <View
                 style={{
-                  backgroundColor: "#E8F5E9",
+                  backgroundColor: "#E6F4EE",
                   padding: 12,
                   borderRadius: 8,
                   width: "100%",
@@ -176,7 +176,7 @@ export function VerificationHubScreen({
                 }}
               >
                 <Text
-                  style={{ color: "#2E7D32", fontWeight: "600", fontSize: 14 }}
+                  style={{ color: "#1F7A5A", fontWeight: "600", fontSize: 14 }}
                 >
                   ✅ Your profile is verified
                 </Text>
@@ -184,7 +184,7 @@ export function VerificationHubScreen({
             ) : verificationStatus === "pending" ? (
               <View
                 style={{
-                  backgroundColor: "#FFF3E0",
+                  backgroundColor: "#FDF3E3",
                   padding: 12,
                   borderRadius: 8,
                   width: "100%",
@@ -193,7 +193,7 @@ export function VerificationHubScreen({
               >
                 <Text
                   style={{
-                    color: "#E65100",
+                    color: "#B26A00",
                     fontWeight: "600",
                     fontSize: 14,
                     textAlign: "center",
@@ -205,7 +205,7 @@ export function VerificationHubScreen({
             ) : verificationStatus === "rejected" ? (
               <View
                 style={{
-                  backgroundColor: "#FFEBEE",
+                  backgroundColor: "#FBE9EC",
                   padding: 12,
                   borderRadius: 8,
                   width: "100%",
@@ -214,7 +214,7 @@ export function VerificationHubScreen({
               >
                 <Text
                   style={{
-                    color: "#B71C1C",
+                    color: "#B3261E",
                     fontWeight: "600",
                     fontSize: 14,
                     textAlign: "center",
@@ -229,7 +229,7 @@ export function VerificationHubScreen({
                 onPress={handleSubmit}
                 disabled={!pickedUri || isSubmitting}
                 style={{
-                  backgroundColor: pickedUri ? "#1A1416" : "#CCCCCC",
+                  backgroundColor: pickedUri ? "#151719" : "#C7CED6",
                   width: "100%",
                   padding: 16,
                   borderRadius: 12,
@@ -257,7 +257,7 @@ export function VerificationHubScreen({
               <Text
                 style={{
                   marginTop: 16,
-                  color: "#B00020",
+                  color: "#B3261E",
                   textAlign: "center",
                   fontSize: 13,
                 }}

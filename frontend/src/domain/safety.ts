@@ -27,7 +27,7 @@ export type SafetyChecklistItem = {
 
 const signalRules: Array<{ type: SafetySignalType; label: string; pattern: RegExp; evidence: string; score: number }> = [
   { type: 'money', label: 'Money request', pattern: /(money|crypto|gift\s*card|wire|bank|cashapp|venmo|zelle|investment|loan|wallet)/i, evidence: 'Money, crypto, gift-card or payment language', score: 45 },
-  { type: 'off_app', label: 'Move off app', pattern: /(whatsapp|telegram|instagram|snapchat|snap|phone number|personal number|outside this app|off[-\s]?app)/i, evidence: 'Pressure to move conversation outside Milaan', score: 20 },
+  { type: 'off_app', label: 'Move off app', pattern: /(whatsapp|telegram|instagram|snapchat|snap|phone number|personal number|outside this app|off[-\s]?app)/i, evidence: 'Pressure to move conversation outside Apnajoda', score: 20 },
   { type: 'private_location', label: 'Private location', pattern: /(home address|my place|your place|hotel|room number|pick you up|send location|exact location|where do you live)/i, evidence: 'Exact address, private place or pickup language', score: 30 },
   { type: 'pressure', label: 'Pressure', pattern: /(now|right now|don.?t tell|secret|prove it|trust me|why not|come alone|no one needs to know)/i, evidence: 'Pressure, secrecy or boundary-testing language', score: 18 },
   { type: 'identity', label: 'Identity concern', pattern: /(fake|catfish|id|passport|driver.?s license|verification|send selfie|prove your identity)/i, evidence: 'Identity or document request language', score: 16 },
@@ -55,7 +55,7 @@ export function scanMessageSafety(text: string): MessageSafetyScan {
       severity: 'calm',
       signals,
       nudgeTitle: 'Conversation looks normal',
-      nudgeBody: 'Milaan scans only this in-app draft for safety hints.',
+      nudgeBody: 'Apnajoda scans only this in-app draft for safety hints.',
       recommendedAction: 'Keep early conversations respectful and inside the app.',
     };
   }
@@ -87,7 +87,7 @@ export function scanMessageSafety(text: string): MessageSafetyScan {
       score,
       severity,
       signals,
-      nudgeTitle: 'Stay in Milaan early',
+      nudgeTitle: 'Stay in Apnajoda early',
       nudgeBody: 'Moving off-app too soon can make reporting and safety review harder.',
       recommendedAction: 'Continue here until verification, intent and comfort are clear.',
     };

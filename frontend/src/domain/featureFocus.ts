@@ -18,23 +18,23 @@ export type FeatureSurface='primary_navigation'|'home'|'chat_toolbar'|'chat_atta
 
 
 export const chatPrimaryAttachments=[
-  {id:'camera',label:'Camera',icon:'camera',color:'#8A1B35'},
-  {id:'gallery',label:'Photo',icon:'images',color:'#7A1028'},
-  {id:'location',label:'Location',icon:'location',color:'#AA812A'},
-  {id:'document',label:'Document',icon:'document-text',color:'#94213C'},
-  {id:'more',label:'More',icon:'ellipsis-horizontal',color:'#94213C'},
+  {id:'camera',label:'Camera',icon:'camera',color:'#1F5286'},
+  {id:'gallery',label:'Photo',icon:'images',color:'#194571'},
+  {id:'location',label:'Location',icon:'location',color:'#AA2A44'},
+  {id:'document',label:'Document',icon:'document-text',color:'#235A92'},
+  {id:'more',label:'More',icon:'ellipsis-horizontal',color:'#235A92'},
 ] as const;
 
 export const chatMoreAttachments=[
-  {id:'contact',label:'Contact',icon:'person',color:'#275C41'},
-  {id:'poll',label:'Poll',icon:'stats-chart',color:'#AA812A'},
-  {id:'gif',label:'GIF',icon:'happy',color:'#861831'},
-  {id:'games',label:'Games',icon:'game-controller',color:'#94213C'},
-  {id:'snap',label:'Snap',icon:'aperture',color:'#861831'},
-  {id:'face',label:'Face',icon:'person-circle',color:'#690D23'},
-  {id:'spark',label:'Spark',icon:'sparkles',color:'#AA812A'},
-  {id:'disappearing',label:'24h',icon:'timer',color:'#AA812A'},
-  {id:'back',label:'Back',icon:'arrow-back',color:'#94213C'},
+  {id:'contact',label:'Contact',icon:'person',color:'#275C4A'},
+  {id:'poll',label:'Poll',icon:'stats-chart',color:'#AA2A44'},
+  {id:'gif',label:'GIF',icon:'happy',color:'#1D4F81'},
+  {id:'games',label:'Games',icon:'game-controller',color:'#235A92'},
+  {id:'snap',label:'Snap',icon:'aperture',color:'#1D4F81'},
+  {id:'face',label:'Face',icon:'person-circle',color:'#153B61'},
+  {id:'spark',label:'Spark',icon:'sparkles',color:'#AA2A44'},
+  {id:'disappearing',label:'24h',icon:'timer',color:'#AA2A44'},
+  {id:'back',label:'Back',icon:'arrow-back',color:'#235A92'},
 ] as const;
 
 export const featureSurfaceBudgets:Record<FeatureSurface,number>={

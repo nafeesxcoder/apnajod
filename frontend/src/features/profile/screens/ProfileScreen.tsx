@@ -16,12 +16,12 @@ import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 
-const PINK = "#E91E63";
-const PINK_LIGHT = "#FCE4EC";
-const DARK = "#1A1416";
-const MUTED = "#635A5D";
+const PINK = "#4983BE";
+const PINK_LIGHT = "#EFF0F1";
+const DARK = "#151719";
+const MUTED = "#5A5E63";
 const WHITE = "#FFFFFF";
-const LINE = "#F0EAE0";
+const LINE = "#E6E8EA";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -57,7 +57,7 @@ export function ProfileScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF5F9" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA" }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 90 }}
@@ -77,13 +77,13 @@ export function ProfileScreen({
                   blurRadius={18}
                 />
               ) : (
-                <View style={{ width: "100%", height: "100%", backgroundColor: "#F6D9E4" }} />
+                <View style={{ width: "100%", height: "100%", backgroundColor: "#E5E7EA" }} />
               )}
               <LinearGradient
                 colors={[
-                  "rgba(233,30,99,0.4)",
+                  "rgba(73,131,190,0.4)",
                   "transparent",
-                  "rgba(255,245,249,1)",
+                  "rgba(250,250,250,1)",
                 ]}
                 style={{
                   position: "absolute",
@@ -394,7 +394,7 @@ export function ProfileScreen({
                 <Text
                   style={{
                     fontSize: 14,
-                    color: bio ? MUTED : "#A0A0A0",
+                    color: bio ? MUTED : "#9AA4AF",
                     lineHeight: 22,
                   }}
                 >

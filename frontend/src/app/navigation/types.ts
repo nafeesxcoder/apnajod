@@ -1,7 +1,7 @@
 /**
  * Every top-level UI destination in the app.
  *
- * Milaan is a dating app: you make an account, you are shown people, you say
+ * Apnajoda is a dating app: you make an account, you are shown people, you say
  * yes or no, and a conversation opens when you both said yes. The follow
  * graph sits alongside it so you can also find someone by name.
  *

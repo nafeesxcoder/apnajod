@@ -299,7 +299,7 @@ async function disconnectConnection(userId, connectionId) {
 
 // WhatsApp-style contact matching: the app sends the phone numbers from the
 // member's address book and gets back only the ones that already have a
-// Milaan account (plus whether they're already connected / pending), so
+// Apnajoda account (plus whether they're already connected / pending), so
 // the rest can be invited. Only name, city, profession and the verified
 // badge come back; phone numbers and emails are never returned.
 async function matchContacts(userId, rawPhones) {

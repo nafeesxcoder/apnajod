@@ -13,7 +13,7 @@
   type CouplePartnerSummary,
 } from "../domain/coupleConnection";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {
@@ -50,7 +50,7 @@ export const coupleApi = {
   },
 
   // Sends the phone numbers from the member's address book and gets back
-  // only the ones that already have a Milaan account.
+  // only the ones that already have a Apnajoda account.
   async matchContacts(accessToken: string, phones: string[]): Promise<CoupleContactMatch[]> {
     const data = await authFetch("/couple/contacts/match", accessToken, {
       method: "POST",

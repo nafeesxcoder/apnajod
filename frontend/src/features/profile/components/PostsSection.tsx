@@ -13,11 +13,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { postApi, type Post } from "../../../api/postApi";
 import { CaptionEditor } from "./CaptionEditor";
 
-const PINK = "#E6286F";
-const DARK = "#1A1416";
-const MUTED = "#635A5D";
-const LINE = "#E2D9CB";
-const DANGER = "#B00020";
+const PINK = "#5087BE";
+const DARK = "#151719";
+const MUTED = "#5A5E63";
+const LINE = "#D3D6DA";
+const DANGER = "#B3261E";
 
 /**
  * The photos a member has posted, with the line they wrote under each.

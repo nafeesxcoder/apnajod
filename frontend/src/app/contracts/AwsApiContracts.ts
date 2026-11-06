@@ -1,5 +1,5 @@
 /**
- * Milaan frontend ↔ AWS boundary.
+ * Apnajoda frontend ↔ AWS boundary.
  *
  * This file contains DTOs and ports only. It must never import an AWS SDK,
  * database client, authentication provider, payment SDK or server secret.

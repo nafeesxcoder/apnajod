@@ -19,8 +19,8 @@ export function BottomNav({
 
   const NavItem = ({ icon, label, screen, activeIcon }: any) => {
     const isActive = active === screen;
-    const activeColor = light ? "#FFFFFF" : "#1A1416";
-    const inactiveColor = light ? "rgba(255,255,255,0.6)" : "#A0A0A0";
+    const activeColor = light ? "#FFFFFF" : "#151719";
+    const inactiveColor = light ? "rgba(255,255,255,0.6)" : "#9AA4AF";
 
     return (
       <TouchableOpacity
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#E2D9CB",
+    borderTopColor: "#D3D6DA",
     paddingTop: 10,
     position: "absolute",
     bottom: 0,

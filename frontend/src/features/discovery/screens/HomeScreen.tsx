@@ -29,10 +29,10 @@ type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
 type MatchingPoolStatusView = { status: string; suggestions: string[] };
 
-const GOLD = "#8A6722";
-const RUBY = "#8A1B35";
-const LINE = "#E2D9CB";
-const PAPER = "#FDFAF4";
+const GOLD = "#8A2237";
+const RUBY = "#1F5286";
+const LINE = "#D3D6DA";
+const PAPER = "#F8F8F9";
 const MAX_WIDTH = 720;
 
 function greetingForNow() {
@@ -291,7 +291,7 @@ export function HomeScreen({
                   width: 44,
                   height: 44,
                   borderRadius: 22,
-                  backgroundColor: "#F3E7E9",
+                  backgroundColor: "#EBEDEF",
                   justifyContent: "center",
                   alignItems: "center",
                   marginRight: 14,
@@ -350,13 +350,13 @@ export function HomeScreen({
                 <Ionicons
                   name="location"
                   size={22}
-                  color="#AA812A"
+                  color="#AA2A44"
                   style={{ marginRight: 12 }}
                 />
                 <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>
                   Crossed paths is on. Nearby profiles are included privately.
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color="#AA812A" />
+                <Ionicons name="chevron-forward" size={20} color="#AA2A44" />
               </Pressable>
             )}
 
@@ -421,7 +421,7 @@ export function HomeScreen({
                       <Text
                         style={{
                           fontSize: 14,
-                          color: "#E0E0E0",
+                          color: "#DFE4EA",
                           marginTop: 4,
                         }}
                       >
@@ -525,7 +525,7 @@ export function HomeScreen({
                           <Text
                             style={{
                               fontSize: 11,
-                              color: "#E0E0E0",
+                              color: "#DFE4EA",
                             }}
                           >
                             {match.city}

@@ -10,19 +10,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, radius, typeScale } from "./theme";
 
-const milaanLogo = require("../assets/milaan-logo.png");
+const brandLogo = require("../assets/apnajoda-logo.png");
 
 export function Brand({ small = false }: { small?: boolean }) {
   return (
     <View style={styles.brand}>
+      {/* The lockup already contains the wordmark, so the name is not set
+          again in the UI font beside it: that put the brand on screen twice,
+          in two typefaces, one of them not the brand's. The box keeps the
+          asset's own 1600x460 ratio and uses `contain`, so it is never
+          cropped. */}
       <Image
-        source={milaanLogo}
-        resizeMode="cover"
-        style={[styles.logoMark, small && styles.logoMarkSmall]}
+        source={brandLogo}
+        resizeMode="contain"
+        accessibilityLabel="Apnajoda"
+        style={small ? styles.logoLockupSmall : styles.logoLockup}
       />
-      <Text style={[styles.brandText, small && styles.brandTextSmall]}>
-        Mil<Text style={styles.brandOne}>aan</Text>
-      </Text>
     </View>
   );
 }
@@ -46,22 +49,22 @@ export function Button({
         <LinearGradient
           colors={
             variant === "gold"
-              ? ["#E8D4A5", colors.gold, "#654918"]
-              : ["#C56279", colors.pink, "#5D0C1F"]
+              ? ["#DAB3BB", colors.gold, "#651827"]
+              : ["#6693C1", colors.pink, "#133456"]
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.buttonIconBadge}
         >
-          <Ionicons name={icon} size={14} color="#FEFDFC" />
+          <Ionicons name={icon} size={14} color="#FDFDFD" />
         </LinearGradient>
       )}
       <Text
         maxFontSizeMultiplier={1.3}
         style={[
           styles.buttonText,
-          variant === "primary" && { color: "#7F5E1F" },
-          variant === "gold" && { color: "#151112" },
+          variant === "primary" && { color: "#7F1F32" },
+          variant === "gold" && { color: "#111315" },
           variant === "ghost" && { color: colors.muted },
         ]}
       >
@@ -84,7 +87,7 @@ export function Button({
     >
       {variant === "primary" ? (
         <LinearGradient
-          colors={["#8E1D38", colors.pink, "#5E0C1F"]}
+          colors={["#20558B", colors.pink, "#133557"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.button, styles.primary]}
@@ -107,7 +110,7 @@ export function Field({ label, error, emphasis = false, ...inputProps }: any) {
       <TextInput
         accessibilityLabel={label}
         accessibilityHint={error || undefined}
-        placeholderTextColor="#51484B"
+        placeholderTextColor="#484C51"
         selectionColor={colors.wine}
         style={[
           styles.input,
@@ -154,18 +157,18 @@ export function Chip({
     >
       <Text
         maxFontSizeMultiplier={1.3}
-        style={[styles.chipText, gold && { color: "#151112" }]}
+        style={[styles.chipText, gold && { color: "#111315" }]}
       >
         {label}
       </Text>
       {selected && (
         <LinearGradient
-          colors={["#E2CB95", colors.gold, "#533D13"]}
+          colors={["#D6A1AC", colors.gold, "#531320"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.chipCheck}
         >
-          <Ionicons name="checkmark" size={10} color="#130F10" />
+          <Ionicons name="checkmark" size={10} color="#0F1113" />
         </LinearGradient>
       )}
     </Pressable>
@@ -282,25 +285,9 @@ export const fieldStyles = {
 
 const styles = StyleSheet.create({
   brand: { flexDirection: "row", alignItems: "center", gap: 9 },
-  logoMark: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2D9CB",
-    shadowColor: colors.pink,
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-  },
-  logoMarkSmall: { width: 32, height: 32, borderRadius: 10 },
-  brandText: {
-    fontFamily: "Mukta_700Bold",
-    fontSize: 24,
-    letterSpacing: 0,
-    color: colors.text,
-  },
-  brandTextSmall: { fontSize: 20 },
-  brandOne: { color: colors.accent },
+  // 1600x460 is the lockup's own ratio. Keep the two in step if it changes.
+  logoLockup: { width: 164, height: 47 },
+  logoLockupSmall: { width: 125, height: 36 },
   button: {
     minHeight: 52,
     borderRadius: radius.pill,
@@ -323,7 +310,7 @@ const styles = StyleSheet.create({
   },
   ghost: { backgroundColor: "transparent" },
   gold: {
-    backgroundColor: "#EEDFBB",
+    backgroundColor: "#E1C8CD",
     borderWidth: 1,
     borderColor: colors.gold,
   },
@@ -334,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E2D9CB",
+    borderColor: "#D3D6DA",
     shadowColor: colors.pink,
     shadowOpacity: 0.18,
     shadowRadius: 8,
@@ -381,7 +368,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: "#FEFDFC",
+    backgroundColor: "#FDFDFD",
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",
@@ -392,7 +379,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.selectedSurface,
     borderColor: colors.selectedBorder,
   },
-  chipGold: { backgroundColor: "#EEDFBB", borderColor: colors.gold },
+  chipGold: { backgroundColor: "#E1C8CD", borderColor: colors.gold },
   chipText: {
     color: colors.text,
     fontFamily: "Mukta_600SemiBold",
@@ -405,7 +392,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E2D9CB",
+    borderColor: "#D3D6DA",
     shadowColor: colors.gold,
     shadowOpacity: 0.18,
     shadowRadius: 8,

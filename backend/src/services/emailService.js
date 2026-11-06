@@ -23,10 +23,10 @@ async function sendOtpEmail(toEmail, code) {
   const { data, error } = await getClient().emails.send({
     from: env.resend.fromEmail,
     to: toEmail,
-    subject: "Your Milaan verification code",
+    subject: "Your Apnajoda verification code",
     html: `
       <div style="font-family: sans-serif; padding: 24px;">
-        <h2 style="color:#B30C3D;">Milaan</h2>
+        <h2 style="color:#1F4D7A;">Apnajoda</h2>
         <p>Your verification code is:</p>
         <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px;">${code}</p>
         <p>This code expires in ${env.otp.expiresMinutes} minutes. If you didn't request this, you can ignore this email.</p>

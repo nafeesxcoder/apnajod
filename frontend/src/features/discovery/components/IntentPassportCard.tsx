@@ -10,8 +10,8 @@ import { passportStyles } from '../../../theme/appStyles';
 export function IntentPassportCard({input,compact=false,onEdit}:{input:IntentPassportInput;compact?:boolean;onEdit:()=>void}){
   const passport=buildIntentPassport(input);
   const visibleFields=compact?passport.fields.slice(0,3):passport.fields;
-  return <LinearGradient colors={['#FDFBF6','#F6F0E5','#F8F3E9']} locations={[0,.62,1]} start={{x:0,y:0}} end={{x:1,y:1}} style={[passportStyles.card,compact&&passportStyles.cardCompact]}>
-    <LinearGradient pointerEvents="none" colors={['rgba(119,16,39,.13)','rgba(138,27,53,.035)','transparent']} start={{x:1,y:0}} end={{x:.25,y:1}} style={passportStyles.glow}/>
+  return <LinearGradient colors={['#F9F9FA','#ECEDEF','#EFF0F2']} locations={[0,.62,1]} start={{x:0,y:0}} end={{x:1,y:1}} style={[passportStyles.card,compact&&passportStyles.cardCompact]}>
+    <LinearGradient pointerEvents="none" colors={['rgba(25,67,110,.13)','rgba(31,82,134,.035)','transparent']} start={{x:1,y:0}} end={{x:.25,y:1}} style={passportStyles.glow}/>
     <View pointerEvents="none" style={passportStyles.topAccent}/>
     <View style={passportStyles.header}>
       <ReferenceIconTile name="finger-print" orbSize={compact?42:48} iconSize={compact?18:20} tilePadding={compact?18:20}/>

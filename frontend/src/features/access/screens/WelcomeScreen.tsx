@@ -5,17 +5,20 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
+  Image,
   ImageBackground,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-const PINK = "#E91E63";
-const PINK_DARK = "#880E4F";
+const brandLogo = require("../../../../assets/apnajoda-logo.png");
+
+// Brand navy and its pressed step, from the mark.
+const NAVY = "#1F4D7A";
+const NAVY_DARK = "#12355A";
 const WHITE = "#FFFFFF";
-const DARK = "#1A1416";
+const DARK = "#151719";
 
 const MAX_WIDTH = 480;
 
@@ -87,28 +90,16 @@ export function AccessWelcomeScreen({
                 ]}
               >
                 <View style={{ alignItems: "center", marginBottom: 20 }}>
-                  <LinearGradient
-                    colors={[PINK, PINK_DARK]}
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 30,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Ionicons name="heart" size={30} color={WHITE} />
-                  </LinearGradient>
-                  <Text
-                    style={{
-                      fontSize: 28,
-                      fontWeight: "800",
-                      color: PINK_DARK,
-                    }}
-                  >
-                    ApnaJod
-                  </Text>
+                  {/* The lockup itself, not a stand-in glyph with the name
+                      typed beside it: this is the first screen anyone sees,
+                      so it shows the actual logo. 1600x460 is the asset's
+                      own ratio. */}
+                  <Image
+                    source={brandLogo}
+                    resizeMode="contain"
+                    accessibilityLabel="Apnajoda"
+                    style={{ width: 226, height: 65, marginBottom: 6 }}
+                  />
                   <Text style={{ fontSize: 14, color: "#555", marginTop: 4 }}>
                     Find Your Perfect Match
                   </Text>
@@ -142,7 +133,7 @@ export function AccessWelcomeScreen({
                     onPress={onSignUp}
                     accessibilityRole="button"
                     style={{
-                      backgroundColor: PINK,
+                      backgroundColor: NAVY,
                       paddingVertical: 14,
                       borderRadius: 25,
                       alignItems: "center",
@@ -160,7 +151,7 @@ export function AccessWelcomeScreen({
                     style={{
                       backgroundColor: "transparent",
                       borderWidth: 1.5,
-                      borderColor: PINK,
+                      borderColor: NAVY,
                       paddingVertical: 14,
                       borderRadius: 25,
                       alignItems: "center",
@@ -168,7 +159,7 @@ export function AccessWelcomeScreen({
                   >
                     <Text
                       style={{
-                        color: PINK_DARK,
+                        color: NAVY_DARK,
                         fontSize: 15,
                         fontWeight: "600",
                       }}

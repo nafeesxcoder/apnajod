@@ -85,7 +85,7 @@ export type CoupleChatSettings = {
   conversationPinned: boolean;
   conversationArchived: boolean;
   notificationMode: 'all' | 'mentions' | 'muted';
-  notificationSound: 'Milaan Chime' | 'Soft Rose' | 'Classic' | 'Silent';
+  notificationSound: 'Apnajoda Chime' | 'Soft Rose' | 'Classic' | 'Silent';
   mutedUntil?: number;
   // Instagram-style "show activity status": when false, this person's own
   // "is typing…" indicator is never sent to the other side (they can
@@ -102,7 +102,7 @@ export const defaultCoupleChatSettings: CoupleChatSettings = {
   conversationPinned: false,
   conversationArchived: false,
   notificationMode: 'all',
-  notificationSound: 'Milaan Chime',
+  notificationSound: 'Apnajoda Chime',
   shareTypingStatus: true,
 };
 

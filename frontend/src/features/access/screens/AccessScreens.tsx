@@ -39,6 +39,8 @@ import { DEFAULT_COUNTRY } from "../../../domain/countries";
 import { access } from "../../../theme/accessStyles";
 import { colors } from "../../../theme";
 
+const wordmarkArt = require("../../../../assets/apnajoda-wordmark.png");
+
 /* ============================================================
    Shared shell
    ============================================================ */
@@ -87,7 +89,16 @@ function AccessPage({
 }
 
 function Wordmark() {
-  return <Text style={access.wordmark}>Milaan</Text>;
+  // The drawn wordmark, not the name re-set in the UI typeface: the brand
+  // has its own letterforms and this is where they belong.
+  return (
+    <Image
+      source={wordmarkArt}
+      resizeMode="contain"
+      accessibilityLabel="Apnajoda"
+      style={access.wordmark}
+    />
+  );
 }
 
 function Heading({ title, body }: { title: string; body?: string }) {
@@ -285,7 +296,12 @@ export function AccessWelcomeScreen({
         body="Verified people across India, looking for something real. No swiping games."
       />
       <View style={access.welcomeArt}>
-        <Text style={access.welcomeArtMark}>Milaan</Text>
+        <Image
+          source={wordmarkArt}
+          resizeMode="contain"
+          accessibilityLabel="Apnajoda"
+          style={access.welcomeArtMark}
+        />
       </View>
       <View style={access.stack}>
         <Action label="Create account" onPress={onSignUp} />
@@ -961,7 +977,7 @@ export function QuickProfileScreen({
 
         <AccessField
           label="Age"
-          error={submitted && !ageOk ? "You must be 18 or older to use Milaan." : ""}
+          error={submitted && !ageOk ? "You must be 18 or older to use Apnajoda." : ""}
         >
           <View
             style={[access.inputBox, access.inputNarrow, submitted && !ageOk && access.inputBad]}

@@ -17,10 +17,10 @@ import type { Screen } from "../../../app/navigation/types";
 import type { Match } from "../../../data";
 import { matchApi } from "../../../api/matchApi";
 
-const GOLD = "#8A6722";
-const RUBY = "#8A1B35";
-const LINE = "#E2D9CB";
-const PAPER = "#F8F3E9";
+const GOLD = "#8A2237";
+const RUBY = "#1F5286";
+const LINE = "#D3D6DA";
+const PAPER = "#EFF0F2";
 
 type IncomingLike = {
   id: string;
@@ -132,11 +132,11 @@ export function LikesScreen({
           >
             <View style={{ flex: 1 }}>
               <Text
-                style={{ fontSize: 28, fontWeight: "700", color: "#1A1416" }}
+                style={{ fontSize: 28, fontWeight: "700", color: "#151719" }}
               >
                 Likes
               </Text>
-              <Text style={{ fontSize: 13, color: "#635A5D", marginTop: 4 }}>
+              <Text style={{ fontSize: 13, color: "#5A5E63", marginTop: 4 }}>
                 People who noticed you
               </Text>
             </View>
@@ -162,7 +162,7 @@ export function LikesScreen({
           {loading && (
             <View style={{ alignItems: "center", marginTop: 80 }}>
               <ActivityIndicator size="large" color={RUBY} />
-              <Text style={{ fontSize: 14, color: "#635A5D", marginTop: 16 }}>
+              <Text style={{ fontSize: 14, color: "#5A5E63", marginTop: 16 }}>
                 Checking for new likes…
               </Text>
             </View>
@@ -186,7 +186,7 @@ export function LikesScreen({
                 style={{
                   fontSize: 16,
                   fontWeight: "700",
-                  color: "#1A1416",
+                  color: "#151719",
                   marginTop: 12,
                 }}
               >
@@ -195,7 +195,7 @@ export function LikesScreen({
               <Text
                 style={{
                   fontSize: 14,
-                  color: "#635A5D",
+                  color: "#5A5E63",
                   textAlign: "center",
                   marginTop: 8,
                 }}
@@ -219,12 +219,12 @@ export function LikesScreen({
                 marginTop: 40,
               }}
             >
-              <Ionicons name="heart-outline" size={64} color="#E2D9CB" />
+              <Ionicons name="heart-outline" size={64} color="#D3D6DA" />
               <Text
                 style={{
                   fontSize: 18,
                   fontWeight: "700",
-                  color: "#1A1416",
+                  color: "#151719",
                   marginTop: 16,
                   textAlign: "center",
                 }}
@@ -234,7 +234,7 @@ export function LikesScreen({
               <Text
                 style={{
                   fontSize: 14,
-                  color: "#635A5D",
+                  color: "#5A5E63",
                   textAlign: "center",
                   marginTop: 8,
                   maxWidth: 280,
@@ -301,12 +301,12 @@ export function LikesScreen({
                           style={{
                             width: "100%",
                             height: 220,
-                            backgroundColor: "#F6D9E4",
+                            backgroundColor: "#E5E7EA",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
                         >
-                          <Ionicons name="person" size={44} color="#C9849F" />
+                          <Ionicons name="person" size={44} color="#86A6C7" />
                         </View>
                       )}
                       <LinearGradient
@@ -374,7 +374,7 @@ export function LikesScreen({
                           alignItems: "center",
                         }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: "600", color: "#635A5D" }}>
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: "#5A5E63" }}>
                           Pass
                         </Text>
                       </TouchableOpacity>
@@ -415,7 +415,7 @@ export function LikesScreen({
               <Text
                 style={{
                   fontSize: 14,
-                  color: "#635A5D",
+                  color: "#5A5E63",
                   textAlign: "center",
                   marginTop: 8,
                   marginBottom: 24,

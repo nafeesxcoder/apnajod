@@ -121,7 +121,7 @@ export function FindPeopleScreen({
       return `No one here goes by “${term.trim()}”.`;
     }
     if (contacts === null) return "";
-    return "None of your contacts are on Milaan yet.";
+    return "None of your contacts are on Apnajoda yet.";
   }, [busy, tab, term, contacts]);
 
   return (
