@@ -68,6 +68,20 @@ export function passesFilters(match: Match, filters: MatchFilters = defaultMatch
   return true;
 }
 
+/**
+ * Order the deck. Do not empty it.
+ *
+ * passesFilters used to be a cut here, the same way age and gender were a
+ * cut in the server's query, so the two stacked: whatever the server let
+ * through, the client threw away again. And this stack is the harsher one -
+ * intent, vibes, family priority, children, timeline, relocation - against
+ * candidates whose intent and timeline are usually blank because they have
+ * not filled that part in yet. The result was a deck of nobody, under a
+ * message telling the member to widen filters that were not the problem.
+ *
+ * Preferences now sort: everyone who matches them first, everyone else
+ * after. A block is still a cut, because that one is not a preference.
+ */
 export function rankMatches(
   matches: Match[],
   preferences: MatchPreferences,
@@ -76,11 +90,21 @@ export function rankMatches(
   enabled = true,
 ) {
   const filters = preferences.filters ?? defaultMatchFilters;
-  const visible = matches.filter((match) => !blockedIds.includes(match.id) && passesFilters(match, filters));
-  if (!enabled) return visible;
+  const visible = matches
+    .filter((match) => !blockedIds.includes(match.id))
+    .map((match, index) => ({
+      match,
+      index,
+      offPreference: passesFilters(match, filters) ? 0 : 1,
+      score: enabled ? scoreMatch(match, preferences, signals) : 0,
+    }));
   return visible
-    .map((match, index) => ({ match, index, score: scoreMatch(match, preferences, signals) }))
-    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .sort(
+      (a, b) =>
+        a.offPreference - b.offPreference ||
+        b.score - a.score ||
+        a.index - b.index,
+    )
     .map(({ match }) => match);
 }
 

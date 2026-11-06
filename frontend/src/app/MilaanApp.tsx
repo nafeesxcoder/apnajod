@@ -957,8 +957,16 @@ function MilaanApp() {
               );
               if (discoverResult.matches)
                 setServerDiscoveredMatches(discoverResult.matches);
+              // This is the path a returning member actually takes: the
+              // block above it is skipped, because memberDataRuntime is read
+              // from a render where accessToken is still empty. Without this
+              // line matchLoadState stayed on its initial "preview" for the
+              // whole session, and an empty deck told the member to widen
+              // filters instead of saying it was still loading or had failed.
+              setMatchLoadState("ready");
             } catch {
               setServerDiscoveredMatches([]);
+              setMatchLoadState("error");
             }
             if (profileData.profile) {
               setProfileDraft((current) => ({
