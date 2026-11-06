@@ -82,20 +82,26 @@ const following = asyncHandler(async (req, res) => {
 const userProfile = asyncHandler(async (req, res) => {
   const user = await followService.getUser(req.params.userId);
   if (!user) throw new ApiError(404, "That account is not available.");
-  const [state, count, permission] = await Promise.all([
+  const [state, count, permission, profile, like] = await Promise.all([
     followService.followState(req.user.id, user.id),
     followService.counts(user.id),
     followService.canMessage(req.user.id, user.id),
+    followService.getProfileCard(user.id),
+    followService.likeState(req.user.id, user.id),
   ]);
   res.json({
     ok: true,
     user: {
       userId: user.id,
       username: user.username,
-      name: user.full_name || user.username,
-      avatarUrl: user.avatar_url,
+      // The profile's own first name beats the account's, which is often
+      // just the username again.
+      name: profile.firstName || user.full_name || user.username,
+      avatarUrl: profile.photos[0] || user.avatar_url,
       isPrivate: !!user.is_private,
     },
+    profile,
+    like,
     counts: count,
     state,
     canMessage: permission.allowed,

@@ -315,8 +315,98 @@ async function decorate(viewerId, rows) {
   }));
 }
 
+/**
+ * The dating profile behind a person page.
+ *
+ * A person page used to carry a username, an avatar and two follower
+ * counts. On a dating app that is nothing to decide from: the member is
+ * looking at somebody who liked them and has to judge from a letter in a
+ * grey circle. Photos, age, city, work and their own words come too.
+ */
+async function getProfileCard(userId) {
+  const [profile] = await query(
+    `SELECT first_name, age, city, profession, religion, community,
+            about, verified, hobbies
+       FROM profiles
+      WHERE user_id = ?`,
+    [userId],
+  );
+  const photos = await query(
+    "SELECT photo_url FROM profile_photos WHERE user_id = ? ORDER BY position ASC",
+    [userId],
+  );
+
+  // mysql2 returns a JSON column already parsed; JSON.parse on it throws.
+  let hobbies = [];
+  if (Array.isArray(profile?.hobbies)) {
+    hobbies = profile.hobbies;
+  } else if (typeof profile?.hobbies === "string" && profile.hobbies.trim()) {
+    try {
+      hobbies = JSON.parse(profile.hobbies);
+    } catch {
+      hobbies = [];
+    }
+  }
+
+  return {
+    firstName: profile?.first_name || "",
+    age: profile?.age || 0,
+    city: profile?.city || "",
+    profession: profile?.profession || "",
+    religion: profile?.religion || "",
+    community: profile?.community || "",
+    about: profile?.about || "",
+    verified: profile?.verified === 1,
+    hobbies: Array.isArray(hobbies) ? hobbies : [],
+    photos: photos.map((row) => row.photo_url).filter(Boolean),
+  };
+}
+
+/**
+ * Where a like between two people stands, in one round trip.
+ *
+ *   none       neither has liked the other
+ *   pending    you liked them and are waiting
+ *   likes_you  they liked you; it is yours to accept
+ *   accepted   both of you, so the chat is open
+ *
+ * The person page needs this to know whether to offer Like, Accept, or
+ * nothing but Message. Offering "Like" to somebody you already matched with
+ * is how a member ends up unsure whether anything happened at all.
+ */
+async function likeState(viewerId, otherId) {
+  const [row] = await query(
+    `SELECT
+       EXISTS (SELECT 1 FROM match_decisions
+                WHERE actor_id = ? AND target_id = ? AND decision = 'interested') AS i_liked,
+       EXISTS (SELECT 1 FROM match_decisions
+                WHERE actor_id = ? AND target_id = ? AND decision = 'interested') AS they_liked,
+       EXISTS (SELECT 1 FROM mutual_matches
+                WHERE (user_a_id = ? AND user_b_id = ?)
+                   OR (user_a_id = ? AND user_b_id = ?)) AS matched`,
+    [viewerId, otherId, otherId, viewerId, viewerId, otherId, otherId, viewerId],
+  );
+  const iLiked = !!row?.i_liked;
+  const theyLiked = !!row?.they_liked;
+  const matched = !!row?.matched;
+  return {
+    iLiked,
+    theyLiked,
+    matched,
+    status: matched
+      ? "accepted"
+      : iLiked
+        ? "pending"
+        : theyLiked
+          ? "likes_you"
+          : "none",
+  };
+}
+
 module.exports = {
   getUser,
+  getProfileCard,
+  likeState,
   followState,
   setPrivacy,
   follow,

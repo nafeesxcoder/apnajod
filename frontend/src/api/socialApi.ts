@@ -5,7 +5,7 @@
  * in the app arrives either from a username search or from the member's own
  * contacts, and whether they can be messaged depends on the follow graph.
  */
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {
@@ -41,8 +41,39 @@ export type FollowRequest = {
   requestedAt: string;
 };
 
+/** The dating profile behind a person page: what you decide from. */
+export type ProfileCard = {
+  firstName: string;
+  age: number;
+  city: string;
+  profession: string;
+  religion: string;
+  community: string;
+  about: string;
+  verified: boolean;
+  hobbies: string[];
+  photos: string[];
+};
+
+/**
+ * Where a like between the two of you stands.
+ *
+ *   none       neither has liked the other
+ *   pending    you liked them and are waiting
+ *   likes_you  they liked you; it is yours to accept
+ *   accepted   both of you, so the chat is open
+ */
+export type LikeState = {
+  iLiked: boolean;
+  theyLiked: boolean;
+  matched: boolean;
+  status: "none" | "pending" | "likes_you" | "accepted";
+};
+
 export type PersonPage = {
   user: SocialUser;
+  profile: ProfileCard;
+  like: LikeState;
   counts: { followers: number; following: number };
   state: {
     self: boolean;
@@ -81,6 +112,13 @@ export const socialApi = {
     const data = await authFetch(`/social/users/${userId}`, accessToken);
     return {
       user: data.user,
+      profile: data.profile ?? {
+        firstName: "", age: 0, city: "", profession: "", religion: "",
+        community: "", about: "", verified: false, hobbies: [], photos: [],
+      },
+      like: data.like ?? {
+        iLiked: false, theyLiked: false, matched: false, status: "none",
+      },
       counts: data.counts,
       state: data.state,
       canMessage: !!data.canMessage,

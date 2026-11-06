@@ -4,6 +4,7 @@ const { query } = require("../config/db");
 const env = require("../config/env");
 const chatService = require("./chatService");
 const pushService = require("./pushService");
+const realtime = require("./realtime");
 
 function parseJsonColumn(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -71,6 +72,17 @@ async function startCall(conversationId, callerId, mode) {
     [callerId],
   );
   const callerName = profile?.first_name || "Someone";
+  // The socket is what actually makes the other phone ring. Push was the
+  // only channel here, and push needs VAPID keys: without them notifyUser
+  // is a no-op, so a call reached nobody. Push stays as the fallback for a
+  // callee who has the app closed.
+  realtime.emitToUser(calleeId, "call:incoming", {
+    callId: id,
+    conversationId,
+    callerId,
+    callerName,
+    mode: mode === "video" ? "video" : "audio",
+  });
   pushService
     .notifyUser(calleeId, {
       title: callerName,
@@ -99,6 +111,12 @@ async function respondToCall(callId, userId, accept) {
   if (call.status !== "ringing") return { id: callId, status: call.status };
   const status = accept ? "accepted" : "declined";
   await query("UPDATE calls SET status = ? WHERE id = ?", [status, callId]);
+  // The caller is sitting on a ringing screen: tell them which way it went
+  // rather than leaving them to find out by polling.
+  realtime.emitToUser(call.caller_id, "call:responded", {
+    callId,
+    status,
+  });
   return { id: callId, status };
 }
 
@@ -109,6 +127,11 @@ async function endCall(callId, userId, reason) {
     "UPDATE calls SET status = 'ended', ended_at = NOW(6), ended_reason = ? WHERE id = ?",
     [reason || "hangup", callId],
   );
+  const other = call.caller_id === userId ? call.callee_id : call.caller_id;
+  realtime.emitToUser(other, "call:ended", {
+    callId,
+    reason: reason || "hangup",
+  });
   return { id: callId, status: "ended" };
 }
 

@@ -1129,7 +1129,13 @@ export function ChatScreen({
       try {
         const call = await callApi.getIncoming(accessToken);
         if (!active) return;
-        if (call && call.conversationId === conversationIdFor(match)) {
+        // Compare the CALLER's id, not the stored conversation id. A call
+        // records its conversation as the id the caller addressed it by,
+        // which is the callee's own user id - so matching it against
+        // conversationIdFor(match), the caller's id, compared two different
+        // people and was never true. The banner could not appear even when
+        // the callee was sitting in the right thread.
+        if (call && call.callerId === conversationIdFor(match)) {
           setIncomingCall({
             id: call.id,
             callerName: call.callerName,

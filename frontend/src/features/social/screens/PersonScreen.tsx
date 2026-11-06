@@ -1,12 +1,26 @@
 /**
  * Someone else's page.
  *
- * The whole product sits on this screen's two decisions: whether you follow
- * them, and whether you may message them. A private account says so plainly
- * instead of letting someone type a message that would be refused.
+ * This is where a like is decided, so it has to show enough to decide on:
+ * their photos, age, city, work and their own words. It used to show a
+ * username, a letter in a grey circle and two follower counts that were
+ * always zero - leftovers from the follow system this app replaced with
+ * liking - which told a member nothing about the person who had just liked
+ * them.
+ *
+ * One action, and it depends only on where the like stands: Like, Accept,
+ * Pending, or Message once it is mutual. Offering "Like" to somebody you
+ * already matched with is how a member ends up unsure what happened.
  */
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,20 +34,15 @@ export function PersonScreen({
   onBack,
   onLoad,
   onFollow,
-  onUnfollow,
   onMessage,
-  onOpenFollowers,
-  onOpenFollowing,
   onBlock,
 }: {
   userId: string;
   onBack: () => void;
   onLoad: (userId: string) => Promise<PersonPage>;
+  /** Like them, or accept their like: the same decision either way. */
   onFollow: (userId: string) => Promise<"accepted" | "pending">;
-  onUnfollow: (userId: string) => Promise<void>;
   onMessage: (page: PersonPage) => void;
-  onOpenFollowers: (userId: string) => void;
-  onOpenFollowing: (userId: string) => void;
   onBlock?: (userId: string) => void;
 }) {
   const [page, setPage] = useState<PersonPage | null>(null);
@@ -52,24 +61,25 @@ export function PersonScreen({
     };
   }, [userId, onLoad]);
 
-  const refresh = async () => {
-    try {
-      setPage(await onLoad(userId));
-    } catch {
-      /* leave the last good view on screen */
-    }
-  };
-
-  const toggleFollow = async () => {
-    if (!page) return;
+  /**
+   * Like, or accept a like. Both are the same decision to the server; the
+   * difference is only whether the other person got there first.
+   *
+   * When it turns out mutual, the chat opens straight away. Accepting is
+   * the member saying they want to talk, so sending them off to find the
+   * thread themselves is a step nobody wants.
+   */
+  const like = async () => {
+    if (!page || busy) return;
     setBusy(true);
+    setError("");
     try {
-      if (page.state.following || page.state.requested) {
-        await onUnfollow(userId);
-      } else {
-        await onFollow(userId);
+      const outcome = await onFollow(userId);
+      const fresh = await onLoad(userId).catch(() => null);
+      if (fresh) setPage(fresh);
+      if (outcome === "accepted" || fresh?.like.matched) {
+        onMessage(fresh ?? page);
       }
-      await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "That did not work.");
     } finally {
@@ -98,106 +108,189 @@ export function PersonScreen({
     );
   }
 
-  const { user, counts, state } = page;
-  const followLabel = state.following
-    ? "Liked"
-    : state.requested
-      ? "Liked"
-      : "Like";
+  const { user, profile, state } = page;
+  const likeStatus = page.like.status;
+  const cover = profile.photos[0] || user.avatarUrl || "";
+  const extraPhotos = profile.photos.slice(1);
 
   return (
     <Shell onBack={onBack} title={user.username} onBlock={onBlock ? () => onBlock(userId) : undefined}>
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <View style={social.personHead}>
-          <Avatar user={user} size={96} />
-          <Text style={social.personName}>{user.name}</Text>
+          {cover ? (
+            <Image
+              source={{ uri: cover }}
+              style={{ width: 132, height: 132, borderRadius: 66 }}
+              resizeMode="cover"
+              accessibilityLabel={`${user.name}'s photo`}
+            />
+          ) : (
+            <Avatar user={user} size={120} />
+          )}
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={social.personName}>
+              {user.name}
+              {profile.age ? `, ${profile.age}` : ""}
+            </Text>
+            {profile.verified && (
+              <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+            )}
+          </View>
           <Text style={social.personHandle}>@{user.username}</Text>
-          {user.isPrivate && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name="lock-closed" size={14} color={colors.muted} />
-              <Text style={social.rowSub}>Private account</Text>
+
+          {!!(profile.city || profile.profession) && (
+            <Text style={social.rowSub}>
+              {[profile.city, profile.profession].filter(Boolean).join("  ·  ")}
+            </Text>
+          )}
+
+          {likeStatus !== "none" && (
+            <View
+              style={{
+                marginTop: 8,
+                paddingHorizontal: 11,
+                paddingVertical: 4,
+                borderRadius: 999,
+                backgroundColor:
+                  likeStatus === "accepted" ? "#E6F4EE" : "#E6EDF5",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: likeStatus === "accepted" ? "#17624A" : "#1F4D7A",
+                }}
+              >
+                {likeStatus === "accepted"
+                  ? "Matched"
+                  : likeStatus === "likes_you"
+                    ? "Likes you"
+                    : "Pending — waiting for them"}
+              </Text>
             </View>
           )}
-          {state.followsYou && <Text style={social.rowSub}>Follows you</Text>}
-        </View>
-
-        <View style={[social.personMetaRow, { justifyContent: "center" }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${counts.followers} followers`}
-            onPress={() => onOpenFollowers(userId)}
-            style={social.personMeta}
-          >
-            <Text style={social.personMetaValue}>{counts.followers}</Text>
-            <Text style={social.personMetaLabel}>Followers</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${counts.following} following`}
-            onPress={() => onOpenFollowing(userId)}
-            style={social.personMeta}
-          >
-            <Text style={social.personMetaValue}>{counts.following}</Text>
-            <Text style={social.personMetaLabel}>Following</Text>
-          </Pressable>
         </View>
 
         {!state.self && (
           <View style={social.personActions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${followLabel} ${user.username}`}
-              disabled={busy}
-              onPress={() => void toggleFollow()}
-              style={[
-                social.personAction,
-                (state.following || state.requested) && social.personActionGhost,
-              ]}
-            >
-              {busy ? (
-                <ActivityIndicator size="small" color={colors.textInverse} />
-              ) : (
-                <Text
-                  style={[
-                    social.personActionText,
-                    (state.following || state.requested) && social.personActionGhostText,
-                  ]}
-                >
-                  {followLabel}
-                </Text>
-              )}
-            </Pressable>
-
-            {page.canMessage && (
+            {likeStatus === "accepted" ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Message ${user.username}`}
                 onPress={() => onMessage(page)}
-                style={[social.personAction, social.personActionGhost]}
+                style={social.personAction}
               >
-                <Ionicons name="chatbubble-outline" size={18} color={colors.text} />
+                <Ionicons name="chatbubble" size={17} color={colors.textInverse} />
+                <Text style={social.personActionText}>Message</Text>
+              </Pressable>
+            ) : likeStatus === "pending" ? (
+              <View style={[social.personAction, social.personActionGhost]}>
+                <Ionicons name="time-outline" size={17} color={colors.muted} />
                 <Text style={[social.personActionText, social.personActionGhostText]}>
-                  Message
+                  Pending
                 </Text>
+              </View>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  likeStatus === "likes_you"
+                    ? `Accept ${user.username} and open a chat`
+                    : `Like ${user.username}`
+                }
+                disabled={busy}
+                onPress={() => void like()}
+                style={[social.personAction, busy && { opacity: 0.6 }]}
+              >
+                {busy ? (
+                  <ActivityIndicator size="small" color={colors.textInverse} />
+                ) : (
+                  <>
+                    <Ionicons name="heart" size={17} color={colors.textInverse} />
+                    <Text style={social.personActionText}>
+                      {likeStatus === "likes_you" ? "Accept" : "Like"}
+                    </Text>
+                  </>
+                )}
               </Pressable>
             )}
           </View>
         )}
 
-        {!state.self && !page.canMessage && (
+        {!!profile.about && (
           <View style={social.lockedCard}>
-            <Ionicons name="lock-closed-outline" size={26} color={colors.accent} />
+            <Text style={[social.lockedTitle, { marginBottom: 4 }]}>About</Text>
+            <Text style={social.lockedBody}>{profile.about}</Text>
+          </View>
+        )}
+
+        {profile.hobbies.length > 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              paddingHorizontal: 20,
+              marginTop: 14,
+            }}
+          >
+            {profile.hobbies.map((hobby) => (
+              <View
+                key={hobby}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: colors.line,
+                  backgroundColor: colors.surface,
+                }}
+              >
+                <Text style={{ fontSize: 13, color: colors.textSoft }}>{hobby}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {extraPhotos.length > 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              paddingHorizontal: 20,
+              marginTop: 16,
+            }}
+          >
+            {extraPhotos.map((uri) => (
+              <Image
+                key={uri}
+                source={{ uri }}
+                style={{ width: "31.5%", aspectRatio: 1, borderRadius: 12 }}
+                resizeMode="cover"
+              />
+            ))}
+          </View>
+        )}
+
+        {!state.self && likeStatus !== "accepted" && (
+          <View style={social.lockedCard}>
+            <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
             <Text style={social.lockedTitle}>
               {page.messageBlockedReason === "blocked"
                 ? "You cannot message this account"
-                : "This account is private"}
+                : "Chat opens on a match"}
             </Text>
             <Text style={social.lockedBody}>
               {page.messageBlockedReason === "blocked"
                 ? "Messaging is unavailable between your accounts."
-                : state.requested
+                : likeStatus === "pending"
                   ? `${user.username} has your like. The chat opens if they like you back.`
-                  : `Like ${user.username}. If they like you back, the chat opens for both of you.`}
+                  : likeStatus === "likes_you"
+                    ? `${user.username} liked you. Accept and the chat opens for both of you.`
+                    : `Like ${user.username}. If they like you back, the chat opens for both of you.`}
             </Text>
           </View>
         )}

@@ -1700,6 +1700,65 @@ function MilaanApp() {
       clearInterval(timer);
     };
   }, [hydrated, screen, conversationPartner.id, accessToken]);
+
+  /**
+   * A call has to reach you wherever you are in the app.
+   *
+   * Incoming calls were only noticed by a poll inside the chat screen, and
+   * only for the one conversation open on it. Anywhere else - Home, Likes,
+   * your own profile, a different thread - the phone never rang. Push was
+   * meant to cover that, but push needs VAPID keys and there are none, so
+   * notifyUser did nothing and a call reached nobody who was not already
+   * looking at that exact chat.
+   *
+   * The socket now carries the call, so it arrives at once. The poll stays
+   * as the fallback for a socket that has dropped, at a slow interval since
+   * it is only a safety net. Either way the thread is opened, and the chat
+   * screen's own banner and ringtone take it from there.
+   */
+  const handledCallRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hydrated || !accessToken) return;
+    let active = true;
+
+    const open = (call: { id: string; callerId: string; callerName: string }) => {
+      if (!active || handledCallRef.current === call.id) return;
+      handledCallRef.current = call.id;
+      if (screen === "chat" && conversationPartner.id === call.callerId) return;
+      openConversationWith({
+        userId: call.callerId,
+        username: "",
+        name: call.callerName || "Someone",
+        avatarUrl: null,
+        isPrivate: false,
+      });
+    };
+
+    const socket = getChatSocket();
+    const onIncoming = (data: {
+      callId: string;
+      callerId: string;
+      callerName: string;
+    }) => open({ id: data.callId, callerId: data.callerId, callerName: data.callerName });
+    socket?.on("call:incoming", onIncoming);
+
+    const poll = () => {
+      if (isChatSocketConnected()) return;
+      void callApi
+        .getIncoming(accessToken)
+        .then((call) => call && open(call))
+        .catch(() => undefined);
+    };
+    poll();
+    const timer = setInterval(poll, 5000);
+
+    return () => {
+      active = false;
+      socket?.off("call:incoming", onIncoming);
+      clearInterval(timer);
+    };
+  }, [hydrated, accessToken, screen, conversationPartner.id]);
+
   useEffect(() => {
     if (!hydrated || screen !== "chat" || !accessToken) return;
     let active = true;
@@ -3261,16 +3320,7 @@ function MilaanApp() {
             onBack={() => setScreen("find")}
             onLoad={(userId) => socialApi.person(accessToken, userId)}
             onFollow={(userId) => likeFromSearch(userId)}
-            onUnfollow={(userId) => socialApi.unfollow(accessToken, userId)}
             onMessage={(page) => openConversationWith(page.user)}
-            onOpenFollowers={(userId) => {
-              setPeopleList({ mode: "followers", userId });
-              setScreen("followers");
-            }}
-            onOpenFollowing={(userId) => {
-              setPeopleList({ mode: "following", userId });
-              setScreen("following");
-            }}
           />
         )}
 

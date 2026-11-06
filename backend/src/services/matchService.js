@@ -1,5 +1,6 @@
 ﻿const crypto = require("crypto");
 const { query } = require("../config/db");
+const pushService = require("./pushService");
 
 async function recordDecision(actorId, targetId, decision) {
   await query(
@@ -94,70 +95,106 @@ async function getMutualMatches(userId) {
 }
 
 /**
- * Who liked me but hasn't been matched with me yet?
+ * Everyone who has liked me, newest first, each with where it stands.
  *
- * This is the "Likes" tab: incoming interest that is still one-sided. Once a
- * mutual match exists, the person moves out of this list and into the
- * Matches tab, so we exclude anyone who is already in mutual_matches.
+ * This list used to drop anybody already matched, so a like vanished at the
+ * exact moment it was accepted and the member had no record that the thing
+ * had happened at all. It now keeps them and says which they are:
+ *
+ *   pending   they liked you; it is yours to accept
+ *   accepted  you liked back, and the chat is open
+ *
+ * Enough of each profile comes back to decide on — photos, age, city, work
+ * and their own words — because deciding from a name and a grey circle is
+ * not deciding.
  *
  * Blocks are filtered out (you shouldn't see someone you blocked, even if
  * they liked you before), and self is obviously excluded.
+ *
+ * Two queries, not 1 + 3N: the per-person lookups ran once per row, so a
+ * hundred likes meant three hundred round trips to show one screen.
  */
 async function getIncomingLikes(userId, limit = 100) {
   const rows = await query(
-    `SELECT d.actor_id, d.created_at
-       FROM match_decisions d
-      WHERE d.target_id = ?
-        AND d.decision = 'interested'
-        AND d.actor_id <> ?
-        AND NOT EXISTS (
-          SELECT 1 FROM mutual_matches m
-           WHERE (m.user_a_id = d.actor_id AND m.user_b_id = d.target_id)
-              OR (m.user_a_id = d.target_id AND m.user_b_id = d.actor_id)
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM blocks b
-           WHERE (b.blocker_id = ? AND b.blocked_id = d.actor_id)
-              OR (b.blocker_id = d.actor_id AND b.blocked_id = ?)
-        )
-      ORDER BY d.created_at DESC
-      LIMIT ${Number(limit)}`,
+    `SELECT
+       d.actor_id, d.created_at,
+       u.username, u.avatar_url,
+       p.first_name, p.age, p.city, p.profession, p.gender, p.about,
+       p.verified, p.hobbies,
+       EXISTS (
+         SELECT 1 FROM mutual_matches m
+          WHERE (m.user_a_id = d.actor_id AND m.user_b_id = d.target_id)
+             OR (m.user_a_id = d.target_id AND m.user_b_id = d.actor_id)
+       ) AS accepted
+     FROM match_decisions d
+     JOIN users u
+       ON u.id = d.actor_id
+      AND u.deleted_at IS NULL
+      AND u.deactivated_at IS NULL
+     LEFT JOIN profiles p ON p.user_id = d.actor_id
+     WHERE d.target_id = ?
+       AND d.decision = 'interested'
+       AND d.actor_id <> ?
+       AND NOT EXISTS (
+         SELECT 1 FROM blocks b
+          WHERE (b.blocker_id = ? AND b.blocked_id = d.actor_id)
+             OR (b.blocker_id = d.actor_id AND b.blocked_id = ?)
+       )
+     ORDER BY d.created_at DESC
+     LIMIT ${Number(limit)}`,
     [userId, userId, userId, userId],
   );
 
-  const results = [];
-  for (const row of rows) {
-    const [profile] = await query(
-      "SELECT first_name, age, city, profession, gender FROM profiles WHERE user_id = ?",
-      [row.actor_id],
-    );
-    const photos = await query(
-      "SELECT photo_url FROM profile_photos WHERE user_id = ? ORDER BY position ASC",
-      [row.actor_id],
-    );
-    const [user] = await query(
-      "SELECT username, avatar_url FROM users WHERE id = ? AND deleted_at IS NULL",
-      [row.actor_id],
-    );
-    // Skip accounts that have been deleted since they liked you.
-    if (!user) continue;
+  if (!rows.length) return [];
 
-    results.push({
+  const ids = rows.map((row) => row.actor_id);
+  const photoRows = await query(
+    `SELECT user_id, photo_url
+       FROM profile_photos
+      WHERE user_id IN (${ids.map(() => "?").join(",")})
+      ORDER BY position ASC`,
+    ids,
+  );
+  const photosByUser = new Map();
+  for (const photo of photoRows) {
+    const list = photosByUser.get(photo.user_id) ?? [];
+    list.push(photo.photo_url);
+    photosByUser.set(photo.user_id, list);
+  }
+
+  return rows.map((row) => {
+    const photos = photosByUser.get(row.actor_id) ?? [];
+    // mysql2 hands back a JSON column already parsed, so JSON.parse on it
+    // throws and the hobbies silently became an empty list.
+    let hobbies = [];
+    if (Array.isArray(row.hobbies)) {
+      hobbies = row.hobbies;
+    } else if (typeof row.hobbies === "string" && row.hobbies.trim()) {
+      try {
+        hobbies = JSON.parse(row.hobbies);
+      } catch {
+        hobbies = [];
+      }
+    }
+    return {
       id: row.actor_id,
       profileId: row.actor_id,
       userId: row.actor_id,
-      username: user.username || "",
-      name: profile?.first_name || user.username || "Member",
-      age: profile?.age || 0,
-      city: profile?.city || "",
-      profession: profile?.profession || "",
-      gender: profile?.gender || "nonbinary",
-      photo: photos[0]?.photo_url || user.avatar_url || "",
-      photos: photos.map((p) => p.photo_url),
+      username: row.username || "",
+      name: row.first_name || row.username || "Member",
+      age: row.age || 0,
+      city: row.city || "",
+      profession: row.profession || "",
+      gender: row.gender || "nonbinary",
+      about: row.about || "",
+      verified: row.verified === 1,
+      hobbies: Array.isArray(hobbies) ? hobbies : [],
+      photo: photos[0] || row.avatar_url || "",
+      photos,
       likedAt: row.created_at,
-    });
-  }
-  return results;
+      status: row.accepted ? "accepted" : "pending",
+    };
+  });
 }
 
 module.exports = {
