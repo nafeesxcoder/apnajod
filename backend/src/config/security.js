@@ -2,9 +2,15 @@ const env = require("./env");
 
 // Origins that may call the API from a browser. The frontend's own URL
 // (APP_URL) is always allowed; add more with CORS_ORIGINS="https://a.com,https://b.com".
+// The live site, both hosts nginx answers on. These are defaults rather
+// than env-only because getting APP_URL wrong does not fail loudly: REST
+// keeps working (the app and the API share an origin, so CORS never
+// applies to it) while the socket dies, because a WebSocket handshake
+// always carries an Origin header. The symptom is a chat with no live
+// presence and no read ticks, and nothing in the log to say why.
 const DEFAULT_ORIGINS = [
-  "https://milaan.in",
-  "https://www.milaan.in",
+  "https://apnajoda.com",
+  "https://www.apnajoda.com",
   "http://localhost:8081",
   "http://localhost:19006",
   "http://localhost:3000",

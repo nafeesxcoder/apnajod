@@ -14,7 +14,7 @@ async function authFetch(path: string, accessToken: string, options: RequestInit
 }
 export const profileApi = {
   async getMyProfile(accessToken: string) {
-    return authFetch("/profile/me", accessToken);
+    return authFetch("/profile/me", accessToken); 
   },
   async discoverMatches(accessToken: string, limit = 20) {
     return authFetch(`/profile/discover?limit=${limit}`, accessToken);
