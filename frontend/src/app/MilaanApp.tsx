@@ -442,6 +442,7 @@ function MilaanApp() {
     Mukta_600SemiBold,
     Mukta_700Bold,
   });
+  const appLayout = useLayout();
   const [screen, setScreen] = useState<Screen>(
     () => showcasePreviewScreen ?? "splash",
   );
@@ -3281,16 +3282,29 @@ function MilaanApp() {
             onSubmit={answerIcebreaker}
           />
         )}
-        {screen === "chats" && accessToken && (
-          <ChatsScreen
-            onLoad={() => loadChatsAndMatches(accessToken)}
-            onOpenConversation={(conversation) =>
-              openConversationWith(conversation.user)
-            }
-            onFind={() => setScreen("find")}
-            navigate={navigateTo}
-          />
-        )}
+        {/*
+          On a desktop the conversation list does not go away when a thread
+          is opened - it becomes the column beside it, the way every
+          desktop messenger works. On a phone it is still one screen at a
+          time, because there is no room for two.
+        */}
+        {(screen === "chats" || (appLayout.isDesktop && screen === "chat")) &&
+          accessToken && (
+            <ChatsScreen
+              pane={appLayout.isDesktop && screen === "chat"}
+              activeConversationId={
+                screen === "chat"
+                  ? conversationIdFor(conversationPartner)
+                  : undefined
+              }
+              onLoad={() => loadChatsAndMatches(accessToken)}
+              onOpenConversation={(conversation) =>
+                openConversationWith(conversation.user)
+              }
+              onFind={() => setScreen("find")}
+              navigate={navigateTo}
+            />
+          )}
 
         {screen === "find" && accessToken && (
           <FindPeopleScreen

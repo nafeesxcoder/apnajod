@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ConversationSummary } from '../../../api/chatApi';
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
+import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
 import type { Screen } from '../../../app/navigation/types';
 import { social } from '../../../theme/socialStyles';
 import { colors } from '../../../theme';
@@ -89,7 +90,11 @@ export function ChatsScreen({
   onOpenConversation,
   onFind,
   navigate,
+  pane,
+  activeConversationId,
 }: {
+  pane?: boolean;
+  activeConversationId?: string;
   onLoad: () => Promise<ConversationSummary[]>;
   onOpenConversation: (conversation: ConversationSummary) => void;
   onFind: () => void;
@@ -120,9 +125,26 @@ export function ChatsScreen({
     setRefreshing(false);
   };
 
+  // On a desktop with a conversation open, this list is not the screen -
+  // it is the column beside it, the way every desktop messenger works.
+  const paneStyle = pane
+    ? {
+        position: "absolute" as const,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        width: RAIL_WIDTH + CHAT_LIST_WIDTH,
+        borderRightWidth: 1,
+        borderRightColor: "#D3D6DA",
+        zIndex: 10,
+      }
+    : null;
+
   return (
-    <View style={[social.root, { paddingLeft: navInset.paddingLeft }]}>
-      <SafeAreaView style={social.safe}>
+    <View style={[social.root, paneStyle]}>
+      <SafeAreaView
+        style={[social.safe, { paddingLeft: navInset.paddingLeft }]}
+      >
         <View style={social.header}>
           <Text style={social.headerTitle}>Chats</Text>
           <View style={social.headerSpacer} />
@@ -181,7 +203,15 @@ export function ChatsScreen({
                     conversation.unread ? `, ${conversation.unread} unread` : ''
                   }`}
                   onPress={() => onOpenConversation(conversation)}
-                  style={social.row}
+                  // Beside an open thread, the list has to say which one
+                  // is open. Without it both panes are visible and neither
+                  // tells you where you are.
+                  style={[
+                    social.row,
+                    conversation.conversationId === activeConversationId && {
+                      backgroundColor: "#EEF2F6",
+                    },
+                  ]}
                 >
                   <View style={social.rowMain}>
                     <Avatar

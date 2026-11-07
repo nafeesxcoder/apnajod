@@ -70,6 +70,8 @@ import type {
 import { defaultCoupleChatSettings } from "../../storage";
 import { colors } from "../../theme";
 import { receiptColor, receiptIcon, receiptLabel } from "./receipt";
+import { APP_MAX_WIDTH, CHAT_LIST_WIDTH, RAIL_WIDTH } from "../../layout/breakpoints";
+import { useLayout } from "../../layout/useLayout";
 import {
   aiStyles,
   chatPremiumStyles,
@@ -969,6 +971,7 @@ export function ChatScreen({
   onTypingChange?: (typing: boolean) => void;
 }) {
   const { width: chatWidth, height: chatHeight } = useWindowDimensions();
+  const { isDesktop: isDesktopChat } = useLayout();
   const messagesRef = useRef<ScrollView | null>(null);
   // When the server has a GIPHY key, GIF search goes through it; otherwise the
   // built-in reaction catalog from runtimePorts stays in use.
@@ -2309,6 +2312,16 @@ export function ChatScreen({
           style={[
             chatPremiumStyles.safeArea,
             { backgroundColor: "transparent" },
+            // On a desktop the rail and the conversation list sit to the
+            // left of this thread, so it starts where they end.
+            isDesktopChat
+              ? {
+                  paddingLeft: RAIL_WIDTH + CHAT_LIST_WIDTH,
+                  maxWidth: APP_MAX_WIDTH,
+                  alignSelf: "stretch" as const,
+                  borderLeftWidth: 0,
+                }
+              : null,
           ]}
         >
           <View

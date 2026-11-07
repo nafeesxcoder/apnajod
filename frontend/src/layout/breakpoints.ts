@@ -22,6 +22,13 @@ export const DESKTOP_MIN = 1024;
 export const RAIL_WIDTH = 96;
 
 /**
+ * The conversation list beside an open chat on a desktop. Narrow enough
+ * that the thread still gets most of the window, wide enough for a name,
+ * a preview line and a time without any of them truncating.
+ */
+export const CHAT_LIST_WIDTH = 340;
+
+/**
  * How wide the app itself ever gets. Past this the content stops growing
  * and centres: a chat line that runs 2,000px is unreadable, and a dating
  * deck stretched that far is mostly empty space.
