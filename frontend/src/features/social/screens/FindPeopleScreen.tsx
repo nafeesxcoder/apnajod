@@ -19,9 +19,24 @@ import { fonts, palette, radius, typeScale } from "../../../theme";
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
 
-type Tab = "username" | "contacts";
+type Tab = "discover" | "contacts";
 
-const SUGGESTIONS = ["riya_07", "arjun_delhi", "priya_mumbai", "kabir_92"];
+const SUGGESTIONS = [
+  "nafarhaofficial",
+  "nafees",
+  "riya_07",
+  "arjun_delhi",
+  "priya_mumbai",
+  "kabir_92",
+];
+
+const FILTERS = [
+  { id: "all", label: "All", icon: "apps" },
+  { id: "active", label: "Active now", icon: "flash" },
+  { id: "new", label: "New", icon: "sparkles" },
+] as const;
+
+type FilterId = (typeof FILTERS)[number]["id"];
 
 export type FindPeopleProps = {
   onBack: () => void;
@@ -30,6 +45,7 @@ export type FindPeopleProps = {
   onOpenPerson: (userId: string) => void;
   onFollow: (userId: string) => Promise<"accepted" | "pending">;
   contactsSupported: boolean;
+  discoverUsers?: SocialUser[];
 };
 
 function formatPhone(phone: string) {
@@ -65,18 +81,21 @@ export function FindPeopleScreen({
   onOpenPerson,
   onFollow,
   contactsSupported,
+  discoverUsers = [],
 }: FindPeopleProps) {
-  const [tab, setTab] = useState<Tab>("username");
+  const [tab, setTab] = useState<Tab>("discover");
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<SocialUser[]>([]);
   const [contacts, setContacts] = useState<ContactsMatchResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState<FilterId>("all");
+  const [searchMode, setSearchMode] = useState(false);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const token = useRef(0);
 
   useEffect(() => {
-    if (tab !== "username") return;
+    if (!searchMode) return;
     const q = term.trim();
     setError("");
     if (q.length < 2) {
@@ -102,7 +121,7 @@ export function FindPeopleScreen({
         });
     }, 350);
     return () => clearTimeout(timer);
-  }, [term, onSearch, tab]);
+  }, [term, onSearch, searchMode]);
 
   const loadContacts = async () => {
     setError("");
@@ -143,6 +162,12 @@ export function FindPeopleScreen({
     }
   };
 
+  const clearSearch = () => {
+    setTerm("");
+    setSearchMode(false);
+    setResults([]);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -166,12 +191,13 @@ export function FindPeopleScreen({
               paddingVertical: 20,
             }}
           >
+            {/* Header */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 10,
-                marginBottom: 16,
+                marginBottom: 20,
               }}
             >
               <Pressable
@@ -190,123 +216,88 @@ export function FindPeopleScreen({
               >
                 <Ionicons name="arrow-back" size={18} color={palette.ink} />
               </Pressable>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: typeScale.title,
-                  color: palette.ink,
-                }}
-              >
-                Find people
-              </Text>
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: tab === "username" }}
-                onPress={() => setTab("username")}
-                style={{
-                  flex: 1,
-                  paddingVertical: 11,
-                  borderRadius: radius.pill,
-                  backgroundColor:
-                    tab === "username" ? palette.navy : palette.paper,
-                  borderWidth: tab === "username" ? 0 : 1,
-                  borderColor: palette.rule,
-                  alignItems: "center",
-                }}
-              >
+              <View style={{ flex: 1 }}>
                 <Text
                   style={{
-                    fontFamily: fonts.bodySemi,
-                    fontSize: 13,
-                    color: tab === "username" ? "#FFFFFF" : palette.ink,
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.title,
+                    color: palette.ink,
                   }}
                 >
-                  Username
+                  Find people
                 </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: tab === "contacts" }}
-                onPress={() => {
-                  setTab("contacts");
-                  if (contacts === null && contactsSupported)
-                    void loadContacts();
-                }}
-                style={{
-                  flex: 1,
-                  paddingVertical: 11,
-                  borderRadius: radius.pill,
-                  backgroundColor:
-                    tab === "contacts" ? palette.navy : palette.paper,
-                  borderWidth: tab === "contacts" ? 0 : 1,
-                  borderColor: palette.rule,
-                  alignItems: "center",
-                }}
-              >
                 <Text
                   style={{
-                    fontFamily: fonts.bodySemi,
+                    fontFamily: fonts.body,
                     fontSize: 13,
-                    color: tab === "contacts" ? "#FFFFFF" : palette.ink,
+                    color: palette.slate,
+                    marginTop: 2,
                   }}
                 >
-                  My contacts
+                  Discover someone worth meeting
                 </Text>
-              </Pressable>
+              </View>
             </View>
 
-            {tab === "username" ? (
-              <>
-                <View
+            {/* Search box — compact */}
+            <Pressable
+              onPress={() => setSearchMode(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: palette.paperSand,
+                borderRadius: radius.pill,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              <Ionicons name="search" size={18} color={palette.navy} />
+              {searchMode ? (
+                <TextInput
+                  autoFocus
+                  value={term}
+                  onChangeText={setTerm}
+                  placeholder="Search by username..."
+                  placeholderTextColor={palette.navySoft}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  selectionColor={palette.navy}
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: palette.paperSand,
-                    borderRadius: radius.pill,
-                    paddingHorizontal: 16,
-                    paddingVertical: 4,
-                    gap: 10,
-                    marginBottom: 24,
+                    flex: 1,
+                    fontSize: 15,
+                    fontFamily: fonts.body,
+                    color: palette.ink,
+                    outlineStyle: "none" as any,
+                  }}
+                />
+              ) : (
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 15,
+                    fontFamily: fonts.body,
+                    color: palette.navySoft,
                   }}
                 >
-                  <Ionicons name="search" size={20} color={palette.navy} />
-                  <TextInput
-                    accessibilityLabel="Search by username"
-                    value={term}
-                    onChangeText={setTerm}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder="Search by username..."
-                    placeholderTextColor={palette.navySoft}
-                    selectionColor={palette.navy}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      fontSize: 15,
-                      fontFamily: fonts.body,
-                      color: palette.ink,
-                      outlineStyle: "none" as any,
-                    }}
+                  Search by username...
+                </Text>
+              )}
+              {searchMode && !!term && (
+                <Pressable onPress={clearSearch} hitSlop={10}>
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={palette.slate}
                   />
-                  {!!term && (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Clear"
-                      onPress={() => setTerm("")}
-                      hitSlop={10}
-                    >
-                      <Ionicons
-                        name="close-circle"
-                        size={18}
-                        color={palette.slate}
-                      />
-                    </Pressable>
-                  )}
-                </View>
+                </Pressable>
+              )}
+            </Pressable>
 
+            {/* SEARCH MODE */}
+            {searchMode ? (
+              <>
                 {!!error && (
                   <Text
                     accessibilityRole="alert"
@@ -326,61 +317,24 @@ export function FindPeopleScreen({
                   <View style={{ paddingVertical: 60, alignItems: "center" }}>
                     <ActivityIndicator color={palette.navy} />
                   </View>
-                ) : results.length === 0 ? (
+                ) : term.trim().length < 2 ? (
                   <View
                     style={{
-                      backgroundColor: palette.paperSand,
-                      borderRadius: radius.lg,
                       padding: 24,
                       alignItems: "center",
                     }}
                   >
-                    <View
-                      style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 32,
-                        backgroundColor: palette.paper,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: 14,
-                      }}
-                    >
-                      <Ionicons
-                        name="people-outline"
-                        size={30}
-                        color={palette.navy}
-                      />
-                    </View>
-                    <Text
-                      style={{
-                        fontFamily: fonts.display,
-                        fontSize: typeScale.section,
-                        color: palette.ink,
-                        textAlign: "center",
-                        marginBottom: 6,
-                      }}
-                    >
-                      {term.trim().length < 2
-                        ? "Who are you looking for?"
-                        : `No one goes by "${term.trim()}"`}
-                    </Text>
                     <Text
                       style={{
                         fontFamily: fonts.body,
-                        fontSize: 13,
+                        fontSize: 14,
                         color: palette.slate,
                         textAlign: "center",
-                        lineHeight: 19,
-                        marginBottom: 20,
-                        maxWidth: 360,
+                        marginBottom: 16,
                       }}
                     >
-                      {term.trim().length < 2
-                        ? "Type at least 2 letters of a username. We'll show the best matches first."
-                        : "Try a different username."}
+                      Type at least 2 letters to search
                     </Text>
-
                     <Text
                       style={{
                         fontFamily: fonts.bodySemi,
@@ -409,7 +363,7 @@ export function FindPeopleScreen({
                             paddingHorizontal: 12,
                             paddingVertical: 6,
                             borderRadius: radius.pill,
-                            backgroundColor: palette.paper,
+                            backgroundColor: palette.paperSand,
                             borderWidth: 1,
                             borderColor: palette.rule,
                           }}
@@ -427,6 +381,32 @@ export function FindPeopleScreen({
                       ))}
                     </View>
                   </View>
+                ) : results.length === 0 ? (
+                  <View
+                    style={{
+                      backgroundColor: palette.paperSand,
+                      borderRadius: radius.lg,
+                      padding: 24,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="search-outline"
+                      size={36}
+                      color={palette.navySoft}
+                      style={{ marginBottom: 12 }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 14,
+                        color: palette.slate,
+                        textAlign: "center",
+                      }}
+                    >
+                      {`No one goes by "${term.trim()}"`}
+                    </Text>
+                  </View>
                 ) : (
                   <View style={{ gap: 8 }}>
                     {results.map((user) => (
@@ -443,275 +423,536 @@ export function FindPeopleScreen({
               </>
             ) : (
               <>
-                {!contactsSupported ? (
-                  <View
+                {/* Tab switch: Discover / Contacts */}
+                <View
+                  style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}
+                >
+                  <Pressable
+                    onPress={() => setTab("discover")}
                     style={{
-                      backgroundColor: palette.paperSand,
-                      borderRadius: radius.lg,
-                      padding: 24,
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: radius.pill,
+                      backgroundColor:
+                        tab === "discover" ? palette.navy : palette.paper,
+                      borderWidth: tab === "discover" ? 0 : 1,
+                      borderColor: palette.rule,
                       alignItems: "center",
                     }}
                   >
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={36}
-                      color={palette.navySoft}
-                      style={{ marginBottom: 12 }}
-                    />
                     <Text
                       style={{
-                        fontFamily: fonts.body,
-                        fontSize: 14,
-                        color: palette.slate,
-                        textAlign: "center",
-                        lineHeight: 20,
-                      }}
-                    >
-                      Reading contacts is only available in the phone app.
-                    </Text>
-                  </View>
-                ) : busy ? (
-                  <View style={{ paddingVertical: 60, alignItems: "center" }}>
-                    <ActivityIndicator color={palette.navy} />
-                  </View>
-                ) : contacts === null ? (
-                  <View
-                    style={{
-                      backgroundColor: palette.paperSand,
-                      borderRadius: radius.lg,
-                      padding: 24,
-                      alignItems: "center",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 32,
-                        backgroundColor: palette.paper,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: 14,
-                      }}
-                    >
-                      <Ionicons
-                        name="people-circle-outline"
-                        size={32}
-                        color={palette.navy}
-                      />
-                    </View>
-                    <Text
-                      style={{
-                        fontFamily: fonts.display,
-                        fontSize: typeScale.section,
-                        color: palette.ink,
-                        textAlign: "center",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Find friends on Apnajoda
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: fonts.body,
+                        fontFamily: fonts.bodySemi,
                         fontSize: 13,
-                        color: palette.slate,
-                        textAlign: "center",
-                        lineHeight: 19,
-                        maxWidth: 360,
-                        marginBottom: 20,
+                        color: tab === "discover" ? "#FFFFFF" : palette.ink,
                       }}
                     >
-                      We'll check your contacts once. Nothing is stored.
+                      Discover
                     </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => void loadContacts()}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setTab("contacts");
+                      if (contacts === null && contactsSupported)
+                        void loadContacts();
+                    }}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: radius.pill,
+                      backgroundColor:
+                        tab === "contacts" ? palette.navy : palette.paper,
+                      borderWidth: tab === "contacts" ? 0 : 1,
+                      borderColor: palette.rule,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
                       style={{
-                        backgroundColor: palette.navy,
-                        paddingVertical: 12,
-                        paddingHorizontal: 24,
-                        borderRadius: radius.pill,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 13,
+                        color: tab === "contacts" ? "#FFFFFF" : palette.ink,
                       }}
                     >
-                      <Ionicons name="sync" size={18} color="#FFFFFF" />
-                      <Text
-                        style={{
-                          color: "#FFFFFF",
-                          fontFamily: fonts.bodySemi,
-                          fontSize: 14,
-                        }}
-                      >
-                        Check my contacts
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View style={{ gap: 20 }}>
-                    {contacts.matched.length > 0 && (
-                      <View>
-                        <Text
-                          style={{
-                            fontFamily: fonts.bodySemi,
-                            fontSize: 11,
-                            color: palette.slate,
-                            textTransform: "uppercase",
-                            letterSpacing: 1,
-                            marginBottom: 10,
-                          }}
-                        >
-                          {contacts.matched.length} on Apnajoda
-                        </Text>
-                        <View style={{ gap: 8 }}>
-                          {contacts.matched.map((user) => (
-                            <PersonRow
-                              key={user.userId}
-                              user={user}
-                              busy={!!pending[user.userId]}
-                              onOpen={() => onOpenPerson(user.userId)}
-                              onFollow={() => void follow(user)}
-                            />
-                          ))}
-                        </View>
-                      </View>
-                    )}
+                      My contacts
+                    </Text>
+                  </Pressable>
+                </View>
 
-                    {contacts.unmatched.length > 0 && (
-                      <View>
-                        <Text
+                {tab === "discover" ? (
+                  <>
+                    {/* Filters */}
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
+                    >
+                      {FILTERS.map((f) => (
+                        <Pressable
+                          key={f.id}
+                          onPress={() => setFilter(f.id)}
                           style={{
-                            fontFamily: fonts.bodySemi,
-                            fontSize: 11,
-                            color: palette.slate,
-                            textTransform: "uppercase",
-                            letterSpacing: 1,
-                            marginBottom: 10,
-                          }}
-                        >
-                          Invite {contacts.unmatched.length}{" "}
-                          {contacts.unmatched.length === 1
-                            ? "friend"
-                            : "friends"}
-                        </Text>
-                        <View style={{ gap: 8 }}>
-                          {contacts.unmatched.map((phone) => (
-                            <View
-                              key={phone}
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: 10,
-                                paddingVertical: 12,
-                                paddingHorizontal: 12,
-                                borderRadius: radius.lg,
-                                backgroundColor: palette.paperSand,
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: 40,
-                                  height: 40,
-                                  borderRadius: 20,
-                                  backgroundColor: palette.paper,
-                                  justifyContent: "center",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <Ionicons
-                                  name="phone-portrait-outline"
-                                  size={20}
-                                  color={palette.navy}
-                                />
-                              </View>
-                              <View style={{ flex: 1, minWidth: 0 }}>
-                                <Text
-                                  style={{
-                                    fontFamily: fonts.bodyMedium,
-                                    fontSize: 14,
-                                    color: palette.ink,
-                                  }}
-                                >
-                                  {formatPhone(phone)}
-                                </Text>
-                                <Text
-                                  style={{
-                                    fontFamily: fonts.body,
-                                    fontSize: 12,
-                                    color: palette.slate,
-                                    marginTop: 1,
-                                  }}
-                                >
-                                  Not on Apnajoda yet
-                                </Text>
-                              </View>
-                              <Pressable
-                                accessibilityRole="button"
-                                accessibilityLabel={`Invite ${formatPhone(phone)} on WhatsApp`}
-                                onPress={() => inviteOnWhatsApp(phone)}
-                                style={{
-                                  paddingHorizontal: 14,
-                                  paddingVertical: 9,
-                                  borderRadius: radius.pill,
-                                  backgroundColor: "#25D366",
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  gap: 6,
-                                }}
-                              >
-                                <Ionicons
-                                  name="logo-whatsapp"
-                                  size={16}
-                                  color="#FFFFFF"
-                                />
-                                <Text
-                                  style={{
-                                    color: "#FFFFFF",
-                                    fontFamily: fonts.bodySemi,
-                                    fontSize: 13,
-                                  }}
-                                >
-                                  Invite
-                                </Text>
-                              </Pressable>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    )}
-
-                    {contacts.matched.length === 0 &&
-                      contacts.unmatched.length === 0 && (
-                        <View
-                          style={{
-                            backgroundColor: palette.paperSand,
-                            borderRadius: radius.lg,
-                            padding: 24,
+                            flexDirection: "row",
                             alignItems: "center",
+                            gap: 6,
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: radius.pill,
+                            backgroundColor:
+                              filter === f.id ? palette.navy : palette.paper,
+                            borderWidth: filter === f.id ? 0 : 1,
+                            borderColor: palette.rule,
                           }}
                         >
                           <Ionicons
-                            name="people-outline"
-                            size={36}
-                            color={palette.navySoft}
-                            style={{ marginBottom: 12 }}
+                            name={f.icon as any}
+                            size={14}
+                            color={filter === f.id ? "#FFFFFF" : palette.navy}
                           />
                           <Text
                             style={{
-                              fontFamily: fonts.body,
-                              fontSize: 14,
-                              color: palette.slate,
-                              textAlign: "center",
-                              lineHeight: 20,
+                              fontFamily: fonts.bodySemi,
+                              fontSize: 12,
+                              color: filter === f.id ? "#FFFFFF" : palette.ink,
                             }}
                           >
-                            No phone numbers found in your contacts.
+                            {f.label}
                           </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+
+                    {discoverUsers.length > 0 && (
+                      <>
+                        <Text
+                          style={{
+                            fontFamily: fonts.display,
+                            fontSize: typeScale.section,
+                            color: palette.ink,
+                            marginBottom: 12,
+                          }}
+                        >
+                          Suggested for you
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            flexWrap: "wrap",
+                            gap: 12,
+                          }}
+                        >
+                          {discoverUsers.slice(0, 4).map((user) => (
+                            <Pressable
+                              key={user.userId}
+                              onPress={() => onOpenPerson(user.userId)}
+                              style={{
+                                width: "48%",
+                                height: 220,
+                                borderRadius: radius.lg,
+                                overflow: "hidden",
+                                backgroundColor: palette.paperSand,
+                                marginBottom: 10,
+                              }}
+                            >
+                              {user.avatarUrl ? (
+                                <Image
+                                  source={{ uri: user.avatarUrl }}
+                                  style={{ width: "100%", height: "100%" }}
+                                  resizeMode="cover"
+                                />
+                              ) : (
+                                <View
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    backgroundColor: palette.paperSand,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontFamily: fonts.display,
+                                      fontSize: 64,
+                                      color: palette.crimson,
+                                    }}
+                                  >
+                                    {(user.username || "?").slice(0, 1).toUpperCase()}
+                                  </Text>
+                                </View>
+                              )}
+                              <View
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  paddingHorizontal: 10,
+                                  paddingVertical: 10,
+                                  backgroundColor: palette.navy,
+                                }}
+                              >
+                                <Text
+                                  numberOfLines={1}
+                                  style={{
+                                    fontFamily: fonts.display,
+                                    fontSize: 15,
+                                    color: "#FFFFFF",
+                                  }}
+                                >
+                                  {user.username}
+                                </Text>
+                                <Text
+                                  numberOfLines={1}
+                                  style={{
+                                    fontFamily: fonts.body,
+                                    fontSize: 11,
+                                    color: "#F4E9E0",
+                                    marginTop: 1,
+                                  }}
+                                >
+                                  {user.name}
+                                </Text>
+                              </View>
+                            </Pressable>
+                          ))}
                         </View>
-                      )}
-                  </View>
+                      </>
+                    )}
+
+                    {discoverUsers.length === 0 && (
+                      <View
+                        style={{
+                          backgroundColor: palette.paperSand,
+                          borderRadius: radius.lg,
+                          padding: 24,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="people-outline"
+                          size={36}
+                          color={palette.navySoft}
+                          style={{ marginBottom: 12 }}
+                        />
+                        <Text
+                          style={{
+                            fontFamily: fonts.body,
+                            fontSize: 14,
+                            color: palette.slate,
+                            textAlign: "center",
+                          }}
+                        >
+                          New members appear here as they join
+                        </Text>
+                      </View>
+                    )}
+
+                    {contactsSupported && (
+                      <Pressable
+                        onPress={() => {
+                          setTab("contacts");
+                          if (contacts === null) void loadContacts();
+                        }}
+                        style={{
+                          marginTop: 16,
+                          paddingVertical: 14,
+                          borderRadius: radius.pill,
+                          backgroundColor: palette.paperSand,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="people-circle-outline"
+                          size={20}
+                          color={palette.navy}
+                        />
+                        <Text
+                          style={{
+                            fontFamily: fonts.bodySemi,
+                            fontSize: 13,
+                            color: palette.navy,
+                          }}
+                        >
+                          Find friends from contacts
+                        </Text>
+                      </Pressable>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Contacts tab */}
+                    {!contactsSupported ? (
+                      <View
+                        style={{
+                          backgroundColor: palette.paperSand,
+                          borderRadius: radius.lg,
+                          padding: 24,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="phone-portrait-outline"
+                          size={36}
+                          color={palette.navySoft}
+                          style={{ marginBottom: 12 }}
+                        />
+                        <Text
+                          style={{
+                            fontFamily: fonts.body,
+                            fontSize: 14,
+                            color: palette.slate,
+                            textAlign: "center",
+                          }}
+                        >
+                          Reading contacts is only available in the phone app.
+                        </Text>
+                      </View>
+                    ) : busy ? (
+                      <View
+                        style={{ paddingVertical: 60, alignItems: "center" }}
+                      >
+                        <ActivityIndicator color={palette.navy} />
+                      </View>
+                    ) : contacts === null ? (
+                      <View
+                        style={{
+                          backgroundColor: palette.paperSand,
+                          borderRadius: radius.lg,
+                          padding: 24,
+                          alignItems: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: 32,
+                            backgroundColor: palette.paper,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            marginBottom: 14,
+                          }}
+                        >
+                          <Ionicons
+                            name="people-circle-outline"
+                            size={32}
+                            color={palette.navy}
+                          />
+                        </View>
+                        <Text
+                          style={{
+                            fontFamily: fonts.display,
+                            fontSize: typeScale.section,
+                            color: palette.ink,
+                            textAlign: "center",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Find friends on Apnajoda
+                        </Text>
+                        <Text
+                          style={{
+                            fontFamily: fonts.body,
+                            fontSize: 13,
+                            color: palette.slate,
+                            textAlign: "center",
+                            lineHeight: 19,
+                            maxWidth: 360,
+                            marginBottom: 20,
+                          }}
+                        >
+                          We check your contacts once. Nothing is stored.
+                        </Text>
+                        <Pressable
+                          onPress={() => void loadContacts()}
+                          style={{
+                            backgroundColor: palette.navy,
+                            paddingVertical: 12,
+                            paddingHorizontal: 24,
+                            borderRadius: radius.pill,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons name="sync" size={18} color="#FFFFFF" />
+                          <Text
+                            style={{
+                              color: palette.ink,
+                              fontFamily: fonts.bodySemi,
+                              fontSize: 14,
+                            }}
+                          >
+                            Check my contacts
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View style={{ gap: 20 }}>
+                        {contacts.matched.length > 0 && (
+                          <View>
+                            <Text
+                              style={{
+                                fontFamily: fonts.bodySemi,
+                                fontSize: 11,
+                                color: palette.slate,
+                                textTransform: "uppercase",
+                                letterSpacing: 1,
+                                marginBottom: 10,
+                              }}
+                            >
+                              {contacts.matched.length} on Apnajoda
+                            </Text>
+                            <View style={{ gap: 8 }}>
+                              {contacts.matched.map((user) => (
+                                <PersonRow
+                                  key={user.userId}
+                                  user={user}
+                                  busy={!!pending[user.userId]}
+                                  onOpen={() => onOpenPerson(user.userId)}
+                                  onFollow={() => void follow(user)}
+                                />
+                              ))}
+                            </View>
+                          </View>
+                        )}
+
+                        {contacts.unmatched.length > 0 && (
+                          <View>
+                            <Text
+                              style={{
+                                fontFamily: fonts.bodySemi,
+                                fontSize: 11,
+                                color: palette.slate,
+                                textTransform: "uppercase",
+                                letterSpacing: 1,
+                                marginBottom: 10,
+                              }}
+                            >
+                              Invite {contacts.unmatched.length}{" "}
+                              {contacts.unmatched.length === 1
+                                ? "friend"
+                                : "friends"}
+                            </Text>
+                            <View style={{ gap: 8 }}>
+                              {contacts.unmatched.map((phone) => (
+                                <View
+                                  key={phone}
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 12,
+                                    borderRadius: radius.lg,
+                                    backgroundColor: palette.paperSand,
+                                  }}
+                                >
+                                  <View
+                                    style={{
+                                      width: 40,
+                                      height: 40,
+                                      borderRadius: 20,
+                                      backgroundColor: palette.paper,
+                                      justifyContent: "center",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="phone-portrait-outline"
+                                      size={20}
+                                      color={palette.navy}
+                                    />
+                                  </View>
+                                  <View style={{ flex: 1, minWidth: 0 }}>
+                                    <Text
+                                      style={{
+                                        fontFamily: fonts.bodyMedium,
+                                        fontSize: 14,
+                                        color: palette.ink,
+                                      }}
+                                    >
+                                      {formatPhone(phone)}
+                                    </Text>
+                                    <Text
+                                      style={{
+                                        fontFamily: fonts.body,
+                                        fontSize: 12,
+                                        color: palette.slate,
+                                        marginTop: 1,
+                                      }}
+                                    >
+                                      Not on Apnajoda yet
+                                    </Text>
+                                  </View>
+                                  <Pressable
+                                    onPress={() => inviteOnWhatsApp(phone)}
+                                    style={{
+                                      paddingHorizontal: 14,
+                                      paddingVertical: 9,
+                                      borderRadius: radius.pill,
+                                      backgroundColor: "#25D366",
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      gap: 6,
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="logo-whatsapp"
+                                      size={16}
+                                      color="#FFFFFF"
+                                    />
+                                    <Text
+                                      style={{
+                                        color: palette.ink,
+                                        fontFamily: fonts.bodySemi,
+                                        fontSize: 13,
+                                      }}
+                                    >
+                                      Invite
+                                    </Text>
+                                  </Pressable>
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        )}
+
+                        {contacts.matched.length === 0 &&
+                          contacts.unmatched.length === 0 && (
+                            <View
+                              style={{
+                                backgroundColor: palette.paperSand,
+                                borderRadius: radius.lg,
+                                padding: 24,
+                                alignItems: "center",
+                              }}
+                            >
+                              <Ionicons
+                                name="people-outline"
+                                size={36}
+                                color={palette.navySoft}
+                                style={{ marginBottom: 12 }}
+                              />
+                              <Text
+                                style={{
+                                  fontFamily: fonts.body,
+                                  fontSize: 14,
+                                  color: palette.slate,
+                                  textAlign: "center",
+                                }}
+                              >
+                                No phone numbers found in your contacts.
+                              </Text>
+                            </View>
+                          )}
+                      </View>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -796,21 +1037,16 @@ function PersonRow({
           </View>
         )}
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text
-              numberOfLines={1}
-              style={{
-                fontFamily: fonts.display,
-                fontSize: typeScale.section,
-                color: palette.ink,
-              }}
-            >
-              {user.username}
-            </Text>
-            {user.isPrivate && (
-              <Ionicons name="lock-closed" size={12} color={palette.slate} />
-            )}
-          </View>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: fonts.display,
+              fontSize: typeScale.section,
+              color: palette.ink,
+            }}
+          >
+            {user.username}
+          </Text>
           <Text
             numberOfLines={1}
             style={{

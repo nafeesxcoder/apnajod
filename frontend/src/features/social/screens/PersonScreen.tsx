@@ -1,17 +1,3 @@
-/**
- * Someone else's page.
- *
- * This is where a like is decided, so it has to show enough to decide on:
- * their photos, age, city, work and their own words. It used to show a
- * username, a letter in a grey circle and two follower counts that were
- * always zero - leftovers from the follow system this app replaced with
- * liking - which told a member nothing about the person who had just liked
- * them.
- *
- * One action, and it depends only on where the like stands: Like, Accept,
- * Pending, or Message once it is mutual. Offering "Like" to somebody you
- * already matched with is how a member ends up unsure what happened.
- */
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,9 +11,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { PersonPage } from "../../../api/socialApi";
-import { colors } from "../../../theme";
-import { social } from "../../../theme/socialStyles";
-import { Avatar } from "./FindPeopleScreen";
+import { fonts, palette, radius, typeScale } from "../../../theme";
+
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
 
 export function PersonScreen({
   userId,
@@ -40,7 +27,6 @@ export function PersonScreen({
   userId: string;
   onBack: () => void;
   onLoad: (userId: string) => Promise<PersonPage>;
-  /** Like them, or accept their like: the same decision either way. */
   onFollow: (userId: string) => Promise<"accepted" | "pending">;
   onMessage: (page: PersonPage) => void;
   onBlock?: (userId: string) => void;
@@ -55,20 +41,18 @@ export function PersonScreen({
     setError("");
     onLoad(userId)
       .then((p) => active && setPage(p))
-      .catch((e) => active && setError(e instanceof Error ? e.message : "Could not open this account."));
+      .catch(
+        (e) =>
+          active &&
+          setError(
+            e instanceof Error ? e.message : "Could not open this account.",
+          ),
+      );
     return () => {
       active = false;
     };
   }, [userId, onLoad]);
 
-  /**
-   * Like, or accept a like. Both are the same decision to the server; the
-   * difference is only whether the other person got there first.
-   *
-   * When it turns out mutual, the chat opens straight away. Accepting is
-   * the member saying they want to talk, so sending them off to find the
-   * thread themselves is a step nobody wants.
-   */
   const like = async () => {
     if (!page || busy) return;
     setBusy(true);
@@ -89,10 +73,30 @@ export function PersonScreen({
 
   if (error && !page) {
     return (
-      <Shell onBack={onBack} title="">
-        <View style={social.center}>
-          <Ionicons name="alert-circle-outline" size={34} color={colors.muted} />
-          <Text style={social.emptyText}>{error}</Text>
+      <Shell onBack={onBack}>
+        <View
+          style={{
+            paddingVertical: 60,
+            alignItems: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          <Ionicons
+            name="alert-circle-outline"
+            size={40}
+            color={palette.slate}
+          />
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 14,
+              color: palette.slate,
+              textAlign: "center",
+              marginTop: 12,
+            }}
+          >
+            {error}
+          </Text>
         </View>
       </Shell>
     );
@@ -100,9 +104,9 @@ export function PersonScreen({
 
   if (!page) {
     return (
-      <Shell onBack={onBack} title="">
-        <View style={social.center}>
-          <ActivityIndicator color={colors.accent} />
+      <Shell onBack={onBack}>
+        <View style={{ paddingVertical: 60, alignItems: "center" }}>
+          <ActivityIndicator color={palette.navy} />
         </View>
       </Shell>
     );
@@ -114,33 +118,121 @@ export function PersonScreen({
   const extraPhotos = profile.photos.slice(1);
 
   return (
-    <Shell onBack={onBack} title={user.username} onBlock={onBlock ? () => onBlock(userId) : undefined}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
-        <View style={social.personHead}>
-          {cover ? (
-            <Image
-              source={{ uri: cover }}
-              style={{ width: 132, height: 132, borderRadius: 66 }}
-              resizeMode="cover"
-              accessibilityLabel={`${user.name}'s photo`}
-            />
-          ) : (
-            <Avatar user={user} size={120} />
-          )}
+    <Shell
+      onBack={onBack}
+      onBlock={onBlock ? () => onBlock(userId) : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: 12,
+          paddingBottom: 100,
+          paddingHorizontal: 12,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: MAX_WIDTH,
+            alignSelf: "center",
+            backgroundColor: palette.paper,
+            borderRadius: radius.xl,
+            paddingHorizontal: SIDE_PADDING,
+            paddingVertical: 20,
+          }}
+        >
+          <View style={{ alignItems: "center", marginTop: 4 }}>
+            {cover ? (
+              <Image
+                source={{ uri: cover }}
+                style={{
+                  width: 132,
+                  height: 132,
+                  borderRadius: 66,
+                  borderWidth: 3,
+                  borderColor: palette.crimson,
+                  backgroundColor: palette.paperSand,
+                }}
+                resizeMode="cover"
+                accessibilityLabel={`${user.name}'s photo`}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 132,
+                  height: 132,
+                  borderRadius: 66,
+                  borderWidth: 3,
+                  borderColor: palette.crimson,
+                  backgroundColor: palette.paperSand,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: 52,
+                    color: palette.crimson,
+                  }}
+                >
+                  {(user.username || "?").slice(0, 1).toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </View>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={social.personName}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              marginTop: 14,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 28,
+                color: palette.ink,
+                textAlign: "center",
+              }}
+            >
               {user.name}
               {profile.age ? `, ${profile.age}` : ""}
             </Text>
             {profile.verified && (
-              <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={palette.marigold}
+              />
             )}
           </View>
-          <Text style={social.personHandle}>@{user.username}</Text>
+
+          <Text
+            style={{
+              fontFamily: fonts.bodyMedium,
+              fontSize: 14,
+              color: palette.crimson,
+              textAlign: "center",
+              marginTop: 2,
+            }}
+          >
+            @{user.username}
+          </Text>
 
           {!!(profile.city || profile.profession) && (
-            <Text style={social.rowSub}>
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 14,
+                color: palette.slate,
+                textAlign: "center",
+                marginTop: 4,
+              }}
+            >
               {[profile.city, profile.profession].filter(Boolean).join("  ·  ")}
             </Text>
           )}
@@ -148,19 +240,23 @@ export function PersonScreen({
           {likeStatus !== "none" && (
             <View
               style={{
-                marginTop: 8,
-                paddingHorizontal: 11,
-                paddingVertical: 4,
-                borderRadius: 999,
+                alignSelf: "center",
+                marginTop: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+                borderRadius: radius.pill,
                 backgroundColor:
-                  likeStatus === "accepted" ? "#E6F4EE" : "#E6EDF5",
+                  likeStatus === "accepted"
+                    ? palette.marigoldTint
+                    : palette.paperSand,
               }}
             >
               <Text
                 style={{
+                  fontFamily: fonts.bodySemi,
                   fontSize: 12,
-                  fontWeight: "700",
-                  color: likeStatus === "accepted" ? "#17624A" : "#1F4D7A",
+                  color:
+                    likeStatus === "accepted" ? palette.emerald : palette.navy,
                 }}
               >
                 {likeStatus === "accepted"
@@ -171,135 +267,277 @@ export function PersonScreen({
               </Text>
             </View>
           )}
-        </View>
 
-        {!state.self && (
-          <View style={social.personActions}>
-            {likeStatus === "accepted" ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Message ${user.username}`}
-                onPress={() => onMessage(page)}
-                style={social.personAction}
-              >
-                <Ionicons name="chatbubble" size={17} color={colors.textInverse} />
-                <Text style={social.personActionText}>Message</Text>
-              </Pressable>
-            ) : likeStatus === "pending" ? (
-              <View style={[social.personAction, social.personActionGhost]}>
-                <Ionicons name="time-outline" size={17} color={colors.muted} />
-                <Text style={[social.personActionText, social.personActionGhostText]}>
-                  Pending
-                </Text>
-              </View>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  likeStatus === "likes_you"
-                    ? `Accept ${user.username} and open a chat`
-                    : `Like ${user.username}`
-                }
-                disabled={busy}
-                onPress={() => void like()}
-                style={[social.personAction, busy && { opacity: 0.6 }]}
-              >
-                {busy ? (
-                  <ActivityIndicator size="small" color={colors.textInverse} />
-                ) : (
-                  <>
-                    <Ionicons name="heart" size={17} color={colors.textInverse} />
-                    <Text style={social.personActionText}>
-                      {likeStatus === "likes_you" ? "Accept" : "Like"}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            )}
-          </View>
-        )}
+          {!state.self && (
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                marginTop: 20,
+              }}
+            >
+              {likeStatus === "accepted" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Message ${user.username}`}
+                  onPress={() => onMessage(page)}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: palette.navy,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons name="chatbubble" size={16} color="#FFFFFF" />
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 14,
+                    }}
+                  >
+                    Message
+                  </Text>
+                </Pressable>
+              ) : likeStatus === "pending" ? (
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: palette.paperSand,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={16}
+                    color={palette.slate}
+                  />
+                  <Text
+                    style={{
+                      color: palette.slate,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 14,
+                    }}
+                  >
+                    Pending
+                  </Text>
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    likeStatus === "likes_you"
+                      ? `Accept ${user.username} and open a chat`
+                      : `Like ${user.username}`
+                  }
+                  disabled={busy}
+                  onPress={() => void like()}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: palette.navy,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                    minHeight: 44,
+                    opacity: busy ? 0.6 : 1,
+                  }}
+                >
+                  {busy ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontFamily: fonts.bodySemi,
+                          fontSize: 14,
+                        }}
+                      >
+                        {likeStatus === "likes_you" ? "Accept" : "Like"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+            </View>
+          )}
 
-        {!!profile.about && (
-          <View style={social.lockedCard}>
-            <Text style={[social.lockedTitle, { marginBottom: 4 }]}>About</Text>
-            <Text style={social.lockedBody}>{profile.about}</Text>
-          </View>
-        )}
-
-        {profile.hobbies.length > 0 && (
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 8,
-              paddingHorizontal: 20,
-              marginTop: 14,
-            }}
-          >
-            {profile.hobbies.map((hobby) => (
-              <View
-                key={hobby}
+          {!!profile.about && (
+            <View
+              style={{
+                marginTop: 24,
+                paddingTop: 20,
+                borderTopWidth: 1,
+                borderTopColor: palette.rule,
+              }}
+            >
+              <Text
                 style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: colors.line,
-                  backgroundColor: colors.surface,
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.section,
+                  color: palette.ink,
+                  marginBottom: 6,
                 }}
               >
-                <Text style={{ fontSize: 13, color: colors.textSoft }}>{hobby}</Text>
+                About
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  color: palette.inkSoft,
+                  lineHeight: 22,
+                }}
+              >
+                {profile.about}
+              </Text>
+            </View>
+          )}
+
+          {profile.hobbies.length > 0 && (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 6,
+                marginTop: 20,
+              }}
+            >
+              {profile.hobbies.map((hobby) => (
+                <View
+                  key={hobby}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: radius.pill,
+                    borderWidth: 1,
+                    borderColor: palette.rule,
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 12,
+                      color: palette.ink,
+                    }}
+                  >
+                    {hobby}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {extraPhotos.length > 0 && (
+            <View style={{ marginTop: 24 }}>
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.section,
+                  color: palette.ink,
+                  marginBottom: 12,
+                }}
+              >
+                Photos
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {extraPhotos.map((uri) => (
+                  <Image
+                    key={uri}
+                    source={{ uri }}
+                    style={{
+                      width: "31.5%",
+                      aspectRatio: 1,
+                      borderRadius: radius.md,
+                      backgroundColor: palette.paperSand,
+                    }}
+                    resizeMode="cover"
+                  />
+                ))}
               </View>
-            ))}
-          </View>
-        )}
+            </View>
+          )}
 
-        {extraPhotos.length > 0 && (
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 8,
-              paddingHorizontal: 20,
-              marginTop: 16,
-            }}
-          >
-            {extraPhotos.map((uri) => (
-              <Image
-                key={uri}
-                source={{ uri }}
-                style={{ width: "31.5%", aspectRatio: 1, borderRadius: 12 }}
-                resizeMode="cover"
+          {!state.self && likeStatus !== "accepted" && (
+            <View
+              style={{
+                marginTop: 24,
+                padding: 16,
+                borderRadius: radius.lg,
+                backgroundColor: palette.paperSand,
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={26}
+                color={palette.navy}
               />
-            ))}
-          </View>
-        )}
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.section,
+                  color: palette.ink,
+                  textAlign: "center",
+                }}
+              >
+                {page.messageBlockedReason === "blocked"
+                  ? "You cannot message this account"
+                  : "Chat opens on a match"}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: palette.slate,
+                  textAlign: "center",
+                  lineHeight: 19,
+                  maxWidth: 360,
+                }}
+              >
+                {page.messageBlockedReason === "blocked"
+                  ? "Messaging is unavailable between your accounts."
+                  : likeStatus === "pending"
+                    ? `${user.username} has your like. The chat opens if they like you back.`
+                    : likeStatus === "likes_you"
+                      ? `${user.username} liked you. Accept and the chat opens for both of you.`
+                      : `Like ${user.username}. If they like you back, the chat opens for both of you.`}
+              </Text>
+            </View>
+          )}
 
-        {!state.self && likeStatus !== "accepted" && (
-          <View style={social.lockedCard}>
-            <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
-            <Text style={social.lockedTitle}>
-              {page.messageBlockedReason === "blocked"
-                ? "You cannot message this account"
-                : "Chat opens on a match"}
+          {!!error && (
+            <Text
+              accessibilityRole="alert"
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 13,
+                color: palette.clay,
+                textAlign: "center",
+                marginTop: 12,
+              }}
+            >
+              {error}
             </Text>
-            <Text style={social.lockedBody}>
-              {page.messageBlockedReason === "blocked"
-                ? "Messaging is unavailable between your accounts."
-                : likeStatus === "pending"
-                  ? `${user.username} has your like. The chat opens if they like you back.`
-                  : likeStatus === "likes_you"
-                    ? `${user.username} liked you. Accept and the chat opens for both of you.`
-                    : `Like ${user.username}. If they like you back, the chat opens for both of you.`}
-            </Text>
-          </View>
-        )}
-
-        {!!error && (
-          <Text accessibilityRole="alert" style={social.error}>
-            {error}
-          </Text>
-        )}
+          )}
+        </View>
       </ScrollView>
     </Shell>
   );
@@ -308,40 +546,68 @@ export function PersonScreen({
 function Shell({
   children,
   onBack,
-  title,
   onBlock,
 }: {
   children: React.ReactNode;
   onBack: () => void;
-  title: string;
   onBlock?: () => void;
 }) {
   return (
-    <View style={social.root}>
-      <SafeAreaView style={social.safe}>
-        <View style={social.header}>
+    <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View
+          style={{
+            width: "100%",
+            maxWidth: MAX_WIDTH,
+            alignSelf: "center",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            paddingHorizontal: 12 + SIDE_PADDING,
+            paddingVertical: 12,
+          }}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={12}
             onPress={onBack}
-            style={social.back}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: palette.paper,
+              borderWidth: 1,
+              borderColor: palette.rule,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Ionicons name="arrow-back" size={18} color={palette.ink} />
           </Pressable>
-          <Text numberOfLines={1} style={social.headerTitle}>
-            {title}
-          </Text>
-          <View style={social.headerSpacer} />
+          <View style={{ flex: 1 }} />
           {onBlock && (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Report or block"
               hitSlop={12}
               onPress={onBlock}
-              style={social.back}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: palette.paper,
+                borderWidth: 1,
+                borderColor: palette.rule,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-              <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={18}
+                color={palette.ink}
+              />
             </Pressable>
           )}
         </View>

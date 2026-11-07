@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+﻿import { useEffect, useRef, useState, type ReactNode } from "react";
 import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -180,7 +180,7 @@ import {
   AppNoticeSheet,
   type AppNotice,
 } from "../components/feedback/AppNoticeSheet";
-import * as Contacts from "expo-contacts";
+// expo-contacts is native-only; loaded lazily inside onMatchContacts
 
 /* =========================================================
     PREMIUM BACKGROUND (MATCHES SPLASH SCREEN EXACTLY)
@@ -1985,6 +1985,8 @@ function MilaanApp() {
       return { matched: [], unmatched: [] };
     }
 
+    const Contacts = await import("expo-contacts");
+
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== "granted") {
       throw new Error("Contacts permission is needed to find people you know.");
@@ -3376,6 +3378,14 @@ function MilaanApp() {
             onMatchContacts={onMatchContacts}
             onOpenPerson={openPerson}
             onFollow={(userId) => likeFromSearch(userId)}
+            discoverUsers={visibleMatches.map((m) => ({
+              userId: m.id,
+              username:
+                m.name?.toLowerCase().replace(/\s+/g, "_") || "member",
+              name: m.name || "Member",
+              avatarUrl: m.photo || null,
+              isPrivate: false,
+            }))}
           />
         )}
 
