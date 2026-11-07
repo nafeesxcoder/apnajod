@@ -1,4 +1,4 @@
-import {
+﻿import {
   Image,
   Pressable,
   StyleSheet,
@@ -63,7 +63,7 @@ export function Button({
         maxFontSizeMultiplier={1.3}
         style={[
           styles.buttonText,
-          variant === "primary" && { color: "#7F1F32" },
+          variant === "primary" && { color: "#FFFFFF" },
           variant === "gold" && { color: "#111315" },
           variant === "ghost" && { color: colors.muted },
         ]}
