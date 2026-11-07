@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   createContext,
   useContext,
   useEffect,
@@ -68,7 +68,7 @@ import type {
   DatePlanStatus,
 } from "../../storage";
 import { defaultCoupleChatSettings } from "../../storage";
-import { colors } from "../../theme";
+import { colors, fonts, palette, radius, typeScale } from "../../theme";
 import { receiptColor, receiptIcon, receiptLabel } from "./receipt";
 import { APP_MAX_WIDTH, CHAT_LIST_WIDTH, RAIL_WIDTH } from "../../layout/breakpoints";
 import { useLayout } from "../../layout/useLayout";
@@ -2332,9 +2332,9 @@ export function ChatScreen({
               alignItems: "center",
               paddingHorizontal: 16,
               paddingVertical: 12,
-              backgroundColor: "#FFFFFF",
+              backgroundColor: palette.paperBase,
               borderBottomWidth: 1,
-              borderBottomColor: "#D3D6DA",
+              borderBottomColor: palette.rule,
               gap: 12,
             }}
           >
@@ -2353,7 +2353,7 @@ export function ChatScreen({
                 navigate("home");
               }}
             >
-              <Ionicons name="arrow-back" size={24} color="#151719" />
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
             </Pressable>
 
             <Pressable
@@ -2372,7 +2372,7 @@ export function ChatScreen({
                     height: 42,
                     borderRadius: 21,
                     borderWidth: 2,
-                    borderColor: "#8A2237",
+                    borderColor: palette.crimson,
                   }}
                 />
               ) : (
@@ -2381,7 +2381,7 @@ export function ChatScreen({
                     width: 42,
                     height: 42,
                     borderRadius: 21,
-                    backgroundColor: "#8A2237",
+                    backgroundColor: palette.crimson,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -2405,7 +2405,7 @@ export function ChatScreen({
             >
               <Text
                 numberOfLines={1}
-                style={{ fontSize: 17, fontWeight: "700", color: "#151719" }}
+                style={{ fontFamily: fonts.display, fontSize: 17, color: colors.text }}
               >
                 {displayName}
               </Text>
@@ -2418,13 +2418,13 @@ export function ChatScreen({
                     height: 6,
                     borderRadius: 3,
                     backgroundColor: partnerTyping
-                      ? "#AA2A44"
+                      ? palette.crimson
                       : partnerIsOnline
-                        ? "#1F7A5A"
-                        : "#9AA4AF",
+                        ? palette.emerald
+                        : palette.slate,
                   }}
                 />
-                <Text numberOfLines={1} style={{ fontSize: 12, color: "#5A5E63" }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, color: colors.muted }}>
                   {presenceLabel || "Online"}
                 </Text>
               </View>
@@ -2436,7 +2436,7 @@ export function ChatScreen({
               hitSlop={accessibilityHitSlop}
               onPress={() => void startRealCall("audio")}
             >
-              <Ionicons name="call-outline" size={22} color="#1F5286" />
+              <Ionicons name="call-outline" size={22} color={palette.navy} />
             </Pressable>
             {chatWidth >= 340 && (
               <Pressable
@@ -2445,7 +2445,7 @@ export function ChatScreen({
                 hitSlop={accessibilityHitSlop}
                 onPress={() => void startRealCall("video")}
               >
-                <Ionicons name="videocam-outline" size={24} color="#1F5286" />
+                <Ionicons name="videocam-outline" size={24} color={palette.navy} />
               </Pressable>
             )}
             <Pressable
@@ -2454,7 +2454,7 @@ export function ChatScreen({
               hitSlop={accessibilityHitSlop}
               onPress={() => setOptionsOpen(true)}
             >
-              <Ionicons name="ellipsis-vertical" size={22} color="#5A5E63" />
+              <Ionicons name="ellipsis-vertical" size={22} color={colors.muted} />
             </Pressable>
           </View>
           {searchOpen && (
@@ -3026,9 +3026,9 @@ export function ChatScreen({
                   alignItems: "center",
                   paddingHorizontal: 12,
                   paddingVertical: 10,
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: palette.paperBase,
                   borderTopWidth: 1,
-                  borderTopColor: "#D3D6DA",
+                  borderTopColor: palette.rule,
                   gap: 10,
                 }}
               >
@@ -3053,7 +3053,7 @@ export function ChatScreen({
                   <Ionicons
                     name={showEmoji ? "keypad-outline" : "happy-outline"}
                     size={24}
-                    color="#8A2237"
+                    color={palette.crimson}
                   />
                 </Pressable>
 
@@ -3062,10 +3062,10 @@ export function ChatScreen({
                     flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#EFF0F2",
+                    backgroundColor: palette.paperSand,
                     borderWidth: 1,
-                    borderColor: "#D3D6DA",
-                    borderRadius: 24,
+                    borderColor: palette.rule,
+                    borderRadius: radius.pill,
                     paddingHorizontal: 16,
                     paddingVertical: 8,
                     gap: 8,
@@ -3092,7 +3092,7 @@ export function ChatScreen({
                       {
                         flex: 1,
                         fontSize: 15,
-                        color: "#151719",
+                        color: colors.text,
                         maxHeight: 110,
                         paddingVertical: 0,
                       },
@@ -3112,7 +3112,7 @@ export function ChatScreen({
                       setShowAttachments((value) => !value);
                     }}
                   >
-                    <Ionicons name="attach" size={22} color="#8A2237" />
+                    <Ionicons name="attach" size={22} color={palette.crimson} />
                   </Pressable>
                 </View>
 
@@ -3126,7 +3126,7 @@ export function ChatScreen({
                     width: 44,
                     height: 44,
                     borderRadius: 22,
-                    backgroundColor: "#1F5286",
+                    backgroundColor: palette.navy,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -3562,11 +3562,11 @@ function ChatBubble({
       alignSelf: mine ? ("flex-end" as const) : ("flex-start" as const),
     },
     mine
-      ? { backgroundColor: "#1F5286", borderBottomRightRadius: 4 }
+      ? { backgroundColor: palette.navy, borderBottomRightRadius: 4 }
       : {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: palette.paper,
           borderWidth: 1,
-          borderColor: "#D3D6DA",
+          borderColor: palette.rule,
           borderBottomLeftRadius: 4,
         },
     !!gamePayload && chatStyles.gameMessageBubble,
@@ -4006,7 +4006,7 @@ function ChatBubble({
               style={[styles.time, { fontSize: 11 },
                 {
                   color:
-                    mine && !emojiOnly ? "rgba(255,255,255,.78)" : "#1F5286",
+                    mine && !emojiOnly ? "rgba(255,255,255,.82)" : colors.muted,
                 },
               ]}
             >

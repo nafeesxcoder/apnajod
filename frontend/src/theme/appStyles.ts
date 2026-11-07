@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, type ImageStyle } from 'react-native';
+﻿import { Platform, StyleSheet, type ImageStyle } from 'react-native';
 import { colors, radius } from '../theme';
 
 /**
@@ -2477,10 +2477,10 @@ Object.assign(chatStyles as Record<string, any>, {
 });
 
 Object.assign(chatPremiumStyles as Record<string, any>, {
-  safeArea:{...chatPremiumStyles.safeArea,backgroundColor:'#F9F9FA',borderColor:'#D9DCE0'},
-  messages:{...chatPremiumStyles.messages,backgroundColor:'#F3F4F5'},
-  theirBubble:{...chatPremiumStyles.theirBubble,backgroundColor:'#FDFDFD',borderColor:'#D7DADE',shadowColor:'#153B61',shadowOpacity:.06,shadowRadius:8},
-  composer:{...chatPremiumStyles.composer,backgroundColor:'#F9F9FA',borderTopColor:'#D4D8DC'},
+  safeArea:{...chatPremiumStyles.safeArea,backgroundColor:'#FDF7F4',borderColor:'#EADDD2'},
+  messages:{...chatPremiumStyles.messages,backgroundColor:'#FDF7F4'},
+  theirBubble:{...chatPremiumStyles.theirBubble,backgroundColor:'#FFFFFF',borderColor:'#EADDD2',shadowColor:'#153B61',shadowOpacity:.06,shadowRadius:8},
+  composer:{...chatPremiumStyles.composer,backgroundColor:'#FDF7F4',borderTopColor:'#EADDD2'},
   chatInput:{...chatPremiumStyles.chatInput,color:colors.text,fontFamily:'Mukta_700Bold'},
 });
 

@@ -14,14 +14,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Button } from "../../../components";
 import {
   BottomNav,
-  handleBottomNavScroll, useNavInset } from "../../../components/navigation/BottomNav";
+  handleBottomNavScroll,
+  useNavInset,
+} from "../../../components/navigation/BottomNav";
 import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal, MatchFilters } from "../../../storage";
 import type { Screen } from "../../../app/navigation/types";
-import { colors } from "../../../theme";
+import { colors, palette, fonts, radius, typeScale } from "../../../theme";
 import { IntentPassportCard } from "../components/IntentPassportCard";
 import { AppCanvas } from "../../../components/AppCanvas";
 
@@ -29,20 +31,7 @@ type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
 type MatchingPoolStatusView = { status: string; suggestions: string[] };
 
-const GOLD = "#8A2237";
-const RUBY = "#1F5286";
-const LINE = "#D3D6DA";
-const PAPER = "#F8F8F9";
 const MAX_WIDTH = 720;
-
-/**
- * The deck gets more room on a laptop.
- *
- * 720 is a phone column with the sides let out, and on a 1440px screen it
- * left the match card - the thing the whole app is for - small and adrift
- * with empty space either side. It is still capped: a profile photo
- * stretched the width of a monitor is not better, just bigger.
- */
 const DESKTOP_MAX_WIDTH = 1000;
 
 function greetingForNow() {
@@ -135,7 +124,13 @@ export function HomeScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas, paddingLeft: navInset.paddingLeft }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: palette.paperBase,
+          paddingLeft: navInset.paddingLeft,
+        }}
+      >
         <ScrollView
           onScroll={handleBottomNavScroll}
           scrollEventThrottle={16}
@@ -145,7 +140,7 @@ export function HomeScreen({
             <RefreshControl
               refreshing={loading}
               onRefresh={onRetryMatches}
-              tintColor={GOLD}
+              tintColor={palette.crimson}
             />
           }
         >
@@ -169,10 +164,9 @@ export function HomeScreen({
               <View style={{ flex: 1, paddingRight: 12 }}>
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontFamily: fonts.body,
+                    fontSize: typeScale.label,
                     color: colors.muted,
-                    letterSpacing: 0.6,
-                    textTransform: "uppercase",
                   }}
                 >
                   {greetingForNow()}
@@ -180,19 +174,25 @@ export function HomeScreen({
                 <Text
                   numberOfLines={1}
                   style={{
-                    fontSize: 26,
-                    fontWeight: "700",
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.title,
                     color: colors.text,
-                    marginTop: 1,
+                    marginTop: 2,
                   }}
                 >
                   {name || "Welcome"}
                 </Text>
                 {items.length > 0 && (
                   <Text
-                    style={{ fontSize: 12, color: GOLD, marginTop: 3, fontWeight: "600" }}
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      fontSize: typeScale.caption,
+                      color: palette.crimson,
+                      marginTop: 3,
+                    }}
                   >
-                    {items.length} {items.length === 1 ? "person" : "people"} to see
+                    {items.length} {items.length === 1 ? "person" : "people"} to
+                    see
                   </Text>
                 )}
               </View>
@@ -226,8 +226,8 @@ export function HomeScreen({
                       minWidth: 18,
                       height: 18,
                       paddingHorizontal: 4,
-                      borderRadius: 9,
-                      backgroundColor: RUBY,
+                      borderRadius: radius.pill,
+                      backgroundColor: palette.crimson,
                       justifyContent: "center",
                       alignItems: "center",
                     }}
@@ -235,8 +235,8 @@ export function HomeScreen({
                     <Text
                       style={{
                         color: "#FFFFFF",
+                        fontFamily: fonts.bodyBold,
                         fontSize: 10,
-                        fontWeight: "700",
                       }}
                     >
                       {notificationCount > 9 ? "9+" : notificationCount}
@@ -252,10 +252,10 @@ export function HomeScreen({
                     style={{
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: radius.pill,
                       borderWidth: 2,
-                      borderColor: GOLD,
-                      backgroundColor: LINE,
+                      borderColor: palette.crimson,
+                      backgroundColor: palette.rule,
                     }}
                   />
                 ) : (
@@ -263,63 +263,69 @@ export function HomeScreen({
                     style={{
                       width: 42,
                       height: 42,
-                      borderRadius: 21,
+                      borderRadius: radius.pill,
                       borderWidth: 2,
-                      borderColor: GOLD,
-                      backgroundColor: PAPER,
+                      borderColor: palette.crimson,
+                      backgroundColor: palette.paperSand,
                       justifyContent: "center",
                       alignItems: "center",
                     }}
                   >
                     {initial ? (
                       <Text
-                        style={{ fontSize: 17, fontWeight: "700", color: GOLD }}
+                        style={{
+                          fontFamily: fonts.display,
+                          fontSize: 17,
+                          color: palette.crimson,
+                        }}
                       >
                         {initial}
                       </Text>
                     ) : (
-                      <Ionicons name="person" size={20} color={GOLD} />
+                      <Ionicons
+                        name="person"
+                        size={20}
+                        color={palette.crimson}
+                      />
                     )}
                   </View>
                 )}
               </Pressable>
             </View>
 
-            {/* Summary */}
+            {/* Summary — unboxed */}
             <View
               style={{
-                backgroundColor: PAPER,
-                borderRadius: 20,
-                padding: 18,
-                marginBottom: 16,
-                borderWidth: 1,
-                borderColor: LINE,
                 flexDirection: "row",
                 alignItems: "center",
+                paddingBottom: 16,
+                marginBottom: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: palette.rule,
               }}
             >
               <View
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 22,
-                  backgroundColor: "#EBEDEF",
+                  borderRadius: radius.pill,
+                  backgroundColor: palette.paperSand,
                   justifyContent: "center",
                   alignItems: "center",
                   marginRight: 14,
                 }}
               >
                 {loading ? (
-                  <ActivityIndicator color={RUBY} />
+                  <ActivityIndicator color={palette.navy} />
                 ) : (
-                  <Ionicons name="heart" size={22} color={RUBY} />
+                  <Ionicons name="heart" size={22} color={palette.navy} />
                 )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
-                    fontSize: 17,
-                    fontWeight: "700",
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
                     color: colors.text,
                   }}
                 >
@@ -327,7 +333,8 @@ export function HomeScreen({
                 </Text>
                 <Text
                   style={{
-                    fontSize: 13,
+                    fontFamily: fonts.body,
+                    fontSize: typeScale.label,
                     color: colors.muted,
                     lineHeight: 19,
                     marginTop: 3,
@@ -338,7 +345,7 @@ export function HomeScreen({
               </View>
             </View>
 
-            {/* Intent passport */}
+            {/* Intent passport — flatten happens in IntentPassportCard.tsx */}
             <IntentPassportCard
               input={passportInput}
               compact
@@ -351,62 +358,54 @@ export function HomeScreen({
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: PAPER,
+                  backgroundColor: palette.paperSand,
                   padding: 16,
-                  borderRadius: 16,
+                  borderRadius: radius.md,
                   marginBottom: 20,
-                  borderWidth: 1,
-                  borderColor: LINE,
                 }}
               >
                 <Ionicons
                   name="location"
                   size={22}
-                  color="#AA2A44"
+                  color={palette.crimson}
                   style={{ marginRight: 12 }}
                 />
-                <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontFamily: fonts.body,
+                    fontSize: typeScale.label,
+                    color: colors.text,
+                  }}
+                >
                   Crossed paths is on. Nearby profiles are included privately.
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color="#AA2A44" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={palette.crimson}
+                />
               </Pressable>
             )}
 
-            {/* Top match - Simple Card with View Profile */}
+            {/* Top match — hero */}
             {featured && (
-              <View style={{ marginBottom: 24 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 17,
-                      fontWeight: "700",
-                      color: colors.text,
-                    }}
-                  >
-                    Your top match
-                  </Text>
-                </View>
+              <View style={{ marginBottom: 32 }}>
                 <Pressable
                   onPress={() => openDetail(featured)}
                   style={{
-                    borderRadius: 20,
+                    borderRadius: radius.xl,
                     overflow: "hidden",
-                    backgroundColor: "#FFF",
-                    borderWidth: 1,
-                    borderColor: LINE,
+                    backgroundColor: palette.paperSand,
                   }}
                 >
                   <View style={{ position: "relative" }}>
                     <Image
                       source={{ uri: featured.photo }}
-                      style={{ width: "100%", height: 380 }}
+                      style={{
+                        width: "100%",
+                        height: isDesktopHome ? 520 : 460,
+                      }}
                       resizeMode="cover"
                     />
                     <LinearGradient
@@ -416,15 +415,15 @@ export function HomeScreen({
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        height: 160,
+                        height: 200,
                         justifyContent: "flex-end",
-                        padding: 20,
+                        padding: 24,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 26,
-                          fontWeight: "700",
+                          fontFamily: fonts.display,
+                          fontSize: typeScale.display,
                           color: "#FFF",
                         }}
                       >
@@ -432,24 +431,25 @@ export function HomeScreen({
                       </Text>
                       <Text
                         style={{
-                          fontSize: 14,
-                          color: "#DFE4EA",
-                          marginTop: 4,
+                          fontFamily: fonts.body,
+                          fontSize: typeScale.label,
+                          color: "#F4E9E0",
+                          marginTop: 6,
                         }}
                       >
                         {featured.profession} · {featured.city}
                       </Text>
                     </LinearGradient>
                   </View>
-                  <View style={{ padding: 16 }}>
+                  <View style={{ padding: 20 }}>
                     <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "center",
-                        backgroundColor: RUBY,
-                        paddingVertical: 14,
-                        borderRadius: 12,
+                        backgroundColor: palette.navy,
+                        paddingVertical: 16,
+                        borderRadius: radius.md,
                       }}
                     >
                       <Ionicons
@@ -461,11 +461,11 @@ export function HomeScreen({
                       <Text
                         style={{
                           color: "#FFF",
-                          fontWeight: "600",
-                          fontSize: 15,
+                          fontFamily: fonts.bodySemi,
+                          fontSize: typeScale.body,
                         }}
                       >
-                        View Profile
+                        View profile
                       </Text>
                     </View>
                   </View>
@@ -473,15 +473,15 @@ export function HomeScreen({
               </View>
             )}
 
-            {/* More introductions - Grid with View Profile */}
+            {/* More introductions */}
             {others.length > 0 && (
               <View style={{ marginBottom: 8 }}>
                 <Text
                   style={{
-                    fontSize: 17,
-                    fontWeight: "700",
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
                     color: colors.text,
-                    marginBottom: 12,
+                    marginBottom: 14,
                   }}
                 >
                   More introductions
@@ -499,12 +499,10 @@ export function HomeScreen({
                       onPress={() => openDetail(match)}
                       style={{
                         width: "48%",
-                        marginBottom: 16,
-                        borderRadius: 16,
+                        marginBottom: 18,
+                        borderRadius: radius.lg,
                         overflow: "hidden",
-                        backgroundColor: "#FFF",
-                        borderWidth: 1,
-                        borderColor: LINE,
+                        backgroundColor: palette.paperSand,
                       }}
                     >
                       <View style={{ position: "relative" }}>
@@ -520,15 +518,15 @@ export function HomeScreen({
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            height: 80,
+                            height: 90,
                             justifyContent: "flex-end",
-                            padding: 10,
+                            padding: 12,
                           }}
                         >
                           <Text
                             style={{
-                              fontSize: 16,
-                              fontWeight: "700",
+                              fontFamily: fonts.display,
+                              fontSize: 17,
                               color: "#FFF",
                             }}
                           >
@@ -536,8 +534,9 @@ export function HomeScreen({
                           </Text>
                           <Text
                             style={{
-                              fontSize: 11,
-                              color: "#DFE4EA",
+                              fontFamily: fonts.body,
+                              fontSize: typeScale.caption,
+                              color: "#F4E9E0",
                             }}
                           >
                             {match.city}
@@ -550,16 +549,13 @@ export function HomeScreen({
               </View>
             )}
 
-            {/* Empty state */}
+            {/* Empty state — unboxed */}
             {!items.length && !loading && (
               <View
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 16,
-                  padding: 24,
                   alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: LINE,
+                  paddingVertical: 32,
+                  paddingHorizontal: 16,
                   marginBottom: 20,
                 }}
               >
@@ -570,13 +566,13 @@ export function HomeScreen({
                       : "heart-outline"
                   }
                   size={44}
-                  color={GOLD}
+                  color={palette.crimson}
                   style={{ marginBottom: 14 }}
                 />
                 <Text
                   style={{
-                    fontSize: 16,
-                    fontWeight: "700",
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
                     color: colors.text,
                     textAlign: "center",
                     marginBottom: 8,
@@ -590,11 +586,12 @@ export function HomeScreen({
                 </Text>
                 <Text
                   style={{
-                    fontSize: 14,
+                    fontFamily: fonts.body,
+                    fontSize: typeScale.body,
                     color: colors.muted,
                     textAlign: "center",
                     lineHeight: 20,
-                    marginBottom: 16,
+                    marginBottom: 18,
                   }}
                 >
                   {matchLoadState === "error"
