@@ -15,6 +15,7 @@ import { Button } from "../../../components";
 import {
   BottomNav,
   handleBottomNavScroll, useNavInset } from "../../../components/navigation/BottomNav";
+import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
@@ -33,6 +34,16 @@ const RUBY = "#1F5286";
 const LINE = "#D3D6DA";
 const PAPER = "#F8F8F9";
 const MAX_WIDTH = 720;
+
+/**
+ * The deck gets more room on a laptop.
+ *
+ * 720 is a phone column with the sides let out, and on a 1440px screen it
+ * left the match card - the thing the whole app is for - small and adrift
+ * with empty space either side. It is still capped: a profile photo
+ * stretched the width of a monitor is not better, just bigger.
+ */
+const DESKTOP_MAX_WIDTH = 1000;
 
 function greetingForNow() {
   const hour = new Date().getHours();
@@ -81,6 +92,7 @@ export function HomeScreen({
   navigate: (s: Screen) => void;
 }) {
   const navInset = useNavInset();
+  const { isDesktop: isDesktopHome } = useLayout();
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
   const others = swipeDeck.slice(1);
@@ -140,7 +152,7 @@ export function HomeScreen({
           <View
             style={{
               width: "100%",
-              maxWidth: MAX_WIDTH,
+              maxWidth: isDesktopHome ? DESKTOP_MAX_WIDTH : MAX_WIDTH,
               alignSelf: "center",
               paddingHorizontal: 20,
             }}

@@ -111,7 +111,7 @@ export function ProfileScreen({
                   <Text
                     style={{ color: DARK, fontSize: 22, fontWeight: "700" }}
                   >
-                    apnajod
+                    Apnajoda
                   </Text>
                   <Text style={{ color: MUTED, fontSize: 10 }}>
                     Find Your Perfect Match ❤️

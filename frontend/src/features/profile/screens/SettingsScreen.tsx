@@ -144,7 +144,7 @@ export function SettingsScreen({
                 letterSpacing: 1,
               }}
             >
-              APNAJOD
+              APNAJODA
             </Text>
             <Text style={{ fontSize: 12, color: "#5A5E63", marginTop: 4 }}>
               Version 1.0.0

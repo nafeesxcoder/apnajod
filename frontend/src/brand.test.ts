@@ -168,3 +168,31 @@ describe('the web shell in public/', () => {
     }
   });
 });
+
+describe('the old name is not on screen', () => {
+  /**
+   * app.json said Apnajoda while two screens still rendered "apnajod" in
+   * their header - the app's own name, wrong, in the one place a member
+   * looks to check whose app this is. The rebrand test only read app.json,
+   * so nothing failed.
+   */
+  it('no screen renders the retired spelling', () => {
+    const { readdirSync, readFileSync, statSync } = require('node:fs');
+    const { join } = require('node:path');
+    const screens: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (entry === 'node_modules') continue;
+        const path = join(dir, entry);
+        if (statSync(path).isDirectory()) walk(path);
+        // .tsx only: a .ts test may legitimately use an old host name.
+        else if (entry.endsWith('.tsx')) screens.push(path);
+      }
+    };
+    walk('src');
+    const offenders = screens.filter((path) =>
+      /\bapnajod\b/i.test(readFileSync(path, 'utf8').replace(/apnajoda/gi, '')),
+    );
+    expect(offenders, `the old name is still on: ${offenders.join(', ')}`).toEqual([]);
+  });
+});
