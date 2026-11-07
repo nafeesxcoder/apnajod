@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
+const billingService = require("./billingService");
 
 async function getFullProfile(userId) {
   const [profile] = await query("SELECT * FROM profiles WHERE user_id = ?", [
@@ -286,14 +287,27 @@ async function findMatches(userId, limit = 20) {
   //
   // What still cuts: blocks both ways, people already decided on, and
   // accounts that are gone. Those are correctness, not taste.
+  // Gender is honoured for everyone. Showing a member the wrong gender
+  // entirely is a broken app, not a free tier - so the paid part of
+  // "filters" is the age range, which is taste rather than correctness.
+  const premium = await billingService.isPremium(userId);
+  const ageClause = premium
+    ? "AND (p.age IS NULL OR p.age BETWEEN ? AND ?)"
+    : "";
+  const ageParams = premium ? [minAge, maxAge] : [];
+
   const candidates = await query(
     `SELECT
        u.id AS user_id, u.username,
        p.first_name, p.gender, p.age, p.height, p.city, p.profession,
        p.religion, p.community, p.about, p.verified, p.hobbies,
+       EXISTS (
+         SELECT 1 FROM boosts b
+          WHERE b.user_id = u.id AND b.ends_at > UTC_TIMESTAMP(6)
+       ) AS boosted,
        CASE
          WHEN (? IS NULL OR p.gender = ?)
-          AND (p.age IS NULL OR p.age BETWEEN ? AND ?)
+          ${ageClause}
          THEN 0 ELSE 1
        END AS off_preference
      FROM users u
@@ -305,12 +319,13 @@ async function findMatches(userId, limit = 20) {
        AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
        AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ?)
      ORDER BY
+       boosted DESC,
        off_preference ASC,
        (p.first_name IS NULL OR p.first_name = '') ASC,
        p.updated_at DESC,
        u.created_at DESC
      LIMIT ${Number(limit)}`,
-    [wantGender, wantGender, minAge, maxAge, userId, userId, userId, userId],
+    [wantGender, wantGender, ...ageParams, userId, userId, userId, userId],
   );
 
   const results = [];

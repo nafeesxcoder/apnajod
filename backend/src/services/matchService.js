@@ -2,6 +2,8 @@
 const { query } = require("../config/db");
 const { ApiError } = require("../middleware/errorHandler");
 const pushService = require("./pushService");
+const billingService = require("./billingService");
+const limits = require("../config/billing");
 
 async function recordDecision(actorId, targetId, decision) {
   // Nothing is written against an id that is not a member. Without this the
@@ -14,6 +16,29 @@ async function recordDecision(actorId, targetId, decision) {
   );
   if (!target) {
     throw new ApiError(404, "That profile is no longer available");
+  }
+
+  // A free member gets so many likes a day. Passing is never limited: the
+  // deck has to stay usable, and charging somebody to say no to a profile
+  // would be a strange thing to sell.
+  //
+  // Liking the same person twice is one like, not two - the insert below
+  // is ON DUPLICATE KEY, so it writes no new row - and the count only sees
+  // rows, so a double tap never costs an extra like.
+  if (decision === "interested") {
+    const [already] = await query(
+      `SELECT decision FROM match_decisions WHERE actor_id = ? AND target_id = ?`,
+      [actorId, targetId],
+    );
+    if (already?.decision !== "interested") {
+      const allowance = await billingService.likeAllowance(actorId);
+      if (allowance.remaining !== null && allowance.remaining <= 0) {
+        throw new ApiError(
+          402,
+          `You have used today's ${allowance.limit} likes. Go Premium for unlimited, or come back tomorrow.`,
+        );
+      }
+    }
   }
 
   await query(
@@ -175,7 +200,32 @@ async function getIncomingLikes(userId, limit = 100) {
     photosByUser.set(photo.user_id, list);
   }
 
+  // Who this member may actually see.
+  //
+  // Everyone they have already matched with stays visible - they can open
+  // that chat anyway, so hiding the row would only confuse. Of the people
+  // still waiting, a free member sees the newest few in full and the rest
+  // as locked rows: a real count and a real timestamp, no name and no
+  // photo. That count is the whole upsell, so it has to be honest.
+  const premium = await billingService.isPremium(userId);
+  const freeVisible = limits.freeVisibleLikers();
+  let shownPending = 0;
+
   return rows.map((row) => {
+    const accepted = !!row.accepted;
+    let locked = false;
+    if (!premium && !accepted) {
+      if (shownPending < freeVisible) shownPending += 1;
+      else locked = true;
+    }
+    if (locked) {
+      return {
+        id: row.actor_id,
+        locked: true,
+        likedAt: row.created_at,
+        status: "pending",
+      };
+    }
     const photos = photosByUser.get(row.actor_id) ?? [];
     // mysql2 hands back a JSON column already parsed, so JSON.parse on it
     // throws and the hobbies silently became an empty list.
@@ -204,8 +254,9 @@ async function getIncomingLikes(userId, limit = 100) {
       hobbies: Array.isArray(hobbies) ? hobbies : [],
       photo: photos[0] || row.avatar_url || "",
       photos,
+      locked: false,
       likedAt: row.created_at,
-      status: row.accepted ? "accepted" : "pending",
+      status: accepted ? "accepted" : "pending",
     };
   });
 }

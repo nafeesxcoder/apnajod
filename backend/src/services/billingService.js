@@ -1,0 +1,251 @@
+/**
+ * What a member has paid for, and what that lets them do.
+ *
+ * Two rails will sell the same things - Razorpay on the website, Google
+ * Play Billing in the Android app, because Play does not allow anything
+ * else to charge for digital goods inside an app. Both end at grantPlan()
+ * below, so no gate anywhere else in the app has to know which one paid.
+ *
+ * Every check here runs on the server. The client is told what it may do
+ * so it can draw the right screen, but it is never asked.
+ */
+const crypto = require("crypto");
+const { query } = require("../config/db");
+const { ApiError } = require("../middleware/errorHandler");
+const limits = require("../config/billing");
+
+const PREMIUM = "premium";
+const BOOST = "boost";
+
+/**
+ * Midnight in India, as a UTC instant.
+ *
+ * The allowance has to reset at midnight where the members are. The server
+ * runs on UTC, so comparing against UTC midnight would reset everyone's
+ * likes at 5:30 in the morning IST - in the middle of the night for some,
+ * and never when they would expect it.
+ */
+function startOfIndianDay(now = new Date()) {
+  const offsetMs = limits.indiaOffsetMinutes * 60 * 1000;
+  const indian = new Date(now.getTime() + offsetMs);
+  const midnightIndian = Date.UTC(
+    indian.getUTCFullYear(),
+    indian.getUTCMonth(),
+    indian.getUTCDate(),
+  );
+  return new Date(midnightIndian - offsetMs);
+}
+
+/** MySQL DATETIME(6) in UTC, which is what every column here stores. */
+function sqlTime(date) {
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
+async function listPlans() {
+  return query(
+    `SELECT code, title, blurb, kind, grants, quantity, amount_paise,
+            currency, play_product_id
+       FROM billing_plans
+      WHERE active = 1
+      ORDER BY sort_order ASC, amount_paise ASC`,
+  );
+}
+
+async function getPlan(code) {
+  const [plan] = await query(
+    "SELECT * FROM billing_plans WHERE code = ? AND active = 1",
+    [code],
+  );
+  return plan || null;
+}
+
+/** Is this member premium right now? */
+async function isPremium(userId) {
+  const [row] = await query(
+    `SELECT 1 FROM entitlements
+      WHERE user_id = ? AND feature = ?
+        AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6))
+      LIMIT 1`,
+    [userId, PREMIUM],
+  );
+  return !!row;
+}
+
+async function premiumUntil(userId) {
+  const [row] = await query(
+    `SELECT expires_at FROM entitlements
+      WHERE user_id = ? AND feature = ?
+        AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6))
+      LIMIT 1`,
+    [userId, PREMIUM],
+  );
+  if (!row) return null;
+  return row.expires_at ? new Date(row.expires_at).toISOString() : null;
+}
+
+/**
+ * Add days of a feature.
+ *
+ * Buying again while still subscribed extends from the existing expiry, not
+ * from today, so nobody loses time they already paid for by renewing early.
+ */
+async function grantFeature(userId, feature, days, source) {
+  await query(
+    `INSERT INTO entitlements (user_id, feature, expires_at, source)
+     VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(6), INTERVAL ? DAY), ?)
+     ON DUPLICATE KEY UPDATE
+       expires_at = DATE_ADD(
+         GREATEST(COALESCE(expires_at, UTC_TIMESTAMP(6)), UTC_TIMESTAMP(6)),
+         INTERVAL ? DAY
+       ),
+       source = VALUES(source)`,
+    [userId, feature, days, source, days],
+  );
+}
+
+async function addCredits(userId, kind, quantity) {
+  await query(
+    `INSERT INTO credit_balances (user_id, kind, balance)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE balance = balance + VALUES(balance)`,
+    [userId, kind, quantity],
+  );
+}
+
+async function creditBalance(userId, kind) {
+  const [row] = await query(
+    "SELECT balance FROM credit_balances WHERE user_id = ? AND kind = ?",
+    [userId, kind],
+  );
+  return row ? Number(row.balance) : 0;
+}
+
+/**
+ * Apply what a plan gives. Called by both payment rails and by a manual
+ * grant from support.
+ */
+async function grantPlan(userId, plan, source) {
+  if (plan.kind === "subscription") {
+    await grantFeature(userId, plan.grants, Number(plan.quantity), source);
+  } else {
+    await addCredits(userId, plan.grants, Number(plan.quantity));
+  }
+}
+
+/**
+ * Spend one credit, refusing if there is none.
+ *
+ * The UPDATE carries its own `balance > 0`, so two requests arriving
+ * together cannot both pass a check and leave the balance at -1. The table
+ * has a CHECK constraint behind that as well.
+ */
+async function spendCredit(userId, kind) {
+  const result = await query(
+    `UPDATE credit_balances SET balance = balance - 1
+      WHERE user_id = ? AND kind = ? AND balance > 0`,
+    [userId, kind],
+  );
+  return (result?.affectedRows ?? 0) > 0;
+}
+
+/** Likes used since midnight IST. */
+async function likesUsedToday(userId, now = new Date()) {
+  const [row] = await query(
+    `SELECT COUNT(*) AS used FROM match_decisions
+      WHERE actor_id = ? AND decision = 'interested' AND created_at >= ?`,
+    [userId, sqlTime(startOfIndianDay(now))],
+  );
+  return Number(row?.used ?? 0);
+}
+
+/**
+ * What the deck should let this member do right now.
+ * `remaining` is null when there is no limit.
+ */
+async function likeAllowance(userId, now = new Date()) {
+  if (await isPremium(userId)) {
+    return { premium: true, limit: null, used: 0, remaining: null };
+  }
+  const limit = limits.freeDailyLikes();
+  const used = await likesUsedToday(userId, now);
+  return {
+    premium: false,
+    limit,
+    used,
+    remaining: Math.max(0, limit - used),
+  };
+}
+
+/** Start a boost, spending one credit. */
+async function startBoost(userId) {
+  const [live] = await query(
+    "SELECT ends_at FROM boosts WHERE user_id = ? AND ends_at > UTC_TIMESTAMP(6) LIMIT 1",
+    [userId],
+  );
+  if (live) {
+    throw new ApiError(409, "A boost is already running");
+  }
+  if (!(await spendCredit(userId, BOOST))) {
+    throw new ApiError(402, "No boosts left");
+  }
+  const minutes = limits.boostMinutes();
+  await query(
+    `INSERT INTO boosts (id, user_id, ends_at)
+     VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(6), INTERVAL ? MINUTE))`,
+    [crypto.randomUUID(), userId, minutes],
+  );
+  return activeBoost(userId);
+}
+
+async function activeBoost(userId) {
+  const [row] = await query(
+    `SELECT ends_at FROM boosts
+      WHERE user_id = ? AND ends_at > UTC_TIMESTAMP(6)
+      ORDER BY ends_at DESC LIMIT 1`,
+    [userId],
+  );
+  return row ? { endsAt: new Date(row.ends_at).toISOString() } : null;
+}
+
+/**
+ * Everything the app needs to draw its paid states, in one call, so no
+ * screen has to assemble this for itself and get it subtly different.
+ */
+async function summaryFor(userId) {
+  const [allowance, boosts, boost] = await Promise.all([
+    likeAllowance(userId),
+    creditBalance(userId, BOOST),
+    activeBoost(userId),
+  ]);
+  return {
+    premium: allowance.premium,
+    premiumUntil: allowance.premium ? await premiumUntil(userId) : null,
+    likes: {
+      limit: allowance.limit,
+      used: allowance.used,
+      remaining: allowance.remaining,
+    },
+    boost: { balance: boosts, active: boost },
+    freeVisibleLikers: limits.freeVisibleLikers(),
+  };
+}
+
+module.exports = {
+  PREMIUM,
+  BOOST,
+  startOfIndianDay,
+  listPlans,
+  getPlan,
+  isPremium,
+  premiumUntil,
+  grantFeature,
+  grantPlan,
+  addCredits,
+  creditBalance,
+  spendCredit,
+  likesUsedToday,
+  likeAllowance,
+  startBoost,
+  activeBoost,
+  summaryFor,
+};
