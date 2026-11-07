@@ -1,12 +1,3 @@
-/**
- * Premium: what it gives, what it costs, and where the member stands.
- *
- * It cannot take money yet - Razorpay is not connected and Play Billing
- * needs the app listed first - so the plans are shown with their real
- * prices and the buy button says so plainly rather than failing when
- * tapped. When billingApi.checkoutAvailable turns true, the buttons work
- * and nothing else on this screen changes.
- */
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,12 +16,8 @@ import {
   rupees,
 } from "../../../api/billingApi";
 import { useLayout } from "../../../layout/useLayout";
-import { palette } from "../../../theme";
+import { fonts, palette, radius, typeScale } from "../../../theme";
 
-const PAPER = "#FDF7F4";
-const LINE = "#EADDD2";
-
-/** The one column width the header and the body both use. */
 const COLUMN = 800;
 
 const INCLUDED = [
@@ -52,6 +39,7 @@ export function PremiumScreen({
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -60,9 +48,14 @@ export function PremiumScreen({
         if (!live) return;
         setPlans(loadedPlans);
         setSummary(loadedSummary);
+        const firstSubscription = loadedPlans.find(
+          (p) => p.kind === "subscription",
+        );
+        if (firstSubscription) setSelectedCode(firstSubscription.code);
       })
       .catch((e) => {
-        if (live) setError(e instanceof Error ? e.message : "Could not load Premium.");
+        if (live)
+          setError(e instanceof Error ? e.message : "Could not load Premium.");
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -76,10 +69,8 @@ export function PremiumScreen({
   const packs = plans.filter((plan) => plan.kind === "consumable");
 
   return (
-    <View style={{ flex: 1, backgroundColor: PAPER }}>
+    <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
       <SafeAreaView style={{ flex: 1 }}>
-        {/* The same column as the body, so the back arrow lines up with
-            the content instead of hugging the far edge of a wide window. */}
         <View
           style={{
             width: "100%",
@@ -87,9 +78,9 @@ export function PremiumScreen({
             alignSelf: "center",
             flexDirection: "row",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
             paddingHorizontal: 20,
-            paddingVertical: 14,
+            paddingVertical: 12,
           }}
         >
           <Pressable
@@ -97,10 +88,26 @@ export function PremiumScreen({
             accessibilityLabel="Go back"
             hitSlop={12}
             onPress={onBack}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: palette.paper,
+              borderWidth: 1,
+              borderColor: palette.rule,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <Ionicons name="arrow-back" size={22} color={palette.ink} />
+            <Ionicons name="arrow-back" size={18} color={palette.ink} />
           </Pressable>
-          <Text style={{ fontSize: 20, fontWeight: "700", color: palette.ink }}>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: typeScale.title,
+              color: palette.ink,
+            }}
+          >
             Premium
           </Text>
         </View>
@@ -109,13 +116,18 @@ export function PremiumScreen({
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={{ width: "100%", maxWidth: COLUMN, alignSelf: "center" }}>
+          <View
+            style={{ width: "100%", maxWidth: COLUMN, alignSelf: "center" }}
+          >
             {loading ? (
               <View style={{ paddingVertical: 60, alignItems: "center" }}>
                 <ActivityIndicator color={palette.navy} />
               </View>
             ) : error ? (
-              <Text accessibilityRole="alert" style={{ color: palette.clay }}>
+              <Text
+                accessibilityRole="alert"
+                style={{ color: palette.clay, fontFamily: fonts.body }}
+              >
                 {error}
               </Text>
             ) : (
@@ -123,18 +135,32 @@ export function PremiumScreen({
                 {summary?.premium && (
                   <View
                     style={{
-                      backgroundColor: "#E8F1F8",
-                      borderRadius: 14,
+                      backgroundColor: palette.paperSand,
+                      borderRadius: radius.lg,
                       padding: 14,
                       marginBottom: 16,
                     }}
                   >
-                    <Text style={{ fontWeight: "700", color: palette.navy }}>
+                    <Text
+                      style={{
+                        fontFamily: fonts.bodySemi,
+                        color: palette.navy,
+                        fontSize: 14,
+                      }}
+                    >
                       You have Premium
                     </Text>
                     {summary.premiumUntil && (
-                      <Text style={{ color: palette.slate, marginTop: 2 }}>
-                        Until {new Date(summary.premiumUntil).toLocaleDateString()}
+                      <Text
+                        style={{
+                          color: palette.slate,
+                          marginTop: 2,
+                          fontFamily: fonts.body,
+                          fontSize: 13,
+                        }}
+                      >
+                        Until{" "}
+                        {new Date(summary.premiumUntil).toLocaleDateString()}
                       </Text>
                     )}
                   </View>
@@ -142,8 +168,8 @@ export function PremiumScreen({
 
                 <Text
                   style={{
-                    fontSize: 15,
-                    fontWeight: "700",
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
                     color: palette.ink,
                     marginBottom: 10,
                   }}
@@ -152,10 +178,10 @@ export function PremiumScreen({
                 </Text>
                 <View
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 16,
+                    backgroundColor: palette.paper,
+                    borderRadius: radius.lg,
                     borderWidth: 1,
-                    borderColor: LINE,
+                    borderColor: palette.rule,
                     padding: 6,
                     marginBottom: 22,
                   }}
@@ -170,8 +196,18 @@ export function PremiumScreen({
                         padding: 12,
                       }}
                     >
-                      <Ionicons name={item.icon} size={18} color={palette.navy} />
-                      <Text style={{ color: palette.ink, fontSize: 15 }}>
+                      <Ionicons
+                        name={item.icon}
+                        size={18}
+                        color={palette.navy}
+                      />
+                      <Text
+                        style={{
+                          color: palette.ink,
+                          fontSize: 15,
+                          fontFamily: fonts.body,
+                        }}
+                      >
                         {item.text}
                       </Text>
                     </View>
@@ -182,9 +218,17 @@ export function PremiumScreen({
                   title="Choose a plan"
                   plans={subscriptions}
                   wide={isWide}
+                  selectedCode={selectedCode}
+                  onSelect={setSelectedCode}
                 />
                 {packs.length > 0 && (
-                  <PlanGroup title="Boosts" plans={packs} wide={isWide} />
+                  <PlanGroup
+                    title="Boosts"
+                    plans={packs}
+                    wide={isWide}
+                    selectedCode={selectedCode}
+                    onSelect={setSelectedCode}
+                  />
                 )}
 
                 {!billingApi.checkoutAvailable && (
@@ -195,6 +239,7 @@ export function PremiumScreen({
                       textAlign: "center",
                       marginTop: 18,
                       lineHeight: 19,
+                      fontFamily: fonts.body,
                     }}
                   >
                     Payments are not open yet. Everything above is free for
@@ -214,18 +259,22 @@ function PlanGroup({
   title,
   plans,
   wide,
+  selectedCode,
+  onSelect,
 }: {
   title: string;
   plans: BillingPlan[];
   wide: boolean;
+  selectedCode: string | null;
+  onSelect: (code: string) => void;
 }) {
   if (!plans.length) return null;
   return (
     <View style={{ marginBottom: 20 }}>
       <Text
         style={{
-          fontSize: 15,
-          fontWeight: "700",
+          fontFamily: fonts.display,
+          fontSize: typeScale.section,
           color: palette.ink,
           marginBottom: 10,
         }}
@@ -238,63 +287,104 @@ function PlanGroup({
           wide && { flexDirection: "row", flexWrap: "wrap" },
         ]}
       >
-        {plans.map((plan) => (
-          <View
-            key={plan.code}
-            style={[
-              {
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: LINE,
-                padding: 16,
-              },
-              wide && { width: 240 },
-            ]}
-          >
-            <Text style={{ fontSize: 15, fontWeight: "700", color: palette.ink }}>
-              {plan.title}
-            </Text>
-            {!!plan.blurb && (
+        {plans.map((plan) => {
+          const selected = selectedCode === plan.code;
+          return (
+            <Pressable
+              key={plan.code}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              accessibilityLabel={`${plan.title}, ${rupees(plan.amount_paise)}`}
+              onPress={() => onSelect(plan.code)}
+              style={[
+                {
+                  backgroundColor: selected ? palette.paperSand : palette.paper,
+                  borderRadius: radius.lg,
+                  borderWidth: selected ? 2 : 1,
+                  borderColor: selected ? palette.navy : palette.rule,
+                  padding: 16,
+                },
+                wide && { width: 240 },
+              ]}
+            >
+              {selected && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    backgroundColor: palette.navy,
+                    borderRadius: radius.pill,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 10,
+                      color: "#FFFFFF",
+                    }}
+                  >
+                    Selected
+                  </Text>
+                </View>
+              )}
               <Text
                 style={{
-                  color: palette.slate,
-                  fontSize: 13,
-                  marginTop: 4,
-                  lineHeight: 18,
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 15,
+                  color: palette.ink,
                 }}
               >
-                {plan.blurb}
+                {plan.title}
               </Text>
-            )}
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "800",
-                color: palette.navy,
-                marginTop: 10,
-              }}
-            >
-              {rupees(plan.amount_paise)}
-            </Text>
-            <View
-              // Not a Pressable: a button that cannot do anything is worse
-              // than no button. It becomes one when checkout opens.
-              accessibilityRole="text"
-              style={{
-                marginTop: 12,
-                paddingVertical: 12,
-                borderRadius: 999,
-                backgroundColor: "#EEF2F6",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: palette.slate, fontWeight: "600" }}>
-                Opening soon
+              {!!plan.blurb && (
+                <Text
+                  style={{
+                    color: palette.slate,
+                    fontSize: 13,
+                    marginTop: 4,
+                    lineHeight: 18,
+                    fontFamily: fonts.body,
+                  }}
+                >
+                  {plan.blurb}
+                </Text>
+              )}
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 24,
+                  color: palette.navy,
+                  marginTop: 10,
+                }}
+              >
+                {rupees(plan.amount_paise)}
               </Text>
-            </View>
-          </View>
-        ))}
+              <View
+                accessibilityRole="text"
+                style={{
+                  marginTop: 12,
+                  paddingVertical: 12,
+                  borderRadius: radius.pill,
+                  backgroundColor: selected ? palette.navy : palette.paperSand,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: selected ? "#FFFFFF" : palette.slate,
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 13,
+                  }}
+                >
+                  {billingApi.checkoutAvailable ? "Choose" : "Opening soon"}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
