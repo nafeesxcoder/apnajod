@@ -72,6 +72,7 @@ import { colors } from "../../theme";
 import { receiptColor, receiptIcon, receiptLabel } from "./receipt";
 import { APP_MAX_WIDTH, CHAT_LIST_WIDTH, RAIL_WIDTH } from "../../layout/breakpoints";
 import { useLayout } from "../../layout/useLayout";
+import { useKeyboardInset } from "../../layout/useKeyboardInset";
 import {
   aiStyles,
   chatPremiumStyles,
@@ -972,6 +973,7 @@ export function ChatScreen({
 }) {
   const { width: chatWidth, height: chatHeight } = useWindowDimensions();
   const { isDesktop: isDesktopChat } = useLayout();
+  const keyboardInset = useKeyboardInset();
   const messagesRef = useRef<ScrollView | null>(null);
   // When the server has a GIPHY key, GIF search goes through it; otherwise the
   // built-in reaction catalog from runtimePorts stays in use.
@@ -2907,7 +2909,10 @@ export function ChatScreen({
                   ? "height"
                   : undefined
             }
-            style={chatStyles.keyboardWrap}
+            // On the web KeyboardAvoidingView takes no behaviour, so the
+            // keyboard covered the composer and the emoji panel - and the
+            // search field inside it that had just been tapped.
+            style={[chatStyles.keyboardWrap, { paddingBottom: keyboardInset }]}
           >
             {!!text.trim() && messageSafety.signals.length > 0 && (
               <SafetyNudge
@@ -3408,6 +3413,9 @@ function MessageReceipt({ status }: { status: ChatMessage["status"] }) {
   );
 }
 
+/** How wide a photo, GIF or snap sits in the thread. */
+const MEDIA_BUBBLE_WIDTH = 260;
+
 function ChatBubble({
   message,
   status,
@@ -3443,6 +3451,35 @@ function ChatBubble({
   onQuickReact?: (event: GestureResponderEvent) => void;
   onSwipeReply?: () => void;
 }) {
+  /**
+   * A photo keeps its own shape.
+   *
+   * The frame was a fixed 210px tall, so a portrait photo - which is most
+   * of what people send from a phone - was cropped to a letterbox slice
+   * of itself. The real ratio comes from the image once it loads, clamped
+   * so that a panorama or a very tall screenshot still fits a bubble.
+   */
+  const [mediaRatio, setMediaRatio] = useState(4 / 3);
+  const mediaUri = message.uri;
+  useEffect(() => {
+    // Image.getSize rather than onLoad: react-native-web does not give
+    // the loaded dimensions through the load event the way native does,
+    // so every photo kept the default shape no matter what it was.
+    if (!mediaUri) return;
+    let live = true;
+    Image.getSize(
+      mediaUri,
+      (width, height) => {
+        if (!live || !width || !height) return;
+        setMediaRatio(Math.min(1.9, Math.max(0.62, width / height)));
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [mediaUri]);
+
   const mine = message.mine !== false;
   // WhatsApp-style swipe actions: swipe right on any message to reply;
   // swipe left on your own message to edit it (can't edit the other
@@ -3541,7 +3578,10 @@ function ChatBubble({
     message.type === "location" && chatStyles.locationBubble,
     message.type === "document" && chatStyles.documentBubble,
     message.type === "document" && !mine && chatStyles.documentBubbleTheirs,
-    isMediaBubble && { padding: 6 },
+    // A photo bubble needs a real width. Without one it sizes to its
+    // content, the frame's `width: 100%` has nothing to resolve against,
+    // and the photo collapses to a thumbnail a few pixels across.
+    isMediaBubble && { padding: 6, width: MEDIA_BUBBLE_WIDTH },
     (emojiOnly || isJustEmoji) && {
       backgroundColor: "transparent",
       borderWidth: 0,
@@ -3734,7 +3774,12 @@ function ChatBubble({
             (message.type === "gif" && !catalogGif) ||
             message.type === "snap") &&
             message.uri && (
-              <View style={chatStyles.messageMediaFrame}>
+              <View
+                style={[
+                  chatStyles.messageMediaFrameAuto,
+                  { aspectRatio: mediaRatio },
+                ]}
+              >
                 {message.type === "gif" ? (
                   <ExpoImage
                     accessible
@@ -3755,6 +3800,7 @@ function ChatBubble({
                     }
                     source={{ uri: message.uri }}
                     style={chatStyles.messageMedia}
+                    resizeMode="cover"
                   />
                 )}
                 <View pointerEvents="none" style={chatStyles.mediaShade} />

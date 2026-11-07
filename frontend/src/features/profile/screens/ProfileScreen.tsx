@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
@@ -24,6 +23,8 @@ const WHITE = "#FFFFFF";
 const LINE = "#E6E8EA";
 
 const MAX_WIDTH = 720;
+
+const brandLogo = require("../../../../assets/apnajoda-logo.png");
 const SIDE_PADDING = 16;
 
 
@@ -66,83 +67,48 @@ export function ProfileScreen({
           <View
             style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center" }}
           >
-            {/* Cover Photo */}
-            <View style={{ position: "relative", height: 160 }}>
-              {/* The member's own first photo, or a plain band. A stock
-                  picture of a stranger used to sit here on every profile. */}
-              {profilePhoto ? (
-                <Image
-                  source={{ uri: profilePhoto }}
-                  style={{ width: "100%", height: "100%" }}
-                  resizeMode="cover"
-                  blurRadius={18}
-                />
-              ) : (
-                <View style={{ width: "100%", height: "100%", backgroundColor: "#E5E7EA" }} />
-              )}
-              <LinearGradient
-                colors={[
-                  "rgba(73,131,190,0.4)",
-                  "transparent",
-                  "rgba(250,250,250,1)",
-                ]}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                }}
+            {/* A plain header bar: the logo, and the two things you do
+                from here. The cover used to be the member's own first
+                photo, blurred, behind a gradient - 160px of their own face
+                out of focus, which told them nothing and pushed the whole
+                profile below the fold. */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: SIDE_PADDING,
+                paddingTop: 10,
+                paddingBottom: 6,
+              }}
+            >
+              <Image
+                source={brandLogo}
+                style={{ width: 132, height: 38 }}
+                resizeMode="contain"
+                accessibilityLabel="Apnajoda"
               />
-
-              {/* App Name */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 14,
-                  left: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <Ionicons name="heart" size={28} color={PINK} />
-                <View>
-                  <Text
-                    style={{ color: DARK, fontSize: 22, fontWeight: "700" }}
-                  >
-                    Apnajoda
-                  </Text>
-                  <Text style={{ color: MUTED, fontSize: 10 }}>
-                    Find Your Perfect Match ❤️
-                  </Text>
-                </View>
-              </View>
-
-              {/* Add a post, and settings */}
-              <View style={{ position: "absolute", top: 14, right: 60 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <AddPostButton
                   accessToken={accessToken}
                   onPosted={() => setPostsReloadKey((key) => key + 1)}
                 />
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Settings"
+                  onPress={() => navigate("settings")}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: "rgba(255,255,255,0.9)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Ionicons name="ellipsis-vertical" size={22} color={DARK} />
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                onPress={() => navigate("settings")}
-                style={{
-                  position: "absolute",
-                  top: 14,
-                  right: 16,
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "rgba(255,255,255,0.9)",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="ellipsis-vertical" size={22} color={DARK} />
-              </TouchableOpacity>
             </View>
 
             <View style={{ paddingHorizontal: SIDE_PADDING }}>
@@ -152,7 +118,7 @@ export function ProfileScreen({
                   flexDirection: "row",
                   justifyContent: "space-between",
                   alignItems: "flex-end",
-                  marginTop: -60,
+                  marginTop: 6,
                 }}
               >
                 <View style={{ position: "relative" }}>

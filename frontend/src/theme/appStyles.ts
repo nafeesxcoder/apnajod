@@ -1654,6 +1654,9 @@ export const chatStyles=StyleSheet.create({
   messageTailTheirs:{left:-4,backgroundColor:'#FDFDFD',borderLeftWidth:1,borderBottomWidth:1,borderColor:'#D6D9DC'},
   mediaBubble:{width:270,maxWidth:'86%',padding:4,borderRadius:18,borderBottomRightRadius:6,overflow:'hidden',backgroundColor:'#123456',borderWidth:1,borderColor:'#163D65',shadowColor:'#133557',shadowOpacity:.13,shadowRadius:10,shadowOffset:{width:0,height:5}},
   mediaBubbleTheirs:{borderBottomRightRadius:18,borderBottomLeftRadius:6,backgroundColor:'#FDFDFD',borderColor:'#D6D9DC'},
+  // No height: the photo sets its own through aspectRatio, so a portrait
+  // is not cropped to a letterbox slice of itself.
+  messageMediaFrameAuto:{width:'100%',borderRadius:14,overflow:'hidden',backgroundColor:'#E5E7EA'},
   messageMediaFrame:{width:'100%',height:210,borderRadius:14,overflow:'hidden',backgroundColor:'#E5E7EA'},
   messageMedia:{width:'100%',height:'100%',backgroundColor:colors.surface},
   mediaShade:{position:'absolute',left:0,right:0,bottom:0,height:52,backgroundColor:'rgba(15,17,19,.14)'},
