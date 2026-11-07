@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { AppCanvas } from "../../../components/AppCanvas";
-import { BottomNav } from "../../../components/navigation/BottomNav";
+import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
@@ -45,6 +45,7 @@ export function ProfileScreen({
   navigate: (screen: any) => void;
   accessToken?: string;
 }) {
+  const navInset = useNavInset();
   // Bumped after posting from the cover, so the list below reloads.
   const [postsReloadKey, setPostsReloadKey] = useState(0);
   const hobbies: string[] = Array.isArray(profile?.hobbies)
@@ -57,7 +58,7 @@ export function ProfileScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA", paddingLeft: navInset.paddingLeft }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 90 }}

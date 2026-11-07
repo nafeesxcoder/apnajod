@@ -67,7 +67,13 @@ describe('the Chats tab', () => {
 
 describe('the Likes tab', () => {
   it('is marked with a heart', () => {
-    const tab = nav.slice(nav.indexOf('label="Likes"') - 200, nav.indexOf('label="Likes"'));
-    expect(tab).toContain('heart');
+    // The five destinations are a data array now, so that the bottom bar
+    // on a phone and the left rail on a desktop cannot drift apart. The
+    // check is the same: the Likes destination carries a heart.
+    const entry = nav
+      .split('\n')
+      .find((line) => line.includes('label: "Likes"'));
+    expect(entry, 'the Likes destination should exist').toBeTruthy();
+    expect(entry).toContain('heart');
   });
 });

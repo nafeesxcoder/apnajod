@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
-import { BottomNav } from "../../../components/navigation/BottomNav";
+import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
 import type { Screen } from "../../../app/navigation/types";
 import type { Match } from "../../../data";
 import { matchApi } from "../../../api/matchApi";
@@ -95,6 +95,7 @@ export function LikesScreen({
   /** Called when accepting made it mutual, so the thread can be opened. */
   onMatched: (like: { userId: string; username: string; name: string; photo: string }) => void;
 }) {
+  const navInset = useNavInset();
   const [likes, setLikes] = useState<IncomingLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -186,7 +187,7 @@ export function LikesScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: PAPER }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: PAPER, paddingLeft: navInset.paddingLeft }}>
         <ScrollView
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}

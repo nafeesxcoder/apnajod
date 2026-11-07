@@ -51,6 +51,8 @@ import {
   type MatchingPoolStatus,
 } from "./adapters/previewMemberRuntime";
 import { deckCandidates, rankMatches } from "../domain/matching";
+import { APP_MAX_WIDTH, PHONE_WIDTH } from "../layout/breakpoints";
+import { useLayout } from "../layout/useLayout";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { configureAnalyticsConsent, track } from "../lib/telemetry";
 import { CallHost } from "../features/chat/CallHost";
@@ -191,6 +193,7 @@ import {
  * on a mid-range phone.
  */
 function AppCanvas({ children }: { children: ReactNode }) {
+  const layout = useLayout();
   return (
     <View
       style={{
@@ -207,9 +210,16 @@ function AppCanvas({ children }: { children: ReactNode }) {
             backgroundColor: colors.canvas,
             overflow: "hidden",
           },
-          // On a desktop browser, keep the app phone-sized and centred.
+          // On the web the app sits in a centred card. On a phone-sized
+          // window that card is phone-wide, which is what it should be. On
+          // a laptop it used to stay phone-wide too, so the whole app was a
+          // 430px strip in the middle of a 1440px screen - the thing this
+          // is meant to stop being.
           Platform.OS === "web"
-            ? { maxWidth: 430, boxShadow: "0 0 40px rgba(21,23,25,0.14)" }
+            ? {
+                maxWidth: layout.isWide ? APP_MAX_WIDTH : PHONE_WIDTH,
+                boxShadow: "0 0 40px rgba(21,23,25,0.14)",
+              }
             : null,
         ]}
       >

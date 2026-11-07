@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ConversationSummary } from '../../../api/chatApi';
-import { BottomNav, handleBottomNavScroll } from '../../../components/navigation/BottomNav';
+import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import type { Screen } from '../../../app/navigation/types';
 import { social } from '../../../theme/socialStyles';
 import { colors } from '../../../theme';
@@ -95,6 +95,7 @@ export function ChatsScreen({
   onFind: () => void;
   navigate: (screen: Screen) => void;
 }) {
+  const navInset = useNavInset();
   const [items, setItems] = useState<ConversationSummary[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -120,7 +121,7 @@ export function ChatsScreen({
   };
 
   return (
-    <View style={social.root}>
+    <View style={[social.root, { paddingLeft: navInset.paddingLeft }]}>
       <SafeAreaView style={social.safe}>
         <View style={social.header}>
           <Text style={social.headerTitle}>Chats</Text>

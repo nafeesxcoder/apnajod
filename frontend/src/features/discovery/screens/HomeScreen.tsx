@@ -14,8 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Button } from "../../../components";
 import {
   BottomNav,
-  handleBottomNavScroll,
-} from "../../../components/navigation/BottomNav";
+  handleBottomNavScroll, useNavInset } from "../../../components/navigation/BottomNav";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
@@ -81,6 +80,7 @@ export function HomeScreen({
   onRose?: (m: Match) => void;
   navigate: (s: Screen) => void;
 }) {
+  const navInset = useNavInset();
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
   const others = swipeDeck.slice(1);
@@ -123,7 +123,7 @@ export function HomeScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas, paddingLeft: navInset.paddingLeft }}>
         <ScrollView
           onScroll={handleBottomNavScroll}
           scrollEventThrottle={16}
