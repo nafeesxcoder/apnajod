@@ -17,7 +17,8 @@ import { AppCanvas } from "../../../components/AppCanvas";
 import { colors } from "../../../theme";
 import { uploadPhotoOrKeepLocal as uploadPhotoAsset } from "../../../api/uploadPhoto";
 
-// ✅ MASTER HOBBY LIST (Icons + Names)
+const BIO_MAX_LENGTH = 500;
+
 export const MASTER_HOBBIES = [
   { label: "Travel", icon: "airplane" },
   { label: "Music", icon: "musical-notes" },
@@ -104,10 +105,14 @@ export function ProfileSetupScreen({
   };
 
   const handleSave = () => {
-    const latest = { ...profile, bio };
+    const trimmedBio = bio.trim().slice(0, BIO_MAX_LENGTH);
+    const latest = { ...profile, bio: trimmedBio };
     onProfileChange(latest);
     onNext(latest);
   };
+
+  const bioLength = bio.length;
+  const bioWarning = bioLength >= BIO_MAX_LENGTH;
 
   return (
     <AppCanvas>
@@ -146,7 +151,6 @@ export function ProfileSetupScreen({
             Add a clear photo and a short bio so people know who you are.
           </Text>
 
-          {/* Profile Photo */}
           <View style={{ alignItems: "center", marginBottom: 24 }}>
             <TouchableOpacity
               onPress={pickImage}
@@ -203,7 +207,6 @@ export function ProfileSetupScreen({
           </View>
 
           <View style={{ gap: 16 }}>
-            {/* Name */}
             <View>
               <Text style={styles.label}>First Name</Text>
               <TextInput
@@ -217,7 +220,6 @@ export function ProfileSetupScreen({
               />
             </View>
 
-            {/* Age & Gender */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Age</Text>
@@ -263,7 +265,6 @@ export function ProfileSetupScreen({
               </View>
             </View>
 
-            {/* City */}
             <View>
               <Text style={styles.label}>City</Text>
               <TextInput
@@ -275,7 +276,6 @@ export function ProfileSetupScreen({
               />
             </View>
 
-            {/* Profession */}
             <View>
               <Text style={styles.label}>What do you do?</Text>
               <TextInput
@@ -289,7 +289,6 @@ export function ProfileSetupScreen({
               />
             </View>
 
-            {/* Bio */}
             <View>
               <Text style={styles.label}>About Me (Bio)</Text>
               <TextInput
@@ -298,22 +297,31 @@ export function ProfileSetupScreen({
                 placeholder="A short bio helps people know the real you..."
                 multiline
                 numberOfLines={4}
+                maxLength={BIO_MAX_LENGTH}
                 style={[
                   styles.input,
                   { height: 100, textAlignVertical: "top" },
                 ]}
                 placeholderTextColor="#9AA4AF"
               />
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: bioWarning ? colors.danger : colors.muted,
+                  textAlign: "right",
+                  marginTop: 4,
+                }}
+              >
+                {bioLength} / {BIO_MAX_LENGTH}
+              </Text>
             </View>
 
-            {/* Hobbies Dropdown Selector */}
             <View>
               <Text style={styles.label}>Hobbies</Text>
               <Text style={{ fontSize: 12, color: "#5A5E63", marginBottom: 8 }}>
                 Add hobbies that describe you (with icons!)
               </Text>
 
-              {/* Display selected hobbies as chips */}
               <View
                 style={{
                   flexDirection: "row",
@@ -365,7 +373,6 @@ export function ProfileSetupScreen({
                 })}
               </View>
 
-              {/* Button to Open Dropdown */}
               <TouchableOpacity
                 onPress={() => setShowHobbyPicker(true)}
                 style={{
@@ -404,7 +411,6 @@ export function ProfileSetupScreen({
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Hobby Picker Modal */}
         <Modal
           visible={showHobbyPicker}
           animationType="slide"
@@ -426,7 +432,6 @@ export function ProfileSetupScreen({
                 height: "80%",
               }}
             >
-              {/* Header */}
               <View
                 style={{
                   padding: 20,
@@ -456,7 +461,6 @@ export function ProfileSetupScreen({
                   </TouchableOpacity>
                 </View>
 
-                {/* Search Bar */}
                 <View
                   style={{
                     flexDirection: "row",
@@ -479,7 +483,6 @@ export function ProfileSetupScreen({
                 </View>
               </View>
 
-              {/* Hobbies List */}
               <ScrollView contentContainerStyle={{ padding: 20 }}>
                 {filteredHobbies.length === 0 ? (
                   <Text
@@ -541,7 +544,6 @@ export function ProfileSetupScreen({
                 )}
               </ScrollView>
 
-              {/* Done Button */}
               <View
                 style={{
                   padding: 20,

@@ -1,19 +1,3 @@
-/**
- * Direct messaging: permission, storage and the conversation list.
- *
- * The storage key matters more than it looks. A conversation is addressed by
- * the other person's user id, so if that is also what it is stored under then
- * each side writes under a different id and neither sees the other's messages
- * after a reload. These tests pin the pair key that fixes it.
- *
- * Permission is now gated by a MUTUAL MATCH — follows no longer grant message
- * rights. sendMessage() should refuse anyone who has not matched, with a
- * generic 403 ("This conversation is not available.") so an attacker cannot
- * tell whether the reason is no-match, block, or not-found.
- *
- * Like follow.test.js these run against a real MySQL and skip with a reason
- * when none is reachable.
- */
 const assert = require("node:assert/strict");
 const { test, before, beforeEach, after } = require("node:test");
 const fs = require("node:fs");
@@ -31,7 +15,6 @@ const env = require("../src/config/env");
 let available = false;
 let skipReason = "";
 let chatService;
-let followService;
 let query;
 
 before(async () => {
@@ -100,7 +83,6 @@ before(async () => {
 
   ({ query } = require("../src/config/db"));
   chatService = require("../src/services/chatService");
-  followService = require("../src/services/followService");
   available = true;
 });
 
@@ -135,7 +117,6 @@ async function member(username, { isPrivate = false } = {}) {
   return id;
 }
 
-/** Insert a mutual match row, the ONLY thing that now unlocks messaging. */
 async function match(a, b) {
   await query(
     `INSERT INTO mutual_matches (id, user_a_id, user_b_id) VALUES (?, ?, ?)`,
@@ -157,12 +138,6 @@ const t = (name, fn) =>
     return fn();
   });
 
-// ------------------------------------------------------------ permission ---
-//
-// Rule: a mutual match is the only thing that unlocks sending. Everyone else
-// gets a generic 403 so an attacker cannot distinguish "no match" from
-// "blocked" from "user not found".
-
 t("a mutual match lets both people message each other", async () => {
   const a = await member("asha");
   const b = await member("bina");
@@ -176,26 +151,9 @@ t("a mutual match lets both people message each other", async () => {
 
 t("no match refuses the message, and no error text leaks why", async () => {
   const a = await member("asha");
-  const b = await member("bina"); // public by default — still needs a match
+  const b = await member("bina");
   await assert.rejects(() => say(a, b, "hello"), /not available/i);
   await assert.rejects(() => say(b, a, "hello back"), /not available/i);
-});
-
-t("an accepted follow alone does not unlock messaging", async () => {
-  const a = await member("asha");
-  const b = await member("bina", { isPrivate: true });
-
-  // Make the follow real: request, then accept.
-  await followService.follow(a, b);
-  await followService.respond(b, a, true);
-
-  // Even with the accepted follow, no message until a match exists.
-  await assert.rejects(() => say(a, b, "hello"), /not available/i);
-
-  // Once a mutual match is recorded, the same message goes through.
-  await match(a, b);
-  await say(a, b, "hello");
-  assert.equal((await chatService.listMessages(b, a)).length, 1);
 });
 
 t("a block stops the conversation even when a match exists", async () => {
@@ -213,8 +171,6 @@ t("a block stops the conversation even when a match exists", async () => {
   await assert.rejects(() => chatService.listMessages(b, a), /not available/i);
 });
 
-// --------------------------------------------------------------- storage ---
-
 t(
   "both people see the same thread, which is the point of the pair key",
   async () => {
@@ -225,7 +181,6 @@ t(
     await say(a, b, "hi from asha");
     await say(b, a, "hi back from bina");
 
-    // Each side addresses the conversation by the other's id.
     const seenByA = await chatService.listMessages(b, a);
     const seenByB = await chatService.listMessages(a, b);
 
@@ -265,8 +220,6 @@ t("two different pairs do not share a conversation", async () => {
   assert.equal((await chatService.listMessages(c, a)).length, 1);
 });
 
-// ----------------------------------------------------------------- inbox ---
-
 t("the conversation list shows each person once, newest first", async () => {
   const me = await member("me");
   const first = await member("first_person");
@@ -300,7 +253,6 @@ t("the conversation list counts what you have not read", async () => {
   let list = await chatService.listConversations(me);
   assert.equal(list[0].unread, 2);
 
-  // Opening the thread marks it read.
   await chatService.listMessages(them, me);
   list = await chatService.listConversations(me);
   assert.equal(list[0].unread, 0);

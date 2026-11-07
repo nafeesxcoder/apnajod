@@ -1,6 +1,9 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
 const billingService = require("./billingService");
+const { ApiError } = require("../middleware/errorHandler");
+
+const BIO_MAX_LENGTH = 500;
 
 async function getFullProfile(userId) {
   const [profile] = await query("SELECT * FROM profiles WHERE user_id = ?", [
@@ -27,7 +30,6 @@ async function getFullProfile(userId) {
     [userId],
   );
 
-  // Parse hobbies JSON
   const hobbies = profile?.hobbies ? safeParseJson(profile.hobbies, []) : [];
 
   return {
@@ -77,14 +79,19 @@ async function upsertProfile(userId, input) {
     hobbies,
   } = input;
 
-  // Bio ko 'about' column mein save karenge.
   const rawAbout = bio !== undefined ? bio : about;
   const profileAbout =
     rawAbout === undefined || rawAbout === null
       ? null
       : String(rawAbout).trim();
 
-  // Hobbies JSON string
+  if (profileAbout !== null && profileAbout.length > BIO_MAX_LENGTH) {
+    throw new ApiError(
+      400,
+      `Bio must be ${BIO_MAX_LENGTH} characters or less.`,
+    );
+  }
+
   const profileHobbies = Array.isArray(hobbies)
     ? JSON.stringify(hobbies)
     : null;
@@ -125,13 +132,6 @@ async function submitVerification(userId, selfieUrl) {
   );
 }
 
-/**
- * The pending queue a human works through.
- *
- * Submitting a selfie sets 'pending' and nothing else moves it, so without
- * this pair a member could never actually become verified — and the verified
- * badge is the one thing this app is really selling.
- */
 async function listPendingVerifications(limit = 50) {
   return query(
     `SELECT u.id AS user_id, u.username, u.phone,
@@ -146,10 +146,6 @@ async function listPendingVerifications(limit = 50) {
   );
 }
 
-/**
- * Approve or reject one selfie. `verified` stays a plain boolean for everything
- * that reads it, and only an approval ever sets it.
- */
 async function setVerificationStatus(userId, status) {
   if (!["none", "pending", "approved", "rejected"].includes(status)) {
     throw new Error(`Unknown verification status: ${status}`);
@@ -262,7 +258,6 @@ async function markOnboardingComplete(userId) {
   ]);
 }
 
-// ---------- Discovery ----------
 async function findMatches(userId, limit = 20) {
   const [myPrefs] = await query(
     "SELECT * FROM matching_preferences WHERE user_id = ?",
@@ -274,22 +269,6 @@ async function findMatches(userId, limit = 20) {
   const wantGender =
     lookingFor === "women" ? "woman" : lookingFor === "men" ? "man" : null;
 
-  // Everybody with an account is in the deck. Preferences ORDER it, they do
-  // not cut it: age, gender and "onboarding_complete" used to be WHERE
-  // clauses, so a member who had not finished setup, or who sat a year
-  // outside a default 21-45 range nobody had chosen, simply did not exist to
-  // anyone. On a young app that is most of the deck, and an empty deck is
-  // the one thing a dating app cannot survive.
-  //
-  // Private accounts were never filtered here and still are not: private
-  // governs who may message, not who may be seen, and messaging stays shut
-  // until both sides have liked each other.
-  //
-  // What still cuts: blocks both ways, people already decided on, and
-  // accounts that are gone. Those are correctness, not taste.
-  // Gender is honoured for everyone. Showing a member the wrong gender
-  // entirely is a broken app, not a free tier - so the paid part of
-  // "filters" is the age range, which is taste rather than correctness.
   const premium = await billingService.isPremium(userId);
   const ageClause = premium
     ? "AND (p.age IS NULL OR p.age BETWEEN ? AND ?)"
@@ -328,29 +307,54 @@ async function findMatches(userId, limit = 20) {
     [wantGender, wantGender, ...ageParams, userId, userId, userId, userId],
   );
 
-  const results = [];
-  for (const candidate of candidates) {
-    const photos = await query(
-      "SELECT photo_url FROM profile_photos WHERE user_id = ? ORDER BY position ASC",
-      [candidate.user_id],
-    );
-    const vibes = await query(
-      "SELECT vibe FROM profile_vibes WHERE user_id = ?",
-      [candidate.user_id],
-    );
-    const [intentRow] = await query(
-      "SELECT intent, timeline, children, family, relocation FROM profile_intent WHERE user_id = ?",
-      [candidate.user_id],
-    );
+  if (!candidates.length) return [];
+
+  const candidateIds = candidates.map((c) => c.user_id);
+  const placeholders = candidateIds.map(() => "?").join(",");
+
+  const allPhotos = await query(
+    `SELECT user_id, photo_url FROM profile_photos
+     WHERE user_id IN (${placeholders})
+     ORDER BY user_id, position ASC`,
+    candidateIds,
+  );
+  const photosByUser = {};
+  for (const row of allPhotos) {
+    if (!photosByUser[row.user_id]) photosByUser[row.user_id] = [];
+    photosByUser[row.user_id].push(row.photo_url);
+  }
+
+  const allVibes = await query(
+    `SELECT user_id, vibe FROM profile_vibes WHERE user_id IN (${placeholders})`,
+    candidateIds,
+  );
+  const vibesByUser = {};
+  for (const row of allVibes) {
+    if (!vibesByUser[row.user_id]) vibesByUser[row.user_id] = [];
+    vibesByUser[row.user_id].push(row.vibe);
+  }
+
+  const allIntents = await query(
+    `SELECT user_id, intent, timeline, children, family, relocation
+     FROM profile_intent WHERE user_id IN (${placeholders})`,
+    candidateIds,
+  );
+  const intentByUser = {};
+  for (const row of allIntents) {
+    intentByUser[row.user_id] = row;
+  }
+
+  return candidates.map((candidate) => {
     const hobbies = candidate.hobbies
       ? safeParseJson(candidate.hobbies, [])
       : [];
-    results.push({
+    const photos = photosByUser[candidate.user_id] || [];
+    const vibes = vibesByUser[candidate.user_id] || [];
+    const intentRow = intentByUser[candidate.user_id];
+    return {
       id: candidate.user_id,
       profileId: candidate.user_id,
       matchId: candidate.user_id,
-      // A member who has not filled the form in yet still has a username,
-      // which is a real name on the card instead of "Member".
       name: candidate.first_name || candidate.username || "Member",
       age: candidate.age || 0,
       city: candidate.city || "",
@@ -359,9 +363,9 @@ async function findMatches(userId, limit = 20) {
       intent: intentRow?.intent || "",
       match: "Great Match",
       verified: candidate.verified === 1,
-      vibes: vibes.map((v) => v.vibe),
-      photo: photos[0]?.photo_url || "",
-      photos: photos.map((p) => p.photo_url),
+      vibes,
+      photo: photos[0] || "",
+      photos,
       about: candidate.about || "",
       hobbies,
       values: "",
@@ -374,9 +378,8 @@ async function findMatches(userId, limit = 20) {
       interests: [],
       familyPriority: "balanced",
       vouches: { count: 0, qualities: [] },
-    });
-  }
-  return results;
+    };
+  });
 }
 
 module.exports = {
