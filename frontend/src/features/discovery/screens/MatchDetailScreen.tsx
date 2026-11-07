@@ -105,18 +105,28 @@ export function MatchDetailScreen({
       <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 90 }}
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 90,
+            paddingHorizontal: 12,
+          }}
         >
           <View
-            style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center" }}
+            style={{
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              backgroundColor: palette.paper,
+              borderRadius: radius.xl,
+              paddingHorizontal: SIDE_PADDING,
+              paddingVertical: 16,
+            }}
           >
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                paddingHorizontal: SIDE_PADDING,
-                paddingTop: 8,
                 paddingBottom: 4,
               }}
             >
@@ -135,9 +145,7 @@ export function MatchDetailScreen({
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: palette.paper,
-                  borderWidth: 1,
-                  borderColor: palette.rule,
+                  backgroundColor: palette.paperSand,
                   justifyContent: "center",
                   alignItems: "center",
                 }}
@@ -146,7 +154,7 @@ export function MatchDetailScreen({
               </TouchableOpacity>
             </View>
 
-            <View style={{ paddingHorizontal: SIDE_PADDING }}>
+            <View>
               <View style={{ alignItems: "center", marginTop: 4 }}>
                 <LinearGradient
                   colors={[palette.crimson, palette.navy]}
@@ -164,7 +172,7 @@ export function MatchDetailScreen({
                       flex: 1,
                       borderRadius: 55,
                       borderWidth: 3,
-                      borderColor: palette.paperBase,
+                      borderColor: palette.paper,
                       overflow: "hidden",
                       backgroundColor: palette.paper,
                     }}

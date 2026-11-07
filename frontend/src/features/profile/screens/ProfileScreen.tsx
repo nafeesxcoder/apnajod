@@ -57,18 +57,28 @@ export function ProfileScreen({
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 90 }}
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 90,
+            paddingHorizontal: 12,
+          }}
         >
           <View
-            style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center" }}
+            style={{
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              backgroundColor: palette.paper,
+              borderRadius: radius.xl,
+              paddingHorizontal: SIDE_PADDING,
+              paddingVertical: 16,
+            }}
           >
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                paddingHorizontal: SIDE_PADDING,
-                paddingTop: 8,
                 paddingBottom: 4,
               }}
             >
@@ -93,9 +103,7 @@ export function ProfileScreen({
                     width: 32,
                     height: 32,
                     borderRadius: 16,
-                    backgroundColor: palette.paper,
-                    borderWidth: 1,
-                    borderColor: palette.rule,
+                    backgroundColor: palette.paperSand,
                     justifyContent: "center",
                     alignItems: "center",
                   }}
@@ -109,7 +117,7 @@ export function ProfileScreen({
               </View>
             </View>
 
-            <View style={{ paddingHorizontal: SIDE_PADDING }}>
+            <View>
               <View style={{ alignItems: "center", marginTop: 4 }}>
                 <LinearGradient
                   colors={[palette.crimson, palette.navy]}
@@ -127,7 +135,7 @@ export function ProfileScreen({
                       flex: 1,
                       borderRadius: 55,
                       borderWidth: 3,
-                      borderColor: palette.paperBase,
+                      borderColor: palette.paper,
                       overflow: "hidden",
                       backgroundColor: palette.paper,
                     }}
@@ -379,24 +387,16 @@ export function ProfileScreen({
               </TouchableOpacity>
 
               <View style={{ marginTop: 24 }}>
-                <View
+                <Text
                   style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
+                    color: palette.ink,
                     marginBottom: 12,
                   }}
                 >
-                  <Text
-                    style={{
-                      fontFamily: fonts.display,
-                      fontSize: typeScale.section,
-                      color: palette.ink,
-                    }}
-                  >
-                    My posts
-                  </Text>
-                </View>
+                  My posts
+                </Text>
 
                 <PostsSection
                   accessToken={accessToken}
