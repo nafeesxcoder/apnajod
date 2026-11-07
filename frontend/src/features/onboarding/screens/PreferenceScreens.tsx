@@ -1,37 +1,23 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
-import { SectionTitle, shared } from "../../../components";
 import { FormPage } from "../../../components/forms/FormScaffold";
-import {
-  MiniPremiumIcon,
-  PremiumIcon } from "../../../components/premium/PremiumIcon";
 import { vibes } from "../../../data";
-import {
-  alignmentStyles,
-  onboardingStyles,
-  styles,
-  vibeStyles,
-} from "../../../theme/appStyles";
+import { fonts, palette, radius } from "../../../theme";
 import { AppCanvas } from "../../../components/AppCanvas";
 
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
 
-
-/* =========================================================
-   GLOW ICON (Dark red background style)
-   ========================================================= */
-function GlowIcon({
+function IconBadge({
   icon,
-  size = 36,
-  color = "#FFFFFF",
-  glowColor = "#1F5286",
+  size = 40,
+  active = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   size?: number;
-  color?: string;
-  glowColor?: string;
+  active?: boolean;
 }) {
   return (
     <View
@@ -41,32 +27,14 @@ function GlowIcon({
         borderRadius: size / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "rgba(15,17,19,.90)",
-        borderWidth: 1.5,
-        borderColor: "rgba(163,185,207,.72)",
-        shadowColor: glowColor,
-        shadowOpacity: 0.72,
-        shadowRadius: 13,
-        shadowOffset: { width: 0, height: 0 },
-        elevation: 5,
+        backgroundColor: active ? palette.navy : palette.paperSand,
       }}
     >
-      <LinearGradient
-        colors={[
-          "rgba(255,255,255,.22)",
-          "rgba(31,82,134,.30)",
-          "rgba(19,20,22,.30)",
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          borderRadius: size / 2,
-        }}
+      <Ionicons
+        name={icon}
+        size={size * 0.45}
+        color={active ? "#FFFFFF" : palette.crimson}
       />
-      <Ionicons name={icon} size={size * 0.48} color={color} />
     </View>
   );
 }
@@ -89,6 +57,7 @@ const vibeIcons: Array<keyof typeof Ionicons.glyphMap> = [
   "musical-notes",
   "globe",
 ];
+
 const vibeDescriptions = [
   "Roots matter",
   "Big goals",
@@ -108,6 +77,67 @@ const vibeDescriptions = [
   "Show up for people",
 ];
 
+function WarmCard({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        width: "100%",
+        maxWidth: MAX_WIDTH,
+        alignSelf: "center",
+        backgroundColor: palette.paper,
+        borderRadius: radius.xl,
+        paddingHorizontal: SIDE_PADDING,
+        paddingVertical: 20,
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function PrimaryButton({
+  label,
+  onPress,
+  disabled,
+  icon = "arrow-forward",
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={{
+        backgroundColor: palette.navy,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: radius.pill,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minHeight: 52,
+        marginTop: 24,
+        opacity: disabled ? 0.4 : 1,
+      }}
+    >
+      <Ionicons name={icon} size={18} color="#FFFFFF" />
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontFamily: fonts.bodySemi,
+          fontSize: 15,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export function VibesScreen({
   value,
   onChange,
@@ -125,142 +155,172 @@ export function VibesScreen({
           ? [...value, vibe]
           : value,
     );
+
   return (
     <AppCanvas>
       <FormPage step={4} scroll>
-        <View style={vibeStyles.hero}>
-          <Text style={styles.kicker}>{value.length} OF 5 LOCKED IN</Text>
-          <Text style={[shared.h1, { textAlign: "center" }]}>
-            What’s your real-life vibe?
+        <WarmCard>
+          <Text
+            style={{
+              fontFamily: fonts.bodySemi,
+              fontSize: 11,
+              color: palette.crimson,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            {value.length} of 5 locked in
           </Text>
           <Text
-            style={[
-              shared.body,
-              onboardingStyles.supportingText,
-              { textAlign: "center" },
-            ]}
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 26,
+              lineHeight: 32,
+              color: palette.ink,
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            What's your real-life vibe?
+          </Text>
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 14,
+              color: palette.slate,
+              textAlign: "center",
+              lineHeight: 20,
+              marginBottom: 16,
+            }}
           >
             Pick the five that feel most like you. The mix is what makes it
             interesting.
           </Text>
-          <View style={vibeStyles.progressDots}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 6,
+              justifyContent: "center",
+              marginBottom: 20,
+            }}
+          >
             {[0, 1, 2, 3, 4].map((index) => (
               <View
                 key={index}
-                style={[
-                  vibeStyles.progressDot,
-                  index < value.length && vibeStyles.progressDotOn,
-                ]}
+                style={{
+                  width: 28,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor:
+                    index < value.length ? palette.crimson : palette.rule,
+                }}
               />
             ))}
           </View>
-        </View>
-        <View style={styles.vibeGrid}>
-          {vibes.map((vibe, index) => (
-            <Pressable
-              onPress={() => toggle(vibe)}
-              key={vibe}
-              style={[
-                styles.vibeCard,
-                vibeStyles.card,
-                value.includes(vibe) && styles.vibeSelected,
-              ]}
-            >
-              <GlowIcon
-                icon={vibeIcons[index] ?? "heart"}
-                size={32}
-                color="#FFFFFF"
-                glowColor="#1F5286"
-              />
-              <View style={vibeStyles.copy}>
-                <Text
-                  numberOfLines={2}
-                  style={[
-                    styles.vibeText,
-                    value.includes(vibe) && styles.vibeTextSelected,
-                  ]}
-                >
-                  {vibe}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    vibeStyles.description,
-                    value.includes(vibe) && vibeStyles.descriptionOn,
-                  ]}
-                >
-                  {value.includes(vibe) ? "Locked in" : vibeDescriptions[index]}
-                </Text>
-              </View>
-              {value.includes(vibe) && (
-                <View style={vibeStyles.vibeCheck}>
-                  <MiniPremiumIcon
-                    name="checkmark"
-                    tone="gold"
-                    size={25}
-                    iconSize={12}
-                  />
-                </View>
-              )}
-            </Pressable>
-          ))}
-        </View>
-        <View style={vibeStyles.tipCard}>
-          <GlowIcon
-            icon="sparkles"
-            size={30}
-            color="#FFFFFF"
-            glowColor="#1F5286"
-          />
-          <Text
-            style={[
-              styles.helper,
-              onboardingStyles.supportingText,
-              { flex: 1 },
-            ]}
-          >
-            Pick your normal-Tuesday self. That’s usually where the best
-            chemistry starts.
-          </Text>
-        </View>
 
-        {/* 🚀 Custom button - dark red gradient */}
-        <Pressable
-          onPress={onNext}
-          disabled={value.length !== 5}
-          style={{
-            borderRadius: 32,
-            overflow: "hidden",
-            opacity: value.length !== 5 ? 0.5 : 1,
-          }}
-        >
-          <LinearGradient
-            colors={["#111315", "#123456", "#121315", "#0F1113"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              height: 58,
-              borderRadius: 32,
-              alignItems: "center",
-              justifyContent: "center",
               flexDirection: "row",
-              gap: 12,
-              borderWidth: 1.5,
-              borderColor: "rgba(110,151,193,.62)",
-              shadowColor: "#1F5286",
-              shadowOpacity: 0.58,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 9 },
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              gap: 8,
             }}
           >
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            {vibes.map((vibe, index) => {
+              const selected = value.includes(vibe);
+              return (
+                <Pressable
+                  key={vibe}
+                  onPress={() => toggle(vibe)}
+                  style={{
+                    width: "48%",
+                    backgroundColor: selected
+                      ? palette.navy
+                      : palette.paperSand,
+                    borderRadius: radius.lg,
+                    padding: 12,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 8,
+                  }}
+                >
+                  <IconBadge
+                    icon={vibeIcons[index] ?? "heart"}
+                    size={32}
+                    active={selected}
+                  />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      numberOfLines={2}
+                      style={{
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 13,
+                        color: selected ? "#FFFFFF" : palette.ink,
+                      }}
+                    >
+                      {vibe}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 11,
+                        color: selected ? "#F4E9E0" : palette.slate,
+                        marginTop: 1,
+                      }}
+                    >
+                      {selected ? "Locked in" : vibeDescriptions[index]}
+                    </Text>
+                  </View>
+                  {selected && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View
+            style={{
+              backgroundColor: palette.paperSand,
+              borderRadius: radius.lg,
+              padding: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 16,
+            }}
+          >
+            <IconBadge icon="sparkles" size={30} />
             <Text
-              style={{ color: "#141618", fontWeight: "bold", fontSize: 16 }}
+              style={{
+                flex: 1,
+                fontFamily: fonts.body,
+                fontSize: 13,
+                color: palette.slate,
+                lineHeight: 19,
+              }}
             >
-              {value.length === 5 ? "Lock in my five" : "Choose 5 to continue"}
+              Pick your normal-Tuesday self. That's usually where the best
+              chemistry starts.
             </Text>
-          </LinearGradient>
-        </Pressable>
+          </View>
+
+          <PrimaryButton
+            label={
+              value.length === 5 ? "Lock in my five" : "Choose 5 to continue"
+            }
+            onPress={onNext}
+            disabled={value.length !== 5}
+          />
+        </WarmCard>
       </FormPage>
     </AppCanvas>
   );
@@ -285,7 +345,7 @@ export function IntentScreen({
     {
       value: "Marriage",
       title: "Marriage",
-      description: "I’m ready to meet my life partner.",
+      description: "I'm ready to meet my life partner.",
       icon: "diamond-outline" as const,
     },
     {
@@ -295,106 +355,128 @@ export function IntentScreen({
       icon: "infinite-outline" as const,
     },
   ];
+
   return (
     <AppCanvas>
       <FormPage step={5}>
-        <SectionTitle
-          emphasis
-          eyebrow="NO MIXED SIGNALS"
-          title="What are you here for?"
-          body="Say it clearly. We’ll show you people looking for the same kind of future."
-        />
-        <View style={styles.seriousPromise}>
-          <GlowIcon
-            icon="shield-checkmark"
-            size={33}
-            color="#FFFFFF"
-            glowColor="#1F5286"
-          />
-          <Text style={styles.seriousPromiseText}>
-            Apnajoda is for commitment, not casual dating.
-          </Text>
-        </View>
-        <View style={{ gap: 12 }}>
-          {options.map((option) => {
-            const selected = value === option.value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => onChange(option.value)}
-                style={[styles.intent, selected && styles.intentSelected]}
-              >
-                <GlowIcon
-                  icon={option.icon}
-                  size={38}
-                  color="#FFFFFF"
-                  glowColor="#1F5286"
-                />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.cardTitle,
-                      selected && styles.intentTitleSelected,
-                    ]}
-                  >
-                    {option.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.helper,
-                      onboardingStyles.supportingText,
-                      selected && styles.intentBodySelected,
-                    ]}
-                  >
-                    {option.description}
-                  </Text>
-                </View>
-                <View style={[styles.radio, selected && styles.radioOn]}>
-                  {selected && <View style={styles.radioDot} />}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View style={shared.spacer} />
-
-        {/* 🚀 Custom button - dark red gradient */}
-        <Pressable
-          onPress={onNext}
-          disabled={!value}
-          style={{
-            borderRadius: 32,
-            overflow: "hidden",
-            opacity: !value ? 0.5 : 1,
-          }}
-        >
-          <LinearGradient
-            colors={["#111315", "#123456", "#121315", "#0F1113"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+        <WarmCard>
+          <Text
             style={{
-              height: 58,
-              borderRadius: 32,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 12,
-              borderWidth: 1.5,
-              borderColor: "rgba(110,151,193,.62)",
-              shadowColor: "#1F5286",
-              shadowOpacity: 0.58,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 9 },
+              fontFamily: fonts.bodySemi,
+              fontSize: 11,
+              color: palette.crimson,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              textAlign: "center",
+              marginBottom: 8,
             }}
           >
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            No mixed signals
+          </Text>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 26,
+              lineHeight: 32,
+              color: palette.ink,
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            What are you here for?
+          </Text>
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 14,
+              color: palette.slate,
+              textAlign: "center",
+              lineHeight: 20,
+              marginBottom: 20,
+            }}
+          >
+            Say it clearly. We'll show you people looking for the same kind of
+            future.
+          </Text>
+
+          <View
+            style={{
+              backgroundColor: palette.paperSand,
+              borderRadius: radius.lg,
+              padding: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 20,
+            }}
+          >
+            <IconBadge icon="shield-checkmark" size={32} />
             <Text
-              style={{ color: "#141618", fontWeight: "bold", fontSize: 16 }}
+              style={{
+                flex: 1,
+                fontFamily: fonts.body,
+                fontSize: 13,
+                color: palette.ink,
+                lineHeight: 19,
+              }}
             >
-              Next
+              Apnajoda is for commitment, not casual dating.
             </Text>
-          </LinearGradient>
-        </Pressable>
+          </View>
+
+          <View style={{ gap: 10 }}>
+            {options.map((option) => {
+              const selected = value === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => onChange(option.value)}
+                  style={{
+                    backgroundColor: selected
+                      ? palette.navy
+                      : palette.paperSand,
+                    borderRadius: radius.lg,
+                    padding: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <IconBadge icon={option.icon} size={36} active={selected} />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 15,
+                        color: selected ? "#FFFFFF" : palette.ink,
+                      }}
+                    >
+                      {option.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 12,
+                        color: selected ? "#F4E9E0" : palette.slate,
+                        marginTop: 2,
+                        lineHeight: 17,
+                      }}
+                    >
+                      {option.description}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={selected ? "checkmark-circle" : "ellipse-outline"}
+                    size={22}
+                    color={selected ? "#FFFFFF" : palette.slate}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <PrimaryButton label="Next" onPress={onNext} disabled={!value} />
+        </WarmCard>
       </FormPage>
     </AppCanvas>
   );
@@ -404,6 +486,7 @@ const alignmentQuestions = [
   {
     key: "timeline",
     eyebrow: "MARRIAGE PACE",
+    icon: "diamond" as const,
     title: "What pace feels right for marriage?",
     options: [
       "Within 1–2 years",
@@ -414,6 +497,7 @@ const alignmentQuestions = [
   {
     key: "children",
     eyebrow: "FAMILY PLANS",
+    icon: "happy" as const,
     title: "Do you see children in your future?",
     options: [
       "Definitely want children",
@@ -424,6 +508,7 @@ const alignmentQuestions = [
   {
     key: "family",
     eyebrow: "FAMILY & US",
+    icon: "people" as const,
     title: "How close should family be to your relationship?",
     options: [
       "Family is deeply involved",
@@ -434,9 +519,10 @@ const alignmentQuestions = [
   {
     key: "relocation",
     eyebrow: "WHERE LIFE GOES",
+    icon: "home" as const,
     title: "Could love take you to a new city?",
     options: [
-      "Yes, I’m open",
+      "Yes, I'm open",
       "Depends on career and family",
       "I prefer to stay in my city",
     ],
@@ -459,149 +545,149 @@ export function AlignmentScreen({
     question < alignmentQuestions.length - 1
       ? setQuestion(question + 1)
       : onNext();
+
   return (
     <AppCanvas>
       <FormPage step={6}>
-        <View style={alignmentStyles.hero}>
-          <GlowIcon
-            icon={
-              (question === 0
-                ? "diamond"
-                : question === 1
-                  ? "happy"
-                  : question === 2
-                    ? "people"
-                    : "home") as keyof typeof Ionicons.glyphMap
-            }
-            size={44}
-            color="#FFFFFF"
-            glowColor="#1F5286"
-          />
-          <Text style={styles.kicker}>{current.eyebrow}</Text>
-          <Text style={[shared.h1, { textAlign: "center" }]}>
+        <WarmCard>
+          <View style={{ alignItems: "center", marginBottom: 16 }}>
+            <IconBadge icon={current.icon} size={52} />
+          </View>
+          <Text
+            style={{
+              fontFamily: fonts.bodySemi,
+              fontSize: 11,
+              color: palette.crimson,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            {current.eyebrow}
+          </Text>
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontSize: 24,
+              lineHeight: 30,
+              color: palette.ink,
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
             {current.title}
           </Text>
           <Text
-            style={[
-              shared.body,
-              onboardingStyles.supportingText,
-              { textAlign: "center" },
-            ]}
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 13,
+              color: palette.slate,
+              textAlign: "center",
+              lineHeight: 19,
+              marginBottom: 20,
+            }}
           >
             No perfect answer. Just what feels true for you.
           </Text>
-        </View>
-        <View style={styles.alignmentProgress}>
-          <Text style={[styles.helper, onboardingStyles.supportingText]}>
-            {question + 1} of {alignmentQuestions.length}
-          </Text>
-          <View style={styles.alignmentTrack}>
-            <View
-              style={[
-                styles.alignmentFill,
-                {
-                  width: `${((question + 1) / alignmentQuestions.length) * 100}%`,
-                },
-              ]}
-            />
-          </View>
-        </View>
-        <View style={{ gap: 10 }}>
-          {current.options.map((option, index) => {
-            const isSelected = selected === option;
-            return (
-              <Pressable
-                key={option}
-                onPress={() => onChange({ ...value, [current.key]: option })}
-                style={[
-                  styles.answer,
-                  alignmentStyles.answerCard,
-                  isSelected && styles.intentSelected,
-                ]}
-              >
-                <GlowIcon
-                  icon={
-                    (index === 0
-                      ? "heart"
-                      : index === 1
-                        ? "leaf"
-                        : "sparkles") as keyof typeof Ionicons.glyphMap
-                  }
-                  size={31}
-                  color="#FFFFFF"
-                  glowColor="#1F5286"
-                />
-                <Text
-                  style={[
-                    styles.answerText,
-                    onboardingStyles.answerText,
-                    { flex: 1 },
-                    isSelected && styles.answerTextSelected,
-                  ]}
-                >
-                  {option}
-                </Text>
-                <PremiumIcon
-                  name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-                  tone="ruby"
-                  size={28}
-                  iconSize={13}
-                  referenceGlass
-                />
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text
-          style={[
-            styles.helper,
-            onboardingStyles.supportingText,
-            { textAlign: "center" },
-          ]}
-        >
-          Private by default. Change anytime.
-        </Text>
-        <View style={shared.spacer} />
 
-        {/* 🚀 Custom button - dark red gradient */}
-        <Pressable
-          onPress={advance}
-          disabled={!selected}
-          style={{
-            borderRadius: 32,
-            overflow: "hidden",
-            opacity: !selected ? 0.5 : 1,
-          }}
-        >
-          <LinearGradient
-            colors={["#111315", "#123456", "#121315", "#0F1113"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View style={{ marginBottom: 16 }}>
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 12,
+                color: palette.slate,
+                marginBottom: 6,
+              }}
+            >
+              {question + 1} of {alignmentQuestions.length}
+            </Text>
+            <View
+              style={{
+                height: 5,
+                backgroundColor: palette.rule,
+                borderRadius: 3,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  height: "100%",
+                  width: `${((question + 1) / alignmentQuestions.length) * 100}%`,
+                  backgroundColor: palette.crimson,
+                  borderRadius: 3,
+                }}
+              />
+            </View>
+          </View>
+
+          <View style={{ gap: 10 }}>
+            {current.options.map((option, index) => {
+              const isSelected = selected === option;
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => onChange({ ...value, [current.key]: option })}
+                  style={{
+                    backgroundColor: isSelected
+                      ? palette.navy
+                      : palette.paperSand,
+                    borderRadius: radius.lg,
+                    padding: 14,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <IconBadge
+                    icon={
+                      index === 0 ? "heart" : index === 1 ? "leaf" : "sparkles"
+                    }
+                    size={32}
+                    active={isSelected}
+                  />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 14,
+                      color: isSelected ? "#FFFFFF" : palette.ink,
+                    }}
+                  >
+                    {option}
+                  </Text>
+                  <Ionicons
+                    name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                    size={22}
+                    color={isSelected ? "#FFFFFF" : palette.slate}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text
             style={{
-              height: 58,
-              borderRadius: 32,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 12,
-              borderWidth: 1.5,
-              borderColor: "rgba(110,151,193,.62)",
-              shadowColor: "#1F5286",
-              shadowOpacity: 0.58,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: 9 },
+              fontFamily: fonts.body,
+              fontSize: 12,
+              color: palette.slate,
+              textAlign: "center",
+              marginTop: 16,
             }}
           >
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            <Text
-              style={{ color: "#141618", fontWeight: "bold", fontSize: 16 }}
-            >
-              {question === alignmentQuestions.length - 1
+            Private by default. Change anytime.
+          </Text>
+
+          <PrimaryButton
+            label={
+              question === alignmentQuestions.length - 1
                 ? "See my introductions"
-                : "Next"}
-            </Text>
-          </LinearGradient>
-        </Pressable>
+                : "Next"
+            }
+            onPress={advance}
+            disabled={!selected}
+          />
+        </WarmCard>
       </FormPage>
     </AppCanvas>
   );
