@@ -1,5 +1,5 @@
 import { startRingback } from "./ringback";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   Modal,
@@ -78,8 +78,13 @@ function RTCVideoView({
   useEffect(() => {
     if (ref.current) {
       ref.current.srcObject = stream as any;
+      // Belt to the muted prop's braces. React does not reliably apply
+      // `muted` to a <video> - it is a long-standing quirk - and a self
+      // view that is not muted plays your own microphone back at you,
+      // which is heard as an echo on a call.
+      if (muted) ref.current.muted = true;
     }
-  }, [stream]);
+  }, [stream, muted]);
   useEffect(() => {
     if (ref.current && typeof volume === "number") {
       ref.current.volume = volume;
@@ -432,9 +437,26 @@ export function CallModal({
     engine.remoteVideo && !!engine.remoteStream && engine.phase === "connected";
   const hasSelfVideo = !!engine.localStream && engine.cameraEnabled;
 
+  /**
+   * The self view, with the microphone taken out of it.
+   *
+   * A preview of yourself has no business carrying your own mic: if it
+   * ever plays - because `muted` did not take, or the element was
+   * recreated - you hear your own voice a fraction of a second late,
+   * which is exactly what an echo is. Muting the element is the first
+   * guard; handing it a stream with no audio in it at all is the one
+   * that cannot fail.
+   */
+  const selfPreview = useMemo(() => {
+    const source = engine.localStream;
+    if (!source) return null;
+    if (typeof MediaStream === "undefined") return source;
+    return new MediaStream(source.getVideoTracks());
+  }, [engine.localStream]);
+
   const mainIsSelf = mainView === "self" && hasSelfVideo;
   const mainStream = mainIsSelf
-    ? engine.localStream
+    ? selfPreview
     : hasRemoteVideo
       ? engine.remoteStream
       : null;
@@ -444,7 +466,7 @@ export function CallModal({
       ? engine.remoteStream
       : null
     : hasSelfVideo
-      ? engine.localStream
+      ? selfPreview
       : null;
 
   // There is no browser API to actually switch a phone's physical output
