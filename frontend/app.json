@@ -69,6 +69,12 @@
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
         }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Apnajoda uses your contacts to help you find friends who are already on the app. Your contact list is never stored on our servers."
+        }
       ]
     ],
     "locales": {}

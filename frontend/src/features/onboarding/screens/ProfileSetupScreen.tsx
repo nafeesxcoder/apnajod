@@ -8,16 +8,19 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
+  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
-import { colors } from "../../../theme";
+import { fonts, palette, radius, typeScale } from "../../../theme";
 import { uploadPhotoOrKeepLocal as uploadPhotoAsset } from "../../../api/uploadPhoto";
 
 const BIO_MAX_LENGTH = 500;
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
 
 export const MASTER_HOBBIES = [
   { label: "Travel", icon: "airplane" },
@@ -105,7 +108,19 @@ export function ProfileSetupScreen({
   };
 
   const handleSave = () => {
-    const trimmedBio = bio.trim().slice(0, BIO_MAX_LENGTH);
+    const trimmedBio = bio.trim();
+
+    if (trimmedBio.length > BIO_MAX_LENGTH) {
+      const overBy = trimmedBio.length - BIO_MAX_LENGTH;
+      const message = `Bio must be ${BIO_MAX_LENGTH} characters or less.\n\nYou have ${trimmedBio.length} characters. Please remove ${overBy} character${overBy === 1 ? "" : "s"}.`;
+      if (typeof window !== "undefined") {
+        window.alert(message);
+      } else {
+        Alert.alert("Bio too long", message);
+      }
+      return;
+    }
+
     const latest = { ...profile, bio: trimmedBio };
     onProfileChange(latest);
     onNext(latest);
@@ -116,299 +131,352 @@ export function ProfileSetupScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#EFF0F2" }}>
-        <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 100 }}>
-          <Text
+      <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 100,
+            paddingHorizontal: 12,
+          }}
+        >
+          <View
             style={{
-              fontSize: 12,
-              fontWeight: "700",
-              color: "#8A2237",
-              letterSpacing: 1,
-              textTransform: "uppercase",
-              marginBottom: 8,
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              backgroundColor: palette.paper,
+              borderRadius: radius.xl,
+              paddingHorizontal: SIDE_PADDING,
+              paddingVertical: 20,
             }}
           >
-            Your Profile
-          </Text>
-          <Text
-            style={{
-              fontSize: 26,
-              fontWeight: "700",
-              color: colors.text,
-              marginBottom: 8,
-            }}
-          >
-            Make it yours.
-          </Text>
-          <Text
-            style={{
-              fontSize: 15,
-              color: colors.muted,
-              marginBottom: 24,
-              lineHeight: 22,
-            }}
-          >
-            Add a clear photo and a short bio so people know who you are.
-          </Text>
-
-          <View style={{ alignItems: "center", marginBottom: 24 }}>
-            <TouchableOpacity
-              onPress={pickImage}
-              style={{ position: "relative" }}
+            <Text
+              style={{
+                fontFamily: fonts.bodySemi,
+                fontSize: typeScale.label,
+                color: palette.crimson,
+                letterSpacing: 1.2,
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
             >
-              {photos[0] ? (
-                <Image
-                  source={{ uri: photos[0] }}
-                  style={{
-                    width: 120,
-                    height: 120,
-                    borderRadius: 60,
-                    borderWidth: 3,
-                    borderColor: "#8A2237",
-                  }}
-                />
-              ) : (
+              Your Profile
+            </Text>
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 28,
+                lineHeight: 34,
+                color: palette.ink,
+                marginBottom: 6,
+              }}
+            >
+              Make it yours
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: fonts.body,
+                color: palette.slate,
+                marginBottom: 24,
+                lineHeight: 21,
+              }}
+            >
+              Add a clear photo and a short bio so people know who you are.
+            </Text>
+
+            <View style={{ alignItems: "center", marginBottom: 24 }}>
+              <TouchableOpacity
+                onPress={pickImage}
+                style={{ position: "relative" }}
+              >
+                {photos[0] ? (
+                  <Image
+                    source={{ uri: photos[0] }}
+                    style={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      borderWidth: 3,
+                      borderColor: palette.crimson,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      backgroundColor: palette.paperSand,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderWidth: 3,
+                      borderColor: palette.crimson,
+                    }}
+                  >
+                    <Ionicons
+                      name="camera"
+                      size={40}
+                      color={palette.navySoft}
+                    />
+                  </View>
+                )}
                 <View
                   style={{
-                    width: 120,
-                    height: 120,
-                    borderRadius: 60,
-                    backgroundColor: "#D3D6DA",
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: palette.navy,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
                     justifyContent: "center",
                     alignItems: "center",
-                    borderWidth: 3,
-                    borderColor: "#8A2237",
+                    borderWidth: 2,
+                    borderColor: palette.paper,
                   }}
                 >
-                  <Ionicons name="camera" size={40} color="#9AA4AF" />
+                  <Ionicons name="add" size={20} color="#FFF" />
                 </View>
-              )}
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  backgroundColor: "#151719",
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  borderWidth: 2,
-                  borderColor: "#FFF",
-                }}
-              >
-                <Ionicons name="add" size={20} color="#FFF" />
-              </View>
-            </TouchableOpacity>
-            <Text style={{ fontSize: 13, color: colors.muted, marginTop: 12 }}>
-              Tap to {photos[0] ? "change" : "add"} your photo
-            </Text>
-          </View>
-
-          <View style={{ gap: 16 }}>
-            <View>
-              <Text style={styles.label}>First Name</Text>
-              <TextInput
-                value={profile.firstName}
-                onChangeText={(v) =>
-                  onProfileChange({ ...profile, firstName: v })
-                }
-                placeholder="Enter your first name"
-                style={styles.input}
-                placeholderTextColor="#9AA4AF"
-              />
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Age</Text>
-                <TextInput
-                  value={profile.age}
-                  onChangeText={(v) => onProfileChange({ ...profile, age: v })}
-                  placeholder="25"
-                  keyboardType="numeric"
-                  style={styles.input}
-                  placeholderTextColor="#9AA4AF"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>I am a</Text>
-                <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
-                  {[
-                    { id: "man", label: "He" },
-                    { id: "woman", label: "She" },
-                    { id: "nonbinary", label: "They" },
-                  ].map((g) => (
-                    <TouchableOpacity
-                      key={g.id}
-                      onPress={() =>
-                        onProfileChange({ ...profile, gender: g.id })
-                      }
-                      style={[
-                        styles.chip,
-                        profile.gender === g.id && styles.chipActive,
-                        { paddingHorizontal: 16 },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          profile.gender === g.id && styles.chipTextActive,
-                        ]}
-                      >
-                        {g.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </View>
-
-            <View>
-              <Text style={styles.label}>City</Text>
-              <TextInput
-                value={profile.city}
-                onChangeText={(v) => onProfileChange({ ...profile, city: v })}
-                placeholder="e.g. Mumbai, MH"
-                style={styles.input}
-                placeholderTextColor="#9AA4AF"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.label}>What do you do?</Text>
-              <TextInput
-                value={profile.profession}
-                onChangeText={(v) =>
-                  onProfileChange({ ...profile, profession: v })
-                }
-                placeholder="e.g. Product Designer"
-                style={styles.input}
-                placeholderTextColor="#9AA4AF"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.label}>About Me (Bio)</Text>
-              <TextInput
-                value={bio}
-                onChangeText={setBio}
-                placeholder="A short bio helps people know the real you..."
-                multiline
-                numberOfLines={4}
-                maxLength={BIO_MAX_LENGTH}
-                style={[
-                  styles.input,
-                  { height: 100, textAlignVertical: "top" },
-                ]}
-                placeholderTextColor="#9AA4AF"
-              />
+              </TouchableOpacity>
               <Text
                 style={{
-                  fontSize: 11,
-                  color: bioWarning ? colors.danger : colors.muted,
-                  textAlign: "right",
-                  marginTop: 4,
+                  fontSize: 13,
+                  color: palette.slate,
+                  marginTop: 12,
+                  fontFamily: fonts.body,
                 }}
               >
-                {bioLength} / {BIO_MAX_LENGTH}
+                Tap to {photos[0] ? "change" : "add"} your photo
               </Text>
             </View>
 
-            <View>
-              <Text style={styles.label}>Hobbies</Text>
-              <Text style={{ fontSize: 12, color: "#5A5E63", marginBottom: 8 }}>
-                Add hobbies that describe you (with icons!)
-              </Text>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  marginBottom: 12,
-                }}
-              >
-                {selectedHobbies.map((hobbyLabel) => {
-                  const hobbyData = MASTER_HOBBIES.find(
-                    (h) => h.label === hobbyLabel,
-                  );
-                  return (
-                    <View
-                      key={hobbyLabel}
-                      style={{
-                        backgroundColor: "#EFF0F1",
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name={(hobbyData?.icon || "heart") as any}
-                        size={14}
-                        color="#4983BE"
-                      />
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: "#4983BE",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {hobbyLabel}
-                      </Text>
-                      <TouchableOpacity onPress={() => toggleHobby(hobbyLabel)}>
-                        <Ionicons
-                          name="close-circle"
-                          size={16}
-                          color="#4983BE"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
+            <View style={{ gap: 16 }}>
+              <View>
+                <Text style={styles.label}>First Name</Text>
+                <TextInput
+                  value={profile.firstName}
+                  onChangeText={(v) =>
+                    onProfileChange({ ...profile, firstName: v })
+                  }
+                  placeholder="Enter your first name"
+                  style={styles.input}
+                  placeholderTextColor={palette.navySoft}
+                />
               </View>
 
-              <TouchableOpacity
-                onPress={() => setShowHobbyPicker(true)}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Age</Text>
+                  <TextInput
+                    value={profile.age}
+                    onChangeText={(v) =>
+                      onProfileChange({ ...profile, age: v })
+                    }
+                    placeholder="25"
+                    keyboardType="numeric"
+                    style={styles.input}
+                    placeholderTextColor={palette.navySoft}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>I am a</Text>
+                  <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
+                    {[
+                      { id: "man", label: "He" },
+                      { id: "woman", label: "She" },
+                      { id: "nonbinary", label: "They" },
+                    ].map((g) => (
+                      <TouchableOpacity
+                        key={g.id}
+                        onPress={() =>
+                          onProfileChange({ ...profile, gender: g.id })
+                        }
+                        style={[
+                          styles.chip,
+                          profile.gender === g.id && styles.chipActive,
+                          { paddingHorizontal: 12 },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            profile.gender === g.id && styles.chipTextActive,
+                          ]}
+                        >
+                          {g.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View>
+                <Text style={styles.label}>City</Text>
+                <TextInput
+                  value={profile.city}
+                  onChangeText={(v) => onProfileChange({ ...profile, city: v })}
+                  placeholder="e.g. Mumbai, MH"
+                  style={styles.input}
+                  placeholderTextColor={palette.navySoft}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.label}>What do you do?</Text>
+                <TextInput
+                  value={profile.profession}
+                  onChangeText={(v) =>
+                    onProfileChange({ ...profile, profession: v })
+                  }
+                  placeholder="e.g. Product Designer"
+                  style={styles.input}
+                  placeholderTextColor={palette.navySoft}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.label}>About Me (Bio)</Text>
+                <TextInput
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="A short bio helps people know the real you..."
+                  multiline
+                  numberOfLines={4}
+                  maxLength={BIO_MAX_LENGTH}
+                  style={[
+                    styles.input,
+                    { height: 100, textAlignVertical: "top", paddingTop: 14 },
+                  ]}
+                  placeholderTextColor={palette.navySoft}
+                />
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: bioWarning ? palette.clay : palette.slate,
+                    textAlign: "right",
+                    marginTop: 4,
+                    fontFamily: fonts.body,
+                  }}
+                >
+                  {bioLength} / {BIO_MAX_LENGTH}
+                </Text>
+              </View>
+
+              <View>
+                <Text style={styles.label}>Hobbies</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: palette.slate,
+                    marginBottom: 8,
+                    fontFamily: fonts.body,
+                  }}
+                >
+                  Add hobbies that describe you
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  {selectedHobbies.map((hobbyLabel) => {
+                    const hobbyData = MASTER_HOBBIES.find(
+                      (h) => h.label === hobbyLabel,
+                    );
+                    return (
+                      <View
+                        key={hobbyLabel}
+                        style={{
+                          backgroundColor: palette.paperSand,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: radius.pill,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Ionicons
+                          name={(hobbyData?.icon || "heart") as any}
+                          size={14}
+                          color={palette.navy}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: palette.navy,
+                            fontFamily: fonts.bodySemi,
+                          }}
+                        >
+                          {hobbyLabel}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => toggleHobby(hobbyLabel)}
+                        >
+                          <Ionicons
+                            name="close-circle"
+                            size={16}
+                            color={palette.navy}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setShowHobbyPicker(true)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    backgroundColor: palette.navy,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                  }}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="#FFF" />
+                  <Text
+                    style={{
+                      color: "#FFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 15,
+                    }}
+                  >
+                    Add Hobbies
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleSave}
+              style={{
+                backgroundColor: palette.navy,
+                paddingVertical: 14,
+                borderRadius: radius.pill,
+                alignItems: "center",
+                marginTop: 32,
+              }}
+            >
+              <Text
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  backgroundColor: "#4983BE",
-                  paddingVertical: 12,
-                  borderRadius: 12,
+                  color: "#FFFFFF",
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 15,
                 }}
               >
-                <Ionicons name="add-circle-outline" size={20} color="#FFF" />
-                <Text
-                  style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}
-                >
-                  Add Hobbies
-                </Text>
-              </TouchableOpacity>
-            </View>
+                Save Profile →
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            onPress={handleSave}
-            style={{
-              backgroundColor: "#151719",
-              paddingVertical: 16,
-              borderRadius: 12,
-              alignItems: "center",
-              marginTop: 32,
-            }}
-          >
-            <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>
-              Save Profile →
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
 
         <Modal
@@ -420,15 +488,15 @@ export function ProfileSetupScreen({
           <View
             style={{
               flex: 1,
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: "rgba(15,20,30,0.5)",
               justifyContent: "flex-end",
             }}
           >
             <View
               style={{
-                backgroundColor: "#FFF",
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
+                backgroundColor: palette.paper,
+                borderTopLeftRadius: radius.xl,
+                borderTopRightRadius: radius.xl,
                 height: "80%",
               }}
             >
@@ -436,7 +504,7 @@ export function ProfileSetupScreen({
                 style={{
                   padding: 20,
                   borderBottomWidth: 1,
-                  borderBottomColor: "#E6E8EA",
+                  borderBottomColor: palette.rule,
                 }}
               >
                 <View
@@ -449,15 +517,15 @@ export function ProfileSetupScreen({
                 >
                   <Text
                     style={{
+                      fontFamily: fonts.display,
                       fontSize: 20,
-                      fontWeight: "700",
-                      color: "#151719",
+                      color: palette.ink,
                     }}
                   >
                     Select Hobbies
                   </Text>
                   <TouchableOpacity onPress={() => setShowHobbyPicker(false)}>
-                    <Ionicons name="close" size={24} color="#151719" />
+                    <Ionicons name="close" size={24} color={palette.ink} />
                   </TouchableOpacity>
                 </View>
 
@@ -465,20 +533,25 @@ export function ProfileSetupScreen({
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#EFF0F2",
-                    borderRadius: 12,
+                    backgroundColor: palette.paperSand,
+                    borderRadius: radius.md,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     gap: 8,
                   }}
                 >
-                  <Ionicons name="search" size={20} color="#5A5E63" />
+                  <Ionicons name="search" size={20} color={palette.slate} />
                   <TextInput
                     value={hobbySearch}
                     onChangeText={setHobbySearch}
                     placeholder="Search hobbies..."
-                    style={{ flex: 1, fontSize: 15, color: "#151719" }}
-                    placeholderTextColor="#9AA4AF"
+                    style={{
+                      flex: 1,
+                      fontSize: 15,
+                      color: palette.ink,
+                      fontFamily: fonts.body,
+                    }}
+                    placeholderTextColor={palette.navySoft}
                   />
                 </View>
               </View>
@@ -488,8 +561,9 @@ export function ProfileSetupScreen({
                   <Text
                     style={{
                       textAlign: "center",
-                      color: "#9AA4AF",
+                      color: palette.slate,
                       marginTop: 20,
+                      fontFamily: fonts.body,
                     }}
                   >
                     No hobby found. Try a different search.
@@ -510,22 +584,26 @@ export function ProfileSetupScreen({
                             gap: 6,
                             paddingHorizontal: 14,
                             paddingVertical: 10,
-                            borderRadius: 20,
+                            borderRadius: radius.pill,
                             borderWidth: 1.5,
-                            borderColor: isSelected ? "#4983BE" : "#D3D6DA",
-                            backgroundColor: isSelected ? "#EFF0F1" : "#FFF",
+                            borderColor: isSelected
+                              ? palette.navy
+                              : palette.rule,
+                            backgroundColor: isSelected
+                              ? palette.paperSand
+                              : palette.paper,
                           }}
                         >
                           <Ionicons
                             name={hobby.icon as any}
                             size={16}
-                            color={isSelected ? "#4983BE" : "#5A5E63"}
+                            color={isSelected ? palette.navy : palette.slate}
                           />
                           <Text
                             style={{
                               fontSize: 14,
-                              fontWeight: "600",
-                              color: isSelected ? "#4983BE" : "#151719",
+                              fontFamily: fonts.bodySemi,
+                              color: isSelected ? palette.navy : palette.ink,
                             }}
                           >
                             {hobby.label}
@@ -534,7 +612,7 @@ export function ProfileSetupScreen({
                             <Ionicons
                               name="checkmark-circle"
                               size={16}
-                              color="#4983BE"
+                              color={palette.navy}
                             />
                           )}
                         </TouchableOpacity>
@@ -548,20 +626,24 @@ export function ProfileSetupScreen({
                 style={{
                   padding: 20,
                   borderTopWidth: 1,
-                  borderTopColor: "#E6E8EA",
+                  borderTopColor: palette.rule,
                 }}
               >
                 <TouchableOpacity
                   onPress={() => setShowHobbyPicker(false)}
                   style={{
-                    backgroundColor: "#4983BE",
+                    backgroundColor: palette.navy,
                     paddingVertical: 14,
-                    borderRadius: 12,
+                    borderRadius: radius.pill,
                     alignItems: "center",
                   }}
                 >
                   <Text
-                    style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}
+                    style={{
+                      color: "#FFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 15,
+                    }}
                   >
                     Done ({selectedHobbies.length} selected)
                   </Text>
@@ -578,30 +660,38 @@ export function ProfileSetupScreen({
 const styles = StyleSheet.create({
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
+    fontFamily: fonts.bodySemi,
+    color: palette.ink,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: palette.paperSand,
     borderWidth: 1,
-    borderColor: "#D3D6DA",
-    borderRadius: 12,
+    borderColor: palette.rule,
+    borderRadius: radius.md,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: colors.text,
+    fontFamily: fonts.body,
+    color: palette.ink,
   },
   chip: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: "#D3D6DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: palette.rule,
+    backgroundColor: palette.paper,
     alignItems: "center",
   },
-  chipActive: { backgroundColor: "#151719", borderColor: "#151719" },
-  chipText: { fontSize: 13, color: colors.text, fontWeight: "500" },
+  chipActive: {
+    backgroundColor: palette.navy,
+    borderColor: palette.navy,
+  },
+  chipText: {
+    fontSize: 13,
+    color: palette.ink,
+    fontFamily: fonts.bodyMedium,
+  },
   chipTextActive: { color: "#FFFFFF" },
 });

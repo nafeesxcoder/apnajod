@@ -180,6 +180,7 @@ import {
   AppNoticeSheet,
   type AppNotice,
 } from "../components/feedback/AppNoticeSheet";
+import * as Contacts from "expo-contacts";
 
 /* =========================================================
     PREMIUM BACKGROUND (MATCHES SPLASH SCREEN EXACTLY)
@@ -550,7 +551,10 @@ function MilaanApp() {
    * loaded back.
    */
   const applyAccountPrivacyFrom = (account: unknown) => {
-    const row = (account ?? {}) as { is_private?: unknown; isPrivate?: unknown };
+    const row = (account ?? {}) as {
+      is_private?: unknown;
+      isPrivate?: unknown;
+    };
     const value = row.is_private ?? row.isPrivate;
     if (value !== undefined) setIsPrivateAccount(value === true || value === 1);
   };
@@ -1729,7 +1733,11 @@ function MilaanApp() {
     if (!hydrated || !accessToken) return;
     let active = true;
 
-    const open = (call: { id: string; callerId: string; callerName: string }) => {
+    const open = (call: {
+      id: string;
+      callerId: string;
+      callerName: string;
+    }) => {
       if (!active || handledCallRef.current === call.id) return;
       handledCallRef.current = call.id;
       if (screen === "chat" && conversationPartner.id === call.callerId) return;
@@ -1747,7 +1755,12 @@ function MilaanApp() {
       callId: string;
       callerId: string;
       callerName: string;
-    }) => open({ id: data.callId, callerId: data.callerId, callerName: data.callerName });
+    }) =>
+      open({
+        id: data.callId,
+        callerId: data.callerId,
+        callerName: data.callerName,
+      });
     socket?.on("call:incoming", onIncoming);
 
     const poll = () => {
@@ -1962,6 +1975,42 @@ function MilaanApp() {
       icon: "heart-outline",
     });
     return "pending";
+  };
+
+  const onMatchContacts = async (): Promise<{
+    matched: SocialUser[];
+    unmatched: string[];
+  }> => {
+    if (Platform.OS === "web") {
+      return { matched: [], unmatched: [] };
+    }
+
+    const { status } = await Contacts.requestPermissionsAsync();
+    if (status !== "granted") {
+      throw new Error("Contacts permission is needed to find people you know.");
+    }
+
+    const { data } = await Contacts.getContactsAsync({
+      fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+    });
+
+    if (!data.length) {
+      throw new Error("No contacts found on this device.");
+    }
+
+    const phoneNumbers = data
+      .flatMap((c) =>
+        (c.phoneNumbers || [])
+          .map((p) => p.number)
+          .filter((n): n is string => !!n),
+      )
+      .filter((n, i, arr) => arr.indexOf(n) === i);
+
+    if (!phoneNumbers.length) {
+      throw new Error("No phone numbers found in your contacts.");
+    }
+
+    return await socialApi.matchContacts(accessToken, phoneNumbers);
   };
 
   const chooseInterested = async (match: Match) => {
@@ -3321,12 +3370,10 @@ function MilaanApp() {
 
         {screen === "find" && accessToken && (
           <FindPeopleScreen
-            contactsSupported={false}
+            contactsSupported={Platform.OS !== "web"}
             onBack={() => setScreen("home")}
             onSearch={(term) => socialApi.search(accessToken, term)}
-            // Reading the address book needs a native permission flow that
-            // does not exist yet, so the contacts tab stays off.
-            onMatchContacts={async () => []}
+            onMatchContacts={onMatchContacts}
             onOpenPerson={openPerson}
             onFollow={(userId) => likeFromSearch(userId)}
           />

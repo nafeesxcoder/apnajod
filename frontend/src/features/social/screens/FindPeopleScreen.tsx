@@ -1,14 +1,9 @@
-/**
- * Find people.
- *
- * Two ways in, because they suit different members: type a username, or let
- * the app check which of your contacts are already here. The contact list is
- * sent for the one request and nothing about it is kept.
- */
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -18,21 +13,50 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import type { SocialUser } from "../../../api/socialApi";
-import { colors } from "../../../theme";
-import { social } from "../../../theme/socialStyles";
+import type { ContactsMatchResult, SocialUser } from "../../../api/socialApi";
+import { fonts, palette, radius, typeScale } from "../../../theme";
+
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
+
+type Tab = "username" | "contacts";
+
+const SUGGESTIONS = ["riya_07", "arjun_delhi", "priya_mumbai", "kabir_92"];
 
 export type FindPeopleProps = {
   onBack: () => void;
   onSearch: (term: string) => Promise<SocialUser[]>;
-  onMatchContacts: () => Promise<SocialUser[]>;
+  onMatchContacts: () => Promise<ContactsMatchResult>;
   onOpenPerson: (userId: string) => void;
   onFollow: (userId: string) => Promise<"accepted" | "pending">;
-  /** Whether the device can hand us a contact list at all. */
   contactsSupported: boolean;
 };
 
-type Tab = "username" | "contacts";
+function formatPhone(phone: string) {
+  const digits = phone.replace(/[^0-9]/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  return phone;
+}
+
+function inviteOnWhatsApp(phone: string, name?: string) {
+  const cleanNumber = phone.replace(/[^0-9]/g, "");
+  const text = encodeURIComponent(
+    `Hi${name ? " " + name : ""}! I'm on Apnajoda, a thoughtful matrimony app where people are serious about finding a life partner. Join me: https://apnajoda.com`,
+  );
+  const url = `https://wa.me/${cleanNumber}?text=${text}`;
+  if (Platform.OS === "web") {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+  Linking.openURL(url).catch(() => {
+    Linking.openURL(`sms:${cleanNumber}?body=${text}`);
+  });
+}
 
 export function FindPeopleScreen({
   onBack,
@@ -45,15 +69,14 @@ export function FindPeopleScreen({
   const [tab, setTab] = useState<Tab>("username");
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<SocialUser[]>([]);
-  const [contacts, setContacts] = useState<SocialUser[] | null>(null);
+  const [contacts, setContacts] = useState<ContactsMatchResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const token = useRef(0);
 
-  // Search as they type, but only once they have stopped: the endpoint is
-  // rate limited and a keystroke is not a question.
   useEffect(() => {
+    if (tab !== "username") return;
     const q = term.trim();
     setError("");
     if (q.length < 2) {
@@ -79,7 +102,7 @@ export function FindPeopleScreen({
         });
     }, 350);
     return () => clearTimeout(timer);
-  }, [term, onSearch]);
+  }, [term, onSearch, tab]);
 
   const loadContacts = async () => {
     setError("");
@@ -87,8 +110,10 @@ export function FindPeopleScreen({
     try {
       setContacts(await onMatchContacts());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not read your contacts.");
-      setContacts([]);
+      setError(
+        e instanceof Error ? e.message : "Could not read your contacts.",
+      );
+      setContacts({ matched: [], unmatched: [] });
     } finally {
       setBusy(false);
     }
@@ -103,13 +128,14 @@ export function FindPeopleScreen({
           u.userId === user.userId
             ? {
                 ...u,
-                likeStatus: (status === "accepted" ? "accepted" : "pending") as
-                  SocialUser["likeStatus"],
+                likeStatus: (status === "accepted"
+                  ? "accepted"
+                  : "pending") as SocialUser["likeStatus"],
               }
             : u,
         );
       setResults(patch);
-      setContacts((c) => (c ? patch(c) : c));
+      setContacts((c) => (c ? { ...c, matched: patch(c.matched) } : c));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send that like.");
     } finally {
@@ -117,133 +143,586 @@ export function FindPeopleScreen({
     }
   };
 
-  const shown = tab === "username" ? results : (contacts ?? []);
-  const emptyMessage = useMemo(() => {
-    if (busy) return "";
-    if (tab === "username") {
-      if (term.trim().length < 2) return "Type at least 2 letters of a username.";
-      return `No one here goes by “${term.trim()}”.`;
-    }
-    if (contacts === null) return "";
-    return "None of your contacts are on Apnajoda yet.";
-  }, [busy, tab, term, contacts]);
-
   return (
-    <View style={social.root}>
-      <SafeAreaView style={social.safe}>
-        <View style={social.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={onBack}
-            style={social.back}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-          </Pressable>
-          <Text style={social.headerTitle}>Find people</Text>
-        </View>
-
-        <View style={social.tabRow}>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === "username" }}
-            onPress={() => setTab("username")}
-            style={[social.tab, tab === "username" && social.tabOn]}
-          >
-            <Text style={[social.tabText, tab === "username" && social.tabTextOn]}>
-              Username
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === "contacts" }}
-            onPress={() => {
-              setTab("contacts");
-              if (contacts === null && contactsSupported) void loadContacts();
+    <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 100,
+            paddingHorizontal: 12,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              backgroundColor: palette.paper,
+              borderRadius: radius.xl,
+              paddingHorizontal: SIDE_PADDING,
+              paddingVertical: 20,
             }}
-            style={[social.tab, tab === "contacts" && social.tabOn]}
           >
-            <Text style={[social.tabText, tab === "contacts" && social.tabTextOn]}>
-              My contacts
-            </Text>
-          </Pressable>
-        </View>
-
-        {tab === "username" ? (
-          <View style={social.searchBox}>
-            <Ionicons name="search" size={18} color={colors.muted} />
-            <TextInput
-              accessibilityLabel="Search by username"
-              value={term}
-              onChangeText={setTerm}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="riya_07"
-              placeholderTextColor={colors.lineSoft}
-              selectionColor={colors.accent}
-              style={social.searchInput}
-            />
-            {!!term && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Clear" onPress={() => setTerm("")} hitSlop={10}>
-                <Ionicons name="close-circle" size={18} color={colors.muted} />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                hitSlop={12}
+                onPress={onBack}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: palette.paperSand,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons name="arrow-back" size={18} color={palette.ink} />
               </Pressable>
-            )}
-          </View>
-        ) : (
-          <View style={social.noteCard}>
-            <Ionicons name="lock-closed-outline" size={18} color={colors.accent} />
-            <Text style={social.noteText}>
-              {contactsSupported
-                ? "Your contacts are checked once and never stored."
-                : "Reading contacts is only available in the phone app."}
-            </Text>
-          </View>
-        )}
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.title,
+                  color: palette.ink,
+                }}
+              >
+                Find people
+              </Text>
+            </View>
 
-        {!!error && (
-          <Text accessibilityRole="alert" style={social.error}>
-            {error}
-          </Text>
-        )}
-
-        {busy ? (
-          <View style={social.center}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
-        ) : shown.length === 0 ? (
-          <View style={social.center}>
-            {tab === "contacts" && contacts === null && contactsSupported ? (
-              <Pressable accessibilityRole="button" onPress={() => void loadContacts()} style={social.primaryButton}>
-                <Text style={social.primaryButtonText}>Check my contacts</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === "username" }}
+                onPress={() => setTab("username")}
+                style={{
+                  flex: 1,
+                  paddingVertical: 11,
+                  borderRadius: radius.pill,
+                  backgroundColor:
+                    tab === "username" ? palette.navy : palette.paper,
+                  borderWidth: tab === "username" ? 0 : 1,
+                  borderColor: palette.rule,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 13,
+                    color: tab === "username" ? "#FFFFFF" : palette.ink,
+                  }}
+                >
+                  Username
+                </Text>
               </Pressable>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === "contacts" }}
+                onPress={() => {
+                  setTab("contacts");
+                  if (contacts === null && contactsSupported)
+                    void loadContacts();
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 11,
+                  borderRadius: radius.pill,
+                  backgroundColor:
+                    tab === "contacts" ? palette.navy : palette.paper,
+                  borderWidth: tab === "contacts" ? 0 : 1,
+                  borderColor: palette.rule,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 13,
+                    color: tab === "contacts" ? "#FFFFFF" : palette.ink,
+                  }}
+                >
+                  My contacts
+                </Text>
+              </Pressable>
+            </View>
+
+            {tab === "username" ? (
+              <>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: palette.paperSand,
+                    borderRadius: radius.pill,
+                    paddingHorizontal: 16,
+                    paddingVertical: 4,
+                    gap: 10,
+                    marginBottom: 24,
+                  }}
+                >
+                  <Ionicons name="search" size={20} color={palette.navy} />
+                  <TextInput
+                    accessibilityLabel="Search by username"
+                    value={term}
+                    onChangeText={setTerm}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="Search by username..."
+                    placeholderTextColor={palette.navySoft}
+                    selectionColor={palette.navy}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 12,
+                      fontSize: 15,
+                      fontFamily: fonts.body,
+                      color: palette.ink,
+                      outlineStyle: "none" as any,
+                    }}
+                  />
+                  {!!term && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Clear"
+                      onPress={() => setTerm("")}
+                      hitSlop={10}
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={18}
+                        color={palette.slate}
+                      />
+                    </Pressable>
+                  )}
+                </View>
+
+                {!!error && (
+                  <Text
+                    accessibilityRole="alert"
+                    style={{
+                      color: palette.clay,
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      marginBottom: 12,
+                      textAlign: "center",
+                    }}
+                  >
+                    {error}
+                  </Text>
+                )}
+
+                {busy ? (
+                  <View style={{ paddingVertical: 60, alignItems: "center" }}>
+                    <ActivityIndicator color={palette.navy} />
+                  </View>
+                ) : results.length === 0 ? (
+                  <View
+                    style={{
+                      backgroundColor: palette.paperSand,
+                      borderRadius: radius.lg,
+                      padding: 24,
+                      alignItems: "center",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 32,
+                        backgroundColor: palette.paper,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginBottom: 14,
+                      }}
+                    >
+                      <Ionicons
+                        name="people-outline"
+                        size={30}
+                        color={palette.navy}
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        fontFamily: fonts.display,
+                        fontSize: typeScale.section,
+                        color: palette.ink,
+                        textAlign: "center",
+                        marginBottom: 6,
+                      }}
+                    >
+                      {term.trim().length < 2
+                        ? "Who are you looking for?"
+                        : `No one goes by "${term.trim()}"`}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 13,
+                        color: palette.slate,
+                        textAlign: "center",
+                        lineHeight: 19,
+                        marginBottom: 20,
+                        maxWidth: 360,
+                      }}
+                    >
+                      {term.trim().length < 2
+                        ? "Type at least 2 letters of a username. We'll show the best matches first."
+                        : "Try a different username."}
+                    </Text>
+
+                    <Text
+                      style={{
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 11,
+                        color: palette.slate,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        marginBottom: 10,
+                      }}
+                    >
+                      Try searching
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: 6,
+                        justifyContent: "center",
+                      }}
+                    >
+                      {SUGGESTIONS.map((s) => (
+                        <Pressable
+                          key={s}
+                          onPress={() => setTerm(s)}
+                          style={{
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: radius.pill,
+                            backgroundColor: palette.paper,
+                            borderWidth: 1,
+                            borderColor: palette.rule,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: fonts.bodyMedium,
+                              fontSize: 12,
+                              color: palette.navy,
+                            }}
+                          >
+                            {s}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ gap: 8 }}>
+                    {results.map((user) => (
+                      <PersonRow
+                        key={user.userId}
+                        user={user}
+                        busy={!!pending[user.userId]}
+                        onOpen={() => onOpenPerson(user.userId)}
+                        onFollow={() => void follow(user)}
+                      />
+                    ))}
+                  </View>
+                )}
+              </>
             ) : (
-              <Text style={social.emptyText}>{emptyMessage}</Text>
+              <>
+                {!contactsSupported ? (
+                  <View
+                    style={{
+                      backgroundColor: palette.paperSand,
+                      borderRadius: radius.lg,
+                      padding: 24,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="phone-portrait-outline"
+                      size={36}
+                      color={palette.navySoft}
+                      style={{ marginBottom: 12 }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 14,
+                        color: palette.slate,
+                        textAlign: "center",
+                        lineHeight: 20,
+                      }}
+                    >
+                      Reading contacts is only available in the phone app.
+                    </Text>
+                  </View>
+                ) : busy ? (
+                  <View style={{ paddingVertical: 60, alignItems: "center" }}>
+                    <ActivityIndicator color={palette.navy} />
+                  </View>
+                ) : contacts === null ? (
+                  <View
+                    style={{
+                      backgroundColor: palette.paperSand,
+                      borderRadius: radius.lg,
+                      padding: 24,
+                      alignItems: "center",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 32,
+                        backgroundColor: palette.paper,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginBottom: 14,
+                      }}
+                    >
+                      <Ionicons
+                        name="people-circle-outline"
+                        size={32}
+                        color={palette.navy}
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        fontFamily: fonts.display,
+                        fontSize: typeScale.section,
+                        color: palette.ink,
+                        textAlign: "center",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Find friends on Apnajoda
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: fonts.body,
+                        fontSize: 13,
+                        color: palette.slate,
+                        textAlign: "center",
+                        lineHeight: 19,
+                        maxWidth: 360,
+                        marginBottom: 20,
+                      }}
+                    >
+                      We'll check your contacts once. Nothing is stored.
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => void loadContacts()}
+                      style={{
+                        backgroundColor: palette.navy,
+                        paddingVertical: 12,
+                        paddingHorizontal: 24,
+                        borderRadius: radius.pill,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons name="sync" size={18} color="#FFFFFF" />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontFamily: fonts.bodySemi,
+                          fontSize: 14,
+                        }}
+                      >
+                        Check my contacts
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={{ gap: 20 }}>
+                    {contacts.matched.length > 0 && (
+                      <View>
+                        <Text
+                          style={{
+                            fontFamily: fonts.bodySemi,
+                            fontSize: 11,
+                            color: palette.slate,
+                            textTransform: "uppercase",
+                            letterSpacing: 1,
+                            marginBottom: 10,
+                          }}
+                        >
+                          {contacts.matched.length} on Apnajoda
+                        </Text>
+                        <View style={{ gap: 8 }}>
+                          {contacts.matched.map((user) => (
+                            <PersonRow
+                              key={user.userId}
+                              user={user}
+                              busy={!!pending[user.userId]}
+                              onOpen={() => onOpenPerson(user.userId)}
+                              onFollow={() => void follow(user)}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {contacts.unmatched.length > 0 && (
+                      <View>
+                        <Text
+                          style={{
+                            fontFamily: fonts.bodySemi,
+                            fontSize: 11,
+                            color: palette.slate,
+                            textTransform: "uppercase",
+                            letterSpacing: 1,
+                            marginBottom: 10,
+                          }}
+                        >
+                          Invite {contacts.unmatched.length}{" "}
+                          {contacts.unmatched.length === 1
+                            ? "friend"
+                            : "friends"}
+                        </Text>
+                        <View style={{ gap: 8 }}>
+                          {contacts.unmatched.map((phone) => (
+                            <View
+                              key={phone}
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 10,
+                                paddingVertical: 12,
+                                paddingHorizontal: 12,
+                                borderRadius: radius.lg,
+                                backgroundColor: palette.paperSand,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 20,
+                                  backgroundColor: palette.paper,
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Ionicons
+                                  name="phone-portrait-outline"
+                                  size={20}
+                                  color={palette.navy}
+                                />
+                              </View>
+                              <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text
+                                  style={{
+                                    fontFamily: fonts.bodyMedium,
+                                    fontSize: 14,
+                                    color: palette.ink,
+                                  }}
+                                >
+                                  {formatPhone(phone)}
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontFamily: fonts.body,
+                                    fontSize: 12,
+                                    color: palette.slate,
+                                    marginTop: 1,
+                                  }}
+                                >
+                                  Not on Apnajoda yet
+                                </Text>
+                              </View>
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`Invite ${formatPhone(phone)} on WhatsApp`}
+                                onPress={() => inviteOnWhatsApp(phone)}
+                                style={{
+                                  paddingHorizontal: 14,
+                                  paddingVertical: 9,
+                                  borderRadius: radius.pill,
+                                  backgroundColor: "#25D366",
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 6,
+                                }}
+                              >
+                                <Ionicons
+                                  name="logo-whatsapp"
+                                  size={16}
+                                  color="#FFFFFF"
+                                />
+                                <Text
+                                  style={{
+                                    color: "#FFFFFF",
+                                    fontFamily: fonts.bodySemi,
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  Invite
+                                </Text>
+                              </Pressable>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {contacts.matched.length === 0 &&
+                      contacts.unmatched.length === 0 && (
+                        <View
+                          style={{
+                            backgroundColor: palette.paperSand,
+                            borderRadius: radius.lg,
+                            padding: 24,
+                            alignItems: "center",
+                          }}
+                        >
+                          <Ionicons
+                            name="people-outline"
+                            size={36}
+                            color={palette.navySoft}
+                            style={{ marginBottom: 12 }}
+                          />
+                          <Text
+                            style={{
+                              fontFamily: fonts.body,
+                              fontSize: 14,
+                              color: palette.slate,
+                              textAlign: "center",
+                              lineHeight: 20,
+                            }}
+                          >
+                            No phone numbers found in your contacts.
+                          </Text>
+                        </View>
+                      )}
+                  </View>
+                )}
+              </>
             )}
           </View>
-        ) : (
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={social.listContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {shown.map((user) => (
-              <PersonRow
-                key={user.userId}
-                user={user}
-                busy={!!pending[user.userId]}
-                onOpen={() => onOpenPerson(user.userId)}
-                onFollow={() => void follow(user)}
-              />
-            ))}
-          </ScrollView>
-        )}
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
 }
 
-export function PersonRow({
+function PersonRow({
   user,
   busy,
   onOpen,
@@ -263,27 +742,83 @@ export function PersonRow({
         : status === "likes_you"
           ? "Accept"
           : "Like";
-  // Only a decision already made is settled. "Accept" is still a button.
   const settled = status === "accepted" || status === "pending";
   return (
-    <View style={social.row}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderRadius: radius.lg,
+        backgroundColor: palette.paperSand,
+      }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Open ${user.username}`}
         onPress={onOpen}
-        style={social.rowMain}
+        style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
       >
-        <Avatar user={user} />
-        <View style={social.rowText}>
-          <View style={social.rowTitleLine}>
-            <Text numberOfLines={1} style={social.rowTitle}>
+        {user.avatarUrl ? (
+          <Image
+            source={{ uri: user.avatarUrl }}
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              backgroundColor: palette.paper,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              backgroundColor: palette.paper,
+              justifyContent: "center",
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: palette.rule,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 18,
+                color: palette.crimson,
+              }}
+            >
+              {(user.username || "?").slice(0, 1).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text
+              numberOfLines={1}
+              style={{
+                fontFamily: fonts.display,
+                fontSize: typeScale.section,
+                color: palette.ink,
+              }}
+            >
               {user.username}
             </Text>
             {user.isPrivate && (
-              <Ionicons name="lock-closed" size={12} color={colors.muted} />
+              <Ionicons name="lock-closed" size={12} color={palette.slate} />
             )}
           </View>
-          <Text numberOfLines={1} style={social.rowSub}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 13,
+              color: palette.slate,
+            }}
+          >
             {status === "likes_you" ? `${user.name} · likes you` : user.name}
           </Text>
         </View>
@@ -294,12 +829,28 @@ export function PersonRow({
           accessibilityLabel={`${label} ${user.username}`}
           disabled={busy || settled}
           onPress={onFollow}
-          style={[social.followButton, settled && social.followButtonOff]}
+          style={{
+            minWidth: 84,
+            paddingHorizontal: 14,
+            paddingVertical: 9,
+            borderRadius: radius.pill,
+            backgroundColor: settled ? palette.paper : palette.navy,
+            borderWidth: settled ? 1 : 0,
+            borderColor: palette.rule,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
           {busy ? (
-            <ActivityIndicator size="small" color={colors.textInverse} />
+            <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={[social.followButtonText, settled && social.followButtonTextOff]}>
+            <Text
+              style={{
+                fontFamily: fonts.bodySemi,
+                fontSize: 13,
+                color: settled ? palette.slate : "#FFFFFF",
+              }}
+            >
               {label}
             </Text>
           )}
@@ -309,20 +860,43 @@ export function PersonRow({
   );
 }
 
-export function Avatar({ user, size = 46 }: { user: { avatarUrl?: string | null; username: string }; size?: number }) {
+export function Avatar({
+  user,
+  size = 46,
+}: {
+  user: { avatarUrl?: string | null; username: string };
+  size?: number;
+}) {
   const dimension = { width: size, height: size, borderRadius: size / 2 };
   if (user.avatarUrl) {
     return (
       <Image
         accessibilityLabel={`${user.username} profile photo`}
         source={{ uri: user.avatarUrl }}
-        style={[social.avatar, dimension]}
+        style={[dimension, { backgroundColor: palette.paperSand }]}
       />
     );
   }
   return (
-    <View style={[social.avatar, social.avatarEmpty, dimension]}>
-      <Text style={[social.avatarInitial, { fontSize: size * 0.4 }]}>
+    <View
+      style={[
+        dimension,
+        {
+          backgroundColor: palette.paperSand,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 1,
+          borderColor: palette.rule,
+        },
+      ]}
+    >
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: size * 0.42,
+          color: palette.crimson,
+        }}
+      >
         {(user.username || "?").slice(0, 1).toUpperCase()}
       </Text>
     </View>

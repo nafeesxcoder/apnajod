@@ -37,8 +37,6 @@ async function setPrivacy(userId, isPrivate) {
     isPrivate ? 1 : 0,
     userId,
   ]);
-  // Going public clears the queue: nobody should stay waiting on an account
-  // that no longer asks to be asked.
   if (!isPrivate) {
     await query(
       "UPDATE follows SET status = 'accepted', responded_at = NOW(6) WHERE following_id = ? AND status = 'pending'",
@@ -47,14 +45,6 @@ async function setPrivacy(userId, isPrivate) {
   }
 }
 
-/**
- * May `viewerId` send a message to `otherId`?
- *
- * Blocks win over everything. After that, the ONLY thing that unlocks
- * messaging is a mutual match. Follows (public or private) no longer grant
- * message rights — that was the old follow-and-chat model and it let any
- * stranger message any woman who had not yet matched with him.
- */
 async function canMessage(viewerId, otherId) {
   if (viewerId === otherId) return { allowed: false, reason: "self" };
   const other = await getUser(otherId);
@@ -75,15 +65,6 @@ async function canMessage(viewerId, otherId) {
     : { allowed: false, reason: "no_match" };
 }
 
-/**
- * Username search. Exact matches first, then prefix, then anywhere.
- *
- * Every account is findable, private ones included. Hiding private accounts
- * here, with sign-up making every account private, meant the search returned
- * nothing at all - on a dating app, where finding somebody is the whole point.
- * Privacy is enforced where it belongs instead: messaging needs a mutual
- * like, so being found costs nothing.
- */
 async function searchByUsername(viewerId, term, limit = 20) {
   const q = String(term || "")
     .trim()
@@ -110,11 +91,6 @@ async function searchByUsername(viewerId, term, limit = 20) {
   return decorate(viewerId, rows);
 }
 
-/**
- * Match a contact list against accounts. Numbers are hashed against the same
- * normalisation sign-up uses, and nothing is stored: the list is used for this
- * request and discarded.
- */
 async function matchContacts(viewerId, phones, limit = 200) {
   const normalized = [
     ...new Set(
@@ -123,11 +99,14 @@ async function matchContacts(viewerId, phones, limit = 200) {
         .filter(Boolean),
     ),
   ].slice(0, 1000);
-  if (!normalized.length) return [];
+
+  if (!normalized.length) {
+    return { matched: [], unmatched: [] };
+  }
 
   const placeholders = normalized.map(() => "?").join(",");
   const rows = await query(
-    `SELECT u.id AS user_id, u.username, u.full_name, u.avatar_url, u.is_private
+    `SELECT u.id AS user_id, u.username, u.full_name, u.avatar_url, u.is_private, u.phone
        FROM users u
       WHERE u.deleted_at IS NULL
         AND u.deactivated_at IS NULL
@@ -138,19 +117,14 @@ async function matchContacts(viewerId, phones, limit = 200) {
       LIMIT ${Number(limit)}`,
     [viewerId, ...normalized, viewerId, viewerId],
   );
-  return decorate(viewerId, rows);
+
+  const matchedPhones = new Set(rows.map((r) => r.phone));
+  const unmatched = normalized.filter((p) => !matchedPhones.has(p));
+  const matched = await decorate(viewerId, rows);
+
+  return { matched, unmatched };
 }
 
-/** Attach the viewer's relationship to each row so the UI can label buttons. */
-/**
- * Add where the like stands to a row of people.
- *
- * This used to read the `follows` table and return following / requested /
- * followsYou. There is no following on this app any more - the only edge
- * between two members is a like - so a search result labelled itself from
- * a graph nothing writes to, and always said "Like" even to somebody you
- * had already matched with.
- */
 async function decorate(viewerId, rows) {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.user_id);
@@ -213,14 +187,6 @@ async function decorate(viewerId, rows) {
   });
 }
 
-/**
- * The dating profile behind a person page.
- *
- * A person page used to carry a username, an avatar and two follower
- * counts. On a dating app that is nothing to decide from: the member is
- * looking at somebody who liked them and has to judge from a letter in a
- * grey circle. Photos, age, city, work and their own words come too.
- */
 async function getProfileCard(userId) {
   const [profile] = await query(
     `SELECT first_name, age, city, profession, religion, community,
@@ -234,7 +200,6 @@ async function getProfileCard(userId) {
     [userId],
   );
 
-  // mysql2 returns a JSON column already parsed; JSON.parse on it throws.
   let hobbies = [];
   if (Array.isArray(profile?.hobbies)) {
     hobbies = profile.hobbies;
@@ -260,18 +225,6 @@ async function getProfileCard(userId) {
   };
 }
 
-/**
- * Where a like between two people stands, in one round trip.
- *
- *   none       neither has liked the other
- *   pending    you liked them and are waiting
- *   likes_you  they liked you; it is yours to accept
- *   accepted   both of you, so the chat is open
- *
- * The person page needs this to know whether to offer Like, Accept, or
- * nothing but Message. Offering "Like" to somebody you already matched with
- * is how a member ends up unsure whether anything happened at all.
- */
 async function likeState(viewerId, otherId) {
   const [row] = await query(
     `SELECT
@@ -282,7 +235,16 @@ async function likeState(viewerId, otherId) {
        EXISTS (SELECT 1 FROM mutual_matches
                 WHERE (user_a_id = ? AND user_b_id = ?)
                    OR (user_a_id = ? AND user_b_id = ?)) AS matched`,
-    [viewerId, otherId, otherId, viewerId, viewerId, otherId, otherId, viewerId],
+    [
+      viewerId,
+      otherId,
+      otherId,
+      viewerId,
+      viewerId,
+      otherId,
+      otherId,
+      viewerId,
+    ],
   );
   const iLiked = !!row?.i_liked;
   const theyLiked = !!row?.they_liked;

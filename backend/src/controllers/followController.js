@@ -2,18 +2,19 @@ const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const followService = require("../services/followService");
 
-/** Turn a service error carrying a status into the API's error shape. */
 function rethrow(error) {
   if (error && error.status) throw new ApiError(error.status, error.message);
   throw error;
 }
 
-// ---------- discovery ----------
-
 const search = asyncHandler(async (req, res) => {
   const term = String(req.query.q || "").trim();
   if (term.length < 2) {
-    return res.json({ ok: true, results: [], reason: "Type at least 2 characters." });
+    return res.json({
+      ok: true,
+      results: [],
+      reason: "Type at least 2 characters.",
+    });
   }
   const results = await followService.searchByUsername(req.user.id, term);
   res.json({ ok: true, results });
@@ -21,12 +22,14 @@ const search = asyncHandler(async (req, res) => {
 
 const contacts = asyncHandler(async (req, res) => {
   const { phones } = req.body;
-  if (!Array.isArray(phones)) throw new ApiError(400, "phones must be an array");
-  const results = await followService.matchContacts(req.user.id, phones);
-  res.json({ ok: true, results });
+  if (!Array.isArray(phones))
+    throw new ApiError(400, "phones must be an array");
+  const { matched, unmatched } = await followService.matchContacts(
+    req.user.id,
+    phones,
+  );
+  res.json({ ok: true, matched, unmatched });
 });
-
-// ---------- a person's page ----------
 
 const userProfile = asyncHandler(async (req, res) => {
   const user = await followService.getUser(req.params.userId);
@@ -41,16 +44,12 @@ const userProfile = asyncHandler(async (req, res) => {
     user: {
       userId: user.id,
       username: user.username,
-      // The profile's own first name beats the account's, which is often
-      // just the username again.
       name: profile.firstName || user.full_name || user.username,
       avatarUrl: profile.photos[0] || user.avatar_url,
       isPrivate: !!user.is_private,
     },
     profile,
     like,
-    // `self` is all the old follow `state` object still carried that
-    // anything reads; the rest described a graph this app no longer has.
     state: { self: req.user.id === user.id },
     canMessage: permission.allowed,
     messageBlockedReason: permission.allowed ? null : permission.reason,
@@ -59,7 +58,8 @@ const userProfile = asyncHandler(async (req, res) => {
 
 const privacy = asyncHandler(async (req, res) => {
   const { isPrivate } = req.body;
-  if (typeof isPrivate !== "boolean") throw new ApiError(400, "isPrivate must be true or false");
+  if (typeof isPrivate !== "boolean")
+    throw new ApiError(400, "isPrivate must be true or false");
   await followService.setPrivacy(req.user.id, isPrivate);
   res.json({ ok: true, isPrivate });
 });

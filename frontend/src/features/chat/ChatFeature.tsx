@@ -68,7 +68,7 @@ import type {
   DatePlanStatus,
 } from "../../storage";
 import { defaultCoupleChatSettings } from "../../storage";
-import { colors, fonts, palette, radius, typeScale } from "../../theme";
+import { colors, fonts, palette, radius } from "../../theme";
 import { receiptColor, receiptIcon, receiptLabel } from "./receipt";
 import { APP_MAX_WIDTH, CHAT_LIST_WIDTH, RAIL_WIDTH } from "../../layout/breakpoints";
 import { useLayout } from "../../layout/useLayout";
