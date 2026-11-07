@@ -167,6 +167,9 @@ async function likeAllowance(userId, now = new Date()) {
     return { premium: true, limit: null, used: 0, remaining: null };
   }
   const limit = limits.freeDailyLikes();
+  // 0 means the gate is off - there is no way to pay yet, so a free member
+  // is not stopped at a price they cannot settle.
+  if (!limit) return { premium: false, limit: null, used: 0, remaining: null };
   const used = await likesUsedToday(userId, now);
   return {
     premium: false,

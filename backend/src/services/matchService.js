@@ -209,12 +209,14 @@ async function getIncomingLikes(userId, limit = 100) {
   // photo. That count is the whole upsell, so it has to be honest.
   const premium = await billingService.isPremium(userId);
   const freeVisible = limits.freeVisibleLikers();
+  // 0 means the gate is off, so nothing is locked. See config/billing.
+  const gated = !premium && freeVisible > 0;
   let shownPending = 0;
 
   return rows.map((row) => {
     const accepted = !!row.accepted;
     let locked = false;
-    if (!premium && !accepted) {
+    if (gated && !accepted) {
       if (shownPending < freeVisible) shownPending += 1;
       else locked = true;
     }

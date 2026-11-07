@@ -122,3 +122,22 @@ test("a subscription plan grants time and a consumable grants credits", async ()
   assert.ok(sqls.some((e) => /INSERT INTO entitlements/.test(e.sql)));
   assert.ok(sqls.some((e) => /INSERT INTO credit_balances/.test(e.sql)));
 });
+
+test("the like gate is off until there is a way to pay", () => {
+  // A member stopped at a price they cannot settle is worse than no gate.
+  // The gate is built and tested; FREE_DAILY_LIKES turns it on.
+  const limits = require("../src/config/billing");
+  delete process.env.FREE_DAILY_LIKES;
+  delete process.env.FREE_VISIBLE_LIKERS;
+  assert.equal(limits.freeDailyLikes(), 0, "no daily limit by default");
+  assert.equal(limits.freeVisibleLikers(), 0, "no locked likers by default");
+});
+
+test("zero means unlimited rather than zero likes", async () => {
+  // Read literally, a limit of 0 would stop every member on their first
+  // like - the gate fully closed instead of fully open.
+  const { billing } = loadBilling({ env: { FREE_DAILY_LIKES: "0" } });
+  const allowance = await billing.likeAllowance("u1");
+  assert.equal(allowance.remaining, null);
+  assert.equal(allowance.limit, null);
+});

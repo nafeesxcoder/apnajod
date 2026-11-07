@@ -15,20 +15,26 @@ const number = (name, fallback) => {
 
 module.exports = {
   /**
-   * Likes a free member gets per day. Generous on purpose: a dating app
-   * with nobody liking anybody is dead, and the limit only has to be low
-   * enough that an active member notices it.
+   * Likes a free member gets per day. 0 means no limit.
+   *
+   * It defaults to no limit because there is no way to pay yet: a member
+   * stopped on their fifteenth like today would be shown a price and no
+   * till. Set FREE_DAILY_LIKES=15 on the day checkout goes live - the gate
+   * itself is built and tested, it is only waiting for somewhere to pay.
    */
-  freeDailyLikes: () => number("FREE_DAILY_LIKES", 15),
+  freeDailyLikes: () => number("FREE_DAILY_LIKES", 0),
 
   /** How long one boost puts a member at the top of other decks. */
   boostMinutes: () => number("BOOST_MINUTES", 30),
 
   /**
-   * How many likers a free member sees in full. The rest arrive without a
-   * name or a photo, as a count and a blurred row, which is the upsell.
+   * How many likers a free member sees in full. 0 means all of them.
+   *
+   * Off for the same reason as the like limit: a locked row with no way to
+   * unlock it is just a worse app. Set FREE_VISIBLE_LIKERS=1 when checkout
+   * is live.
    */
-  freeVisibleLikers: () => number("FREE_VISIBLE_LIKERS", 1),
+  freeVisibleLikers: () => number("FREE_VISIBLE_LIKERS", 0),
 
   /** India only, so the day that a like allowance resets on is the IST day. */
   indiaOffsetMinutes: 330,

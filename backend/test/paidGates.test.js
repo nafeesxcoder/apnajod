@@ -181,3 +181,33 @@ test("the age range is the paid part of the filters, gender is not", async () =>
   assert.ok(!/p\.age BETWEEN/.test(free), "a free member gets no age range");
   assert.match(paid, /p\.age BETWEEN \? AND \?/, "premium gets the range");
 });
+
+test("nothing is locked while the likers gate is off", async () => {
+  const likeRows = [
+    { actor_id: "d", created_at: "2026-01-04", username: "d", accepted: 0 },
+    { actor_id: "c", created_at: "2026-01-03", username: "c", accepted: 0 },
+  ];
+  const original = Module.prototype.require;
+  Module.prototype.require = function patched(id) {
+    if (id === "../config/db") {
+      return {
+        query: async (sql) => (/FROM match_decisions d/i.test(sql) ? likeRows : []),
+      };
+    }
+    if (id === "./pushService") return { notifyUser: async () => undefined };
+    if (id === "./billingService") return { isPremium: async () => false };
+    // 0 is the shipped default: no way to pay yet, so nothing is hidden.
+    if (id === "../config/billing") return { freeVisibleLikers: () => 0 };
+    return original.apply(this, arguments);
+  };
+  let service;
+  try {
+    delete require.cache[require.resolve("../src/services/matchService")];
+    service = require("../src/services/matchService");
+  } finally {
+    Module.prototype.require = original;
+  }
+  const likes = await service.getIncomingLikes("me");
+  assert.ok(likes.every((like) => like.locked === false), "no row is locked");
+  assert.ok(likes.every((like) => like.name), "every row keeps its name");
+});

@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
+import { useLayout } from "../../../layout/useLayout";
 import type { Screen } from "../../../app/navigation/types";
 import type { Match } from "../../../data";
 import { matchApi } from "../../../api/matchApi";
@@ -39,6 +40,12 @@ type IncomingLike = {
   likedAt: string | null;
   /** pending: yours to accept. accepted: you liked back, chat is open. */
   status: "pending" | "accepted";
+  /**
+   * A liker this member has not paid to see. The server sends the row with
+   * no name and no photo, which is the point - but it has to look locked
+   * rather than broken, or it reads as a bug in the app.
+   */
+  locked?: boolean;
 };
 
 /**
@@ -49,6 +56,85 @@ type IncomingLike = {
  * grey circle - no photos, no bio - which is not enough to decide on. The
  * profile the server already sent is carried across instead.
  */
+/** Two per row on a wide screen, with the gap and page padding removed. */
+const LIKE_CARD_WIDTH = 420;
+
+/**
+ * Somebody liked you and you cannot see who yet.
+ *
+ * The server sends these rows with no name and no photo on purpose. Drawn
+ * with the ordinary card they came out as a blank box with a date on it,
+ * which reads as the app being broken rather than as something to unlock -
+ * the worst of both, since it neither protects nor sells.
+ */
+function LockedLikeCard({
+  likedAt,
+  wide,
+  onUnlock,
+}: {
+  likedAt: string | null;
+  wide: boolean;
+  /** Omitted until there is somewhere to buy Premium. */
+  onUnlock?: () => void;
+}) {
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: "#FFFFFF",
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: LINE,
+          overflow: "hidden",
+        },
+        wide && { width: LIKE_CARD_WIDTH },
+      ]}
+    >
+      <View style={{ flexDirection: "row", padding: 12, gap: 12, alignItems: "center" }}>
+        <View
+          style={{
+            width: 92,
+            height: 112,
+            borderRadius: 12,
+            backgroundColor: "#E7EBF0",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="lock-closed" size={26} color="#8A96A4" />
+        </View>
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: "#14202E" }}>
+            Someone liked you
+          </Text>
+          <Text style={{ fontSize: 13, color: "#5A6878" }}>
+            {sinceLabel(likedAt)}
+          </Text>
+        </View>
+      </View>
+      {onUnlock && (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="See who liked you with Premium"
+        onPress={onUnlock}
+        style={{
+          margin: 12,
+          marginTop: 0,
+          paddingVertical: 13,
+          borderRadius: 999,
+          backgroundColor: "#1F4D7A",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>
+          See who it is
+        </Text>
+      </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 function matchFromLike(like: IncomingLike): Match {
   const match = matchFromSocialUser({
     userId: like.userId,
@@ -96,6 +182,7 @@ export function LikesScreen({
   onMatched: (like: { userId: string; username: string; name: string; photo: string }) => void;
 }) {
   const navInset = useNavInset();
+  const { isWide: isWideLikes } = useLayout();
   const [likes, setLikes] = useState<IncomingLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -320,20 +407,43 @@ export function LikesScreen({
 
           {/* Everyone who liked you, newest first */}
           {!loading && !error && likes.length > 0 && (
-            <View style={{ paddingHorizontal: 20, gap: 12 }}>
+            <View
+              style={[
+                { paddingHorizontal: 20, gap: 12 },
+                // Full-width rows across a laptop leave an Accept button a
+                // thousand pixels wide. Two columns keep the card the size
+                // a card should be.
+                isWideLikes && {
+                  flexDirection: "row" as const,
+                  flexWrap: "wrap" as const,
+                },
+              ]}
+            >
               {likes.map((like) => {
                 const accepted = like.status === "accepted";
                 const busy = deciding === like.userId;
+                if (like.locked) {
+                  return (
+                    <LockedLikeCard
+                      key={like.id}
+                      likedAt={like.likedAt}
+                      wide={isWideLikes}
+                    />
+                  );
+                }
                 return (
                   <View
                     key={like.id}
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: LINE,
-                      overflow: "hidden",
-                    }}
+                    style={[
+                      {
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: LINE,
+                        overflow: "hidden",
+                      },
+                      isWideLikes && { width: LIKE_CARD_WIDTH },
+                    ]}
                   >
                     <TouchableOpacity
                       accessibilityRole="button"
