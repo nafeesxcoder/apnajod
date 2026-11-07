@@ -11,6 +11,9 @@ importers:
       '@countrystatecity/countries-browser':
         specifier: ^1.0.2
         version: 1.0.4
+      '@expo-google-fonts/marcellus':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@expo-google-fonts/mukta':
         specifier: ^0.4.1
         version: 0.4.1
@@ -770,6 +773,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@expo-google-fonts/marcellus@0.4.1':
+    resolution: {integrity: sha512-oSi/MHPkzy8WXTv1ii71zRZq5NyLbb73dNhQf7zJTZkuar9pUqUeutii9IqzXYEkCyR+auq5Fz8zbFO2zkHaaA==}
 
   '@expo-google-fonts/mukta@0.4.1':
     resolution: {integrity: sha512-4DmGZ/ZWycvHzfLrR80c/1EIU4VWULxUxg/KHTxkywrtv8WMMBvvUW6BPiOybBCcllfKLkIwih98wcZsX+r4jA==}
@@ -4456,6 +4462,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@expo-google-fonts/marcellus@0.4.1': {}
 
   '@expo-google-fonts/mukta@0.4.1': {}
 

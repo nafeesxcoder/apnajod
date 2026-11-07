@@ -27,11 +27,33 @@
  */
 
 // ---- The palette, named for what it is ----
+/**
+ * The two faces.
+ *
+ * Mukta runs the interface and handles Devanagari, which an India-only
+ * app needs. Marcellus appears only on names and section headings: Roman
+ * inscriptional letterforms, which read as an occasion without tipping
+ * into wedding-card script.
+ */
+export const fonts = {
+  display: 'Marcellus_400Regular',
+  body: 'Mukta_400Regular',
+  bodyMedium: 'Mukta_500Medium',
+  bodySemi: 'Mukta_600SemiBold',
+  bodyBold: 'Mukta_700Bold',
+};
+
 export const palette = {
   // Paper
-  paperBase: '#F5F6F8', // the canvas, a cool near-white
+  //
+  // The canvas was #F5F6F8, a cool grey near-white, and it was the single
+  // reason the app read as an admin tool: every screen sat on office
+  // paper. This one is barely pink. Nothing else had to change for the
+  // whole app to stop feeling cold.
+  paperBase: '#FDF7F4', // the canvas, a warm near-white
   paper: '#FFFFFF', // raised cards and fields
-  paperCool: '#FBFCFD', // a half-step above the canvas
+  paperCool: '#FFFBF9', // a half-step above the canvas
+  paperSand: '#F6EBE3', // a tinted panel, for the one thing that is raised
 
   // Type
   ink: '#14202E', // navy-black — primary type
@@ -50,6 +72,12 @@ export const palette = {
   crimsonSoft: '#D8A3AC',
   crimsonTint: '#F7E3E7', // a wash behind a liked card
 
+  // Marigold. Used sparingly and only for things worth celebrating -
+  // verified, a boost - because this is the colour that stops the app
+  // being navy-and-grey, and spending it everywhere would waste it.
+  marigold: '#E0923A',
+  marigoldTint: '#FBEEDC',
+
   // Status
   emerald: '#1F7A5A', // verified, success
   clay: '#B3261E', // errors only — orange-leaning, not the brand red
@@ -61,15 +89,15 @@ export const palette = {
   // "blue ticks".
   tickRead: '#53BDEB',
 
-  // Lines
-  rule: '#DDE3EA', // hairline on paper
-  ruleSoft: '#EDF1F5',
+  // Lines. Warm, because a grey hairline on warm paper looks like dirt.
+  rule: '#EADDD2',
+  ruleSoft: '#F3E8E0',
 
   // ---- Legacy member names, repointed. Screens import these directly. ----
-  cream: '#F5F6F8',
-  paperWarm: '#FBFCFD',
-  limewash: '#F5F6F8',
-  pearl: '#F5F6F8',
+  cream: '#FDF7F4',
+  paperWarm: '#FFFBF9',
+  limewash: '#FDF7F4',
+  pearl: '#FDF7F4',
   indigo: '#14202E',
   indigoDeep: '#0A1420',
   indigoSoft: '#33414F',

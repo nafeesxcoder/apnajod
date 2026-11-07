@@ -21,7 +21,7 @@ import { matchFromSocialUser } from "../../../domain/socialMatch";
 const GOLD = "#8A2237";
 const RUBY = "#1F5286";
 const LINE = "#D3D6DA";
-const PAPER = "#EFF0F2";
+const PAPER = "#FDF7F4";
 
 type IncomingLike = {
   id: string;

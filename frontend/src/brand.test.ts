@@ -79,7 +79,7 @@ describe('brand colours', () => {
   it('builds the theme from the mark: navy acts, crimson accents', () => {
     expect(palette.navy).toBe('#1F4D7A');
     expect(palette.crimson).toBe('#A8243A');
-    expect(palette.paperBase).toBe('#F5F6F8');
+    expect(palette.paperBase).toBe('#FDF7F4');
     // The legacy names the screens still import must follow the new palette,
     // or half the app stays on the old identity while the theme claims not
     // to be.

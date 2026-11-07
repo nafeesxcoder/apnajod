@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { fonts, palette } from "../../../theme";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
@@ -15,12 +17,11 @@ import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 
-const PINK = "#4983BE";
-const PINK_LIGHT = "#EFF0F1";
-const DARK = "#151719";
-const MUTED = "#5A5E63";
+const PINK = palette.navy;
+const PINK_LIGHT = palette.paperSand;
+const DARK = palette.ink;
+const MUTED = palette.slate;
 const WHITE = "#FFFFFF";
-const LINE = "#E6E8EA";
 
 const MAX_WIDTH = 720;
 
@@ -59,7 +60,7 @@ export function ProfileScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA", paddingLeft: navInset.paddingLeft }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase, paddingLeft: navInset.paddingLeft }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 90 }}
@@ -112,127 +113,100 @@ export function ProfileScreen({
             </View>
 
             <View style={{ paddingHorizontal: SIDE_PADDING }}>
-              {/* Profile Photo + Verified */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "flex-end",
-                  marginTop: 6,
-                }}
-              >
+              {/* The one bold thing on this screen.
+                  Everything here used to be the same left-aligned list of
+                  rows as the settings page. A profile is a portrait, so it
+                  is centred and the photo is given a ring that echoes the
+                  arc in the mark - crimson into navy. Nothing else on the
+                  screen competes with it. */}
+              <View style={{ alignItems: "center", marginTop: 10 }}>
                 <View style={{ position: "relative" }}>
-                  <View
+                  <LinearGradient
+                    colors={[palette.crimson, palette.navy]}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 1, y: 0 }}
                     style={{
-                      width: 120,
-                      height: 120,
-                      borderRadius: 60,
-                      borderWidth: 4,
-                      borderColor: PINK,
-                      overflow: "hidden",
-                      backgroundColor: "#FFF",
+                      width: 144,
+                      height: 144,
+                      borderRadius: 72,
+                      padding: 4,
                     }}
                   >
-                    {profilePhoto ? (
-                      <Image
-                        source={{ uri: profilePhoto }}
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    ) : (
-                      <View
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Ionicons name="person" size={50} color={PINK} />
-                      </View>
-                    )}
-                  </View>
+                    <View
+                      style={{
+                        flex: 1,
+                        borderRadius: 68,
+                        borderWidth: 4,
+                        borderColor: palette.paperBase,
+                        overflow: "hidden",
+                        backgroundColor: palette.paper,
+                      }}
+                    >
+                      {profilePhoto ? (
+                        <Image
+                          source={{ uri: profilePhoto }}
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      ) : (
+                        <View
+                          style={{
+                            flex: 1,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            backgroundColor: palette.paperSand,
+                          }}
+                        >
+                          <Ionicons name="person" size={54} color={palette.navySoft} />
+                        </View>
+                      )}
+                    </View>
+                  </LinearGradient>
+
                   {verified && (
                     <View
                       style={{
                         position: "absolute",
-                        bottom: 4,
-                        right: 4,
-                        backgroundColor: PINK,
-                        borderRadius: 12,
-                        padding: 4,
+                        bottom: 2,
+                        right: 2,
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        backgroundColor: palette.marigold,
+                        borderWidth: 3,
+                        borderColor: palette.paperBase,
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
                     </View>
                   )}
                 </View>
 
-                {verified && (
-                  <View
-                    style={{
-                      backgroundColor: PINK_LIGHT,
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 20,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Ionicons name="shield-checkmark" size={16} color={PINK} />
-                    <Text
-                      style={{ fontSize: 12, color: PINK, fontWeight: "700" }}
-                    >
-                      Verified
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Name & Age */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  marginTop: 12,
-                }}
-              >
-                <Text style={{ fontSize: 24, fontWeight: "700", color: DARK }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: 32,
+                    lineHeight: 40,
+                    color: palette.ink,
+                    marginTop: 18,
+                    textAlign: "center",
+                  }}
+                >
                   {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
                 </Text>
-                {verified && (
-                  <Ionicons name="checkmark-circle" size={24} color={PINK} />
-                )}
-              </View>
 
-              {/* City & Profession */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 12,
-                  marginTop: 6,
-                  alignItems: "center",
-                }}
-              >
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: palette.slate,
+                    marginTop: 4,
+                    textAlign: "center",
+                  }}
                 >
-                  <Ionicons name="location" size={16} color={MUTED} />
-                  <Text style={{ fontSize: 14, color: MUTED }}>
-                    {profile?.city || "Bareilly"}
-                  </Text>
-                </View>
-                <Text style={{ color: MUTED }}>|</Text>
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-                >
-                  <Ionicons name="briefcase" size={16} color={MUTED} />
-                  <Text style={{ fontSize: 14, color: MUTED }}>
-                    {profile?.profession || "Software Engineer"}
-                  </Text>
-                </View>
+                  {[profile?.city, profile?.profession].filter(Boolean).join("  ·  ") ||
+                    "Add your city and work"}
+                </Text>
               </View>
 
               {/* Hobbies */}
@@ -240,8 +214,9 @@ export function ProfileScreen({
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
+                  justifyContent: "center",
                   gap: 8,
-                  marginTop: 14,
+                  marginTop: 16,
                 }}
               >
                 {hobbies.length > 0 ? (
@@ -345,7 +320,7 @@ export function ProfileScreen({
                   gap: 12,
                   backgroundColor: "#FFFFFF",
                   borderWidth: 1,
-                  borderColor: "#DDE3EA",
+                  borderColor: palette.rule,
                   borderRadius: 16,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
@@ -354,7 +329,7 @@ export function ProfileScreen({
               >
                 <Ionicons name="sparkles" size={20} color="#1F4D7A" />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: "#14202E" }}>
+                  <Text style={{ fontFamily: fonts.display, fontSize: 18, color: palette.ink }}>
                     Premium
                   </Text>
                   <Text style={{ fontSize: 13, color: "#5A6878" }}>
@@ -364,37 +339,35 @@ export function ProfileScreen({
                 <Ionicons name="chevron-forward" size={18} color="#8A96A4" />
               </TouchableOpacity>
 
-              {/* About Me */}
+              {/* Not a card.
+                  Everything on this page was the same white rounded box
+                  with a hairline, which is what made it read as a form.
+                  Somebody's own words about themselves belong on the page,
+                  with a rule and some air for separation and nothing
+                  boxing them in. */}
               <View
                 style={{
-                  backgroundColor: WHITE,
-                  marginTop: 20,
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: LINE,
+                  marginTop: 24,
+                  paddingTop: 20,
+                  borderTopWidth: 1,
+                  borderTopColor: palette.rule,
                 }}
               >
-                <View
+                <Text
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
+                    fontFamily: fonts.display,
+                    fontSize: 19,
+                    color: DARK,
                     marginBottom: 8,
                   }}
                 >
-                  <Ionicons name="sparkles" size={20} color={PINK} />
-                  <Text
-                    style={{ fontSize: 16, fontWeight: "700", color: DARK }}
-                  >
-                    About Me
-                  </Text>
-                </View>
+                  About
+                </Text>
                 <Text
                   style={{
-                    fontSize: 14,
-                    color: bio ? MUTED : "#9AA4AF",
-                    lineHeight: 22,
+                    fontSize: 15,
+                    color: bio ? palette.inkSoft : MUTED,
+                    lineHeight: 24,
                   }}
                 >
                   {bio || "Add a short bio so people know the real you."}
@@ -420,7 +393,7 @@ export function ProfileScreen({
                   >
                     <Ionicons name="images" size={20} color={PINK} />
                     <Text
-                      style={{ fontSize: 16, fontWeight: "700", color: DARK }}
+                      style={{ fontFamily: fonts.display, fontSize: 19, color: DARK }}
                     >
                       My Posts
                     </Text>

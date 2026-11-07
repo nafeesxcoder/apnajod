@@ -27,8 +27,8 @@ import {
 import { useLayout } from "../../../layout/useLayout";
 import { palette } from "../../../theme";
 
-const PAPER = "#F5F6F8";
-const LINE = "#DDE3EA";
+const PAPER = "#FDF7F4";
+const LINE = "#EADDD2";
 
 /** The one column width the header and the body both use. */
 const COLUMN = 800;

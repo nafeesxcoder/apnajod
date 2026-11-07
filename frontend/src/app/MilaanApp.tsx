@@ -15,6 +15,7 @@ import {
   Mukta_600SemiBold,
   Mukta_700Bold,
 } from "@expo-google-fonts/mukta";
+import { Marcellus_400Regular } from "@expo-google-fonts/marcellus";
 import * as ImagePicker from "expo-image-picker";
 import {} from "expo-linear-gradient"; // <-- Import added for background
 
@@ -442,6 +443,10 @@ function MilaanApp() {
     Mukta_500Medium,
     Mukta_600SemiBold,
     Mukta_700Bold,
+    // The display face. Mukta carries the interface and Devanagari;
+    // Marcellus carries names and headings, where the app should sound
+    // like an occasion rather than a form.
+    Marcellus_400Regular,
   });
   const appLayout = useLayout();
   const [screen, setScreen] = useState<Screen>(

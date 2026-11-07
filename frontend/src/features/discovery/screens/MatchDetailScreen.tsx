@@ -116,7 +116,7 @@ export function MatchDetailScreen({
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAFAFA" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FDF7F4" }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 90 }}

@@ -4,7 +4,7 @@
   "description": "Serious, verified dating for India.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F6F8",
+  "background_color": "#FDF7F4",
   "theme_color": "#1F4D7A",
   "icons": [
     {
