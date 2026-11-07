@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The social surface: finding people, a person's page, and follow requests.
  *
  * Written against the semantic tokens only, so the palette stays in theme.ts.
@@ -7,7 +7,7 @@
  */
 import { StyleSheet } from 'react-native';
 
-import { colors, font, radius, typeScale } from '../theme';
+import { colors, font, fonts, radius, typeScale } from '../theme';
 
 export const social = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.canvas },
@@ -30,7 +30,7 @@ export const social = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: font.bold,
+    fontFamily: fonts.display,
     fontSize: typeScale.title,
     color: colors.text,
   },
@@ -114,16 +114,16 @@ export const social = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 12,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lineSoft,
   },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowText: { flex: 1, minWidth: 0, gap: 2 },
   rowTitleLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowTitle: { fontFamily: font.semibold, fontSize: typeScale.section, color: colors.text },
+  rowTitle: { fontFamily: fonts.display, fontSize: typeScale.section, color: colors.text },
   rowSub: { fontFamily: font.regular, fontSize: typeScale.body, color: colors.muted },
 
   avatar: { backgroundColor: colors.surface2 },
