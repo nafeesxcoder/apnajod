@@ -1,33 +1,22 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { fonts, palette } from "../../../theme";
+import { fonts, palette, radius, typeScale } from "../../../theme";
 
 import { AppCanvas } from "../../../components/AppCanvas";
-import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
+import {
+  BottomNav,
+  useNavInset,
+} from "../../../components/navigation/BottomNav";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 
-const PINK = palette.navy;
-const PINK_LIGHT = palette.paperSand;
-const DARK = palette.ink;
-const MUTED = palette.slate;
-const WHITE = "#FFFFFF";
-
 const MAX_WIDTH = 720;
-
-const brandLogo = require("../../../../assets/apnajoda-logo.png");
 const SIDE_PADDING = 16;
-
+const brandLogo = require("../../../../assets/apnajoda-logo.png");
 
 function hobbyIcon(label: string) {
   const wanted = String(label).trim().toLowerCase();
@@ -36,7 +25,7 @@ function hobbyIcon(label: string) {
 
 export function ProfileScreen({
   profile,
-  verified,
+  verified: _verified,
   profilePhoto,
   navigate,
   accessToken,
@@ -48,19 +37,24 @@ export function ProfileScreen({
   accessToken?: string;
 }) {
   const navInset = useNavInset();
-  // Bumped after posting from the cover, so the list below reloads.
   const [postsReloadKey, setPostsReloadKey] = useState(0);
+
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
     : [];
   const name = String(profile?.firstName ?? "").trim();
   const age = String(profile?.age ?? "").trim();
   const bio = String(profile?.bio ?? "").trim();
-  // const initial = name ? name.charAt(0).toUpperCase() : "";
 
   return (
     <AppCanvas>
-      <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase, paddingLeft: navInset.paddingLeft }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: palette.paperBase,
+          paddingLeft: navInset.paddingLeft,
+        }}
+      >
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 90 }}
@@ -68,28 +62,25 @@ export function ProfileScreen({
           <View
             style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center" }}
           >
-            {/* A plain header bar: the logo, and the two things you do
-                from here. The cover used to be the member's own first
-                photo, blurred, behind a gradient - 160px of their own face
-                out of focus, which told them nothing and pushed the whole
-                profile below the fold. */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
                 paddingHorizontal: SIDE_PADDING,
-                paddingTop: 10,
-                paddingBottom: 6,
+                paddingTop: 8,
+                paddingBottom: 4,
               }}
             >
               <Image
                 source={brandLogo}
-                style={{ width: 132, height: 38 }}
+                style={{ width: 116, height: 32 }}
                 resizeMode="contain"
                 accessibilityLabel="Apnajoda"
               />
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <AddPostButton
                   accessToken={accessToken}
                   onPosted={() => setPostsReloadKey((key) => key + 1)}
@@ -99,123 +90,106 @@ export function ProfileScreen({
                   accessibilityLabel="Settings"
                   onPress={() => navigate("settings")}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: "rgba(255,255,255,0.9)",
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: palette.paper,
+                    borderWidth: 1,
+                    borderColor: palette.rule,
                     justifyContent: "center",
                     alignItems: "center",
                   }}
                 >
-                  <Ionicons name="ellipsis-vertical" size={22} color={DARK} />
+                  <Ionicons
+                    name="ellipsis-vertical"
+                    size={18}
+                    color={palette.ink}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={{ paddingHorizontal: SIDE_PADDING }}>
-              {/* The one bold thing on this screen.
-                  Everything here used to be the same left-aligned list of
-                  rows as the settings page. A profile is a portrait, so it
-                  is centred and the photo is given a ring that echoes the
-                  arc in the mark - crimson into navy. Nothing else on the
-                  screen competes with it. */}
-              <View style={{ alignItems: "center", marginTop: 10 }}>
-                <View style={{ position: "relative" }}>
-                  <LinearGradient
-                    colors={[palette.crimson, palette.navy]}
-                    start={{ x: 0, y: 1 }}
-                    end={{ x: 1, y: 0 }}
+              <View style={{ alignItems: "center", marginTop: 4 }}>
+                <LinearGradient
+                  colors={[palette.crimson, palette.navy]}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    width: 116,
+                    height: 116,
+                    borderRadius: 58,
+                    padding: 3,
+                  }}
+                >
+                  <View
                     style={{
-                      width: 144,
-                      height: 144,
-                      borderRadius: 72,
-                      padding: 4,
+                      flex: 1,
+                      borderRadius: 55,
+                      borderWidth: 3,
+                      borderColor: palette.paperBase,
+                      overflow: "hidden",
+                      backgroundColor: palette.paper,
                     }}
                   >
-                    <View
-                      style={{
-                        flex: 1,
-                        borderRadius: 68,
-                        borderWidth: 4,
-                        borderColor: palette.paperBase,
-                        overflow: "hidden",
-                        backgroundColor: palette.paper,
-                      }}
-                    >
-                      {profilePhoto ? (
-                        <Image
-                          source={{ uri: profilePhoto }}
-                          style={{ width: "100%", height: "100%" }}
+                    {profilePhoto ? (
+                      <Image
+                        source={{ uri: profilePhoto }}
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          flex: 1,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          backgroundColor: palette.paperSand,
+                        }}
+                      >
+                        <Ionicons
+                          name="person"
+                          size={44}
+                          color={palette.navySoft}
                         />
-                      ) : (
-                        <View
-                          style={{
-                            flex: 1,
-                            justifyContent: "center",
-                            alignItems: "center",
-                            backgroundColor: palette.paperSand,
-                          }}
-                        >
-                          <Ionicons name="person" size={54} color={palette.navySoft} />
-                        </View>
-                      )}
-                    </View>
-                  </LinearGradient>
-
-                  {verified && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        bottom: 2,
-                        right: 2,
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
-                        backgroundColor: palette.marigold,
-                        borderWidth: 3,
-                        borderColor: palette.paperBase,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                    </View>
-                  )}
-                </View>
-
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: 32,
-                    lineHeight: 40,
-                    color: palette.ink,
-                    marginTop: 18,
-                    textAlign: "center",
-                  }}
-                >
-                  {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
-                </Text>
-
-                <Text
-                  style={{
-                    fontSize: 15,
-                    color: palette.slate,
-                    marginTop: 4,
-                    textAlign: "center",
-                  }}
-                >
-                  {[profile?.city, profile?.profession].filter(Boolean).join("  ·  ") ||
-                    "Add your city and work"}
-                </Text>
+                      </View>
+                    )}
+                  </View>
+                </LinearGradient>
               </View>
 
-              {/* Hobbies */}
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 28,
+                  lineHeight: 34,
+                  color: palette.ink,
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
+              >
+                {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: palette.slate,
+                  marginTop: 2,
+                  textAlign: "center",
+                  fontFamily: fonts.body,
+                }}
+              >
+                {[profile?.city, profile?.profession]
+                  .filter(Boolean)
+                  .join("  ·  ") || "Add your city and work"}
+              </Text>
+
               <View
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
                   justifyContent: "center",
-                  gap: 8,
+                  gap: 6,
                   marginTop: 16,
                 }}
               >
@@ -226,23 +200,29 @@ export function ProfileScreen({
                       <View
                         key={hobby}
                         style={{
-                          backgroundColor: PINK_LIGHT,
-                          paddingHorizontal: 14,
-                          paddingVertical: 8,
-                          borderRadius: 20,
+                          backgroundColor: "transparent",
+                          borderWidth: 1,
+                          borderColor: palette.rule,
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: radius.pill,
                           flexDirection: "row",
                           alignItems: "center",
-                          gap: 6,
+                          gap: 4,
                         }}
                       >
                         {!!icon && (
-                          <Ionicons name={icon as any} size={14} color={DARK} />
+                          <Ionicons
+                            name={icon as any}
+                            size={12}
+                            color={palette.ink}
+                          />
                         )}
                         <Text
                           style={{
-                            fontSize: 12,
-                            color: DARK,
-                            fontWeight: "600",
+                            fontSize: 11,
+                            color: palette.ink,
+                            fontFamily: fonts.bodySemi,
                           }}
                         >
                           {hobby}
@@ -253,7 +233,11 @@ export function ProfileScreen({
                 ) : (
                   <TouchableOpacity onPress={() => navigate("profileSetup")}>
                     <Text
-                      style={{ fontSize: 14, color: PINK, fontWeight: "600" }}
+                      style={{
+                        fontSize: 14,
+                        color: palette.navy,
+                        fontFamily: fonts.bodySemi,
+                      }}
                     >
                       Add hobbies
                     </Text>
@@ -261,8 +245,7 @@ export function ProfileScreen({
                 )}
               </View>
 
-              {/* Edit Profile & Share Buttons */}
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
                 <TouchableOpacity
                   onPress={() => navigate("profileSetup")}
                   style={{
@@ -270,17 +253,22 @@ export function ProfileScreen({
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: PINK,
-                    paddingVertical: 14,
-                    borderRadius: 30,
-                    gap: 8,
+                    backgroundColor: palette.navy,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    gap: 6,
+                    minHeight: 44,
                   }}
                 >
-                  <Ionicons name="create-outline" size={20} color={WHITE} />
+                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
                   <Text
-                    style={{ color: WHITE, fontWeight: "700", fontSize: 16 }}
+                    style={{
+                      color: "#FFFFFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 13,
+                    }}
                   >
-                    Edit Profile
+                    Edit profile
                   </Text>
                 </TouchableOpacity>
 
@@ -290,61 +278,32 @@ export function ProfileScreen({
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: WHITE,
-                    borderWidth: 2,
-                    borderColor: PINK,
-                    paddingVertical: 14,
-                    borderRadius: 30,
-                    gap: 8,
+                    backgroundColor: palette.paper,
+                    borderWidth: 1.5,
+                    borderColor: palette.navy,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    gap: 6,
+                    minHeight: 44,
                   }}
                 >
-                  <Ionicons name="share-social" size={20} color={PINK} />
+                  <Ionicons
+                    name="share-social"
+                    size={16}
+                    color={palette.navy}
+                  />
                   <Text
-                    style={{ color: PINK, fontWeight: "700", fontSize: 16 }}
+                    style={{
+                      color: palette.navy,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 13,
+                    }}
                   >
-                    Share Profile
+                    Share profile
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Premium. A row rather than a banner: it is there when
-                  somebody goes looking, and it does not shout at a member
-                  who has not asked. */}
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="See Premium"
-                onPress={() => navigate("premium")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
-                  borderColor: palette.rule,
-                  borderRadius: 16,
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  marginBottom: 16,
-                }}
-              >
-                <Ionicons name="sparkles" size={20} color="#1F4D7A" />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.display, fontSize: 18, color: palette.ink }}>
-                    Premium
-                  </Text>
-                  <Text style={{ fontSize: 13, color: "#5A6878" }}>
-                    Unlimited likes, see who liked you, and more
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#8A96A4" />
-              </TouchableOpacity>
-
-              {/* Not a card.
-                  Everything on this page was the same white rounded box
-                  with a hairline, which is what made it read as a form.
-                  Somebody's own words about themselves belong on the page,
-                  with a rule and some air for separation and nothing
-                  boxing them in. */}
               <View
                 style={{
                   marginTop: 24,
@@ -356,9 +315,9 @@ export function ProfileScreen({
                 <Text
                   style={{
                     fontFamily: fonts.display,
-                    fontSize: 19,
-                    color: DARK,
-                    marginBottom: 8,
+                    fontSize: typeScale.section,
+                    color: palette.ink,
+                    marginBottom: 6,
                   }}
                 >
                   About
@@ -366,16 +325,60 @@ export function ProfileScreen({
                 <Text
                   style={{
                     fontSize: 15,
-                    color: bio ? palette.inkSoft : MUTED,
-                    lineHeight: 24,
+                    fontFamily: fonts.body,
+                    color: bio ? palette.inkSoft : palette.slate,
+                    lineHeight: 22,
                   }}
                 >
                   {bio || "Add a short bio so people know the real you."}
                 </Text>
               </View>
 
-              {/* Posts */}
-              <View style={{ marginTop: 20 }}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="See Premium"
+                onPress={() => navigate("premium")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  backgroundColor: palette.paperSand,
+                  borderRadius: radius.md,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  marginTop: 24,
+                }}
+              >
+                <Ionicons name="sparkles" size={18} color={palette.navy} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.display,
+                      fontSize: 15,
+                      color: palette.ink,
+                    }}
+                  >
+                    Premium
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: palette.slate,
+                      marginTop: 1,
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    Unlimited likes, see who liked you
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={palette.slate}
+                />
+              </TouchableOpacity>
+
+              <View style={{ marginTop: 24 }}>
                 <View
                   style={{
                     flexDirection: "row",
@@ -384,20 +387,15 @@ export function ProfileScreen({
                     marginBottom: 12,
                   }}
                 >
-                  <View
+                  <Text
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
+                      fontFamily: fonts.display,
+                      fontSize: typeScale.section,
+                      color: palette.ink,
                     }}
                   >
-                    <Ionicons name="images" size={20} color={PINK} />
-                    <Text
-                      style={{ fontFamily: fonts.display, fontSize: 19, color: DARK }}
-                    >
-                      My Posts
-                    </Text>
-                  </View>
+                    My posts
+                  </Text>
                 </View>
 
                 <PostsSection
