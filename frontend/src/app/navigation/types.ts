@@ -42,6 +42,7 @@ export type Screen =
   | "chat"
   // Your own account, and the two things that keep it safe.
   | "profile"
+  | "premium"
   | "settings"
   | "safety"
   | "verifyHub";

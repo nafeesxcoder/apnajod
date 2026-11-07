@@ -366,6 +366,38 @@ export function ProfileScreen({
                 </TouchableOpacity>
               </View>
 
+              {/* Premium. A row rather than a banner: it is there when
+                  somebody goes looking, and it does not shout at a member
+                  who has not asked. */}
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="See Premium"
+                onPress={() => navigate("premium")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: "#DDE3EA",
+                  borderRadius: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  marginBottom: 16,
+                }}
+              >
+                <Ionicons name="sparkles" size={20} color="#1F4D7A" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: "#14202E" }}>
+                    Premium
+                  </Text>
+                  <Text style={{ fontSize: 13, color: "#5A6878" }}>
+                    Unlimited likes, see who liked you, and more
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#8A96A4" />
+              </TouchableOpacity>
+
               {/* About Me */}
               <View
                 style={{

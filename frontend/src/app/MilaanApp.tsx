@@ -51,6 +51,7 @@ import {
   type MatchingPoolStatus,
 } from "./adapters/previewMemberRuntime";
 import { deckCandidates, rankMatches } from "../domain/matching";
+import { PremiumScreen } from "../features/premium/screens/PremiumScreen";
 import { APP_MAX_WIDTH, PHONE_WIDTH } from "../layout/breakpoints";
 import { useLayout } from "../layout/useLayout";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -3305,6 +3306,13 @@ function MilaanApp() {
               navigate={navigateTo}
             />
           )}
+
+        {screen === "premium" && accessToken && (
+          <PremiumScreen
+            accessToken={accessToken}
+            onBack={() => setScreen("profile")}
+          />
+        )}
 
         {screen === "find" && accessToken && (
           <FindPeopleScreen
