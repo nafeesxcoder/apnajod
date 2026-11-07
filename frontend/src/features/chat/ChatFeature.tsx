@@ -69,6 +69,7 @@ import type {
 } from "../../storage";
 import { defaultCoupleChatSettings } from "../../storage";
 import { colors } from "../../theme";
+import { receiptColor, receiptIcon, receiptLabel } from "./receipt";
 import {
   aiStyles,
   chatPremiumStyles,
@@ -3383,19 +3384,12 @@ export function ChatScreen({
 }
 
 function MessageReceipt({ status }: { status: ChatMessage["status"] }) {
-  const read = status === "read";
-  const label =
-    status === "sent"
-      ? "Sent · one tick"
-      : status === "delivered"
-        ? "Delivered · two ticks"
-        : "Read · blue ticks";
   return (
-    <View accessibilityLabel={label} style={chatStyles.receipt}>
+    <View accessibilityLabel={receiptLabel(status)} style={chatStyles.receipt}>
       <Ionicons
-        name={status === "sent" ? "checkmark" : "checkmark-done"}
+        name={receiptIcon(status)}
         size={14}
-        color={read ? "#898F96" : "rgba(255,255,255,.78)"}
+        color={receiptColor(status)}
       />
     </View>
   );

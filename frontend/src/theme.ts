@@ -53,6 +53,13 @@ export const palette = {
   // Status
   emerald: '#1F7A5A', // verified, success
   clay: '#B3261E', // errors only — orange-leaning, not the brand red
+  // The read tick, and the only light blue in the app. It has to read as
+  // blue against the navy bubble it sits on (#174069), so the navy tokens
+  // above are all too dark for it: a tick in those is invisible, which is
+  // exactly how the ticks shipped - the read state was a mid grey, dimmer
+  // than the unread white tick beside it, on a screen whose own label says
+  // "blue ticks".
+  tickRead: '#53BDEB',
 
   // Lines
   rule: '#DDE3EA', // hairline on paper
