@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  Linking,
-  Platform,
-} from "react-native";
+import { Pressable, ScrollView, Text, View, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -89,19 +82,16 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
       "Hi Apnajoda team,\n\nI need help with:\n\n[Describe your issue here]\n\nApp version: 1.0.0\nMy username: [your username]\nMy mobile number: [your mobile number]",
     );
 
-    if (Platform.OS === "web") {
-      // On the web, mailto: opens a blank page when no desktop mail client
-      // is registered. Go straight to Gmail compose, which always works.
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`;
-      if (typeof window !== "undefined") {
-        window.open(gmailUrl, "_blank", "noopener,noreferrer");
-      }
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`;
+
+    // Open Gmail web compose in a new tab (works on desktop and mobile browsers).
+    if (typeof window !== "undefined") {
+      window.open(gmailUrl, "_blank", "noopener,noreferrer");
       return;
     }
 
-    // On mobile, hand off to the native mail app.
-    const mailtoUrl = `mailto:${to}?subject=${subject}&body=${body}`;
-    void Linking.openURL(mailtoUrl).catch(() => undefined);
+    // Native fallback (native builds): hand off to the system.
+    void Linking.openURL(gmailUrl).catch(() => undefined);
   };
 
   return (
