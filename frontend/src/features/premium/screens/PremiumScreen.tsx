@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -123,6 +123,7 @@ export function PremiumScreen({
         theme: { color: "#1F4D7A" },
         handler: async () => {
           setNotice("Payment successful. Verifying...");
+          setBuying(false);
           setTimeout(() => {
             reload();
             setNotice("Premium is now active. Enjoy!");
