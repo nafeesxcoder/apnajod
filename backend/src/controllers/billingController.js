@@ -96,7 +96,7 @@ const webhook = asyncHandler(async (req, res) => {
     );
     if (!plan) throw new ApiError(400, "Unknown plan on payment");
 
-    const [updateResult] = await query(
+    const updateResult = await query(
       `UPDATE payments
           SET status = 'paid',
               granted_at = NOW(6),
