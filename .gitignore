@@ -22,3 +22,6 @@ backend/node_modules
 *.bak3
 *.bak4
 *.backup
+
+frontend/dist-check/
+frontend/dist/

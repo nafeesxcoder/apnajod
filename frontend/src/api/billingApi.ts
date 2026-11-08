@@ -1,11 +1,4 @@
-/**
- * What a member has paid for, and what is for sale.
- *
- * Everything here is for drawing the screen. No gate trusts it: the server
- * checks again when a like is sent or a boost is started, because anything
- * the client decides is decided by whoever opens the console.
- */
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+﻿const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 async function authFetch(
   path: string,
@@ -43,14 +36,21 @@ export type BillingSummary = {
   boost: { balance: number; active: { endsAt: string } | null };
 };
 
-/** Paise to rupees, because two places rounding separately will disagree. */
+export type RazorpayOrder = {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  planCode: string;
+  planTitle: string;
+};
+
 export function rupees(paise: number) {
   const whole = Math.round(paise) / 100;
   return `₹${whole % 1 === 0 ? whole.toFixed(0) : whole.toFixed(2)}`;
 }
 
 export const billingApi = {
-  /** Public: prices can be shown before anyone signs up. */
   async plans(): Promise<BillingPlan[]> {
     const response = await fetch(`${API_URL}/billing/plans`);
     const data = await response.json();
@@ -67,13 +67,23 @@ export const billingApi = {
     return authFetch("/billing/boost", accessToken, { method: "POST" });
   },
 
-  /**
-   * Checkout.
-   *
-   * Nothing to call yet: Razorpay is not connected, and Google Play
-   * Billing needs the app listed before it can be. This is the single
-   * place that changes when either arrives, so no screen has to learn
-   * which rail took the money.
-   */
-  checkoutAvailable: false,
+  async createOrder(
+    accessToken: string,
+    planCode: string,
+  ): Promise<RazorpayOrder> {
+    const data = await authFetch("/billing/order", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ planCode }),
+    });
+    return {
+      orderId: data.orderId,
+      amount: data.amount,
+      currency: data.currency,
+      keyId: data.keyId,
+      planCode: data.planCode,
+      planTitle: data.planTitle,
+    };
+  },
+
+  checkoutAvailable: true,
 };

@@ -27,6 +27,18 @@ const INCLUDED = [
   { icon: "rocket", text: "Boosts to reach the top of the deck" },
 ] as const;
 
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export function PremiumScreen({
   accessToken,
   onBack,
@@ -40,6 +52,28 @@ export function PremiumScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  const reload = () => {
+    Promise.all([billingApi.plans(), billingApi.me(accessToken)])
+      .then(([loadedPlans, loadedSummary]) => {
+        setPlans(loadedPlans);
+        setSummary(loadedSummary);
+        const firstSubscription = loadedPlans.find(
+          (p) => p.kind === "subscription",
+        );
+        if (firstSubscription && !selectedCode) {
+          setSelectedCode(firstSubscription.code);
+        }
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "Could not load Premium.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
     let live = true;
@@ -64,6 +98,57 @@ export function PremiumScreen({
       live = false;
     };
   }, [accessToken]);
+
+  const handleBuy = async () => {
+    if (!selectedCode || buying) return;
+    setBuying(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const ok = await loadRazorpayScript();
+      if (!ok) {
+        throw new Error("Could not load Razorpay. Check your connection.");
+      }
+
+      const order = await billingApi.createOrder(accessToken, selectedCode);
+
+      const rzp = new (window as any).Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.orderId,
+        name: "Apnajoda",
+        description: order.planTitle,
+        theme: { color: "#1F4D7A" },
+        handler: async () => {
+          setNotice("Payment successful. Verifying...");
+          setTimeout(() => {
+            reload();
+            setNotice("Premium is now active. Enjoy!");
+          }, 2000);
+        },
+        modal: {
+          ondismiss: () => {
+            setBuying(false);
+            setNotice("");
+          },
+        },
+      });
+
+      rzp.on("payment.failed", (response: any) => {
+        setError(
+          response?.error?.description || "Payment failed. Please try again.",
+        );
+        setBuying(false);
+      });
+
+      rzp.open();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start checkout.");
+      setBuying(false);
+    }
+  };
 
   const subscriptions = plans.filter((plan) => plan.kind === "subscription");
   const packs = plans.filter((plan) => plan.kind === "consumable");
@@ -231,6 +316,68 @@ export function PremiumScreen({
                   />
                 )}
 
+                {!!notice && (
+                  <Text
+                    accessibilityRole="alert"
+                    style={{
+                      color: palette.emerald,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 14,
+                      textAlign: "center",
+                      marginTop: 18,
+                    }}
+                  >
+                    {notice}
+                  </Text>
+                )}
+
+                {!!error && (
+                  <Text
+                    accessibilityRole="alert"
+                    style={{
+                      color: palette.clay,
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      textAlign: "center",
+                      marginTop: 18,
+                    }}
+                  >
+                    {error}
+                  </Text>
+                )}
+
+                <Pressable
+                  onPress={() => void handleBuy()}
+                  disabled={!selectedCode || buying}
+                  style={{
+                    backgroundColor: palette.navy,
+                    paddingVertical: 16,
+                    borderRadius: radius.pill,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexDirection: "row",
+                    gap: 8,
+                    marginTop: 20,
+                    minHeight: 52,
+                    opacity: !selectedCode || buying ? 0.5 : 1,
+                  }}
+                >
+                  {buying ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+                  )}
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 16,
+                    }}
+                  >
+                    {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
+                  </Text>
+                </Pressable>
+
                 {!billingApi.checkoutAvailable && (
                   <Text
                     style={{
@@ -362,26 +509,6 @@ function PlanGroup({
               >
                 {rupees(plan.amount_paise)}
               </Text>
-              <View
-                accessibilityRole="text"
-                style={{
-                  marginTop: 12,
-                  paddingVertical: 12,
-                  borderRadius: radius.pill,
-                  backgroundColor: selected ? palette.navy : palette.paperSand,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: selected ? "#FFFFFF" : palette.slate,
-                    fontFamily: fonts.bodySemi,
-                    fontSize: 13,
-                  }}
-                >
-                  {billingApi.checkoutAvailable ? "Choose" : "Opening soon"}
-                </Text>
-              </View>
             </Pressable>
           );
         })}

@@ -21,6 +21,11 @@ app.set("trust proxy", 1);
 app.disable("x-powered-by");
 app.use(securityHeaders);
 app.use(cors(corsOptions));
+
+// Razorpay webhook needs the raw body — signature is HMAC over exact bytes.
+// Must be mounted BEFORE express.json(), which would parse and consume it.
+app.use("/billing/webhook", express.raw({ type: "application/json" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
