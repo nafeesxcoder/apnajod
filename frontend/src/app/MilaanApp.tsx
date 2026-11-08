@@ -163,6 +163,7 @@ import { LikesScreen } from "../features/discovery/screens/LikesScreen";
 import { HomeScreen } from "../features/discovery/screens/HomeScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { SettingsScreen } from "../features/profile/screens/SettingsScreen";
+import { SupportScreen } from "../features/help/screens/SupportScreen";
 import { MatchDetailScreen } from "../features/discovery/screens/MatchDetailScreen";
 import {
   IcebreakerScreen,
@@ -3649,6 +3650,9 @@ function MilaanApp() {
             onDeactivate={() => void deactivateAccount()}
             onDeletePermanently={() => setScreen("safety")}
           />
+        )}
+        {screen === "support" && (
+          <SupportScreen onBack={() => setScreen("settings")} />
         )}
         {selected.id ? (
           <SafetyActions

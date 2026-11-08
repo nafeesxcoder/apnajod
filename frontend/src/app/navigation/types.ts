@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Every top-level UI destination in the app.
  *
  * Apnajoda is a dating app: you make an account, you are shown people, you say
@@ -45,7 +45,8 @@ export type Screen =
   | "premium"
   | "settings"
   | "safety"
-  | "verifyHub";
+  | "verifyHub"
+  | "support";
 
 /** Deep-linkable modal or state used by visual QA and product previews. */
 export type PreviewState =
@@ -101,6 +102,7 @@ export const previewScreens: readonly Screen[] = [
   "settings",
   "safety",
   "verifyHub",
+  "support",
 ];
 
 export const previewStates: readonly PreviewState[] = [
