@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,17 +15,40 @@ import {
   billingApi,
   rupees,
 } from "../../../api/billingApi";
-import { useLayout } from "../../../layout/useLayout";
+
 import { fonts, palette, radius, typeScale } from "../../../theme";
 
 const COLUMN = 800;
 
-const INCLUDED = [
-  { icon: "infinite", text: "Unlimited likes, every day" },
-  { icon: "eye", text: "See everyone who liked you, in full" },
-  { icon: "options", text: "Filter by the age range you want" },
-  { icon: "rocket", text: "Boosts to reach the top of the deck" },
+// Marketing copy per plan. Not from DB — this is UI, DB has amount/title.
+const FREE_FEATURES = [
+  { text: "10 likes per day", ok: true },
+  { text: "Chat free", ok: true },
+  { text: "1 liker visible", ok: true },
+  { text: "No age filter", ok: false },
+  { text: "0 boosts", ok: false },
+  { text: "0 super likes", ok: false },
 ] as const;
+
+const PLUS_FEATURES = [
+  { text: "Unlimited likes", ok: true },
+  { text: "All likers visible", ok: true },
+  { text: "Age filter", ok: true },
+  { text: "1 boost per week", ok: true },
+  { text: "2 super likes per week", ok: true },
+] as const;
+
+const PRO_FEATURES = [
+  { text: "Everything in Plus", ok: true },
+  { text: "3 boosts per week", ok: true },
+  { text: "5 super likes per week", ok: true },
+] as const;
+
+const PLAN_FEATURES: Record<string, readonly { text: string; ok: boolean }[]> =
+  {
+    plus_monthly: PLUS_FEATURES,
+    pro_monthly: PRO_FEATURES,
+  };
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -46,7 +69,7 @@ export function PremiumScreen({
   accessToken: string;
   onBack: () => void;
 }) {
-  const { isWide } = useLayout();
+  
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,7 +175,12 @@ export function PremiumScreen({
   };
 
   const subscriptions = plans.filter((plan) => plan.kind === "subscription");
-  const packs = plans.filter((plan) => plan.kind === "consumable");
+  const boostPacks = plans.filter(
+    (plan) => plan.kind === "consumable" && plan.grants === "boost",
+  );
+  const superlikePacks = plans.filter(
+    (plan) => plan.kind === "consumable" && plan.grants === "superlike",
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
@@ -252,66 +280,44 @@ export function PremiumScreen({
                   </View>
                 )}
 
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.section,
-                    color: palette.ink,
-                    marginBottom: 10,
-                  }}
-                >
-                  What you get
-                </Text>
-                <View
-                  style={{
-                    backgroundColor: palette.paper,
-                    borderRadius: radius.lg,
-                    borderWidth: 1,
-                    borderColor: palette.rule,
-                    padding: 6,
-                    marginBottom: 22,
-                  }}
-                >
-                  {INCLUDED.map((item) => (
-                    <View
-                      key={item.text}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: 12,
-                      }}
-                    >
-                      <Ionicons
-                        name={item.icon}
-                        size={18}
-                        color={palette.navy}
-                      />
-                      <Text
-                        style={{
-                          color: palette.ink,
-                          fontSize: 15,
-                          fontFamily: fonts.body,
-                        }}
-                      >
-                        {item.text}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                <PlanGroup
-                  title="Choose a plan"
-                  plans={subscriptions}
-                  wide={isWide}
-                  selectedCode={selectedCode}
-                  onSelect={setSelectedCode}
+                <PlanCard
+                  title="Free"
+                  price="?0"
+                  features={FREE_FEATURES}
+                  selected={false}
+                  disabled
+                  badge="Current plan"
+                  onSelect={() => {}}
                 />
-                {packs.length > 0 && (
-                  <PlanGroup
-                    title="Boosts"
-                    plans={packs}
-                    wide={isWide}
+
+                {subscriptions.map((plan) => {
+                  const features = PLAN_FEATURES[plan.code] ?? [];
+                  return (
+                    <PlanCard
+                      key={plan.code}
+                      title={plan.title}
+                      price={`${rupees(plan.amount_paise)}/month`}
+                      features={features}
+                      selected={selectedCode === plan.code}
+                      onSelect={() => setSelectedCode(plan.code)}
+                      highlight={plan.code === "pro_monthly"}
+                    />
+                  );
+                })}
+
+                {boostPacks.length > 0 && (
+                  <PackGroup
+                    title="Boost packs"
+                    packs={boostPacks}
+                    selectedCode={selectedCode}
+                    onSelect={setSelectedCode}
+                  />
+                )}
+
+                {superlikePacks.length > 0 && (
+                  <PackGroup
+                    title="Super Like packs"
+                    packs={superlikePacks}
                     selectedCode={selectedCode}
                     onSelect={setSelectedCode}
                   />
@@ -403,22 +409,152 @@ export function PremiumScreen({
   );
 }
 
-function PlanGroup({
+// -- Plan card ---------------------------------------------------------
+function PlanCard({
   title,
-  plans,
-  wide,
+  price,
+  features,
+  selected,
+  disabled,
+  badge,
+  highlight,
+  onSelect,
+}: {
+  title: string;
+  price: string;
+  features: readonly { text: string; ok: boolean }[];
+  selected: boolean;
+  disabled?: boolean;
+  badge?: string;
+  highlight?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled }}
+      accessibilityLabel={`${title}, ${price}`}
+      onPress={disabled ? undefined : onSelect}
+      disabled={disabled}
+      style={{
+        backgroundColor: selected ? palette.paperSand : palette.paper,
+        borderRadius: radius.lg,
+        borderWidth: selected || highlight ? 2 : 1,
+        borderColor: selected
+          ? palette.navy
+          : highlight
+            ? palette.crimson
+            : palette.rule,
+        padding: 16,
+        marginBottom: 12,
+      }}
+    >
+      {badge && (
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            backgroundColor: palette.slate,
+            borderRadius: radius.pill,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: fonts.bodySemi,
+              fontSize: 10,
+              color: "#FFFFFF",
+            }}
+          >
+            {badge}
+          </Text>
+        </View>
+      )}
+      {selected && !badge && (
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            backgroundColor: palette.navy,
+            borderRadius: radius.pill,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: fonts.bodySemi,
+              fontSize: 10,
+              color: "#FFFFFF",
+            }}
+          >
+            Selected
+          </Text>
+        </View>
+      )}
+      <Text
+        style={{
+          fontFamily: fonts.bodySemi,
+          fontSize: 16,
+          color: palette.ink,
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: 22,
+          color: palette.navy,
+          marginTop: 2,
+        }}
+      >
+        {price}
+      </Text>
+      <View style={{ marginTop: 10, gap: 4 }}>
+        {features.map((f) => (
+          <View
+            key={f.text}
+            style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+          >
+            <Ionicons
+              name={f.ok ? "checkmark-circle" : "close-circle"}
+              size={14}
+              color={f.ok ? palette.emerald : palette.slate}
+            />
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 13,
+                color: f.ok ? palette.ink : palette.slate,
+              }}
+            >
+              {f.text}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Pressable>
+  );
+}
+
+// -- Pack group ---------------------------------------------------------
+function PackGroup({
+  title,
+  packs,
   selectedCode,
   onSelect,
 }: {
   title: string;
-  plans: BillingPlan[];
-  wide: boolean;
+  packs: BillingPlan[];
   selectedCode: string | null;
   onSelect: (code: string) => void;
 }) {
-  if (!plans.length) return null;
   return (
-    <View style={{ marginBottom: 20 }}>
+    <View style={{ marginTop: 8, marginBottom: 12 }}>
       <Text
         style={{
           fontFamily: fonts.display,
@@ -429,83 +565,39 @@ function PlanGroup({
       >
         {title}
       </Text>
-      <View
-        style={[
-          { gap: 10 },
-          wide && { flexDirection: "row", flexWrap: "wrap" },
-        ]}
-      >
-        {plans.map((plan) => {
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        {packs.map((plan) => {
           const selected = selectedCode === plan.code;
           return (
             <Pressable
               key={plan.code}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`${plan.title}, ${rupees(plan.amount_paise)}`}
               onPress={() => onSelect(plan.code)}
-              style={[
-                {
-                  backgroundColor: selected ? palette.paperSand : palette.paper,
-                  borderRadius: radius.lg,
-                  borderWidth: selected ? 2 : 1,
-                  borderColor: selected ? palette.navy : palette.rule,
-                  padding: 16,
-                },
-                wide && { width: 240 },
-              ]}
+              style={{
+                flex: 1,
+                backgroundColor: selected ? palette.paperSand : palette.paper,
+                borderRadius: radius.lg,
+                borderWidth: selected ? 2 : 1,
+                borderColor: selected ? palette.navy : palette.rule,
+                padding: 14,
+              }}
             >
-              {selected && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 10,
-                    backgroundColor: palette.navy,
-                    borderRadius: radius.pill,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 10,
-                      color: "#FFFFFF",
-                    }}
-                  >
-                    Selected
-                  </Text>
-                </View>
-              )}
               <Text
                 style={{
                   fontFamily: fonts.bodySemi,
-                  fontSize: 15,
+                  fontSize: 14,
                   color: palette.ink,
                 }}
               >
                 {plan.title}
               </Text>
-              {!!plan.blurb && (
-                <Text
-                  style={{
-                    color: palette.slate,
-                    fontSize: 13,
-                    marginTop: 4,
-                    lineHeight: 18,
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  {plan.blurb}
-                </Text>
-              )}
               <Text
                 style={{
                   fontFamily: fonts.display,
-                  fontSize: 24,
+                  fontSize: 20,
                   color: palette.navy,
-                  marginTop: 10,
+                  marginTop: 4,
                 }}
               >
                 {rupees(plan.amount_paise)}
