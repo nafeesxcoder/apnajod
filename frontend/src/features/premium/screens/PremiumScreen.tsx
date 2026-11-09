@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,12 +15,10 @@ import {
   billingApi,
   rupees,
 } from "../../../api/billingApi";
-
 import { fonts, palette, radius, typeScale } from "../../../theme";
 
 const COLUMN = 800;
 
-// Marketing copy per plan. Not from DB � this is UI, DB has amount/title.
 const FREE_FEATURES = [
   { text: "10 likes per day", ok: true },
   { text: "Chat free", ok: true },
@@ -44,11 +42,10 @@ const PRO_FEATURES = [
   { text: "5 super likes per week", ok: true },
 ] as const;
 
-const PLAN_FEATURES: Record<string, readonly { text: string; ok: boolean }[]> =
-  {
-    plus_monthly: PLUS_FEATURES,
-    pro_monthly: PRO_FEATURES,
-  };
+const PLAN_FEATURES: Record<string, readonly { text: string; ok: boolean }[]> = {
+  plus_monthly: PLUS_FEATURES,
+  pro_monthly: PRO_FEATURES,
+};
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -69,7 +66,6 @@ export function PremiumScreen({
   accessToken: string;
   onBack: () => void;
 }) {
-  
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,6 +178,13 @@ export function PremiumScreen({
     (plan) => plan.kind === "consumable" && plan.grants === "superlike",
   );
 
+  const currentPlanName =
+    selectedCode === "pro_monthly"
+      ? "Pro"
+      : selectedCode === "plus_monthly"
+        ? "Plus"
+        : "Premium";
+
   return (
     <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -230,9 +233,7 @@ export function PremiumScreen({
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={{ width: "100%", maxWidth: COLUMN, alignSelf: "center" }}
-          >
+          <View style={{ width: "100%", maxWidth: COLUMN, alignSelf: "center" }}>
             {loading ? (
               <View style={{ paddingVertical: 60, alignItems: "center" }}>
                 <ActivityIndicator color={palette.navy} />
@@ -262,7 +263,7 @@ export function PremiumScreen({
                         fontSize: 14,
                       }}
                     >
-                      You have Premium
+                      You have {currentPlanName}
                     </Text>
                     {summary.premiumUntil && (
                       <Text
@@ -282,16 +283,18 @@ export function PremiumScreen({
 
                 <PlanCard
                   title="Free"
-                  price="?0"
+                  price="₹0"
                   features={FREE_FEATURES}
                   selected={false}
                   disabled
-                  badge="Current plan"
+                  badge={!summary?.premium ? "Current plan" : undefined}
                   onSelect={() => {}}
                 />
 
                 {subscriptions.map((plan) => {
                   const features = PLAN_FEATURES[plan.code] ?? [];
+                  const isCurrentPlan =
+                    summary?.premium && selectedCode === plan.code;
                   return (
                     <PlanCard
                       key={plan.code}
@@ -301,6 +304,7 @@ export function PremiumScreen({
                       selected={selectedCode === plan.code}
                       onSelect={() => setSelectedCode(plan.code)}
                       highlight={plan.code === "pro_monthly"}
+                      badge={isCurrentPlan ? "Current plan" : undefined}
                     />
                   );
                 })}
@@ -409,7 +413,6 @@ export function PremiumScreen({
   );
 }
 
-// -- Plan card ---------------------------------------------------------
 function PlanCard({
   title,
   price,
@@ -541,7 +544,6 @@ function PlanCard({
   );
 }
 
-// -- Pack group ---------------------------------------------------------
 function PackGroup({
   title,
   packs,
