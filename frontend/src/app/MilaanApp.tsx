@@ -454,6 +454,9 @@ function MilaanApp() {
   });
   const appLayout = useLayout();
   const [adminToken, setAdminToken] = useState<string | null>(null);
+  // Set from the signed-in account; only admins see the Admin Panel entry in
+  // Settings. The server still checks the role on every /admin call.
+  const [isAdmin, setIsAdmin] = useState(false);
   const [screen, setScreen] = useState<Screen>(() => {
     if (isAdminMode) return "adminLogin" as Screen;
     return showcasePreviewScreen ?? "splash";
@@ -977,6 +980,7 @@ function MilaanApp() {
               me = await authApi.me(currentToken);
             }
             setAccessToken(currentToken);
+            setIsAdmin(me?.user?.role === "admin");
             const profileData = await profileApi.getMyProfile(currentToken);
             try {
               const discoverResult = await profileApi.discoverMatches(
@@ -2876,6 +2880,7 @@ function MilaanApp() {
     await AsyncStorage.removeItem("milaan_access_token");
     await AsyncStorage.removeItem("milaan_refresh_token");
     setAccessToken("");
+    setIsAdmin(false);
     await resetDemo();
   };
 
@@ -2975,6 +2980,7 @@ function MilaanApp() {
       phone?: string | null;
       username?: string | null;
       isPrivate?: boolean;
+      role?: string | null;
     };
   }): Promise<Screen> => {
     await AsyncStorage.setItem("milaan_access_token", session.accessToken);
@@ -2982,6 +2988,7 @@ function MilaanApp() {
     setAccessToken(session.accessToken);
     setAuthDestination(session.user?.phone || session.user?.username || "");
     applyAccountPrivacyFrom(session.user);
+    setIsAdmin(session.user?.role === "admin");
 
     // A member who already has a profile goes straight in; a brand-new one
     // sees the short profile screen. If the profile call fails we send them
@@ -3421,9 +3428,11 @@ function MilaanApp() {
         {screen === "adminDashboard" && adminToken && (
           <AdminDashboardScreen
             accessToken={adminToken}
+            // Opened from Settings: go back to the app, still signed in.
+            exitLabel={isAdminMode ? "Logout" : "Back to app"}
             onLogout={() => {
               setAdminToken(null);
-              setScreen("welcome");
+              setScreen(isAdminMode ? "adminLogin" : "settings");
             }}
           />
         )}
@@ -3710,6 +3719,14 @@ function MilaanApp() {
                 });
               }
             }}
+            onOpenAdmin={
+              isAdmin && accessToken
+                ? () => {
+                    setAdminToken(accessToken);
+                    setScreen("adminDashboard");
+                  }
+                : undefined
+            }
             onLogout={() => void logout()}
             onDeactivate={() => void deactivateAccount()}
             onDeletePermanently={() => setScreen("safety")}

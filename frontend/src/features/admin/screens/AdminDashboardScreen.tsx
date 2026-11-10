@@ -52,9 +52,11 @@ const webHoverStyle: any =
 export function AdminDashboardScreen({
   accessToken,
   onLogout,
+  exitLabel = "Logout",
 }: {
   accessToken: string;
   onLogout: () => void;
+  exitLabel?: string;
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   // A 260px sidebar leaves almost nothing on a phone, so narrow screens get
@@ -96,7 +98,7 @@ export function AdminDashboardScreen({
             <Pressable
               onPress={onLogout}
               accessibilityRole="button"
-              accessibilityLabel="Logout"
+              accessibilityLabel={exitLabel}
               hitSlop={8}
               style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
             >
@@ -112,7 +114,7 @@ export function AdminDashboardScreen({
                   color: COLORS.danger,
                 }}
               >
-                Logout
+                {exitLabel}
               </Text>
             </Pressable>
           </View>
@@ -306,7 +308,7 @@ export function AdminDashboardScreen({
                   color: COLORS.danger,
                 }}
               >
-                Logout
+                {exitLabel}
               </Text>
             </Pressable>
           </View>

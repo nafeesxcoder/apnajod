@@ -16,6 +16,7 @@ export function SettingsScreen({
   onLogout,
   onDeactivate,
   onDeletePermanently,
+  onOpenAdmin,
 }: {
   navigate: (screen: any) => void;
   isPrivate: boolean;
@@ -23,6 +24,8 @@ export function SettingsScreen({
   onLogout: () => void;
   onDeactivate: () => void;
   onDeletePermanently: () => void;
+  /** Only passed for admin accounts; everyone else never sees the entry. */
+  onOpenAdmin?: () => void;
 }) {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
 
@@ -188,6 +191,20 @@ export function SettingsScreen({
                 Meaningful connections. Meaningful futures.
               </Text>
             </View>
+
+            {onOpenAdmin && (
+              <>
+                <SectionHeader title="Admin" />
+                <Card>
+                  <Row
+                    icon="shield-checkmark-outline"
+                    label="Admin Panel"
+                    onPress={onOpenAdmin}
+                    isLast
+                  />
+                </Card>
+              </>
+            )}
 
             {/* Account */}
             <SectionHeader title="Account" />
