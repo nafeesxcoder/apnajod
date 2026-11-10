@@ -59,6 +59,22 @@ const resolveReport = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+const getAppeals = asyncHandler(async (req, res) => {
+  const appealService = require("../services/appealService");
+  const appeals = await appealService.listOpenAppeals();
+  res.json({ ok: true, appeals });
+});
+
+const resolveAppeal = asyncHandler(async (req, res) => {
+  const appealService = require("../services/appealService");
+  try {
+    await appealService.resolveAppeal(req.params.id, req.body?.action);
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+  res.json({ ok: true });
+});
+
 const updateAdminPassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) throw new ApiError(400, "Current and new password are required");
@@ -99,5 +115,5 @@ const resetAdminPassword = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getStats, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

@@ -10,9 +10,19 @@ let refreshInFlight: Promise<{
 
 export class AuthRequestError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Machine-readable reason from the server, e.g. "account_suspended". */
+  code?: string;
+  /** Extra fields the server sent with the error (e.g. an appeal token). */
+  details?: Record<string, unknown>;
+  constructor(
+    message: string,
+    status: number,
+    details?: Record<string, unknown>,
+  ) {
     super(message);
     this.status = status;
+    this.details = details;
+    this.code = typeof details?.code === "string" ? details.code : undefined;
   }
 }
 // True only when the server says the saved session is invalid or expired.
@@ -51,7 +61,12 @@ async function post<T>(route: string, body: unknown, fallback: string): Promise<
   });
   const data = await response.json().catch(() => ({}) as Record<string, unknown>);
   if (!response.ok) {
-    throw new AuthRequestError((data as { error?: string }).error || fallback, response.status);
+    const failure = data as { error?: string; details?: Record<string, unknown> };
+    throw new AuthRequestError(
+      failure.error || fallback,
+      response.status,
+      failure.details,
+    );
   }
   return data as T;
 }
@@ -82,6 +97,14 @@ export const authApi = {
   // ---- Sign in with username (or mobile) + password ----
   login(input: { identifier: string; password: string }) {
     return post<AuthSession>("/auth/login", input, "Could not sign you in");
+  },
+  /** A suspended member asks for a review; lands in the admin dashboard. */
+  submitAppeal(appealToken: string, message: string) {
+    return post<{ ok: boolean; updated?: boolean }>(
+      "/auth/appeal",
+      { appealToken, message },
+      "Could not send your appeal",
+    );
   },
 
   // ---- Forgot password: OTP to the registered mobile, then a new password ----

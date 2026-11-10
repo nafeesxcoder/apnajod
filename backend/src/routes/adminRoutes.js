@@ -28,4 +28,7 @@ router.put("/update-password", adminController.updateAdminPassword);
 router.get("/reports", adminController.getReports);
 router.post("/reports/:id/resolve", adminController.resolveReport);
 
+router.get("/appeals", adminController.getAppeals);
+router.post("/appeals/:id/resolve", adminController.resolveAppeal);
+
 module.exports = router;

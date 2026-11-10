@@ -19,7 +19,7 @@ async function getDashboardStats() {
   // Destructuring it again read rows[0][0], which is always undefined, and
   // every card on the dashboard showed 0.
   const live = "SELECT id FROM users WHERE deleted_at IS NULL";
-  const [users, newThisWeek, pendingVerifications, verifiedUsers, openReports, suspendedUsers, revenuePaise] =
+  const [users, newThisWeek, pendingVerifications, verifiedUsers, openReports, suspendedUsers, revenuePaise, openAppeals] =
     await Promise.all([
       scalar("SELECT COUNT(*) AS total FROM users WHERE deleted_at IS NULL"),
       scalar(
@@ -38,6 +38,7 @@ async function getDashboardStats() {
         "SELECT COUNT(*) AS total FROM users WHERE deleted_at IS NULL AND status = 'suspended'",
       ),
       scalar("SELECT SUM(amount_paise) AS total FROM payments WHERE status = 'paid'"),
+      scalar("SELECT COUNT(*) AS total FROM account_appeals WHERE status = 'open'"),
     ]);
 
   return {
@@ -48,6 +49,7 @@ async function getDashboardStats() {
     openReports,
     suspendedUsers,
     revenuePaise,
+    openAppeals,
   };
 }
 

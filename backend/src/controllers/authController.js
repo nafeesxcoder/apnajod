@@ -7,6 +7,7 @@ const sessionService = require("../services/sessionService");
 const oauthService = require("../services/oauthService");
 const env = require("../config/env");
 const { normalizeIndianPhone } = require("../utils/otp");
+const appealService = require("../services/appealService");
 // In-memory OAuth state store (swap for Redis in production / multi-instance deploys)
 const oauthStates = new Map();
 function createState(meta = {}) {
@@ -248,9 +249,12 @@ const login = asyncHandler(async (req, res) => {
   // Checked after the password so a wrong password and a suspension are
   // not distinguishable to someone guessing their way in.
   if (user.status === "suspended") {
+    // No session, but a short-lived token that can only send an appeal,
+    // so they can ask for a review from this screen.
     throw new ApiError(
       403,
-      "This account has been suspended. Contact support if you believe this is a mistake.",
+      "This account has been suspended. If you think this is a mistake, send us an appeal below.",
+      { code: "account_suspended", appealToken: appealService.signAppealToken(user.id) },
     );
   }
 
@@ -462,6 +466,19 @@ const linkedinCallback = asyncHandler(async (req, res) => {
   });
   res.redirect(`${env.appUrl}/auth/callback?${params.toString()}`);
 });
+const submitSuspensionAppeal = asyncHandler(async (req, res) => {
+  const userId = appealService.userIdFromAppealToken(req.body?.appealToken);
+  if (!userId) {
+    throw new ApiError(401, "This appeal link has expired. Log in again to send it.");
+  }
+  try {
+    const result = await appealService.submitAppeal(userId, req.body?.message);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+});
+
 // ---------- helpers ----------
 function publicUser(user) {
   return {
@@ -480,6 +497,7 @@ function publicUser(user) {
   };
 }
 module.exports = {
+  submitSuspensionAppeal,
   requestOtp,
   verifyOtp,
   checkUsername,

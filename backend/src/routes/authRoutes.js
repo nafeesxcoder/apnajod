@@ -30,6 +30,7 @@ router.post("/register/verify", otpVerifyLimiter, authController.registerVerify)
 
 // Sign in with username (or mobile) + password
 router.post("/login", loginLimiter, authController.login);
+router.post("/appeal", otpRequestLimiter, authController.submitSuspensionAppeal);
 
 // Forgot password: OTP to the registered mobile, then set a new password
 router.post("/password/forgot", otpRequestLimiter, authController.forgotPassword);

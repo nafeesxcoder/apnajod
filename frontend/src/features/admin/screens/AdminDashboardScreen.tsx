@@ -16,7 +16,8 @@ import { adminApi } from "../../../api/adminApi";
 import { fonts, radius } from "../../../theme";
 
 // 👇 Naya tab "security" add kiya
-type Tab = "overview" | "users" | "verifications" | "reports" | "security";
+type Tab =
+  "overview" | "users" | "verifications" | "reports" | "appeals" | "security";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "overview", label: "Overview", icon: "grid-outline" },
@@ -27,6 +28,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
     icon: "shield-checkmark-outline",
   },
   { key: "reports", label: "Reports", icon: "flag-outline" },
+  { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
   { key: "security", label: "Security", icon: "lock-closed-outline" }, // 👈 New
 ];
 
@@ -339,6 +341,7 @@ export function AdminDashboardScreen({
             <VerificationsTab accessToken={accessToken} />
           )}
           {tab === "reports" && <ReportsTab accessToken={accessToken} />}
+          {tab === "appeals" && <AppealsTab accessToken={accessToken} />}
           {tab === "security" && <SecurityTab accessToken={accessToken} />}
         </ScrollView>
       </View>
@@ -545,6 +548,7 @@ function OverviewTab({
   const pendingVerifications = Number(stats?.pendingVerifications ?? 0);
   const verifiedUsers = Number(stats?.verifiedUsers ?? 0);
   const openReports = Number(stats?.openReports ?? 0);
+  const openAppeals = Number(stats?.openAppeals ?? 0);
   const revenue = Number(stats?.revenuePaise ?? 0) / 100;
 
   return (
@@ -616,6 +620,13 @@ function OverviewTab({
           icon="flag"
           trend={openReports > 0 ? "Needs review" : undefined}
           onPress={() => onNavigate("reports")}
+        />
+        <StatCard
+          title="Appeals"
+          value={String(openAppeals)}
+          icon="chatbox-ellipses"
+          trend={openAppeals > 0 ? "Needs review" : undefined}
+          onPress={() => onNavigate("appeals")}
         />
         <StatCard
           title="Total Revenue"
@@ -1323,6 +1334,146 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
                 tone="plain"
                 busy={busyId === id}
                 onPress={() => void act(id, "dismiss")}
+              />
+            </View>
+          </Card>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ---------------- Appeals ---------------- */
+
+function AppealsTab({ accessToken }: { accessToken: string }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res: any = await adminApi.appeals(accessToken);
+      setItems(Array.isArray(res?.appeals) ? res.appeals : []);
+    } catch (e) {
+      setError(errText(e, "Failed to load appeals"));
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const act = async (id: string, action: "restore" | "reject") => {
+    setBusyId(id);
+    setError("");
+    try {
+      await adminApi.resolveAppeal(accessToken, id, action);
+      await load();
+    } catch (e) {
+      setError(errText(e, "Action failed"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading) return <Loading />;
+
+  return (
+    <View style={{ gap: 16 }}>
+      {!!error && <Message tone="error" text={error} />}
+      {items.length === 0 && !error && (
+        <Message text="No appeals from suspended members." />
+      )}
+      {items.map((a) => {
+        const id = String(a?.id);
+        const reports = Number(a?.report_count ?? 0);
+        const meta = [
+          a?.username ? `@${a.username}` : "",
+          a?.phone ?? "",
+          a?.city ?? "",
+          a?.updated_at ? `Sent ${joinedLabel(a.updated_at)}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <Card key={id} style={{ padding: 20, gap: 10 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 16,
+                  color: COLORS.textMain,
+                }}
+              >
+                {displayName(a)}
+              </Text>
+              <Badge text="Suspended" danger />
+              {reports > 0 && (
+                <Badge
+                  text={`${reports} report${reports === 1 ? "" : "s"}`}
+                  danger
+                />
+              )}
+            </View>
+            {!!meta && (
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: COLORS.textMuted,
+                }}
+              >
+                {meta}
+              </Text>
+            )}
+            <View
+              style={{
+                backgroundColor: COLORS.bg,
+                borderRadius: 8,
+                padding: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  color: COLORS.textMain,
+                }}
+              >
+                {String(a?.message ?? "")}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+                marginTop: 6,
+              }}
+            >
+              <SmallButton
+                label="Restore account"
+                busy={busyId === id}
+                onPress={() => void act(id, "restore")}
+              />
+              <SmallButton
+                label="Keep suspended"
+                tone="plain"
+                busy={busyId === id}
+                onPress={() => void act(id, "reject")}
               />
             </View>
           </Card>

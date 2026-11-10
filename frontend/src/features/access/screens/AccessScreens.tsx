@@ -35,6 +35,7 @@ import {
   passwordError,
   usernameError,
 } from "../../../domain/validation";
+import { authApi, AuthRequestError } from "../../../api/authApi";
 import { DEFAULT_COUNTRY } from "../../../domain/countries";
 import { access } from "../../../theme/accessStyles";
 import { colors } from "../../../theme";
@@ -623,9 +624,35 @@ export function LogInScreen({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // A suspended member can't reach the in-app Support screen, so the appeal
+  // is sent from here and shows up in the admin dashboard.
+  const [appealToken, setAppealToken] = useState<string | null>(null);
+  const [appealText, setAppealText] = useState("");
+  const [appealSending, setAppealSending] = useState(false);
+  const [appealError, setAppealError] = useState("");
+  const [appealSent, setAppealSent] = useState(false);
+
+  const sendAppeal = async () => {
+    if (!appealToken) return;
+    if (appealText.trim().length < 10) {
+      setAppealError("Please tell us a little more (at least 10 characters).");
+      return;
+    }
+    setAppealSending(true);
+    setAppealError("");
+    try {
+      await authApi.submitAppeal(appealToken, appealText.trim());
+      setAppealSent(true);
+    } catch (caught) {
+      setAppealError(caught instanceof Error ? caught.message : "Could not send your appeal.");
+    } finally {
+      setAppealSending(false);
+    }
+  };
 
   const submit = async () => {
     setError("");
+    setAppealToken(null);
     if (!identifier.trim()) {
       setError("Enter your username or mobile number.");
       return;
@@ -638,6 +665,15 @@ export function LogInScreen({
     try {
       await onSubmit({ identifier: identifier.trim(), password });
     } catch (caught) {
+      const token =
+        caught instanceof AuthRequestError &&
+        caught.code === "account_suspended" &&
+        typeof caught.details?.appealToken === "string"
+          ? caught.details.appealToken
+          : null;
+      setAppealToken(token);
+      setAppealSent(false);
+      setAppealError("");
       setError(caught instanceof Error ? caught.message : "Could not log you in. Try again.");
     } finally {
       setLoading(false);
@@ -690,6 +726,45 @@ export function LogInScreen({
         <Text accessibilityRole="alert" style={access.formError}>
           {error}
         </Text>
+      )}
+
+      {!!appealToken && (
+        <View style={access.stack}>
+          {appealSent ? (
+            <Text accessibilityRole="alert" style={access.help}>
+              Your appeal has been sent. Our team will review your account and you can try
+              logging in again later.
+            </Text>
+          ) : (
+            <>
+              <AccessField label="Your appeal">
+                <View style={[access.inputBox, { minHeight: 110, alignItems: "flex-start" }]}>
+                  <TextInput
+                    accessibilityLabel="Your appeal"
+                    value={appealText}
+                    onChangeText={setAppealText}
+                    multiline
+                    maxLength={1000}
+                    placeholder="Tell us why you think this is a mistake"
+                    placeholderTextColor={colors.lineSoft}
+                    selectionColor={colors.accent}
+                    style={[access.input, { minHeight: 96, textAlignVertical: "top" }]}
+                  />
+                </View>
+              </AccessField>
+              {!!appealError && (
+                <Text accessibilityRole="alert" style={access.formError}>
+                  {appealError}
+                </Text>
+              )}
+              <Action
+                label="Send appeal"
+                onPress={() => void sendAppeal()}
+                loading={appealSending}
+              />
+            </>
+          )}
+        </View>
       )}
 
       <View style={access.stack}>
