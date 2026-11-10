@@ -30,6 +30,9 @@ const screensThatMarkPeople = [
   'src/features/discovery/components/MatchCard.tsx',
   'src/features/discovery/screens/MatchDetailScreen.tsx',
   'src/features/profile/screens/ProfileScreen.tsx',
+  'src/features/social/screens/PersonScreen.tsx',
+  'src/features/discovery/screens/LikesScreen.tsx',
+  'src/features/discovery/screens/HomeScreen.tsx',
 ];
 
 /**
@@ -42,7 +45,7 @@ const screensThatMarkPeople = [
  * selection tick - those live in the chat and the sign-up screens, which are
  * not in this list - so a checkmark here is always a claim about a person.
  */
-const TRUST_MARKS = /name="[a-z-]*checkmark[a-z-]*"|>\s*Verified\s*</g;
+const TRUST_MARKS = /name="[a-z-]*checkmark[a-z-]*"|name="verified"|<VerifiedBadge|>\s*Verified\s*</g;
 
 describe('the verified badge', () => {
   it('is drawn only for someone who is actually verified', () => {

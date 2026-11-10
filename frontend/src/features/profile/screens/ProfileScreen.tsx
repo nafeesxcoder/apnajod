@@ -13,6 +13,7 @@ import {
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
+import { VerifiedBadge } from "../../../components/VerifiedBadge";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -25,7 +26,7 @@ function hobbyIcon(label: string) {
 
 export function ProfileScreen({
   profile,
-  verified: _verified,
+  verified,
   profilePhoto,
   navigate,
   accessToken,
@@ -165,18 +166,29 @@ export function ProfileScreen({
                 </LinearGradient>
               </View>
 
-              <Text
+              <View
                 style={{
-                  fontFamily: fonts.display,
-                  fontSize: 28,
-                  lineHeight: 34,
-                  color: palette.ink,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                   marginTop: 12,
-                  textAlign: "center",
                 }}
               >
-                {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
-              </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: 28,
+                    lineHeight: 34,
+                    color: palette.ink,
+                    textAlign: "center",
+                    flexShrink: 1,
+                  }}
+                >
+                  {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
+                </Text>
+                {verified && <VerifiedBadge size={22} />}
+              </View>
 
               <Text
                 style={{

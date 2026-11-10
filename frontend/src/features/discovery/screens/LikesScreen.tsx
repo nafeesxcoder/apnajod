@@ -21,6 +21,7 @@ import type { Match } from "../../../data";
 import { matchApi } from "../../../api/matchApi";
 import { matchFromSocialUser } from "../../../domain/socialMatch";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
+import { VerifiedBadge } from "../../../components/VerifiedBadge";
 
 type IncomingLike = {
   id: string;
@@ -517,13 +518,7 @@ export function LikesScreen({
                             {like.name}
                             {like.age ? `, ${like.age}` : ""}
                           </Text>
-                          {like.verified && (
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={15}
-                              color={palette.marigold}
-                            />
-                          )}
+                          {like.verified && <VerifiedBadge size={17} />}
                         </View>
 
                         {!!(like.city || like.profession) && (

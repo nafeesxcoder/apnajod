@@ -26,6 +26,7 @@ import type { Screen } from "../../../app/navigation/types";
 import { colors, palette, fonts, radius, typeScale } from "../../../theme";
 import { IntentPassportCard } from "../components/IntentPassportCard";
 import { AppCanvas } from "../../../components/AppCanvas";
+import { VerifiedBadge } from "../../../components/VerifiedBadge";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
@@ -420,15 +421,25 @@ export function HomeScreen({
                         padding: 24,
                       }}
                     >
-                      <Text
+                      <View
                         style={{
-                          fontFamily: fonts.display,
-                          fontSize: typeScale.display,
-                          color: "#FFF",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
                         }}
                       >
-                        {featured.name}, {featured.age}
-                      </Text>
+                        <Text
+                          style={{
+                            fontFamily: fonts.display,
+                            fontSize: typeScale.display,
+                            color: "#FFF",
+                            flexShrink: 1,
+                          }}
+                        >
+                          {featured.name}, {featured.age}
+                        </Text>
+                        {featured.verified && <VerifiedBadge size={24} />}
+                      </View>
                       <Text
                         style={{
                           fontFamily: fonts.body,
@@ -523,15 +534,26 @@ export function HomeScreen({
                             padding: 12,
                           }}
                         >
-                          <Text
+                          <View
                             style={{
-                              fontFamily: fonts.display,
-                              fontSize: 17,
-                              color: "#FFF",
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 4,
                             }}
                           >
-                            {match.name}, {match.age}
-                          </Text>
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                fontFamily: fonts.display,
+                                fontSize: 17,
+                                color: "#FFF",
+                                flexShrink: 1,
+                              }}
+                            >
+                              {match.name}, {match.age}
+                            </Text>
+                            {match.verified && <VerifiedBadge size={16} />}
+                          </View>
                           <Text
                             style={{
                               fontFamily: fonts.body,
