@@ -1,3 +1,4 @@
+import { API_URL } from "./config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ACCESS_KEY = "milaan_access_token";
@@ -19,7 +20,6 @@ export const isSessionRejected = (error: unknown) =>
   error instanceof AuthRequestError &&
   (error.status === 401 || error.status === 403);
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
 export type AuthSession = {
   ok: true;
   user: {
@@ -33,6 +33,7 @@ export type AuthSession = {
     emailVerified: boolean;
     hasPassword: boolean;
     mustChangePassword: boolean;
+    role?: "user" | "admin" | string | null;
   };
   accessToken: string;
   refreshToken: string;

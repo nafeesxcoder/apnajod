@@ -13,6 +13,8 @@
  * mean anything. Every extra tab is one more place a young app looks empty.
  */
 export type Screen =
+  | "adminLogin"
+  | "adminDashboard"
   // Getting in: signup -> otp -> quickProfile, with recovery alongside.
   | "splash"
   | "welcome"

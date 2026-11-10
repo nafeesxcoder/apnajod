@@ -476,6 +476,7 @@ function publicUser(user) {
     hasPassword: !!user.password_hash,
     mustChangePassword: !!user.must_change_password,
     isPrivate: user.is_private === 1 || user.is_private === true,
+    role: user.role || 'user',
   };
 }
 module.exports = {
@@ -500,3 +501,4 @@ module.exports = {
   linkedinStart,
   linkedinCallback,
 };
+

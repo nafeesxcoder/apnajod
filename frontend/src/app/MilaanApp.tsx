@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,7 +17,6 @@ import {
 } from "@expo-google-fonts/mukta";
 import { Marcellus_400Regular } from "@expo-google-fonts/marcellus";
 import * as ImagePicker from "expo-image-picker";
-import {} from "expo-linear-gradient"; // <-- Import added for background
 
 import { Match, matches } from "../data";
 import { colors } from "../theme";
@@ -52,6 +51,8 @@ import {
   type MatchingPoolStatus,
 } from "./adapters/previewMemberRuntime";
 import { deckCandidates, rankMatches } from "../domain/matching";
+import { AdminLoginScreen } from "../features/admin/screens/AdminLoginScreen";
+import { AdminDashboardScreen } from "../features/admin/screens/AdminDashboardScreen";
 import { PremiumScreen } from "../features/premium/screens/PremiumScreen";
 import { APP_MAX_WIDTH, PHONE_WIDTH } from "../layout/breakpoints";
 import { useLayout } from "../layout/useLayout";
@@ -318,6 +319,7 @@ function getPreviewState(): PreviewState | undefined {
 const showcasePreviewScreen = getPreviewScreen();
 const showcasePreviewState = getPreviewState();
 const googleCallbackData = getGoogleCallback();
+const isAdminMode = Platform.OS === "web" && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "1";
 const isPreviewAccessMode =
   Platform.OS === "web" &&
   typeof window !== "undefined" &&
@@ -451,9 +453,11 @@ function MilaanApp() {
     Marcellus_400Regular,
   });
   const appLayout = useLayout();
-  const [screen, setScreen] = useState<Screen>(
-    () => showcasePreviewScreen ?? "splash",
-  );
+  const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (isAdminMode) return "adminLogin" as Screen;
+    return showcasePreviewScreen ?? "splash";
+  });
   // App-wide back-button guard: give every in-app screen its own browser
   // history entry, so the hardware/gesture back button steps back through
   // screens instead of exiting the whole app/webview. Without this, the
@@ -1031,8 +1035,7 @@ function MilaanApp() {
         const remaining = Math.max(0, 3000 - (Date.now() - started));
         ``;
         setTimeout(() => {
-          if (active) {
-            setScreen(showcasePreviewScreen ?? nextScreen);
+          if (active) { if (!isAdminMode) setScreen(showcasePreviewScreen ?? nextScreen);
             setHydrated(true);
           }
         }, remaining);
@@ -3062,8 +3065,9 @@ function MilaanApp() {
       }));
     return [...waiting, ...conversations].sort((a, b) => b.lastAt - a.lastAt);
   };
-
   return (
+
+    
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <AppCanvas>
@@ -3363,6 +3367,25 @@ function MilaanApp() {
               navigate={navigateTo}
             />
           )}
+
+        {screen === "adminLogin" && (
+          <AdminLoginScreen
+            onLogin={(token: string) => {
+              setAdminToken(token);
+              setScreen("adminDashboard");
+            }}
+            />
+        )}
+
+        {screen === "adminDashboard" && adminToken && (
+          <AdminDashboardScreen
+            accessToken={adminToken}
+            onLogout={() => {
+              setAdminToken(null);
+              setScreen("welcome");
+            }}
+          />
+        )}
 
         {screen === "premium" && accessToken && (
           <PremiumScreen
@@ -3724,3 +3747,6 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
+
+

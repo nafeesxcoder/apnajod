@@ -1,6 +1,5 @@
-﻿import type { ChatMessage, CoupleChatSettings, DatePlanStatus } from "../storage";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
+import { API_URL } from "./config";
+import type { ChatMessage, CoupleChatSettings, DatePlanStatus } from "../storage";
 
 export type PersistenceResult<T = unknown> = {
   saved: boolean;

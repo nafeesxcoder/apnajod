@@ -1,10 +1,10 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://31.42.125.109/api";
+import { API_URL } from "./config";
 
 /**
  * Put an image the member picked onto the server and return its public URL.
  *
- * The picker hands back a local reference — `file:///…` on a phone,
- * `blob:…` in a browser — which means something only on that device. Storing
+ * The picker hands back a local reference â€” `file:///â€¦` on a phone,
+ * `blob:â€¦` in a browser â€” which means something only on that device. Storing
  * one is how a selfie could be "submitted" without ever leaving the handset:
  * the row looked fine and the reviewer had nothing to open.
  *
@@ -34,7 +34,7 @@ export async function uploadPhoto(
 /**
  * The same upload, for profile photos, where a failure is not worth blocking
  * on: the member keeps seeing their picture and the next save tries again.
- * Verification must not use this — a selfie nobody can open is worse than no
+ * Verification must not use this â€” a selfie nobody can open is worse than no
  * selfie, because it still looks like a submission.
  */
 export async function uploadPhotoOrKeepLocal(

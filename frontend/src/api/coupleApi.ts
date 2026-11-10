@@ -1,4 +1,5 @@
-﻿import {
+import { API_URL } from "./config";
+import {
   parseCoupleConnectionHub,
   parseCoupleConnectionRequest,
   parseCouplePartnerSummary,
@@ -12,8 +13,6 @@
   type CoupleConnectionRequest,
   type CouplePartnerSummary,
 } from "../domain/coupleConnection";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {

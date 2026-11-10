@@ -12,6 +12,7 @@ const safetyRoutes = require("./routes/safetyRoutes");
 const followRoutes = require("./routes/followRoutes");
 const postRoutes = require("./routes/postRoutes");
 const billingRoutes = require("./routes/billingRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 const { corsOptions, securityHeaders } = require("./config/security");
 
@@ -22,7 +23,7 @@ app.disable("x-powered-by");
 app.use(securityHeaders);
 app.use(cors(corsOptions));
 
-// Razorpay webhook needs the raw body — signature is HMAC over exact bytes.
+// Razorpay webhook needs the raw body â€” signature is HMAC over exact bytes.
 // Must be mounted BEFORE express.json(), which would parse and consume it.
 app.use("/billing/webhook", express.raw({ type: "application/json" }));
 
@@ -44,6 +45,7 @@ app.use("/safety", safetyRoutes);
 app.use("/social", followRoutes);
 app.use("/posts", postRoutes);
 app.use("/billing", billingRoutes);
+app.use("/admin", adminRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -52,3 +54,4 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 module.exports = app;
+
