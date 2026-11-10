@@ -25,7 +25,10 @@ export function VerificationHubScreen({
   onBack: () => void;
   onVerify: (uri: string) => Promise<void>;
 }) {
-  const [pickedUri, setPickedUri] = useState(selfieUri);
+  const isRejected = verificationStatus === "rejected";
+  // After a rejection the old selfie is the one that failed review, so start
+  // empty and make them take a fresh one before they can resubmit.
+  const [pickedUri, setPickedUri] = useState(isRejected ? "" : selfieUri);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -202,54 +205,60 @@ export function VerificationHubScreen({
                   ⏳ Verification pending. We'll review it shortly.
                 </Text>
               </View>
-            ) : verificationStatus === "rejected" ? (
-              <View
-                style={{
-                  backgroundColor: "#FBE9EC",
-                  padding: 12,
-                  borderRadius: 8,
-                  width: "100%",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#B3261E",
-                    fontWeight: "600",
-                    fontSize: 14,
-                    textAlign: "center",
-                  }}
-                >
-                  ❌ Your previous selfie was rejected. Please upload a clear
-                  selfie.
-                </Text>
-              </View>
             ) : (
-              <TouchableOpacity
-                onPress={handleSubmit}
-                disabled={!pickedUri || isSubmitting}
-                style={{
-                  backgroundColor: pickedUri ? "#151719" : "#C7CED6",
-                  width: "100%",
-                  padding: 16,
-                  borderRadius: 12,
-                  alignItems: "center",
-                }}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text
+              <>
+                {isRejected && (
+                  <View
                     style={{
-                      color: "#FFFFFF",
-                      fontWeight: "600",
-                      fontSize: 16,
+                      backgroundColor: "#FBE9EC",
+                      padding: 12,
+                      borderRadius: 8,
+                      width: "100%",
+                      alignItems: "center",
+                      marginBottom: 12,
                     }}
                   >
-                    Submit for Verification
-                  </Text>
+                    <Text
+                      style={{
+                        color: "#B3261E",
+                        fontWeight: "600",
+                        fontSize: 14,
+                        textAlign: "center",
+                      }}
+                    >
+                      ❌ Your previous selfie was rejected. Take a new, clear
+                      selfie and submit it again.
+                    </Text>
+                  </View>
                 )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={!pickedUri || isSubmitting}
+                  style={{
+                    backgroundColor: pickedUri ? "#151719" : "#C7CED6",
+                    width: "100%",
+                    padding: 16,
+                    borderRadius: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
+                      {isRejected
+                        ? "Resubmit for Verification"
+                        : "Submit for Verification"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </>
             )}
 
             {/* Error Message */}
