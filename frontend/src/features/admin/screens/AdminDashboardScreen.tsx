@@ -987,7 +987,8 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
       {items.map((v) => {
         const id = String(pick(v, "id", "user_id", "userId") ?? Math.random());
-        const selfie = pick(v, "selfie_url", "selfieUrl", "selfie", "photo");
+        const rawSelfie = pick(v, "selfie_uri", "selfie_url", "selfieUrl", "selfie", "photo");
+        const selfie = typeof rawSelfie === "string" && /^https?:\/\//i.test(rawSelfie) ? rawSelfie : undefined;
         const name = String(
           pick(v, "name", "first_name", "firstName", "username") ?? "Member",
         );
@@ -1010,6 +1011,9 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
                 {name}
               </Text>
             </View>
+            {!selfie && (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.danger }}>No uploaded selfie on file. Ask them to submit again.</Text>
+            )}
             {!!selfie && (
               <Image
                 source={{ uri: String(selfie) }}
