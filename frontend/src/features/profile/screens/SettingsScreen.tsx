@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Switch } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -159,16 +159,12 @@ export function SettingsScreen({
 
             {/* App Info */}
             <View style={{ alignItems: "center", paddingBottom: 24 }}>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: 22,
-                  color: palette.crimson,
-                  letterSpacing: 1,
-                }}
-              >
-                Apnajoda
-              </Text>
+              <Image
+                source={require("../../../../assets/apnajoda-mark.png")}
+                style={{ width: 84, height: 84 }}
+                resizeMode="contain"
+                accessibilityLabel="Apnajoda"
+              />
               <Text
                 style={{
                   fontFamily: fonts.body,

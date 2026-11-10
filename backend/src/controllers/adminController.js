@@ -19,6 +19,11 @@ const updateUserRole = asyncHandler(async (req, res) => {
 });
 
 const banUser = asyncHandler(async (req, res) => {
+  if (req.params.id === req.user.id) throw new ApiError(400, "You cannot suspend your own account.");
+  const userService = require("../services/userService");
+  const target = await userService.findUserById(req.params.id);
+  if (!target) throw new ApiError(404, "User not found");
+  if (target.role === "admin") throw new ApiError(400, "Remove admin access before suspending this account.");
   await adminService.setAccountStatus(req.params.id, "suspended");
   res.json({ ok: true });
 });

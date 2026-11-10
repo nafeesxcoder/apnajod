@@ -233,55 +233,6 @@ export function AdminDashboardScreen({
           </View>
 
           <View style={{ marginTop: "auto", gap: 16 }}>
-            <View
-              style={{
-                padding: 16,
-                backgroundColor: COLORS.bg,
-                borderRadius: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemi,
-                  fontSize: 13,
-                  color: COLORS.textMain,
-                }}
-              >
-                Need help?
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 12,
-                  color: COLORS.textMuted,
-                  marginTop: 4,
-                  marginBottom: 12,
-                }}
-              >
-                Check our docs or contact support.
-              </Text>
-              <Pressable
-                style={{
-                  backgroundColor: COLORS.card,
-                  paddingVertical: 8,
-                  borderRadius: 6,
-                  alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: COLORS.border,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: fonts.bodySemi,
-                    fontSize: 12,
-                    color: COLORS.textMain,
-                  }}
-                >
-                  Support
-                </Text>
-              </Pressable>
-            </View>
-
             <Pressable
               onPress={onLogout}
               style={[
@@ -527,6 +478,24 @@ const pick = (row: any, ...keys: string[]) => {
   return undefined;
 };
 
+const displayName = (u: any) =>
+  String(
+    pick(u, "first_name", "full_name", "name", "firstName") ??
+      pick(u, "username") ??
+      "Member",
+  );
+
+function joinedLabel(value: unknown) {
+  if (!value) return "";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 /* ---------------- Overview ---------------- */
 
 function OverviewTab({
@@ -571,9 +540,12 @@ function OverviewTab({
   if (loading) return <Loading />;
   if (error) return <Message tone="error" text={error} />;
 
-  const totalUsers = stats?.users ?? 0;
-  const pendingVerifications = stats?.pendingVerifications ?? 0;
-  const revenue = (stats?.revenuePaise ?? 0) / 100;
+  const totalUsers = Number(stats?.users ?? 0);
+  const newThisWeek = Number(stats?.newThisWeek ?? 0);
+  const pendingVerifications = Number(stats?.pendingVerifications ?? 0);
+  const verifiedUsers = Number(stats?.verifiedUsers ?? 0);
+  const openReports = Number(stats?.openReports ?? 0);
+  const revenue = Number(stats?.revenuePaise ?? 0) / 100;
 
   return (
     <View style={{ gap: 24 }}>
@@ -622,21 +594,33 @@ function OverviewTab({
           title="Total Users"
           value={String(totalUsers)}
           icon="people"
-          trend="+12%"
+          trend={newThisWeek > 0 ? `+${newThisWeek} this week` : undefined}
           trendUp
+          onPress={() => onNavigate("users")}
         />
         <StatCard
           title="Pending Verifications"
           value={String(pendingVerifications)}
           icon="shield-checkmark"
-          trend="Needs attention"
+          trend={pendingVerifications > 0 ? "Needs review" : undefined}
+          onPress={() => onNavigate("verifications")}
+        />
+        <StatCard
+          title="Verified Members"
+          value={String(verifiedUsers)}
+          icon="checkmark-done-circle"
+        />
+        <StatCard
+          title="Open Reports"
+          value={String(openReports)}
+          icon="flag"
+          trend={openReports > 0 ? "Needs review" : undefined}
+          onPress={() => onNavigate("reports")}
         />
         <StatCard
           title="Total Revenue"
-          value={`₹${revenue.toFixed(2)}`}
+          value={`₹${revenue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`}
           icon="cash"
-          trend="+8%"
-          trendUp
         />
       </View>
 
@@ -677,19 +661,19 @@ function OverviewTab({
             </Text>
           ) : (
             recentUsers.map((u, i) => {
-              const rawName =
-                pick(u, "name", "full_name", "first_name", "firstName") ??
-                pick(u, "username") ??
-                "Unnamed";
-              const nameStr = typeof rawName === "string" ? rawName : "Member";
-              const contactStr = String(
-                pick(u, "phone", "email", "username") ?? "",
-              );
+              const nameStr = displayName(u);
+              const contactStr = [
+                u?.username ? `@${u.username}` : "",
+                u?.city ?? "",
+                joinedLabel(u?.created_at),
+              ]
+                .filter(Boolean)
+                .join(" · ");
               const initial = nameStr.charAt(0).toUpperCase();
 
               return (
                 <View
-                  key={i}
+                  key={String(u?.id ?? i)}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -757,8 +741,13 @@ function OverviewTab({
           </Text>
           <View style={{ gap: 12 }}>
             <SmallButton
-              label="Review Verifications"
+              label={`Review Verifications${pendingVerifications ? ` (${pendingVerifications})` : ""}`}
               onPress={() => onNavigate("verifications")}
+            />
+            <SmallButton
+              label={`Review Reports${openReports ? ` (${openReports})` : ""}`}
+              tone="plain"
+              onPress={() => onNavigate("reports")}
             />
             <SmallButton
               label="Change Password"
@@ -778,19 +767,23 @@ function StatCard({
   icon,
   trend,
   trendUp,
+  onPress,
 }: {
   title: string;
   value: string;
   icon: any;
   trend?: string;
   trendUp?: boolean;
+  onPress?: () => void;
 }) {
   const shadowStyle: any =
     Platform.OS === "web"
       ? { boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }
       : {};
   return (
-    <View
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
       style={[
         {
           flex: 1,
@@ -802,6 +795,7 @@ function StatCard({
           borderColor: COLORS.border,
         },
         shadowStyle,
+        onPress ? webHoverStyle : null,
       ]}
     >
       <View
@@ -864,7 +858,7 @@ function StatCard({
       >
         {value}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -951,18 +945,22 @@ function UsersTab({ accessToken }: { accessToken: string }) {
       ) : (
         <View style={{ gap: 12 }}>
           {users.map((u) => {
-            const name = String(
-              pick(u, "name", "full_name", "first_name", "firstName") ??
-                pick(u, "username") ??
-                "Unnamed",
-            );
-            const contact = String(
-              pick(u, "phone", "email", "username") ?? "No contact info",
-            );
+            const name = displayName(u);
+            const contact = [
+              u?.username ? `@${u.username}` : "",
+              u?.phone ?? "",
+              u?.age ? `${u.age} yrs` : "",
+              u?.city ?? "",
+              u?.created_at ? `Joined ${joinedLabel(u.created_at)}` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ");
             const role = String(pick(u, "role") ?? "user");
-            const banned =
-              Boolean(pick(u, "banned", "is_banned", "isBanned")) ||
-              pick(u, "status") === "banned";
+            const verified = u?.verified === 1 || u?.verified === true;
+            // The server marks a banned account "suspended".
+            const banned = ["suspended", "banned"].includes(
+              String(pick(u, "status") ?? ""),
+            );
             const userId = String(u?.id || Math.random());
 
             return (
@@ -971,6 +969,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
+                  gap: 12,
                   padding: 16,
                 }}
               >
@@ -979,6 +978,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
+                      flexWrap: "wrap",
                       gap: 8,
                     }}
                   >
@@ -992,7 +992,8 @@ function UsersTab({ accessToken }: { accessToken: string }) {
                       {name}
                     </Text>
                     {role === "admin" && <Badge text="Admin" />}
-                    {banned && <Badge text="Banned" danger />}
+                    {verified && <Badge text="Verified" />}
+                    {banned && <Badge text="Suspended" danger />}
                   </View>
                   {!!contact && (
                     <Text
@@ -1007,12 +1008,14 @@ function UsersTab({ accessToken }: { accessToken: string }) {
                     </Text>
                   )}
                 </View>
-                <SmallButton
-                  label={banned ? "Unban" : "Ban"}
-                  tone={banned ? "plain" : "danger"}
-                  busy={busyId === userId}
-                  onPress={() => void toggleBan(u, banned)}
-                />
+                {role !== "admin" && (
+                  <SmallButton
+                    label={banned ? "Restore" : "Suspend"}
+                    tone={banned ? "plain" : "danger"}
+                    busy={busyId === userId}
+                    onPress={() => void toggleBan(u, banned)}
+                  />
+                )}
               </Card>
             );
           })}
@@ -1185,81 +1188,146 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => {
-    adminApi
-      .reports(accessToken)
-      .then((res: any) => {
-        let list = [];
-        if (Array.isArray(res?.reports)) list = res.reports;
-        else if (Array.isArray(res?.items)) list = res.items;
-        else if (Array.isArray(res)) list = res;
-        setItems(list);
-      })
-      .catch((e) => setError(errText(e, "Failed to load reports")))
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res: any = await adminApi.reports(accessToken);
+      setItems(Array.isArray(res?.reports) ? res.reports : []);
+    } catch (e) {
+      setError(errText(e, "Failed to load reports"));
+    } finally {
+      setLoading(false);
+    }
   }, [accessToken]);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // The server groups reports per reported account; closing one closes all.
+  const act = async (id: string, kind: "suspend" | "dismiss") => {
+    setBusyId(id);
+    setError("");
+    try {
+      if (kind === "suspend") {
+        await adminApi.banUser(accessToken, id);
+        await adminApi.resolveReport(accessToken, id, "actioned");
+      } else {
+        await adminApi.resolveReport(accessToken, id, "dismissed");
+      }
+      await load();
+    } catch (e) {
+      setError(errText(e, "Action failed"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   if (loading) return <Loading />;
-  if (error) return <Message tone="error" text={error} />;
-  if (items.length === 0) return <Message text="No reports to review." />;
 
   return (
     <View style={{ gap: 16 }}>
-      {items.map((r, i) => (
-        <Card key={String(pick(r, "id") ?? i)} style={{ padding: 20 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+      {!!error && <Message tone="error" text={error} />}
+      {items.length === 0 && !error && (
+        <Message text="No open reports. Nothing to review." />
+      )}
+      {items.map((r, i) => {
+        const id = String(pick(r, "reported_id") ?? i);
+        const name = String(
+          pick(r, "reported_name", "reported_username") ?? "Member",
+        );
+        const count = Number(pick(r, "report_count") ?? 1);
+        const reasons = String(pick(r, "reasons") ?? "")
+          .split(" | ")
+          .filter(Boolean);
+        const suspended = pick(r, "account_status") === "suspended";
+        const meta = [
+          r?.reported_username ? `@${r.reported_username}` : "",
+          r?.reported_city ?? "",
+          r?.last_reported_at
+            ? `Last report ${joinedLabel(r.last_reported_at)}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <Card key={id} style={{ padding: 20, gap: 10 }}>
             <View
               style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: COLORS.danger,
-              }}
-            />
-            <Text
-              style={{
-                fontFamily: fonts.bodySemi,
-                fontSize: 16,
-                color: COLORS.textMain,
+                flexDirection: "row",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 8,
               }}
             >
-              {String(pick(r, "reason") ?? "Report")}
-            </Text>
-          </View>
-          {!!pick(r, "details") && (
-            <Text
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 16,
+                  color: COLORS.textMain,
+                }}
+              >
+                {name}
+              </Text>
+              <Badge text={`${count} report${count === 1 ? "" : "s"}`} danger />
+              {suspended && <Badge text="Suspended" danger />}
+            </View>
+            {!!meta && (
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: COLORS.textMuted,
+                }}
+              >
+                {meta}
+              </Text>
+            )}
+            {reasons.length > 0 && (
+              <View style={{ gap: 4 }}>
+                {reasons.map((reason, k) => (
+                  <Text
+                    key={k}
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 14,
+                      color: COLORS.textMain,
+                    }}
+                  >
+                    • {reason}
+                  </Text>
+                ))}
+              </View>
+            )}
+            <View
               style={{
-                fontFamily: fonts.body,
-                fontSize: 14,
-                color: COLORS.textMuted,
-                marginTop: 4,
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+                marginTop: 6,
               }}
             >
-              {String(pick(r, "details"))}
-            </Text>
-          )}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              marginTop: 12,
-            }}
-          >
-            <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                color: COLORS.textMuted,
-              }}
-            >
-              Status: {String(pick(r, "status") ?? "open")}
-            </Text>
-          </View>
-        </Card>
-      ))}
+              {!suspended && (
+                <SmallButton
+                  label="Suspend account"
+                  tone="danger"
+                  busy={busyId === id}
+                  onPress={() => void act(id, "suspend")}
+                />
+              )}
+              <SmallButton
+                label={suspended ? "Mark resolved" : "Dismiss"}
+                tone="plain"
+                busy={busyId === id}
+                onPress={() => void act(id, "dismiss")}
+              />
+            </View>
+          </Card>
+        );
+      })}
     </View>
   );
 }
