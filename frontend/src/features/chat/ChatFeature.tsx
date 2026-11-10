@@ -2796,10 +2796,11 @@ export function ChatScreen({
                 onPress={() => setViewerImageUri(null)}
               >
                 {viewerImageUri && (
-                  <Image
+                  <ExpoImage
                     source={{ uri: viewerImageUri }}
                     style={{ width: "100%", height: "100%" }}
-                    resizeMode="contain"
+                    contentFit="contain"
+                    autoplay
                   />
                 )}
                 <Pressable
@@ -3650,7 +3651,9 @@ function ChatBubble({
               ? openDocument
               : gamePayload
                 ? undefined
-                : (message.type === "image" || message.type === "snap") &&
+                : (message.type === "image" ||
+                      message.type === "snap" ||
+                      (message.type === "gif" && !catalogGif)) &&
                     message.uri
                   ? () => onOpenImage?.(message.uri!)
                   : onPress
@@ -4420,13 +4423,10 @@ function CatalogGifMessage({ gif }: { gif: ChatGifCatalogItem }) {
         backgroundColor: "#ECEDEF",
       }}
     >
-      <ExpoImage
-        source={{ uri: gif.uri }}
-        style={{ width: "100%", height: "100%" }}
-        contentFit="cover"
-        autoplay
-        cachePolicy="memory-disk"
-      />
+      {/* Catalog GIFs have an in-app id (milaan-gif:...), not an image URL,
+          so draw the same animated artwork the picker shows. Loading the id
+          as an image left an empty grey box for both people in the chat. */}
+      <CatalogGifArtwork gif={gif} />
     </View>
   );
 }

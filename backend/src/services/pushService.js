@@ -39,7 +39,10 @@ async function removeSubscription(userId, endpoint) {
 }
 
 async function notifyUser(userId, payload) {
-  if (!env.push.publicKey || !env.push.privateKey) return;
+  if (!env.push.publicKey || !env.push.privateKey) {
+    console.log("[PUSH SKIPPED] VAPID keys are not set in .env");
+    return;
+  }
   const subs = await query(
     "SELECT * FROM push_subscriptions WHERE user_id = ?",
     [userId],
@@ -53,7 +56,11 @@ async function notifyUser(userId, payload) {
         },
         JSON.stringify(payload),
       );
+      console.log(`[PUSH SENT] to user ${userId}`);
     } catch (error) {
+      console.log(
+        `[PUSH FAILED] to user ${userId}: ${error.statusCode || ""} ${error.body || error.message}`,
+      );
       if (error.statusCode === 404 || error.statusCode === 410) {
         await query("DELETE FROM push_subscriptions WHERE id = ?", [sub.id]);
       }

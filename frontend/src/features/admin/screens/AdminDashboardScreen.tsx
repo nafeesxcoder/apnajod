@@ -7,6 +7,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -56,155 +57,261 @@ export function AdminDashboardScreen({
   onLogout: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("overview");
+  // A 260px sidebar leaves almost nothing on a phone, so narrow screens get
+  // a top bar with scrollable tabs instead.
+  const { width } = useWindowDimensions();
+  const narrow = width < 768;
+  const pad = narrow ? 16 : 32;
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: COLORS.bg, flexDirection: "row" }}
+      style={{
+        flex: 1,
+        backgroundColor: COLORS.bg,
+        flexDirection: narrow ? "column" : "row",
+      }}
     >
-      {/* ================= LEFT SIDEBAR ================= */}
-      <View
-        style={{
-          width: 260,
-          backgroundColor: COLORS.sidebar,
-          borderRightWidth: 1,
-          borderRightColor: COLORS.border,
-          paddingVertical: 32,
-          paddingHorizontal: 20,
-          display: "flex",
-        }}
-      >
+      {narrow && (
         <View
           style={{
-            marginBottom: 40,
-            paddingHorizontal: 8,
-            alignItems: "flex-start",
+            backgroundColor: COLORS.sidebar,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+            paddingTop: 10,
           }}
         >
-          <Image
-            source={require("../../../../assets/apnajoda-logo.png")}
-            style={{ width: 170, height: 55 }}
-            resizeMode="contain"
-          />
-        </View>
-
-        <View style={{ gap: 8 }}>
-          {TABS.map((t) => {
-            const active = t.key === tab;
-            return (
-              <Pressable
-                key={t.key}
-                onPress={() => setTab(t.key)}
-                style={[
-                  {
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                    borderRadius: radius.md || 8,
-                    backgroundColor: active
-                      ? COLORS.primaryLight
-                      : "transparent",
-                  },
-                  webHoverStyle,
-                ]}
-              >
-                <Ionicons
-                  name={t.icon}
-                  size={20}
-                  color={active ? COLORS.primary : COLORS.textMuted}
-                />
-                <Text
-                  style={{
-                    fontFamily: active ? fonts.bodySemi : fonts.body,
-                    fontSize: 15,
-                    color: active ? COLORS.primary : COLORS.textMuted,
-                  }}
-                >
-                  {t.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View style={{ marginTop: "auto", gap: 16 }}>
           <View
             style={{
-              padding: 16,
-              backgroundColor: COLORS.bg,
-              borderRadius: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 16,
             }}
           >
-            <Text
-              style={{
-                fontFamily: fonts.bodySemi,
-                fontSize: 13,
-                color: COLORS.textMain,
-              }}
-            >
-              Need help?
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                color: COLORS.textMuted,
-                marginTop: 4,
-                marginBottom: 12,
-              }}
-            >
-              Check our docs or contact support.
-            </Text>
+            <Image
+              source={require("../../../../assets/apnajoda-logo.png")}
+              style={{ width: 120, height: 40 }}
+              resizeMode="contain"
+            />
             <Pressable
+              onPress={onLogout}
+              accessibilityRole="button"
+              accessibilityLabel="Logout"
+              hitSlop={8}
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={COLORS.danger}
+              />
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 14,
+                  color: COLORS.danger,
+                }}
+              >
+                Logout
+              </Text>
+            </Pressable>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: 8,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+            }}
+          >
+            {TABS.map((t) => {
+              const active = t.key === tab;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => setTab(t.key)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 999,
+                    backgroundColor: active ? COLORS.primaryLight : COLORS.bg,
+                  }}
+                >
+                  <Ionicons
+                    name={t.icon}
+                    size={16}
+                    color={active ? COLORS.primary : COLORS.textMuted}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: active ? fonts.bodySemi : fonts.body,
+                      fontSize: 13,
+                      color: active ? COLORS.primary : COLORS.textMuted,
+                    }}
+                  >
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* ================= LEFT SIDEBAR ================= */}
+      {!narrow && (
+        <View
+          style={{
+            width: 260,
+            backgroundColor: COLORS.sidebar,
+            borderRightWidth: 1,
+            borderRightColor: COLORS.border,
+            paddingVertical: 32,
+            paddingHorizontal: 20,
+            display: "flex",
+          }}
+        >
+          <View
+            style={{
+              marginBottom: 40,
+              paddingHorizontal: 8,
+              alignItems: "flex-start",
+            }}
+          >
+            <Image
+              source={require("../../../../assets/apnajoda-logo.png")}
+              style={{ width: 170, height: 55 }}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={{ gap: 8 }}>
+            {TABS.map((t) => {
+              const active = t.key === tab;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => setTab(t.key)}
+                  style={[
+                    {
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      borderRadius: radius.md || 8,
+                      backgroundColor: active
+                        ? COLORS.primaryLight
+                        : "transparent",
+                    },
+                    webHoverStyle,
+                  ]}
+                >
+                  <Ionicons
+                    name={t.icon}
+                    size={20}
+                    color={active ? COLORS.primary : COLORS.textMuted}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: active ? fonts.bodySemi : fonts.body,
+                      fontSize: 15,
+                      color: active ? COLORS.primary : COLORS.textMuted,
+                    }}
+                  >
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={{ marginTop: "auto", gap: 16 }}>
+            <View
               style={{
-                backgroundColor: COLORS.card,
-                paddingVertical: 8,
-                borderRadius: 6,
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: COLORS.border,
+                padding: 16,
+                backgroundColor: COLORS.bg,
+                borderRadius: 12,
               }}
             >
               <Text
                 style={{
                   fontFamily: fonts.bodySemi,
-                  fontSize: 12,
+                  fontSize: 13,
                   color: COLORS.textMain,
                 }}
               >
-                Support
+                Need help?
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: COLORS.textMuted,
+                  marginTop: 4,
+                  marginBottom: 12,
+                }}
+              >
+                Check our docs or contact support.
+              </Text>
+              <Pressable
+                style={{
+                  backgroundColor: COLORS.card,
+                  paddingVertical: 8,
+                  borderRadius: 6,
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: COLORS.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 12,
+                    color: COLORS.textMain,
+                  }}
+                >
+                  Support
+                </Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              onPress={onLogout}
+              style={[
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                },
+                webHoverStyle,
+              ]}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={COLORS.danger}
+              />
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 15,
+                  color: COLORS.danger,
+                }}
+              >
+                Logout
               </Text>
             </Pressable>
           </View>
-
-          <Pressable
-            onPress={onLogout}
-            style={[
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 8,
-              },
-              webHoverStyle,
-            ]}
-          >
-            <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
-            <Text
-              style={{
-                fontFamily: fonts.bodySemi,
-                fontSize: 15,
-                color: COLORS.danger,
-              }}
-            >
-              Logout
-            </Text>
-          </Pressable>
         </View>
-      </View>
+      )}
 
       {/* ================= MAIN CONTENT ================= */}
       <View style={{ flex: 1 }}>
@@ -217,7 +324,7 @@ export function AdminDashboardScreen({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 32,
+            paddingHorizontal: pad,
           }}
         >
           <Text
@@ -231,20 +338,22 @@ export function AdminDashboardScreen({
             {tab}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 13,
-                color: COLORS.textMuted,
-              }}
-            >
-              {new Date().toLocaleDateString("en-IN", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </Text>
+            {!narrow && (
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: COLORS.textMuted,
+                }}
+              >
+                {new Date().toLocaleDateString("en-IN", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </Text>
+            )}
             <View
               style={{
                 width: 40,
@@ -267,7 +376,7 @@ export function AdminDashboardScreen({
         </View>
 
         <ScrollView
-          contentContainerStyle={{ padding: 32, gap: 24, flexGrow: 1 }}
+          contentContainerStyle={{ padding: pad, gap: 24, flexGrow: 1 }}
         >
           {tab === "overview" && (
             <OverviewTab accessToken={accessToken} onNavigate={setTab} />
@@ -987,8 +1096,18 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
       {items.map((v) => {
         const id = String(pick(v, "id", "user_id", "userId") ?? Math.random());
-        const rawSelfie = pick(v, "selfie_uri", "selfie_url", "selfieUrl", "selfie", "photo");
-        const selfie = typeof rawSelfie === "string" && /^https?:\/\//i.test(rawSelfie) ? rawSelfie : undefined;
+        const rawSelfie = pick(
+          v,
+          "selfie_uri",
+          "selfie_url",
+          "selfieUrl",
+          "selfie",
+          "photo",
+        );
+        const selfie =
+          typeof rawSelfie === "string" && /^https?:\/\//i.test(rawSelfie)
+            ? rawSelfie
+            : undefined;
         const name = String(
           pick(v, "name", "first_name", "firstName", "username") ?? "Member",
         );
@@ -1012,7 +1131,15 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
               </Text>
             </View>
             {!selfie && (
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.danger }}>No uploaded selfie on file. Ask them to submit again.</Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: COLORS.danger,
+                }}
+              >
+                No uploaded selfie on file. Ask them to submit again.
+              </Text>
             )}
             {!!selfie && (
               <Image

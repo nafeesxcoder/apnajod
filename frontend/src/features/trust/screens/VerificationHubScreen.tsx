@@ -5,12 +5,14 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
+import { WebSelfieCamera } from "../components/WebSelfieCamera";
 
 export function VerificationHubScreen({
   verified,
@@ -31,9 +33,16 @@ export function VerificationHubScreen({
   const [pickedUri, setPickedUri] = useState(isRejected ? "" : selfieUri);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [webCameraOpen, setWebCameraOpen] = useState(false);
 
   const takeSelfie = async () => {
     setError(null);
+    // In a browser the picker's "camera" is only a file chooser on a laptop,
+    // so open the webcam directly for a real live selfie.
+    if (Platform.OS === "web") {
+      setWebCameraOpen(true);
+      return;
+    }
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
       setError("Please allow camera access to take a selfie.");
@@ -291,6 +300,13 @@ export function VerificationHubScreen({
           </View>
         </View>
       </SafeAreaView>
+      {Platform.OS === "web" && (
+        <WebSelfieCamera
+          visible={webCameraOpen}
+          onClose={() => setWebCameraOpen(false)}
+          onCapture={setPickedUri}
+        />
+      )}
     </AppCanvas>
   );
 }

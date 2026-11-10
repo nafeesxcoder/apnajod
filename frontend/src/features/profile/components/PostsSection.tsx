@@ -50,6 +50,7 @@ export function PostsSection({
   const [menuFor, setMenuFor] = useState<Post | null>(null);
   const [editing, setEditing] = useState<Post | null>(null);
   const [draftCaption, setDraftCaption] = useState("");
+  const [viewing, setViewing] = useState<Post | null>(null);
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -146,11 +147,17 @@ export function PostsSection({
           {posts.map((post) => (
             <View key={post.id} style={{ width: "31.5%" }}>
               <View style={{ position: "relative" }}>
-                <Image
-                  source={{ uri: post.media_url }}
-                  style={{ width: "100%", aspectRatio: 1, borderRadius: 10 }}
-                  resizeMode="cover"
-                />
+                <Pressable
+                  accessibilityRole="imagebutton"
+                  accessibilityLabel="Open post"
+                  onPress={() => setViewing(post)}
+                >
+                  <Image
+                    source={{ uri: post.media_url }}
+                    style={{ width: "100%", aspectRatio: 1, borderRadius: 10 }}
+                    resizeMode="cover"
+                  />
+                </Pressable>
                 {isOwner && (
                   <TouchableOpacity
                     accessibilityRole="button"
@@ -182,6 +189,64 @@ export function PostsSection({
           ))}
         </View>
       )}
+
+      {/* Full-screen view of one post */}
+      <Modal
+        visible={!!viewing}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewing(null)}
+      >
+        <Pressable
+          onPress={() => setViewing(null)}
+          style={{
+            flex: 1,
+            backgroundColor: "#000",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {viewing && (
+            <Image
+              source={{ uri: viewing.media_url }}
+              style={{ width: "100%", height: "80%" }}
+              resizeMode="contain"
+            />
+          )}
+          {!!viewing?.caption && (
+            <Text
+              style={{
+                color: "#FFF",
+                fontSize: 15,
+                lineHeight: 21,
+                paddingHorizontal: 22,
+                marginTop: 14,
+                textAlign: "center",
+              }}
+            >
+              {viewing.caption}
+            </Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            onPress={() => setViewing(null)}
+            style={{
+              position: "absolute",
+              top: 48,
+              right: 20,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255,255,255,0.15)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="close" size={24} color="#FFF" />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Post options */}
       <Modal visible={!!menuFor} transparent animationType="fade">

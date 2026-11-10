@@ -563,6 +563,17 @@ function MilaanApp() {
     const value = row.is_private ?? row.isPrivate;
     if (value !== undefined) setIsPrivateAccount(value === true || value === 1);
   };
+  /** Server row -> intent + the four alignment answers ("future essentials"). */
+  const applyIntentFrom = (row: unknown) => {
+    const r = (row ?? {}) as Record<string, unknown>;
+    if (typeof r.intent === "string" && r.intent) setIntent(r.intent);
+    const next: Record<string, string> = {};
+    for (const key of ["timeline", "children", "family", "relocation"]) {
+      const value = r[key];
+      if (typeof value === "string" && value) next[key] = value;
+    }
+    if (Object.keys(next).length) setAlignment(next);
+  };
   const applyVerificationFrom = (profile: unknown) => {
     const row = (profile ?? {}) as {
       verified?: unknown;
@@ -1007,8 +1018,7 @@ function MilaanApp() {
             if (profileData.photos?.length)
               setProfilePhotos(profileData.photos);
             if (profileData.vibes?.length) setVibeList(profileData.vibes);
-            if (profileData.intent?.intent)
-              setIntent(profileData.intent.intent);
+            applyIntentFrom(profileData.intent);
             const onboardingDone = !!profileData.profile?.onboarding_complete;
             setOnboardingComplete(onboardingDone);
             nextScreen = onboardingDone ? "home" : "profileSetup";
@@ -3004,7 +3014,7 @@ function MilaanApp() {
       }
       if (profileData.photos?.length) setProfilePhotos(profileData.photos);
       if (profileData.vibes?.length) setVibeList(profileData.vibes);
-      if (profileData.intent?.intent) setIntent(profileData.intent.intent);
+      applyIntentFrom(profileData.intent);
       const done = !!profileData.profile?.onboarding_complete;
       setOnboardingComplete(done);
       onboardingCompleteRef.current = done;
@@ -3259,7 +3269,32 @@ function MilaanApp() {
           <AlignmentScreen
             value={alignment}
             onChange={setAlignment}
-            onNext={() => setScreen("discovery")}
+            onNext={() => {
+              // Editing from Home: save to the server now, otherwise a refresh
+              // reloads the old answers. During onboarding the whole profile is
+              // saved together at the end, so just move on.
+              if (!onboardingComplete || !accessToken) {
+                setScreen("discovery");
+                return;
+              }
+              void profileApi
+                .updateIntent(accessToken, {
+                  intent,
+                  timeline: alignment.timeline,
+                  children: alignment.children,
+                  family: alignment.family,
+                  relocation: alignment.relocation,
+                })
+                .then(() => setScreen("home"))
+                .catch(() =>
+                  setAppNotice({
+                    title: "Not saved",
+                    body: "Your answers could not be saved. Check your connection and try again.",
+                    icon: "cloud-offline-outline",
+                    tone: "ruby",
+                  }),
+                );
+            }}
           />
         )}
         {screen === "home" && (
