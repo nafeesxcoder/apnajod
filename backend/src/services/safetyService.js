@@ -4,6 +4,23 @@ const sessionService = require('./sessionService');
 const { forgetAccountStatus } = require('../middleware/auth');
 
 async function submitReport(reporterId, reportedId, reason, details, reportId) {
+  // One open report per person per reporter. Reporting the same account
+  // again updates that report, so five taps from one member still count as
+  // one complaint in the admin queue rather than looking like five people.
+  const [existing] = await query(
+    `SELECT id FROM reports
+      WHERE reporter_id = ? AND reported_id = ? AND review_status = 'open'
+      LIMIT 1`,
+    [reporterId, reportedId],
+  );
+  if (existing) {
+    await query(`UPDATE reports SET reason = ?, details = ? WHERE id = ?`, [
+      reason,
+      details || null,
+      existing.id,
+    ]);
+    return { ok: true, updated: true };
+  }
   await query(
     `INSERT IGNORE INTO reports (id, reporter_id, reported_id, reason, details) VALUES (?, ?, ?, ?, ?)`,
     [reportId, reporterId, reportedId, reason, details || null],
@@ -54,7 +71,7 @@ async function listOpenReports(limit = 50) {
             profile.first_name   AS reported_name,
             profile.city         AS reported_city,
             reported.status      AS account_status,
-            COUNT(*)             AS report_count,
+            COUNT(DISTINCT r.reporter_id) AS report_count,
             GROUP_CONCAT(DISTINCT r.reason ORDER BY r.created_at SEPARATOR ' | ') AS reasons,
             MIN(r.created_at)    AS first_reported_at,
             MAX(r.created_at)    AS last_reported_at

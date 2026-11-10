@@ -3569,7 +3569,7 @@ function MilaanApp() {
                 setScreen("chat");
               }}
               onReport={(reason, details) =>
-                void reportMatch(conversationPartner, reason, details)
+                reportMatch(conversationPartner, reason, details)
               }
               onBlock={async () => {
                 if (await blockMatch(conversationPartner)) setScreen("home");

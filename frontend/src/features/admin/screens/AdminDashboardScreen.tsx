@@ -1283,7 +1283,7 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
               >
                 {name}
               </Text>
-              <Badge text={`${count} report${count === 1 ? "" : "s"}`} danger />
+              <Badge text={`Reported by ${count} ${count === 1 ? "person" : "people"}`} danger />
               {suspended && <Badge text="Suspended" danger />}
             </View>
             {!!meta && (
@@ -1422,7 +1422,7 @@ function AppealsTab({ accessToken }: { accessToken: string }) {
               <Badge text="Suspended" danger />
               {reports > 0 && (
                 <Badge
-                  text={`${reports} report${reports === 1 ? "" : "s"}`}
+                  text={`Reported by ${reports} ${reports === 1 ? "person" : "people"}`}
                   danger
                 />
               )}

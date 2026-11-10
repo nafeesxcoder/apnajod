@@ -951,7 +951,7 @@ export function ChatScreen({
   ) => Promise<boolean>;
   onForward: (target: Match, messages: ChatMessage[]) => Promise<number>;
   onOpenConversation: (target: Match) => void;
-  onReport: (reason: string, details?: string) => void;
+  onReport: (reason: string, details?: string) => void | Promise<unknown>;
   onBlock: () => void;
   isBlocked?: boolean;
   onUnblock: () => void;
@@ -3380,8 +3380,8 @@ export function ChatScreen({
               navigate("safety");
             }}
             onReport={(reason, details) => {
-              onReport(reason, details);
               setSafetyOpen(false);
+              return onReport(reason, details);
             }}
             onBlock={() => {
               setSafetyOpen(false);

@@ -66,7 +66,7 @@ async function listOpenAppeals(limit = 50) {
   return query(
     `SELECT a.id, a.user_id, a.message, a.created_at, a.updated_at,
             u.username, u.phone, p.first_name, p.city,
-            (SELECT COUNT(*) FROM reports r WHERE r.reported_id = u.id) AS report_count
+            (SELECT COUNT(DISTINCT r.reporter_id) FROM reports r WHERE r.reported_id = u.id) AS report_count
        FROM account_appeals a
        JOIN users u ON u.id = a.user_id
        LEFT JOIN profiles p ON p.user_id = u.id
