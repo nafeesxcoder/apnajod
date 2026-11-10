@@ -1035,9 +1035,15 @@ function MilaanApp() {
         const remaining = Math.max(0, 3000 - (Date.now() - started));
         ``;
         setTimeout(() => {
-          if (active) { if (!isAdminMode) setScreen(showcasePreviewScreen ?? nextScreen);
-            setHydrated(true);
-          }
+         if (active) {
+           if (isAdminMode) {
+             setScreen("adminLogin");
+           } else {
+          
+             setScreen(showcasePreviewScreen ?? nextScreen);
+           }
+           setHydrated(true);
+         }
         }, remaining);
       },
     );
