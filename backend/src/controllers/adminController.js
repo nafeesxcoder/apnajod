@@ -70,7 +70,8 @@ const forgotAdminPassword = asyncHandler(async (req, res) => {
   if (!phone) throw new ApiError(400, "Registered phone number is required");
   const userService = require("../services/userService");
   const otpService = require("../services/otpService");
-  const user = await userService.findUserByPhone(phone);
+  const { normalizeIndianPhone } = require("../utils/otp");
+  const user = await userService.findUserByPhone(normalizeIndianPhone(phone) || phone);
   if (!user || user.role !== "admin") return res.json({ ok: true, message: "If this is a registered admin phone, an OTP has been sent." });
   await otpService.requestOtp({ channel: "phone", identifier: user.phone, purpose: "password_reset" });
   res.json({ ok: true, message: "If this is a registered admin phone, an OTP has been sent." });
@@ -83,7 +84,8 @@ const resetAdminPassword = asyncHandler(async (req, res) => {
   const userService = require("../services/userService");
   const otpService = require("../services/otpService");
   const sessionService = require("../services/sessionService");
-  const user = await userService.findUserByPhone(phone);
+  const { normalizeIndianPhone } = require("../utils/otp");
+  const user = await userService.findUserByPhone(normalizeIndianPhone(phone) || phone);
   if (!user || user.role !== "admin") throw new ApiError(400, "Invalid request");
   await otpService.verifyOtp({ channel: "phone", identifier: user.phone, code, purpose: "password_reset" });
   await userService.setPassword(user.id, newPassword, { mustChange: false });
