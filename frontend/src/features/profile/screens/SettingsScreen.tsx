@@ -1,13 +1,35 @@
-import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Switch, Image } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  Switch,
+  Image,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { fonts, palette, radius, typeScale } from "../../../theme";
+import { pushApi } from "../../../api/pushApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
+
+// Set to "1" when the member turns notifications off, so the app-wide
+// auto-subscribe in MilaanApp does not quietly turn them back on.
+const PUSH_OFF_KEY = "milaan.push.off";
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
 
 export function SettingsScreen({
   navigate,
@@ -17,6 +39,7 @@ export function SettingsScreen({
   onDeactivate,
   onDeletePermanently,
   onOpenAdmin,
+  accessToken,
 }: {
   navigate: (screen: any) => void;
   isPrivate: boolean;
@@ -26,8 +49,95 @@ export function SettingsScreen({
   onDeletePermanently: () => void;
   /** Only passed for admin accounts; everyone else never sees the entry. */
   onOpenAdmin?: () => void;
+  accessToken?: string;
 }) {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
+
+  // ---- notifications (browser push) ----
+  const pushSupported =
+    Platform.OS === "web" &&
+    typeof window !== "undefined" &&
+    typeof navigator !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    typeof Notification !== "undefined";
+  const [notifOn, setNotifOn] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifNote, setNotifNote] = useState("");
+
+  useEffect(() => {
+    if (!pushSupported) return;
+    let off = false;
+    try {
+      off = window.localStorage.getItem(PUSH_OFF_KEY) === "1";
+    } catch {
+      // Storage blocked: fall back to the permission alone.
+    }
+    setNotifOn(!off && Notification.permission === "granted");
+  }, [pushSupported]);
+
+  const changeNotifications = async (next: boolean) => {
+    setNotifBusy(true);
+    setNotifNote("");
+    try {
+      if (next) {
+        if (Notification.permission === "denied") {
+          setNotifNote(
+            "Notifications are blocked for this site. Allow them in your browser settings, then try again.",
+          );
+          return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          setNotifNote("Permission was not given, so notifications stay off.");
+          return;
+        }
+        try {
+          window.localStorage.removeItem(PUSH_OFF_KEY);
+        } catch {
+          // Harmless.
+        }
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          const publicKey = await pushApi.getPublicKey();
+          if (!publicKey) {
+            setNotifNote("Notifications are not set up on the server yet.");
+            return;
+          }
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+          });
+        }
+        if (accessToken) {
+          await pushApi.subscribe(accessToken, subscription.toJSON());
+        }
+        setNotifOn(true);
+      } else {
+        try {
+          window.localStorage.setItem(PUSH_OFF_KEY, "1");
+        } catch {
+          // Harmless.
+        }
+        const registration = await navigator.serviceWorker.getRegistration();
+        const subscription = await registration?.pushManager.getSubscription();
+        if (subscription) {
+          if (accessToken) {
+            await pushApi
+              .unsubscribe(accessToken, subscription.endpoint)
+              .catch(() => undefined);
+          }
+          await subscription.unsubscribe();
+        }
+        setNotifOn(false);
+      }
+    } catch {
+      setNotifNote("Could not change that. Please try again.");
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   const Row = ({
     icon,
@@ -239,6 +349,62 @@ export function SettingsScreen({
               />
             </Card>
 
+            {/* Notifications (web push) */}
+            {pushSupported && (
+              <>
+                <SectionHeader title="Notifications" />
+                <Card>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                    }}
+                  >
+                    <Ionicons
+                      name={notifOn ? "notifications-outline" : "notifications-off-outline"}
+                      size={20}
+                      color={palette.navy}
+                      style={{ marginRight: 14 }}
+                    />
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text
+                        style={{
+                          fontFamily: fonts.bodyMedium,
+                          fontSize: 15,
+                          color: palette.ink,
+                        }}
+                      >
+                        Push notifications
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: fonts.body,
+                          fontSize: 12,
+                          color: notifNote ? palette.clay : palette.slate,
+                          marginTop: 3,
+                        }}
+                      >
+                        {notifNote ||
+                          (notifOn
+                            ? "On. You will hear about messages, likes and calls."
+                            : "Off. You will not get alerts on this device.")}
+                      </Text>
+                    </View>
+                    <Switch
+                      accessibilityLabel="Push notifications"
+                      value={notifOn}
+                      disabled={notifBusy}
+                      onValueChange={(next) => void changeNotifications(next)}
+                      trackColor={{ false: palette.rule, true: palette.crimson }}
+                      thumbColor="#FFFFFF"
+                    />
+                  </View>
+                </Card>
+              </>
+            )}
+
             {/* Privacy & Safety */}
             <SectionHeader title="Privacy & Safety" />
             <Card>
@@ -305,7 +471,7 @@ export function SettingsScreen({
               />
             </Card>
 
-            {/* Support — single link */}
+            {/* Support â€” single link */}
             <SectionHeader title="Support" />
             <Card>
               <Row
@@ -345,3 +511,4 @@ export function SettingsScreen({
     </AppCanvas>
   );
 }
+

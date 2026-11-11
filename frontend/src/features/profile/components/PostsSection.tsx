@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { postApi, type Post } from "../../../api/postApi";
 import { CaptionEditor } from "./CaptionEditor";
@@ -50,7 +53,36 @@ export function PostsSection({
   const [menuFor, setMenuFor] = useState<Post | null>(null);
   const [editing, setEditing] = useState<Post | null>(null);
   const [draftCaption, setDraftCaption] = useState("");
-  const [viewing, setViewing] = useState<Post | null>(null);
+  // Index of the post opened from the grid; null while the feed is closed.
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
+  const isViewing = viewingIndex !== null;
+  const pushedRef = useRef(false);
+  const listRef = useRef<FlatList<Post>>(null);
+
+  // On the web the browser Back button must close the feed and stay on this
+  // page. Opening the feed adds one history entry; Back removes it. The
+  // listener runs first (capture) and stops the app-wide back handler, which
+  // would otherwise treat this Back as "leave the profile".
+  useEffect(() => {
+    if (!isViewing || Platform.OS !== "web" || typeof window === "undefined")
+      return;
+    window.history.pushState(window.history.state, "");
+    pushedRef.current = true;
+    const onPop = (event: PopStateEvent) => {
+      if (!pushedRef.current) return;
+      pushedRef.current = false;
+      event.stopImmediatePropagation();
+      setViewingIndex(null);
+    };
+    window.addEventListener("popstate", onPop, true);
+    return () => window.removeEventListener("popstate", onPop, true);
+  }, [isViewing]);
+
+  const closeViewer = useCallback(() => {
+    if (Platform.OS === "web" && pushedRef.current && typeof window !== "undefined")
+      window.history.back();
+    else setViewingIndex(null);
+  }, []);
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -144,13 +176,13 @@ export function PostsSection({
         </View>
       ) : (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <View key={post.id} style={{ width: "31.5%" }}>
               <View style={{ position: "relative" }}>
                 <Pressable
                   accessibilityRole="imagebutton"
                   accessibilityLabel="Open post"
-                  onPress={() => setViewing(post)}
+                  onPress={() => setViewingIndex(index)}
                 >
                   <Image
                     source={{ uri: post.media_url }}
@@ -190,62 +222,82 @@ export function PostsSection({
         </View>
       )}
 
-      {/* Full-screen view of one post */}
+      {/* Instagram-style feed: tap a post, then scroll through all of them */}
       <Modal
-        visible={!!viewing}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setViewing(null)}
+        visible={isViewing}
+        animationType="slide"
+        onRequestClose={closeViewer}
       >
-        <Pressable
-          onPress={() => setViewing(null)}
-          style={{
-            flex: 1,
-            backgroundColor: "#000",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {viewing && (
-            <Image
-              source={{ uri: viewing.media_url }}
-              style={{ width: "100%", height: "80%" }}
-              resizeMode="contain"
-            />
-          )}
-          {!!viewing?.caption && (
-            <Text
-              style={{
-                color: "#FFF",
-                fontSize: 15,
-                lineHeight: 21,
-                paddingHorizontal: 22,
-                marginTop: 14,
-                textAlign: "center",
-              }}
-            >
-              {viewing.caption}
-            </Text>
-          )}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-            onPress={() => setViewing(null)}
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF" }} edges={["top", "bottom"]}>
+          <View
             style={{
-              position: "absolute",
-              top: 48,
-              right: 20,
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "rgba(255,255,255,0.15)",
+              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
+              gap: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderBottomWidth: 1,
+              borderBottomColor: LINE,
             }}
           >
-            <Ionicons name="close" size={24} color="#FFF" />
-          </Pressable>
-        </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              onPress={closeViewer}
+              hitSlop={12}
+              style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+            >
+              <Ionicons name="arrow-back" size={24} color={DARK} />
+            </Pressable>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: DARK }}>Posts</Text>
+          </View>
+          {viewingIndex !== null && (
+            <FlatList
+              ref={listRef}
+              style={{ flex: 1 }}
+              data={posts}
+              keyExtractor={(post) => post.id}
+              initialScrollIndex={Math.min(viewingIndex, Math.max(posts.length - 1, 0))}
+              onScrollToIndexFailed={(info) => {
+                setTimeout(
+                  () => listRef.current?.scrollToIndex({ index: info.index, animated: false }),
+                  120,
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 40 }}
+              renderItem={({ item }) => (
+                <View style={{ width: "100%", maxWidth: 600, alignSelf: "center", marginBottom: 18 }}>
+                  {isOwner && (
+                    <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 12, paddingVertical: 6 }}>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Post options"
+                        hitSlop={10}
+                        onPress={() => {
+                          closeViewer();
+                          setTimeout(() => setMenuFor(item), 350);
+                        }}
+                      >
+                        <Ionicons name="ellipsis-horizontal" size={22} color={DARK} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <Image
+                    source={{ uri: item.media_url }}
+                    style={{ width: "100%", aspectRatio: 1, backgroundColor: LINE }}
+                    resizeMode="cover"
+                  />
+                  {!!item.caption && (
+                    <Text style={{ color: DARK, fontSize: 15, lineHeight: 21, paddingHorizontal: 14, paddingTop: 10 }}>
+                      {item.caption}
+                    </Text>
+                  )}
+                </View>
+              )}
+            />
+          )}
+        </SafeAreaView>
       </Modal>
 
       {/* Post options */}
@@ -294,3 +346,4 @@ export function PostsSection({
     </View>
   );
 }
+

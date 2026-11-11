@@ -38,10 +38,15 @@ async function setPrivacy(userId, isPrivate) {
     userId,
   ]);
   if (!isPrivate) {
-    await query(
-      "UPDATE follows SET status = 'accepted', responded_at = NOW(6) WHERE following_id = ? AND status = 'pending'",
-      [userId],
-    );
+    try {
+      await query(
+        "UPDATE follows SET status = 'accepted', responded_at = NOW(6) WHERE following_id = ? AND status = 'pending'",
+        [userId],
+      );
+    } catch (error) {
+      // The follows table may not exist any more. Going public must not fail for that.
+      if (!error || error.code !== "ER_NO_SUCH_TABLE") throw error;
+    }
   }
 }
 

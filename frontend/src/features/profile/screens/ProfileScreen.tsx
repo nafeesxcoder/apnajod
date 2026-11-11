@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  Share,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,10 +22,17 @@ import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { VerifiedBadge } from "../../../components/VerifiedBadge";
+import { authApi } from "../../../api/authApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
 const brandLogo = require("../../../../assets/apnajoda-logo.png");
+
+// Invite links point at the public site. ?invite=<username> is read by
+// captureInviteFromUrl, so a signup that comes from this link credits you.
+const SHARE_BASE = "https://apnajoda.com/";
+const SHARE_TEXT =
+  "Join me on Apnajoda. Meaningful connections, meaningful futures.";
 
 function hobbyIcon(label: string) {
   const wanted = String(label).trim().toLowerCase();
@@ -39,6 +54,55 @@ export function ProfileScreen({
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
+  const [username, setUsername] = useState("");
+  const [shareNote, setShareNote] = useState("");
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let active = true;
+    authApi
+      .me(accessToken)
+      .then((res: any) => {
+        if (active) setUsername(String(res?.user?.username ?? ""));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!shareNote) return;
+    const timer = setTimeout(() => setShareNote(""), 4000);
+    return () => clearTimeout(timer);
+  }, [shareNote]);
+
+  const shareLink = username
+    ? `${SHARE_BASE}?invite=${encodeURIComponent(username)}`
+    : SHARE_BASE;
+
+  const onShareProfile = async () => {
+    try {
+      if (Platform.OS === "web") {
+        const nav: any = typeof navigator !== "undefined" ? navigator : null;
+        if (nav?.share) {
+          await nav.share({ title: "Apnajoda", text: SHARE_TEXT, url: shareLink });
+          return;
+        }
+        if (nav?.clipboard?.writeText) {
+          await nav.clipboard.writeText(`${SHARE_TEXT} ${shareLink}`);
+          setShareNote("Link copied. Paste it in WhatsApp, Instagram or Facebook.");
+          return;
+        }
+        setShareNote(shareLink);
+        return;
+      }
+      await Share.share({ message: `${SHARE_TEXT} ${shareLink}` });
+    } catch (error: any) {
+      if (error?.name === "AbortError") return;
+      setShareNote("Could not share. Please try again.");
+    }
+  };
 
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
@@ -201,7 +265,7 @@ export function ProfileScreen({
               >
                 {[profile?.city, profile?.profession]
                   .filter(Boolean)
-                  .join("  ·  ") || "Add your city and work"}
+                  .join("  Ã‚Â·  ") || "Add your city and work"}
               </Text>
 
               <View
@@ -293,6 +357,9 @@ export function ProfileScreen({
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Share profile"
+                  onPress={() => void onShareProfile()}
                   style={{
                     flex: 1,
                     flexDirection: "row",
@@ -323,6 +390,20 @@ export function ProfileScreen({
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {!!shareNote && (
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    color: palette.slate,
+                    textAlign: "center",
+                    marginTop: 8,
+                  }}
+                >
+                  {shareNote}
+                </Text>
+              )}
 
               <View
                 style={{

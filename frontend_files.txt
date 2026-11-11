@@ -1,0 +1,1734 @@
+﻿
+===== FRONTEND: src\features\profile\components\PostsSection.tsx =====
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+import { postApi, type Post } from "../../../api/postApi";
+import { CaptionEditor } from "./CaptionEditor";
+
+const PINK = "#5087BE";
+const DARK = "#151719";
+const MUTED = "#5A5E63";
+const LINE = "#D3D6DA";
+const DANGER = "#B3261E";
+
+/**
+ * The photos a member has posted, with the line they wrote under each.
+ *
+ * This section used to render three Unsplash pictures from a constant, on
+ * every profile, with a note to wire the real thing in later. So a brand new
+ * account looked like it had already posted, and the pictures were of
+ * strangers.
+ *
+ * Read-only when looking at somebody else: the menu, the editor and the add
+ * button only exist on your own profile.
+ */
+export function PostsSection({
+  accessToken,
+  userId,
+  isOwner,
+  reloadKey = 0,
+}: {
+  accessToken?: string;
+  /** Whose posts to show. Omit for your own. */
+  userId?: string;
+  isOwner: boolean;
+  /** Bump this after posting elsewhere on the screen to reload the list. */
+  reloadKey?: number;
+}) {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<Post | null>(null);
+  const [editing, setEditing] = useState<Post | null>(null);
+  const [draftCaption, setDraftCaption] = useState("");
+  const [viewing, setViewing] = useState<Post | null>(null);
+
+  const load = useCallback(async () => {
+    if (!accessToken) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setError(null);
+      const rows = userId
+        ? await postApi.of(accessToken, userId)
+        : await postApi.mine(accessToken);
+      setPosts(rows);
+    } catch (err: any) {
+      setError(err.message || "Could not load posts.");
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, userId]);
+
+  useEffect(() => {
+    void load();
+  }, [load, reloadKey]);
+
+
+  const saveCaption = async () => {
+    if (!accessToken || !editing) return;
+    setBusy(true);
+    try {
+      await postApi.updateCaption(accessToken, editing.id, draftCaption);
+      setPosts((current) =>
+        current.map((post) =>
+          post.id === editing.id ? { ...post, caption: draftCaption } : post,
+        ),
+      );
+      setEditing(null);
+    } catch (err: any) {
+      setError(err.message || "Could not save that.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removePost = async (post: Post) => {
+    if (!accessToken) return;
+    setMenuFor(null);
+    setBusy(true);
+    try {
+      await postApi.remove(accessToken, post.id);
+      setPosts((current) => current.filter((row) => row.id !== post.id));
+    } catch (err: any) {
+      setError(err.message || "Could not delete that.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={{ paddingVertical: 24, alignItems: "center" }}>
+        <ActivityIndicator color={PINK} />
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      {!!error && (
+        <Text style={{ color: DANGER, fontSize: 13, marginBottom: 10 }}>
+          {error}
+        </Text>
+      )}
+
+      {posts.length === 0 ? (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: LINE,
+            borderStyle: "dashed",
+            borderRadius: 14,
+            paddingVertical: 28,
+            paddingHorizontal: 16,
+            alignItems: "center",
+          }}
+        >
+          <Ionicons name="images-outline" size={28} color={MUTED} />
+          <Text style={{ color: MUTED, fontSize: 13, marginTop: 8, textAlign: "center" }}>
+            {isOwner
+              ? "Nothing posted yet. Add a photo and say something about it."
+              : "They have not posted anything yet."}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {posts.map((post) => (
+            <View key={post.id} style={{ width: "31.5%" }}>
+              <View style={{ position: "relative" }}>
+                <Pressable
+                  accessibilityRole="imagebutton"
+                  accessibilityLabel="Open post"
+                  onPress={() => setViewing(post)}
+                >
+                  <Image
+                    source={{ uri: post.media_url }}
+                    style={{ width: "100%", aspectRatio: 1, borderRadius: 10 }}
+                    resizeMode="cover"
+                  />
+                </Pressable>
+                {isOwner && (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Post options"
+                    onPress={() => setMenuFor(post)}
+                    hitSlop={8}
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      backgroundColor: "rgba(0,0,0,0.45)",
+                      borderRadius: 12,
+                      padding: 3,
+                    }}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={14} color="#FFF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {!!post.caption && (
+                <Text
+                  numberOfLines={2}
+                  style={{ fontSize: 11, color: MUTED, marginTop: 4 }}
+                >
+                  {post.caption}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Full-screen view of one post */}
+      <Modal
+        visible={!!viewing}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewing(null)}
+      >
+        <Pressable
+          onPress={() => setViewing(null)}
+          style={{
+            flex: 1,
+            backgroundColor: "#000",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {viewing && (
+            <Image
+              source={{ uri: viewing.media_url }}
+              style={{ width: "100%", height: "80%" }}
+              resizeMode="contain"
+            />
+          )}
+          {!!viewing?.caption && (
+            <Text
+              style={{
+                color: "#FFF",
+                fontSize: 15,
+                lineHeight: 21,
+                paddingHorizontal: 22,
+                marginTop: 14,
+                textAlign: "center",
+              }}
+            >
+              {viewing.caption}
+            </Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            onPress={() => setViewing(null)}
+            style={{
+              position: "absolute",
+              top: 48,
+              right: 20,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255,255,255,0.15)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="close" size={24} color="#FFF" />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Post options */}
+      <Modal visible={!!menuFor} transparent animationType="fade">
+        <Pressable
+          onPress={() => setMenuFor(null)}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+        >
+          <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingVertical: 8 }}>
+            <TouchableOpacity
+              onPress={() => {
+                setDraftCaption(menuFor?.caption ?? "");
+                setEditing(menuFor);
+                setMenuFor(null);
+              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 22, paddingVertical: 16 }}
+            >
+              <Ionicons name="create-outline" size={20} color={DARK} />
+              <Text style={{ fontSize: 16, color: DARK }}>Edit caption</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => menuFor && removePost(menuFor)}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 22, paddingVertical: 16 }}
+            >
+              <Ionicons name="trash-outline" size={20} color={DANGER} />
+              <Text style={{ fontSize: 16, color: DANGER }}>Delete post</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMenuFor(null)}
+              style={{ paddingHorizontal: 22, paddingVertical: 16, alignItems: "center" }}
+            >
+              <Text style={{ fontSize: 15, color: MUTED }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <CaptionEditor
+        visible={!!editing}
+        value={draftCaption}
+        busy={busy}
+        onChange={setDraftCaption}
+        onCancel={() => setEditing(null)}
+        onSave={saveCaption}
+      />
+    </View>
+  );
+}
+
+
+===== FRONTEND: src\features\profile\screens\ProfileScreen.tsx =====
+import { useState } from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { fonts, palette, radius, typeScale } from "../../../theme";
+
+import { AppCanvas } from "../../../components/AppCanvas";
+import {
+  BottomNav,
+  useNavInset,
+} from "../../../components/navigation/BottomNav";
+import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
+import { PostsSection } from "../components/PostsSection";
+import { AddPostButton } from "../components/AddPostButton";
+import { VerifiedBadge } from "../../../components/VerifiedBadge";
+
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
+const brandLogo = require("../../../../assets/apnajoda-logo.png");
+
+function hobbyIcon(label: string) {
+  const wanted = String(label).trim().toLowerCase();
+  return MASTER_HOBBIES.find((h) => h.label.toLowerCase() === wanted)?.icon;
+}
+
+export function ProfileScreen({
+  profile,
+  verified,
+  profilePhoto,
+  navigate,
+  accessToken,
+}: {
+  profile: any;
+  verified: boolean;
+  profilePhoto?: string;
+  navigate: (screen: any) => void;
+  accessToken?: string;
+}) {
+  const navInset = useNavInset();
+  const [postsReloadKey, setPostsReloadKey] = useState(0);
+
+  const hobbies: string[] = Array.isArray(profile?.hobbies)
+    ? profile.hobbies
+    : [];
+  const name = String(profile?.firstName ?? "").trim();
+  const age = String(profile?.age ?? "").trim();
+  const bio = String(profile?.bio ?? "").trim();
+
+  return (
+    <AppCanvas>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: palette.paperBase,
+          paddingLeft: navInset.paddingLeft,
+        }}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 90,
+            paddingHorizontal: 12,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              backgroundColor: palette.paper,
+              borderRadius: radius.xl,
+              paddingHorizontal: SIDE_PADDING,
+              paddingVertical: 16,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingBottom: 4,
+              }}
+            >
+              <Image
+                source={brandLogo}
+                style={{ width: 116, height: 32 }}
+                resizeMode="contain"
+                accessibilityLabel="Apnajoda"
+              />
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <AddPostButton
+                  accessToken={accessToken}
+                  onPosted={() => setPostsReloadKey((key) => key + 1)}
+                />
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Settings"
+                  onPress={() => navigate("settings")}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: palette.paperSand,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Ionicons
+                    name="ellipsis-vertical"
+                    size={18}
+                    color={palette.ink}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View>
+              <View style={{ alignItems: "center", marginTop: 4 }}>
+                <LinearGradient
+                  colors={[palette.crimson, palette.navy]}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    width: 116,
+                    height: 116,
+                    borderRadius: 58,
+                    padding: 3,
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      borderRadius: 55,
+                      borderWidth: 3,
+                      borderColor: palette.paper,
+                      overflow: "hidden",
+                      backgroundColor: palette.paper,
+                    }}
+                  >
+                    {profilePhoto ? (
+                      <Image
+                        source={{ uri: profilePhoto }}
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          flex: 1,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          backgroundColor: palette.paperSand,
+                        }}
+                      >
+                        <Ionicons
+                          name="person"
+                          size={44}
+                          color={palette.navySoft}
+                        />
+                      </View>
+                    )}
+                  </View>
+                </LinearGradient>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: 28,
+                    lineHeight: 34,
+                    color: palette.ink,
+                    textAlign: "center",
+                    flexShrink: 1,
+                  }}
+                >
+                  {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
+                </Text>
+                {verified && <VerifiedBadge size={22} />}
+              </View>
+
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: palette.slate,
+                  marginTop: 2,
+                  textAlign: "center",
+                  fontFamily: fonts.body,
+                }}
+              >
+                {[profile?.city, profile?.profession]
+                  .filter(Boolean)
+                  .join("  Â·  ") || "Add your city and work"}
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: 16,
+                }}
+              >
+                {hobbies.length > 0 ? (
+                  hobbies.map((hobby) => {
+                    const icon = hobbyIcon(hobby);
+                    return (
+                      <View
+                        key={hobby}
+                        style={{
+                          backgroundColor: "transparent",
+                          borderWidth: 1,
+                          borderColor: palette.rule,
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: radius.pill,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        {!!icon && (
+                          <Ionicons
+                            name={icon as any}
+                            size={12}
+                            color={palette.ink}
+                          />
+                        )}
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: palette.ink,
+                            fontFamily: fonts.bodySemi,
+                          }}
+                        >
+                          {hobby}
+                        </Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <TouchableOpacity onPress={() => navigate("profileSetup")}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: palette.navy,
+                        fontFamily: fonts.bodySemi,
+                      }}
+                    >
+                      Add hobbies
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
+                <TouchableOpacity
+                  onPress={() => navigate("profileSetup")}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: palette.navy,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    gap: 6,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 13,
+                    }}
+                  >
+                    Edit profile
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: palette.paper,
+                    borderWidth: 1.5,
+                    borderColor: palette.navy,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    gap: 6,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons
+                    name="share-social"
+                    size={16}
+                    color={palette.navy}
+                  />
+                  <Text
+                    style={{
+                      color: palette.navy,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 13,
+                    }}
+                  >
+                    Share profile
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View
+                style={{
+                  marginTop: 24,
+                  paddingTop: 20,
+                  borderTopWidth: 1,
+                  borderTopColor: palette.rule,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
+                    color: palette.ink,
+                    marginBottom: 6,
+                  }}
+                >
+                  About
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontFamily: fonts.body,
+                    color: bio ? palette.inkSoft : palette.slate,
+                    lineHeight: 22,
+                  }}
+                >
+                  {bio || "Add a short bio so people know the real you."}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="See Premium"
+                onPress={() => navigate("premium")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  backgroundColor: palette.paperSand,
+                  borderRadius: radius.md,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  marginTop: 24,
+                }}
+              >
+                <Ionicons name="sparkles" size={18} color={palette.navy} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.display,
+                      fontSize: 15,
+                      color: palette.ink,
+                    }}
+                  >
+                    Premium
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: palette.slate,
+                      marginTop: 1,
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    Unlimited likes, see who liked you
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={palette.slate}
+                />
+              </TouchableOpacity>
+
+              <View style={{ marginTop: 24 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
+                    color: palette.ink,
+                    marginBottom: 12,
+                  }}
+                >
+                  My posts
+                </Text>
+
+                <PostsSection
+                  accessToken={accessToken}
+                  isOwner
+                  reloadKey={postsReloadKey}
+                />
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+
+        <BottomNav active="profile" navigate={navigate} />
+      </SafeAreaView>
+    </AppCanvas>
+  );
+}
+
+
+===== FRONTEND: src\features\profile\screens\SettingsScreen.tsx =====
+import { useState } from "react";
+import { View, Text, Pressable, ScrollView, Switch, Image } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+
+import { AppCanvas } from "../../../components/AppCanvas";
+import { fonts, palette, radius, typeScale } from "../../../theme";
+
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
+
+export function SettingsScreen({
+  navigate,
+  isPrivate,
+  onPrivacyChange,
+  onLogout,
+  onDeactivate,
+  onDeletePermanently,
+  onOpenAdmin,
+}: {
+  navigate: (screen: any) => void;
+  isPrivate: boolean;
+  onPrivacyChange: (next: boolean) => Promise<void>;
+  onLogout: () => void;
+  onDeactivate: () => void;
+  onDeletePermanently: () => void;
+  /** Only passed for admin accounts; everyone else never sees the entry. */
+  onOpenAdmin?: () => void;
+}) {
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+
+  const Row = ({
+    icon,
+    label,
+    onPress,
+    danger = false,
+    isLast = false,
+  }: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    onPress: () => void;
+    danger?: boolean;
+    isLast?: boolean;
+  }) => (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: palette.rule,
+      }}
+    >
+      <Ionicons
+        name={icon}
+        size={20}
+        color={danger ? palette.clay : palette.navy}
+        style={{ marginRight: 14 }}
+      />
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: fonts.bodyMedium,
+          fontSize: 15,
+          color: danger ? palette.clay : palette.ink,
+        }}
+      >
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={16} color={palette.slate} />
+    </Pressable>
+  );
+
+  const SectionHeader = ({ title }: { title: string }) => (
+    <Text
+      style={{
+        fontFamily: fonts.display,
+        fontSize: typeScale.section,
+        color: palette.ink,
+        marginTop: 24,
+        marginBottom: 10,
+      }}
+    >
+      {title}
+    </Text>
+  );
+
+  const Card = ({ children }: { children: React.ReactNode }) => (
+    <View
+      style={{
+        backgroundColor: palette.paper,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: palette.rule,
+        marginBottom: 12,
+        overflow: "hidden",
+      }}
+    >
+      {children}
+    </View>
+  );
+
+  return (
+    <AppCanvas>
+      <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingTop: 12,
+            paddingBottom: 60,
+            paddingHorizontal: 12,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              backgroundColor: palette.paper,
+              borderRadius: radius.xl,
+              paddingHorizontal: SIDE_PADDING,
+              paddingVertical: 20,
+            }}
+          >
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 20,
+              }}
+            >
+              <Pressable
+                onPress={() => navigate("profile")}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: palette.paperSand,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons name="arrow-back" size={18} color={palette.ink} />
+              </Pressable>
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.title,
+                  color: palette.ink,
+                }}
+              >
+                Settings
+              </Text>
+            </View>
+
+            {/* App Info */}
+            <View style={{ alignItems: "center", paddingBottom: 24 }}>
+              <Image
+                source={require("../../../../assets/apnajoda-mark.png")}
+                style={{ width: 84, height: 84 }}
+                resizeMode="contain"
+                accessibilityLabel="Apnajoda"
+              />
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: palette.slate,
+                  marginTop: 4,
+                }}
+              >
+                Version 1.0.0
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: palette.slate,
+                  fontStyle: "italic",
+                  marginTop: 4,
+                }}
+              >
+                Meaningful connections. Meaningful futures.
+              </Text>
+            </View>
+
+            {onOpenAdmin && (
+              <>
+                <SectionHeader title="Admin" />
+                <Card>
+                  <Row
+                    icon="shield-checkmark-outline"
+                    label="Admin Panel"
+                    onPress={onOpenAdmin}
+                    isLast
+                  />
+                </Card>
+              </>
+            )}
+
+            {/* Account */}
+            <SectionHeader title="Account" />
+            <Card>
+              <Row
+                icon="person-outline"
+                label="Edit Profile"
+                onPress={() => navigate("profileSetup")}
+              />
+              <Row
+                icon="shield-checkmark-outline"
+                label="Trust Hub & Verification"
+                onPress={() => navigate("verifyHub")}
+              />
+              <Row
+                icon="options-outline"
+                label="Match Filters & Preferences"
+                onPress={() => navigate("discovery")}
+                isLast
+              />
+            </Card>
+
+            {/* Discover */}
+            <SectionHeader title="Discover" />
+            <Card>
+              <Row
+                icon="heart-outline"
+                label="Who Chose You"
+                onPress={() => navigate("likes")}
+              />
+              <Row
+                icon="search-outline"
+                label="Find Someone"
+                onPress={() => navigate("find")}
+                isLast
+              />
+            </Card>
+
+            {/* Privacy & Safety */}
+            <SectionHeader title="Privacy & Safety" />
+            <Card>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  borderBottomWidth: 1,
+                  borderBottomColor: palette.rule,
+                }}
+              >
+                <Ionicons
+                  name={isPrivate ? "lock-closed-outline" : "lock-open-outline"}
+                  size={20}
+                  color={palette.navy}
+                  style={{ marginRight: 14 }}
+                />
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodyMedium,
+                      fontSize: 15,
+                      color: palette.ink,
+                    }}
+                  >
+                    Private account
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 12,
+                      color: palette.slate,
+                      marginTop: 3,
+                    }}
+                  >
+                    {isPrivate
+                      ? "Nobody can find you by username. You still appear to people browsing."
+                      : "Anyone can find you by searching your username."}
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel="Private account"
+                  value={isPrivate}
+                  disabled={savingPrivacy}
+                  onValueChange={async (next) => {
+                    setSavingPrivacy(true);
+                    try {
+                      await onPrivacyChange(next);
+                    } finally {
+                      setSavingPrivacy(false);
+                    }
+                  }}
+                  trackColor={{ false: palette.rule, true: palette.crimson }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+              <Row
+                icon="shield-outline"
+                label="Safety & Privacy"
+                onPress={() => navigate("safety")}
+                isLast
+              />
+            </Card>
+
+            {/* Support â€” single link */}
+            <SectionHeader title="Support" />
+            <Card>
+              <Row
+                icon="help-circle-outline"
+                label="Help & Support"
+                onPress={() => navigate("support")}
+                isLast
+              />
+            </Card>
+
+            {/* Danger Zone */}
+            <SectionHeader title="Danger zone" />
+            <Card>
+              <Row
+                icon="log-out-outline"
+                label="Log out"
+                onPress={onLogout}
+                danger
+              />
+              <Row
+                icon="pause-circle-outline"
+                label="Deactivate account"
+                onPress={onDeactivate}
+                danger
+              />
+              <Row
+                icon="trash-outline"
+                label="Delete account permanently"
+                onPress={onDeletePermanently}
+                danger
+                isLast
+              />
+            </Card>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </AppCanvas>
+  );
+}
+
+
+===== FRONTEND: src\features\social\screens\PersonScreen.tsx =====
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import type { PersonPage } from "../../../api/socialApi";
+import { fonts, palette, radius, typeScale } from "../../../theme";
+import { VerifiedBadge } from "../../../components/VerifiedBadge";
+
+const MAX_WIDTH = 720;
+const SIDE_PADDING = 16;
+
+export function PersonScreen({
+  userId,
+  onBack,
+  onLoad,
+  onFollow,
+  onMessage,
+  onBlock,
+}: {
+  userId: string;
+  onBack: () => void;
+  onLoad: (userId: string) => Promise<PersonPage>;
+  onFollow: (userId: string) => Promise<"accepted" | "pending">;
+  onMessage: (page: PersonPage) => void;
+  onBlock?: (userId: string) => void;
+}) {
+  const [page, setPage] = useState<PersonPage | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setPage(null);
+    setError("");
+    onLoad(userId)
+      .then((p) => active && setPage(p))
+      .catch(
+        (e) =>
+          active &&
+          setError(
+            e instanceof Error ? e.message : "Could not open this account.",
+          ),
+      );
+    return () => {
+      active = false;
+    };
+  }, [userId, onLoad]);
+
+  const like = async () => {
+    if (!page || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const outcome = await onFollow(userId);
+      const fresh = await onLoad(userId).catch(() => null);
+      if (fresh) setPage(fresh);
+      if (outcome === "accepted" || fresh?.like.matched) {
+        onMessage(fresh ?? page);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That did not work.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (error && !page) {
+    return (
+      <Shell onBack={onBack}>
+        <View
+          style={{
+            paddingVertical: 60,
+            alignItems: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          <Ionicons
+            name="alert-circle-outline"
+            size={40}
+            color={palette.slate}
+          />
+          <Text
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 14,
+              color: palette.slate,
+              textAlign: "center",
+              marginTop: 12,
+            }}
+          >
+            {error}
+          </Text>
+        </View>
+      </Shell>
+    );
+  }
+
+  if (!page) {
+    return (
+      <Shell onBack={onBack}>
+        <View style={{ paddingVertical: 60, alignItems: "center" }}>
+          <ActivityIndicator color={palette.navy} />
+        </View>
+      </Shell>
+    );
+  }
+
+  const { user, profile, state } = page;
+  const likeStatus = page.like.status;
+  const cover = profile.photos[0] || user.avatarUrl || "";
+  const extraPhotos = profile.photos.slice(1);
+
+  return (
+    <Shell
+      onBack={onBack}
+      onBlock={onBlock ? () => onBlock(userId) : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: 12,
+          paddingBottom: 100,
+          paddingHorizontal: 12,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: MAX_WIDTH,
+            alignSelf: "center",
+            backgroundColor: palette.paper,
+            borderRadius: radius.xl,
+            paddingHorizontal: SIDE_PADDING,
+            paddingVertical: 20,
+          }}
+        >
+          <View style={{ alignItems: "center", marginTop: 4 }}>
+            {cover ? (
+              <Image
+                source={{ uri: cover }}
+                style={{
+                  width: 132,
+                  height: 132,
+                  borderRadius: 66,
+                  borderWidth: 3,
+                  borderColor: palette.crimson,
+                  backgroundColor: palette.paperSand,
+                }}
+                resizeMode="cover"
+                accessibilityLabel={`${user.name}'s photo`}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 132,
+                  height: 132,
+                  borderRadius: 66,
+                  borderWidth: 3,
+                  borderColor: palette.crimson,
+                  backgroundColor: palette.paperSand,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: 52,
+                    color: palette.crimson,
+                  }}
+                >
+                  {(user.username || "?").slice(0, 1).toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              marginTop: 14,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 28,
+                color: palette.ink,
+                textAlign: "center",
+              }}
+            >
+              {user.name}
+              {profile.age ? `, ${profile.age}` : ""}
+            </Text>
+            {profile.verified && <VerifiedBadge size={22} />}
+          </View>
+
+          <Text
+            style={{
+              fontFamily: fonts.bodyMedium,
+              fontSize: 14,
+              color: palette.crimson,
+              textAlign: "center",
+              marginTop: 2,
+            }}
+          >
+            @{user.username}
+          </Text>
+
+          {!!(profile.city || profile.profession) && (
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 14,
+                color: palette.slate,
+                textAlign: "center",
+                marginTop: 4,
+              }}
+            >
+              {[profile.city, profile.profession].filter(Boolean).join("  Â·  ")}
+            </Text>
+          )}
+
+          {likeStatus !== "none" && (
+            <View
+              style={{
+                alignSelf: "center",
+                marginTop: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+                borderRadius: radius.pill,
+                backgroundColor:
+                  likeStatus === "accepted"
+                    ? palette.marigoldTint
+                    : palette.paperSand,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 12,
+                  color:
+                    likeStatus === "accepted" ? palette.emerald : palette.navy,
+                }}
+              >
+                {likeStatus === "accepted"
+                  ? "Matched"
+                  : likeStatus === "likes_you"
+                    ? "Likes you"
+                    : "Pending â€” waiting for them"}
+              </Text>
+            </View>
+          )}
+
+          {!state.self && (
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                marginTop: 20,
+              }}
+            >
+              {likeStatus === "accepted" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Message ${user.username}`}
+                  onPress={() => onMessage(page)}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: palette.navy,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons name="chatbubble" size={16} color="#FFFFFF" />
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 14,
+                    }}
+                  >
+                    Message
+                  </Text>
+                </Pressable>
+              ) : likeStatus === "pending" ? (
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: palette.paperSand,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={16}
+                    color={palette.slate}
+                  />
+                  <Text
+                    style={{
+                      color: palette.slate,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 14,
+                    }}
+                  >
+                    Pending
+                  </Text>
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    likeStatus === "likes_you"
+                      ? `Accept ${user.username} and open a chat`
+                      : `Like ${user.username}`
+                  }
+                  disabled={busy}
+                  onPress={() => void like()}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    backgroundColor: palette.navy,
+                    paddingVertical: 12,
+                    borderRadius: radius.pill,
+                    minHeight: 44,
+                    opacity: busy ? 0.6 : 1,
+                  }}
+                >
+                  {busy ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontFamily: fonts.bodySemi,
+                          fontSize: 14,
+                        }}
+                      >
+                        {likeStatus === "likes_you" ? "Accept" : "Like"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {!!profile.about && (
+            <View
+              style={{
+                marginTop: 24,
+                paddingTop: 20,
+                borderTopWidth: 1,
+                borderTopColor: palette.rule,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.section,
+                  color: palette.ink,
+                  marginBottom: 6,
+                }}
+              >
+                About
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  color: palette.inkSoft,
+                  lineHeight: 22,
+                }}
+              >
+                {profile.about}
+              </Text>
+            </View>
+          )}
+
+          {profile.hobbies.length > 0 && (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 6,
+                marginTop: 20,
+              }}
+            >
+              {profile.hobbies.map((hobby) => (
+                <View
+                  key={hobby}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: radius.pill,
+                    borderWidth: 1,
+                    borderColor: palette.rule,
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 12,
+                      color: palette.ink,
+                    }}
+                  >
+                    {hobby}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {extraPhotos.length > 0 && (
+            <View style={{ marginTop: 24 }}>
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.section,
+                  color: palette.ink,
+                  marginBottom: 12,
+                }}
+              >
+                Photos
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {extraPhotos.map((uri) => (
+                  <Image
+                    key={uri}
+                    source={{ uri }}
+                    style={{
+                      width: "31.5%",
+                      aspectRatio: 1,
+                      borderRadius: radius.md,
+                      backgroundColor: palette.paperSand,
+                    }}
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+
+          {!state.self && likeStatus !== "accepted" && (
+            <View
+              style={{
+                marginTop: 24,
+                padding: 16,
+                borderRadius: radius.lg,
+                backgroundColor: palette.paperSand,
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={26}
+                color={palette.navy}
+              />
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: typeScale.section,
+                  color: palette.ink,
+                  textAlign: "center",
+                }}
+              >
+                {page.messageBlockedReason === "blocked"
+                  ? "You cannot message this account"
+                  : "Chat opens on a match"}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: palette.slate,
+                  textAlign: "center",
+                  lineHeight: 19,
+                  maxWidth: 360,
+                }}
+              >
+                {page.messageBlockedReason === "blocked"
+                  ? "Messaging is unavailable between your accounts."
+                  : likeStatus === "pending"
+                    ? `${user.username} has your like. The chat opens if they like you back.`
+                    : likeStatus === "likes_you"
+                      ? `${user.username} liked you. Accept and the chat opens for both of you.`
+                      : `Like ${user.username}. If they like you back, the chat opens for both of you.`}
+              </Text>
+            </View>
+          )}
+
+          {!!error && (
+            <Text
+              accessibilityRole="alert"
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 13,
+                color: palette.clay,
+                textAlign: "center",
+                marginTop: 12,
+              }}
+            >
+              {error}
+            </Text>
+          )}
+        </View>
+      </ScrollView>
+    </Shell>
+  );
+}
+
+function Shell({
+  children,
+  onBack,
+  onBlock,
+}: {
+  children: React.ReactNode;
+  onBack: () => void;
+  onBlock?: () => void;
+}) {
+  return (
+    <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View
+          style={{
+            width: "100%",
+            maxWidth: MAX_WIDTH,
+            alignSelf: "center",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            paddingHorizontal: 12 + SIDE_PADDING,
+            paddingVertical: 12,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={12}
+            onPress={onBack}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: palette.paper,
+              borderWidth: 1,
+              borderColor: palette.rule,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="arrow-back" size={18} color={palette.ink} />
+          </Pressable>
+          <View style={{ flex: 1 }} />
+          {onBlock && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Report or block"
+              hitSlop={12}
+              onPress={onBlock}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: palette.paper,
+                borderWidth: 1,
+                borderColor: palette.rule,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={18}
+                color={palette.ink}
+              />
+            </Pressable>
+          )}
+        </View>
+        {children}
+      </SafeAreaView>
+    </View>
+  );
+}
+
+
+===== FRONTEND: src\features\onboarding\inviteTracking.ts =====
+import { Platform } from "react-native";
+
+const KEY = "milaan.invite";
+
+// Reads ?invite=<who> from the landing URL once and remembers it, so signup
+// can credit the member who invited this person.
+export function captureInviteFromUrl(): string | null {
+  if (Platform.OS !== "web" || typeof window === "undefined") return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const invite = params.get("invite")?.trim().slice(0, 60);
+    if (invite) {
+      window.localStorage.setItem(KEY, invite);
+      params.delete("invite");
+      const qs = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash,
+      );
+      return invite;
+    }
+    return window.localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function storedInvite(): string | null {
+  if (Platform.OS !== "web" || typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
+

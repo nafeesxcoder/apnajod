@@ -980,6 +980,7 @@ function MilaanApp() {
               me = await authApi.me(currentToken);
             }
             setAccessToken(currentToken);
+            applyAccountPrivacyFrom(me.user);
             setIsAdmin(me?.user?.role === "admin");
             const profileData = await profileApi.getMyProfile(currentToken);
             try {
@@ -1250,6 +1251,7 @@ function MilaanApp() {
       return;
     void (async () => {
       try {
+        try { if (window.localStorage.getItem("milaan.push.off") === "1") return; } catch {}
         const registration = await navigator.serviceWorker.register("/sw.js");
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
@@ -3700,7 +3702,7 @@ function MilaanApp() {
         />
 
         {screen === "settings" && (
-          <SettingsScreen
+          <SettingsScreen accessToken={accessToken}
             navigate={navigateTo}
             isPrivate={isPrivateAccount}
             onPrivacyChange={async (next) => {
