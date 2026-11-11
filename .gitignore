@@ -25,3 +25,8 @@ backend/node_modules
 
 frontend/dist-check/
 frontend/dist/
+
+*.bak
+*.bak[0-9]
+*.bak-fix
+*.bak-share
