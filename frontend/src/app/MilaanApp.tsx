@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi, AuthRequestError, isSessionRejected } from "../api/authApi";
 import { profileApi } from "../api/profileApi";
 import { uploadPhoto } from "../api/uploadPhoto";
-import { matchApi, type MutualMatchSummary } from "../api/matchApi";
+import {
+  matchApi,
+  type MutualMatchSummary,
+  type SparkWallet,
+} from "../api/matchApi";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -665,6 +669,8 @@ function MilaanApp() {
   );
   const [roseTarget, setRoseTarget] = useState<Match | null>(null);
   const [rosePopup, setRosePopup] = useState<RosePopupPayload | null>(null);
+  /** Sparks and Super Likes, straight from the server. Null until loaded. */
+  const [sparkWallet, setSparkWallet] = useState<SparkWallet | null>(null);
   const [appNotice, setAppNotice] = useState<AppNotice | null>(null);
   const [detailSafetyOpen, setDetailSafetyOpen] = useState(
     showcasePreviewState === "match-safety",
@@ -2164,8 +2170,31 @@ function MilaanApp() {
   const visibleMatches = rankedMatches.filter(
     (match) => !dismissedIds.includes(match.id),
   );
-  const roseAvailability = getRoseAvailability(roseLedger);
-  const openRose = (match: Match) => setRoseTarget(match);
+  const refreshSparkWallet = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      setSparkWallet(await matchApi.sparkWallet(accessToken));
+    } catch {
+      // Leave the last known count; the send itself is checked on the server.
+    }
+  }, [accessToken]);
+  useEffect(() => {
+    void refreshSparkWallet();
+  }, [refreshSparkWallet]);
+  // Signed in, the server is the only source of truth. The local ledger is
+  // for the preview build only - it is what let a reinstall hand out a
+  // second free Spark.
+  const roseAvailability: RoseAvailability = accessToken
+    ? {
+        freeAvailable: sparkWallet?.freeSparkAvailable ?? false,
+        paidCredits: sparkWallet?.sparks ?? 0,
+        superlikes: sparkWallet?.superlikes ?? 0,
+      }
+    : getRoseAvailability(roseLedger);
+  const openRose = (match: Match) => {
+    setRoseTarget(match);
+    void refreshSparkWallet();
+  };
   const createRoseMessage = (note: string): ChatMessage => ({
     id: `spark-${Date.now()}`,
     type: "rose",
@@ -2774,18 +2803,48 @@ function MilaanApp() {
     });
     return true;
   };
-  const sendRose = async (match: Match, note: string) => {
-    const today = todayKey();
-    const available = getRoseAvailability(roseLedger);
-    if (memberDataRuntime.source === "server") {
-      setAppNotice({
-        title: "AWS integration required",
-        body: "Golden Sparks remain disabled until your developer connects the typed discovery and payments ports.",
-        icon: "shield-outline",
-        tone: "ruby",
-      });
+  const sendRose = async (
+    match: Match,
+    note: string,
+    kind: "spark" | "superlike" = "spark",
+  ) => {
+    if (accessToken) {
+      try {
+        const result = await matchApi.sendSpark(accessToken, {
+          targetId: profileIdFor(match),
+          kind,
+          note,
+        });
+        setSparkWallet(result.wallet);
+        setSelected(match);
+        trackDiscovery("interested", match);
+        setDismissedIds((current) => [...new Set([...current, match.id])]);
+        if (result.mutual) {
+          setScreen("mutual");
+          return;
+        }
+        setAppNotice({
+          title: kind === "superlike" ? "Super Like sent ⭐" : "Spark sent ✨",
+          body: `${match.name} will see you at the top of their Likes with your note.`,
+          icon: kind === "superlike" ? "star" : "sparkles",
+          tone: "gold",
+        });
+      } catch (error) {
+        setAppNotice({
+          title: kind === "superlike" ? "Super Like not sent" : "Spark not sent",
+          body:
+            error instanceof Error
+              ? error.message
+              : "It could not be sent. Please try again.",
+          icon: "sparkles",
+          tone: "ruby",
+        });
+        void refreshSparkWallet();
+      }
       return;
     }
+    const today = todayKey();
+    const available = getRoseAvailability(roseLedger);
     if (!available.freeAvailable && available.paidCredits <= 0) {
       setAppNotice({
         title: "That is today's Spark",
@@ -3339,6 +3398,7 @@ function MilaanApp() {
             onInterested={chooseInterested}
             onSkip={passMatch}
             onRose={openRose}
+            onSparkRewarded={() => void refreshSparkWallet()}
             navigate={navigateTo}
           />
         )}
@@ -3697,10 +3757,18 @@ function MilaanApp() {
           recipientName={roseTarget?.name ?? ""}
           availability={roseAvailability}
           onClose={() => setRoseTarget(null)}
-          onSend={(note) => {
-            if (roseTarget) void sendRose(roseTarget, note);
+          onSend={(note, kind) => {
+            if (roseTarget) void sendRose(roseTarget, note, kind);
             setRoseTarget(null);
           }}
+          onBuySuperLikes={
+            accessToken
+              ? () => {
+                  setRoseTarget(null);
+                  setScreen("premium");
+                }
+              : undefined
+          }
         />
         <RoseReceivedPopup
           data={rosePopup}

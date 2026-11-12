@@ -1,6 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const matchService = require("../services/matchService");
+const sparkService = require("../services/sparkService");
 
 const decide = asyncHandler(async (req, res) => {
   const { targetId, decision } = req.body;
@@ -29,8 +30,27 @@ const getIncomingLikes = asyncHandler(async (req, res) => {
   res.json({ ok: true, likes });
 });
 
+const getSparkWallet = asyncHandler(async (req, res) => {
+  const wallet = await sparkService.wallet(req.user.id);
+  res.json({ ok: true, wallet });
+});
+
+const sendSpark = asyncHandler(async (req, res) => {
+  const { targetId, kind = "spark", note } = req.body || {};
+  const result = await sparkService.send(
+    req.user.id,
+    targetId,
+    kind,
+    note,
+    matchService.recordDecision,
+  );
+  res.json(result);
+});
+
 module.exports = {
   decide,
+  getSparkWallet,
+  sendSpark,
   getMatches,
   getIncomingLikes,
 };

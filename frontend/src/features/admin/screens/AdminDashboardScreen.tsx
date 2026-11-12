@@ -17,7 +17,13 @@ import { fonts, radius } from "../../../theme";
 
 // 👇 Naya tab "security" add kiya
 type Tab =
-  "overview" | "users" | "verifications" | "reports" | "appeals" | "security";
+  | "overview"
+  | "users"
+  | "verifications"
+  | "reports"
+  | "appeals"
+  | "questions"
+  | "security";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "overview", label: "Overview", icon: "grid-outline" },
@@ -29,6 +35,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   },
   { key: "reports", label: "Reports", icon: "flag-outline" },
   { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
+  { key: "questions", label: "Daily Questions", icon: "help-circle-outline" },
   { key: "security", label: "Security", icon: "lock-closed-outline" }, // 👈 New
 ];
 
@@ -342,6 +349,7 @@ export function AdminDashboardScreen({
           )}
           {tab === "reports" && <ReportsTab accessToken={accessToken} />}
           {tab === "appeals" && <AppealsTab accessToken={accessToken} />}
+          {tab === "questions" && <QuestionsTab accessToken={accessToken} />}
           {tab === "security" && <SecurityTab accessToken={accessToken} />}
         </ScrollView>
       </View>
@@ -1316,6 +1324,162 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
           </Card>
         );
       })}
+    </View>
+  );
+}
+
+/* ---------------- Daily Questions ---------------- */
+
+type AdminQuestion = {
+  id: number;
+  question: string;
+  options: string[];
+  active: boolean;
+  answers: number;
+  today: boolean;
+};
+
+function QuestionsTab({ accessToken }: { accessToken: string }) {
+  const [items, setItems] = useState<AdminQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", "", "", ""]);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res: any = await adminApi.dailyQuestions(accessToken);
+      setItems(Array.isArray(res?.questions) ? res.questions : []);
+    } catch (e) {
+      setError(errText(e, "Failed to load questions"));
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const toggle = async (item: AdminQuestion) => {
+    setBusyId(item.id);
+    setError("");
+    try {
+      await adminApi.setDailyQuestionActive(accessToken, item.id, !item.active);
+      await load();
+    } catch (e) {
+      setError(errText(e, "Could not update the question"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const add = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await adminApi.createDailyQuestion(
+        accessToken,
+        question.trim(),
+        options.map((o) => o.trim()).filter(Boolean),
+      );
+      setQuestion("");
+      setOptions(["", "", "", ""]);
+      await load();
+    } catch (e) {
+      setError(errText(e, "Could not add the question"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle: any = {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: COLORS.textMain,
+    backgroundColor: COLORS.card,
+    ...(Platform.OS === "web" ? { outlineStyle: "none" } : {}),
+  };
+
+  return (
+    <View style={{ gap: 20 }}>
+      <Card style={{ gap: 12, maxWidth: 640 }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>
+          Add a question
+        </Text>
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+          One question runs per day for everyone, in turn. Members get 1 Spark
+          for answering. Give 2 to 4 answers.
+        </Text>
+        <TextInput
+          value={question}
+          onChangeText={setQuestion}
+          placeholder="e.g. Your ideal weekend?"
+          placeholderTextColor={COLORS.textMuted}
+          maxLength={200}
+          style={inputStyle}
+        />
+        {options.map((value, index) => (
+          <TextInput
+            key={index}
+            value={value}
+            onChangeText={(text) =>
+              setOptions((current) =>
+                current.map((o, i) => (i === index ? text : o)),
+              )
+            }
+            placeholder={`Answer ${index + 1}${index >= 2 ? " (optional)" : ""}`}
+            placeholderTextColor={COLORS.textMuted}
+            maxLength={80}
+            style={inputStyle}
+          />
+        ))}
+        <View style={{ alignSelf: "flex-start" }}>
+          <SmallButton label="Add question" busy={saving} onPress={() => void add()} />
+        </View>
+      </Card>
+
+      {!!error && <Message tone="error" text={error} />}
+      {loading ? (
+        <Loading />
+      ) : items.length === 0 ? (
+        <Message text="No questions yet. Add the first one above." />
+      ) : (
+        items.map((item) => (
+          <Card key={item.id} style={{ gap: 10, maxWidth: 640 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {item.today && <Badge text="Today" />}
+              {!item.active && <Badge text="Off" danger />}
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: COLORS.textMuted }}>
+                {item.answers} answer{item.answers === 1 ? "" : "s"}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: COLORS.textMain }}>
+              {item.question}
+            </Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+              {item.options.join("  ·  ")}
+            </Text>
+            <View style={{ alignSelf: "flex-start" }}>
+              <SmallButton
+                label={item.active ? "Turn off" : "Turn on"}
+                tone={item.active ? "plain" : "navy"}
+                busy={busyId === item.id}
+                onPress={() => void toggle(item)}
+              />
+            </View>
+          </Card>
+        ))
+      )}
     </View>
   );
 }

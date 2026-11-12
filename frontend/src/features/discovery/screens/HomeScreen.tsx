@@ -28,6 +28,8 @@ import { IntentPassportCard } from "../components/IntentPassportCard";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { TrustBadge } from "../../../components/TrustBadge";
 
+import { DailyQuestionCard } from "../components/DailyQuestionCard";
+
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
 type MatchingPoolStatusView = { status: string; suggestions: string[] };
@@ -57,6 +59,7 @@ export function HomeScreen({
   accessToken,
   crossedPaths,
   openDetail,
+  onSparkRewarded,
   navigate,
 }: {
   preview: boolean;
@@ -79,6 +82,8 @@ export function HomeScreen({
   onInterested?: (m: Match) => void;
   onSkip?: (m: Match) => void;
   onRose?: (m: Match) => void;
+  /** A Spark was just earned (daily question) - refresh the count. */
+  onSparkRewarded?: () => void;
   navigate: (s: Screen) => void;
 }) {
   const navInset = useNavInset();
@@ -345,6 +350,13 @@ export function HomeScreen({
                 </Text>
               </View>
             </View>
+
+            {!preview && (
+              <DailyQuestionCard
+                accessToken={accessToken}
+                onRewarded={onSparkRewarded}
+              />
+            )}
 
             {/* Intent passport — flatten happens in IntentPassportCard.tsx */}
             <IntentPassportCard

@@ -5,7 +5,7 @@ const pushService = require("./pushService");
 const billingService = require("./billingService");
 const limits = require("../config/billing");
 
-async function recordDecision(actorId, targetId, decision) {
+async function recordDecision(actorId, targetId, decision, options = {}) {
   // Nothing is written against an id that is not a member. Without this the
   // id reached the foreign key, MySQL raised ER_NO_REFERENCED_ROW_2 and the
   // request came back a 500 - which the app shows as a crash rather than as
@@ -25,7 +25,8 @@ async function recordDecision(actorId, targetId, decision) {
   // Liking the same person twice is one like, not two - the insert below
   // is ON DUPLICATE KEY, so it writes no new row - and the count only sees
   // rows, so a double tap never costs an extra like.
-  if (decision === "interested") {
+  // A Spark or Super Like pays for itself, so it skips the limit.
+  if (decision === "interested" && !options.skipLikeLimit) {
     const [already] = await query(
       `SELECT decision FROM match_decisions WHERE actor_id = ? AND target_id = ?`,
       [actorId, targetId],
@@ -160,6 +161,12 @@ async function getIncomingLikes(userId, limit = 100) {
        p.first_name, p.age, p.city, p.profession, p.gender, p.about,
        p.verified, p.hobbies,
        ${billingService.blueTickSql("d.actor_id", "p.verified")} AS blue_tick,
+       (SELECT s.kind FROM match_sparks s
+         WHERE s.actor_id = d.actor_id AND s.target_id = d.target_id
+         ORDER BY s.kind = 'superlike' DESC, s.created_at DESC LIMIT 1) AS spark_kind,
+       (SELECT s.note FROM match_sparks s
+         WHERE s.actor_id = d.actor_id AND s.target_id = d.target_id
+         ORDER BY s.kind = 'superlike' DESC, s.created_at DESC LIMIT 1) AS spark_note,
        EXISTS (
          SELECT 1 FROM mutual_matches m
           WHERE (m.user_a_id = d.actor_id AND m.user_b_id = d.target_id)
@@ -179,7 +186,11 @@ async function getIncomingLikes(userId, limit = 100) {
           WHERE (b.blocker_id = ? AND b.blocked_id = d.actor_id)
              OR (b.blocker_id = d.actor_id AND b.blocked_id = ?)
        )
-     ORDER BY d.created_at DESC
+     ORDER BY
+       -- Super Likes, then Sparks, then plain likes. Standing out is what
+       -- the sender spent something on.
+       CASE spark_kind WHEN 'superlike' THEN 0 WHEN 'spark' THEN 1 ELSE 2 END,
+       d.created_at DESC
      LIMIT ${Number(limit)}`,
     [userId, userId, userId, userId],
   );
@@ -216,8 +227,13 @@ async function getIncomingLikes(userId, limit = 100) {
 
   return rows.map((row) => {
     const accepted = !!row.accepted;
+    const spark = row.spark_kind
+      ? { kind: row.spark_kind, note: row.spark_note || "" }
+      : null;
     let locked = false;
-    if (gated && !accepted) {
+    // Someone who spent a Spark or Super Like to reach this member is never
+    // hidden behind the lock - that is the whole point of sending one.
+    if (gated && !accepted && !spark) {
       if (shownPending < freeVisible) shownPending += 1;
       else locked = true;
     }
@@ -261,6 +277,7 @@ async function getIncomingLikes(userId, limit = 100) {
       locked: false,
       likedAt: row.created_at,
       status: accepted ? "accepted" : "pending",
+      spark,
     };
   });
 }

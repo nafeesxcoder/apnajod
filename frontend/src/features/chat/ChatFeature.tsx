@@ -128,7 +128,14 @@ import { AppCanvas } from "../../components/AppCanvas";
 
 // 🚀 BACKGROUND IMAGE ADDED HERE
 
-export type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
+export type RoseAvailability = {
+  /** Today's free Spark is still there. */
+  freeAvailable: boolean;
+  /** Extra Sparks (earned from the Daily Question). */
+  paidCredits: number;
+  /** Super Likes bought in packs. Undefined on the preview build. */
+  superlikes?: number;
+};
 export type RosePopupPayload = { match: Match; note: string; paid: boolean };
 export type CoupleLaunchTool = "games" | null;
 const accessibilityHitSlop = {
@@ -5399,18 +5406,29 @@ export function RoseComposer({
   availability,
   onClose,
   onSend,
+  onBuySuperLikes,
 }: {
   visible: boolean;
   recipientName: string;
   availability: RoseAvailability;
   onClose: () => void;
-  onSend: (note: string) => void;
+  onSend: (note: string, kind: "spark" | "superlike") => void;
+  /** Opens Premium, where Super Like packs are sold. */
+  onBuySuperLikes?: () => void;
 }) {
   const [note, setNote] = useState("A Golden Spark for something real ✨");
   useEffect(() => {
     if (visible) setNote("A Golden Spark for something real ✨");
   }, [visible]);
   const canSend = availability.freeAvailable || availability.paidCredits > 0;
+  const superlikes = availability.superlikes;
+  const sparkSummary = availability.freeAvailable
+    ? availability.paidCredits > 0
+      ? `Today's free Spark + ${availability.paidCredits} extra`
+      : "Today's free Spark is ready"
+    : availability.paidCredits > 0
+      ? `${availability.paidCredits} extra Spark${availability.paidCredits === 1 ? "" : "s"} left`
+      : "Free Spark used today";
   return (
     <Modal
       visible={visible}
@@ -5434,14 +5452,13 @@ export function RoseComposer({
           style={aiStyles.roseComposerHero}
         >
           <PremiumIcon name="sparkles" tone="gold" size={76} iconSize={35} />
-          <Text style={aiStyles.roseComposerTitle}>
-            {availability.freeAvailable
-              ? "Free Spark available today"
-              : "Free Spark used today"}
-          </Text>
+          <Text style={aiStyles.roseComposerTitle}>{sparkSummary}</Text>
           <Text style={aiStyles.roseComposerBody}>
-            {availability.paidCredits} paid Sparks available. Base plan gets 1
-            free Golden Spark every day.
+            Everyone gets 1 free Spark a day. Answer the Daily Question on Home
+            for one more.
+            {superlikes !== undefined
+              ? ` Super Likes left: ${superlikes}.`
+              : ""}
           </Text>
         </LinearGradient>
         <TextInput
@@ -5454,17 +5471,34 @@ export function RoseComposer({
           style={aiStyles.roseNote}
         />
         <Button
-          label={canSend ? "Send Spark" : "Buy Spark pack"}
+          label={canSend ? "Send Spark ✨" : "No Spark left today"}
           icon="sparkles"
-          variant={canSend ? "primary" : "gold"}
+          variant="primary"
+          disabled={!canSend}
           onPress={() =>
-            canSend
-              ? onSend(note.trim() || "A Golden Spark for something real ✨")
-              : onSend(note.trim())
+            onSend(note.trim() || "A Golden Spark for something real ✨", "spark")
           }
         />
+        {superlikes !== undefined && (
+          <View style={{ marginTop: 10 }}>
+            <Button
+              label={
+                superlikes > 0
+                  ? `Send as Super Like ⭐ (${superlikes} left)`
+                  : "Get Super Likes ⭐"
+              }
+              icon="star"
+              variant="gold"
+              onPress={() =>
+                superlikes > 0
+                  ? onSend(note.trim() || "A Golden Spark for something real ✨", "superlike")
+                  : onBuySuperLikes?.()
+              }
+            />
+          </View>
+        )}
         <Text style={styles.legal}>
-          Extra Sparks will use Google Play / App Store billing in production.
+          A Spark or Super Like puts you at the top of their Likes with your note.
         </Text>
       </SafeAreaView>
     </Modal>

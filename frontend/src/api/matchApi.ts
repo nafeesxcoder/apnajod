@@ -26,7 +26,34 @@ export type MutualMatchSummary = {
   matchedAt?: string;
 };
 
+/** What a member can send right now. Decided on the server, never the phone. */
+export type SparkWallet = {
+  freeSparkAvailable: boolean;
+  /** Extra Sparks earned from the Daily Question. */
+  sparks: number;
+  /** Super Likes bought in packs. */
+  superlikes: number;
+};
+
+export type SparkKind = "spark" | "superlike";
+
 export const matchApi = {
+  async sparkWallet(accessToken: string): Promise<SparkWallet> {
+    const data = await authFetch("/matches/sparks", accessToken);
+    return data.wallet as SparkWallet;
+  },
+
+  /** Send a Spark (free) or a Super Like (paid). It likes them as well. */
+  async sendSpark(
+    accessToken: string,
+    input: { targetId: string; kind: SparkKind; note?: string },
+  ): Promise<{ ok: true; kind: SparkKind; mutual: boolean; wallet: SparkWallet }> {
+    return authFetch("/matches/spark", accessToken, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+
   async decide(accessToken: string, targetId: string, decision: "interested" | "pass") {
     return authFetch("/matches/decide", accessToken, {
       method: "POST",

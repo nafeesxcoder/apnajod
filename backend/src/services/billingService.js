@@ -42,6 +42,12 @@ function startOfIndianDay(now = new Date()) {
   return new Date(midnightIndian - offsetMs);
 }
 
+/** Today's date in India as YYYY-MM-DD - the day a free Spark or a daily question belongs to. */
+function indianDay(now = new Date()) {
+  const indian = new Date(now.getTime() + limits.indiaOffsetMinutes * 60 * 1000);
+  return indian.toISOString().slice(0, 10);
+}
+
 /** MySQL DATETIME(6) in UTC, which is what every column here stores. */
 function sqlTime(date) {
   return date.toISOString().slice(0, 19).replace("T", " ");
@@ -297,6 +303,7 @@ async function summaryFor(userId) {
 }
 
 module.exports = {
+  indianDay,
   PREMIUM,
   PRO,
   BOOST,

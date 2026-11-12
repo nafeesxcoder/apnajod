@@ -28,6 +28,10 @@ router.put("/update-password", adminController.updateAdminPassword);
 router.get("/reports", adminController.getReports);
 router.post("/reports/:id/resolve", adminController.resolveReport);
 
+router.get("/questions", adminController.getQuestions);
+router.post("/questions", adminController.createQuestion);
+router.post("/questions/:id/active", adminController.setQuestionActive);
+
 router.get("/appeals", adminController.getAppeals);
 router.post("/appeals/:id/resolve", adminController.resolveAppeal);
 

@@ -33,6 +33,23 @@ const unbanUser = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+const dailyQuestionService = require("../services/dailyQuestionService");
+
+const getQuestions = asyncHandler(async (req, res) => {
+  const questions = await dailyQuestionService.listAll();
+  res.json({ ok: true, questions });
+});
+
+const createQuestion = asyncHandler(async (req, res) => {
+  await dailyQuestionService.create(req.body?.question, req.body?.options);
+  res.json({ ok: true });
+});
+
+const setQuestionActive = asyncHandler(async (req, res) => {
+  await dailyQuestionService.setActive(req.params.id, req.body?.active === true);
+  res.json({ ok: true });
+});
+
 const getVerifications = asyncHandler(async (req, res) => {
   const queue = await adminService.listPendingVerifications();
   res.json({ ok: true, queue });
@@ -115,5 +132,8 @@ const resetAdminPassword = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getQuestions,
+  createQuestion,
+  setQuestionActive,
   getStats, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

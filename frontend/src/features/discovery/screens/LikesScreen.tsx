@@ -41,6 +41,8 @@ type IncomingLike = {
   likedAt: string | null;
   status: "pending" | "accepted";
   locked?: boolean;
+  /** They sent a Spark or a Super Like with this like. */
+  spark?: { kind: "spark" | "superlike"; note: string } | null;
 };
 
 const LIKE_CARD_WIDTH = 420;
@@ -522,6 +524,60 @@ export function LikesScreen({
                           </Text>
                           {like.verified && <TrustBadge blueTick={like.blueTick} size={17} />}
                         </View>
+
+                        {!!like.spark && (
+                          <View
+                            accessibilityLabel={
+                              like.spark.kind === "superlike"
+                                ? "They sent you a Super Like"
+                                : "They sent you a Spark"
+                            }
+                            style={{
+                              alignSelf: "flex-start",
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 4,
+                              marginTop: 4,
+                              borderRadius: radius.pill,
+                              paddingHorizontal: 10,
+                              paddingVertical: 3,
+                              backgroundColor:
+                                like.spark.kind === "superlike"
+                                  ? palette.navy
+                                  : palette.marigoldTint,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: fonts.bodySemi,
+                                fontSize: 12,
+                                color:
+                                  like.spark.kind === "superlike"
+                                    ? "#FFFFFF"
+                                    : palette.ink,
+                              }}
+                            >
+                              {like.spark.kind === "superlike"
+                                ? "⭐ Super Like"
+                                : "✨ Spark"}
+                            </Text>
+                          </View>
+                        )}
+                        {!!like.spark?.note && (
+                          <Text
+                            numberOfLines={3}
+                            style={{
+                              fontFamily: fonts.body,
+                              fontStyle: "italic",
+                              fontSize: typeScale.caption,
+                              lineHeight: 17,
+                              color: colors.text,
+                              marginTop: 6,
+                            }}
+                          >
+                            "{like.spark.note}"
+                          </Text>
+                        )}
 
                         {!!(like.city || like.profession) && (
                           <Text

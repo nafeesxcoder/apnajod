@@ -8,5 +8,7 @@ router.use(requireAuth);
 router.post("/decide", matchController.decide);
 router.get("/", matchController.getMatches);
 router.get("/likes", matchController.getIncomingLikes);
+router.get("/sparks", matchController.getSparkWallet);
+router.post("/spark", matchController.sendSpark);
 
 module.exports = router;
