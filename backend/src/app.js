@@ -17,6 +17,7 @@ const shareRoutes = require("./routes/shareRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 const { corsOptions, securityHeaders } = require("./config/security");
+const { SERVABLE_EXTENSIONS } = require("./utils/uploadTypes");
 
 const app = express();
 
@@ -32,8 +33,22 @@ app.use("/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded photos
-app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+// Serve uploaded photos, videos and voice notes.
+// Uploads share the app's origin, so a file that runs script here could
+// read a member's login. Only the media extensions uploads are saved with
+// are served at all (anything else, including a bad file from before
+// utils/uploadTypes.js existed, is a 404), and every response tells the
+// browser to treat it as an inert sandbox even if opened directly.
+app.use("/uploads", (req, res, next) => {
+  const ext = path.extname(req.path).toLowerCase();
+  if (!SERVABLE_EXTENSIONS.has(ext)) return res.status(404).json({ error: "Not found" });
+  res.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self'; media-src 'self'; sandbox");
+  next();
+});
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "..", "uploads"), { dotfiles: "deny", index: false }),
+);
 
 // Mount routes
 app.use("/auth", authRoutes);

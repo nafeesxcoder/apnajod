@@ -2,6 +2,8 @@
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
+const { CHAT_TYPES, extensionFor } = require("../utils/uploadTypes");
+const { ApiError } = require("./errorHandler");
 
 const uploadDir = path.join(__dirname, "..", "..", "uploads", "chat");
 if (!fs.existsSync(uploadDir)) {
@@ -12,21 +14,18 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
+  // The extension comes from the checked type, never from the file name -
+  // see utils/uploadTypes.js.
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || "";
-    cb(null, `${crypto.randomUUID()}${ext}`);
+    cb(null, `${crypto.randomUUID()}${extensionFor(file.mimetype, CHAT_TYPES)}`);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype.startsWith("image/") ||
-    file.mimetype.startsWith("video/") ||
-    file.mimetype.startsWith("audio/")
-  ) {
+  if (extensionFor(file.mimetype, CHAT_TYPES)) {
     cb(null, true);
   } else {
-    cb(new Error("Only image, video, or audio files are allowed"));
+    cb(new ApiError(400, "Only photos, videos or voice notes can be sent"));
   }
 };
 
