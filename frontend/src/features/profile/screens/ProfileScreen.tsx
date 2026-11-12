@@ -26,6 +26,7 @@ import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
+import { useWindowDimensions } from "react-native";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 import { authApi } from "../../../api/authApi";
 
@@ -69,6 +70,10 @@ export function ProfileScreen({
   const [shareNote, setShareNote] = useState("");
   // One Share button; it asks whether this is for family or for friends.
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  // On a laptop the menu is a centred dialog; a bottom sheet there ran off
+  // the bottom of the window. Phones keep the sheet.
+  const { width: windowWidth } = useWindowDimensions();
+  const shareMenuCentred = windowWidth >= 700;
   const family = useFamilyShare({
     accessToken,
     name: profile?.firstName || "me",
@@ -536,33 +541,51 @@ export function ProfileScreen({
           style={{
             flex: 1,
             backgroundColor: "rgba(0,0,0,0.35)",
-            justifyContent: "flex-end",
+            justifyContent: shareMenuCentred ? "center" : "flex-end",
             alignItems: "center",
+            padding: shareMenuCentred ? 24 : 0,
           }}
         >
           <Pressable
             onPress={() => undefined}
             style={{
               width: "100%",
-              maxWidth: 480,
+              maxWidth: 440,
               backgroundColor: palette.paper,
+              borderRadius: shareMenuCentred ? radius.xl : 0,
               borderTopLeftRadius: radius.xl,
               borderTopRightRadius: radius.xl,
               padding: 20,
-              paddingBottom: 32,
+              paddingBottom: shareMenuCentred ? 20 : 32,
               gap: 10,
             }}
           >
-            <Text
+            <View
               style={{
-                fontFamily: fonts.display,
-                fontSize: 20,
-                color: palette.ink,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
                 marginBottom: 4,
               }}
             >
-              Share your profile
-            </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.display,
+                  fontSize: 20,
+                  color: palette.ink,
+                }}
+              >
+                Share your profile
+              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                onPress={() => setShareMenuOpen(false)}
+                hitSlop={10}
+              >
+                <Ionicons name="close" size={22} color={palette.slate} />
+              </TouchableOpacity>
+            </View>
             {[
               {
                 key: "family",
