@@ -21,7 +21,7 @@ import type { Match } from "../../../data";
 import { matchApi } from "../../../api/matchApi";
 import { matchFromSocialUser } from "../../../domain/socialMatch";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
-import { VerifiedBadge } from "../../../components/VerifiedBadge";
+import { TrustBadge } from "../../../components/TrustBadge";
 
 type IncomingLike = {
   id: string;
@@ -34,6 +34,7 @@ type IncomingLike = {
   gender: string;
   about: string;
   verified: boolean;
+  blueTick?: boolean;
   hobbies: string[];
   photo: string;
   photos: string[];
@@ -150,6 +151,7 @@ function matchFromLike(like: IncomingLike): Match {
   match.photo = like.photo;
   match.about = like.about;
   match.verified = like.verified;
+  match.blueTick = like.blueTick === true;
   match.hobbies = like.hobbies;
   return match;
 }
@@ -518,7 +520,7 @@ export function LikesScreen({
                             {like.name}
                             {like.age ? `, ${like.age}` : ""}
                           </Text>
-                          {like.verified && <VerifiedBadge size={17} />}
+                          {like.verified && <TrustBadge blueTick={like.blueTick} size={17} />}
                         </View>
 
                         {!!(like.city || like.profession) && (

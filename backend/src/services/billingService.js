@@ -71,6 +71,43 @@ async function isPremium(userId) {
   return !!row;
 }
 
+/**
+ * The blue tick: an approved selfie AND a paid plan running.
+ *
+ * Paying alone never shows it. A blue tick reads as "this person is real",
+ * so anyone who could buy it without a verified selfie could buy trust -
+ * which on a dating app is how scams start. An unverified member can still
+ * pay for Plus; the tick turns on by itself the day the selfie is approved,
+ * and goes away by itself when the plan lapses or the approval is undone.
+ *
+ * Returned as SQL so every list that already reads profiles can carry the
+ * flag in the same query instead of one extra lookup per row.
+ * `userIdExpr` and `verifiedExpr` are column names, never user input.
+ */
+function blueTickSql(userIdExpr, verifiedExpr) {
+  return `(COALESCE(${verifiedExpr}, 0) = 1 AND EXISTS (
+    SELECT 1 FROM entitlements bt
+     WHERE bt.user_id = ${userIdExpr}
+       AND bt.feature = '${PREMIUM}'
+       AND (bt.expires_at IS NULL OR bt.expires_at > UTC_TIMESTAMP(6))
+  ))`;
+}
+
+async function trustStatus(userId) {
+  const [row] = await query(
+    `SELECT COALESCE(p.verified, 0) AS verified,
+            ${blueTickSql("u.id", "p.verified")} AS blue_tick
+       FROM users u
+       LEFT JOIN profiles p ON p.user_id = u.id
+      WHERE u.id = ?`,
+    [userId],
+  );
+  return {
+    verified: Number(row?.verified) === 1,
+    blueTick: Number(row?.blue_tick) === 1,
+  };
+}
+
 async function premiumUntil(userId) {
   const [row] = await query(
     `SELECT expires_at FROM entitlements
@@ -215,13 +252,16 @@ async function activeBoost(userId) {
  * screen has to assemble this for itself and get it subtly different.
  */
 async function summaryFor(userId) {
-  const [allowance, boosts, boost] = await Promise.all([
+  const [allowance, boosts, boost, trust] = await Promise.all([
     likeAllowance(userId),
     creditBalance(userId, BOOST),
     activeBoost(userId),
+    trustStatus(userId),
   ]);
   return {
     premium: allowance.premium,
+    verified: trust.verified,
+    blueTick: trust.blueTick,
     premiumUntil: allowance.premium ? await premiumUntil(userId) : null,
     likes: {
       limit: allowance.limit,
@@ -240,6 +280,8 @@ module.exports = {
   listPlans,
   getPlan,
   isPremium,
+  blueTickSql,
+  trustStatus,
   premiumUntil,
   grantFeature,
   grantPlan,

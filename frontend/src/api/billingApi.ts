@@ -32,6 +32,10 @@ export type BillingPlan = {
 export type BillingSummary = {
   premium: boolean;
   premiumUntil: string | null;
+  /** An admin approved their selfie. */
+  verified?: boolean;
+  /** Approved selfie AND Plus/Pro running. */
+  blueTick?: boolean;
   likes: { limit: number | null; used: number; remaining: number | null };
   boost: { balance: number; active: { endsAt: string } | null };
 };

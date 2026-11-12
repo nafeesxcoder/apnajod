@@ -1,4 +1,5 @@
 const { query } = require("../config/db");
+const billingService = require("./billingService");
 const safetyService = require("./safetyService");
 const profileService = require("./profileService");
 
@@ -19,7 +20,7 @@ async function getDashboardStats() {
   // Destructuring it again read rows[0][0], which is always undefined, and
   // every card on the dashboard showed 0.
   const live = "SELECT id FROM users WHERE deleted_at IS NULL";
-  const [users, newThisWeek, pendingVerifications, verifiedUsers, openReports, suspendedUsers, revenuePaise, openAppeals] =
+  const [users, newThisWeek, pendingVerifications, verifiedUsers, openReports, suspendedUsers, revenuePaise, openAppeals, blueTickUsers] =
     await Promise.all([
       scalar("SELECT COUNT(*) AS total FROM users WHERE deleted_at IS NULL"),
       scalar(
@@ -39,6 +40,11 @@ async function getDashboardStats() {
       ),
       scalar("SELECT SUM(amount_paise) AS total FROM payments WHERE status = 'paid'"),
       scalar("SELECT COUNT(*) AS total FROM account_appeals WHERE status = 'open'"),
+      scalar(
+        `SELECT COUNT(*) AS total FROM profiles p
+          WHERE p.user_id IN (${live})
+            AND ${billingService.blueTickSql("p.user_id", "p.verified")}`,
+      ),
     ]);
 
   return {
@@ -50,12 +56,14 @@ async function getDashboardStats() {
     suspendedUsers,
     revenuePaise,
     openAppeals,
+    blueTickUsers,
   };
 }
 
 async function listUsers(search = "", limit = 50) {
   let sql = `SELECT u.id, u.username, u.full_name, u.phone, u.avatar_url, u.role, u.status, u.created_at,
-                    p.first_name, p.age, p.city, p.verified
+                    p.first_name, p.age, p.city, p.verified,
+                    ${billingService.blueTickSql("u.id", "p.verified")} AS blue_tick
                FROM users u
                LEFT JOIN profiles p ON p.user_id = u.id
               WHERE u.deleted_at IS NULL`;

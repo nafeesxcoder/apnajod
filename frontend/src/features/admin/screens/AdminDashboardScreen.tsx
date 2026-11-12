@@ -547,6 +547,7 @@ function OverviewTab({
   const newThisWeek = Number(stats?.newThisWeek ?? 0);
   const pendingVerifications = Number(stats?.pendingVerifications ?? 0);
   const verifiedUsers = Number(stats?.verifiedUsers ?? 0);
+  const blueTickUsers = Number(stats?.blueTickUsers ?? 0);
   const openReports = Number(stats?.openReports ?? 0);
   const openAppeals = Number(stats?.openAppeals ?? 0);
   const revenue = Number(stats?.revenuePaise ?? 0) / 100;
@@ -613,6 +614,11 @@ function OverviewTab({
           title="Verified Members"
           value={String(verifiedUsers)}
           icon="checkmark-done-circle"
+        />
+        <StatCard
+          title="Blue Tick Members"
+          value={String(blueTickUsers)}
+          icon="ribbon"
         />
         <StatCard
           title="Open Reports"
@@ -968,6 +974,8 @@ function UsersTab({ accessToken }: { accessToken: string }) {
               .join(" · ");
             const role = String(pick(u, "role") ?? "user");
             const verified = u?.verified === 1 || u?.verified === true;
+            const blueTick =
+              verified && (u?.blue_tick === 1 || u?.blue_tick === true);
             // The server marks a banned account "suspended".
             const banned = ["suspended", "banned"].includes(
               String(pick(u, "status") ?? ""),
@@ -1004,6 +1012,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
                     </Text>
                     {role === "admin" && <Badge text="Admin" />}
                     {verified && <Badge text="Verified" />}
+                    {blueTick && <Badge text="Blue tick" />}
                     {banned && <Badge text="Suspended" danger />}
                   </View>
                   {!!contact && (

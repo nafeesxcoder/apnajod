@@ -21,7 +21,7 @@ import {
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
-import { VerifiedBadge } from "../../../components/VerifiedBadge";
+import { TrustBadge } from "../../../components/TrustBadge";
 import { authApi } from "../../../api/authApi";
 
 const MAX_WIDTH = 720;
@@ -42,12 +42,15 @@ function hobbyIcon(label: string) {
 export function ProfileScreen({
   profile,
   verified,
+  blueTick = false,
   profilePhoto,
   navigate,
   accessToken,
 }: {
   profile: any;
   verified: boolean;
+  /** Approved selfie AND Plus/Pro. */
+  blueTick?: boolean;
   profilePhoto?: string;
   navigate: (screen: any) => void;
   accessToken?: string;
@@ -251,7 +254,7 @@ export function ProfileScreen({
                 >
                   {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
                 </Text>
-                {verified && <VerifiedBadge size={22} />}
+                {verified && <TrustBadge blueTick={blueTick} size={22} label />}
               </View>
 
               <Text

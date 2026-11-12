@@ -16,6 +16,7 @@ import {
   rupees,
 } from "../../../api/billingApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
+import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
 
 const COLUMN = 800;
 
@@ -29,6 +30,8 @@ const FREE_FEATURES = [
 ] as const;
 
 const PLUS_FEATURES = [
+  { text: "Blue tick next to your name", ok: true },
+  { text: "Top of search", ok: true },
   { text: "Unlimited likes", ok: true },
   { text: "All likers visible", ok: true },
   { text: "Age filter", ok: true },
@@ -37,7 +40,7 @@ const PLUS_FEATURES = [
 ] as const;
 
 const PRO_FEATURES = [
-  { text: "Everything in Plus", ok: true },
+  { text: "Everything in Plus, blue tick included", ok: true },
   { text: "3 boosts per week", ok: true },
   { text: "5 super likes per week", ok: true },
 ] as const;
@@ -62,9 +65,12 @@ function loadRazorpayScript(): Promise<boolean> {
 export function PremiumScreen({
   accessToken,
   onBack,
+  onVerify,
 }: {
   accessToken: string;
   onBack: () => void;
+  /** Opens the selfie verification hub. */
+  onVerify?: () => void;
 }) {
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
@@ -280,6 +286,8 @@ export function PremiumScreen({
                     )}
                   </View>
                 )}
+
+                <BlueTickNote summary={summary} onVerify={onVerify} />
 
                 <PlanCard
                   title="Free"
@@ -608,6 +616,87 @@ function PackGroup({
           );
         })}
       </View>
+    </View>
+  );
+}
+
+/**
+ * Where the member stands on the blue tick.
+ *
+ * The tick needs an approved selfie as well as Plus or Pro, so nobody can
+ * buy "this person is real". Paying still works without one - the tick
+ * simply turns on the day the selfie is approved - but the member is told
+ * that before they pay, not after.
+ */
+function BlueTickNote({
+  summary,
+  onVerify,
+}: {
+  summary: BillingSummary | null;
+  onVerify?: () => void;
+}) {
+  if (!summary) return null;
+  if (summary.blueTick) {
+    return (
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          backgroundColor: palette.paperSand,
+          borderRadius: radius.lg,
+          padding: 14,
+          marginBottom: 16,
+        }}
+      >
+        <TrustBadge blueTick size={22} />
+        <Text style={{ fontFamily: fonts.bodySemi, color: palette.navy, fontSize: 14, flex: 1 }}>
+          Your blue tick is live. It shows next to your name everywhere.
+        </Text>
+      </View>
+    );
+  }
+  if (summary.verified) return null;
+  return (
+    <View
+      style={{
+        backgroundColor: palette.paperSand,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: BLUE_TICK,
+        padding: 14,
+        marginBottom: 16,
+        gap: 8,
+      }}
+    >
+      <Text style={{ fontFamily: fonts.bodySemi, color: palette.navy, fontSize: 14 }}>
+        {summary.premium
+          ? "Verify your selfie to switch on your blue tick"
+          : "The blue tick needs a verified selfie"}
+      </Text>
+      <Text style={{ fontFamily: fonts.body, color: palette.slate, fontSize: 13 }}>
+        {summary.premium
+          ? "Your plan is active. The blue tick appears the moment an admin approves your selfie."
+          : "You can buy Plus now and use every feature. The blue tick appears once an admin approves your selfie."}
+      </Text>
+      {onVerify && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Verify my selfie"
+          onPress={onVerify}
+          style={{
+            alignSelf: "flex-start",
+            backgroundColor: palette.navy,
+            borderRadius: radius.pill,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 13 }}>
+            Verify my selfie
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }

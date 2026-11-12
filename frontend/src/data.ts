@@ -4,6 +4,8 @@ export type Match = {
   intent: string; match: 'Strong Match' | 'Great Match' | 'Exceptional Match';
   /** Set only when a human approved their selfie. Absent means not verified. */
   verified?: boolean;
+  /** Approved selfie AND Plus/Pro. The server never sets it without `verified`. */
+  blueTick?: boolean;
   vibes: string[]; photo: string; photos: string[]; about: string; values: string; goals: string;
   timeline: string; children: string; family: string; relocation: string; languages: string[];
   interests: string[]; familyPriority: 'high' | 'balanced' | 'independent';

@@ -98,7 +98,7 @@ for (const file of files) {
       continue;
     }
 
-    if (/^(INSERT|UPDATE|DELETE|SET|CREATE DATABASE|USE)\b/i.test(sql)) continue;
+    if (/^(INSERT|UPDATE|DELETE|SET|CREATE DATABASE|USE|PREPARE|EXECUTE|DEALLOCATE)\b/i.test(sql)) continue;
     problems.push(`${file}: unrecognised statement — ${sql.slice(0, 70).replace(/\s+/g, ' ')}…`);
   }
 }

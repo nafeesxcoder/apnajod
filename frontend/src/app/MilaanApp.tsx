@@ -549,6 +549,8 @@ function MilaanApp() {
   const [intent, setIntent] = useState("Long-term, leading to Marriage");
   const [alignment, setAlignment] = useState<Record<string, string>>({});
   const [verified, setVerified] = useState(isCustomerShowcase);
+  /** Approved selfie AND Plus/Pro - the server works it out, never the app. */
+  const [blueTick, setBlueTick] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<
     "none" | "pending" | "approved" | "rejected"
   >("none");
@@ -581,8 +583,11 @@ function MilaanApp() {
     const row = (profile ?? {}) as {
       verified?: unknown;
       verification_status?: unknown;
+      blue_tick?: unknown;
     };
-    setVerified(row.verified === true || row.verified === 1);
+    const isVerified = row.verified === true || row.verified === 1;
+    setVerified(isVerified);
+    setBlueTick(isVerified && (row.blue_tick === true || row.blue_tick === 1));
     const status = row.verification_status;
     setVerificationStatus(
       status === "pending" || status === "approved" || status === "rejected"
@@ -3443,6 +3448,7 @@ function MilaanApp() {
           <PremiumScreen
             accessToken={accessToken}
             onBack={() => setScreen("profile")}
+            onVerify={() => setScreen("verifyHub")}
           />
         )}
 
@@ -3675,6 +3681,7 @@ function MilaanApp() {
           <ProfileScreen
             profile={profileDraft}
             verified={verified}
+            blueTick={blueTick}
             profilePhoto={profilePhotos[0]}
             navigate={navigateTo}
             accessToken={accessToken}

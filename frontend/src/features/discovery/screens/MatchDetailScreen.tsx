@@ -19,7 +19,7 @@ import { socialApi } from "../../../api/socialApi";
 import { matchApi } from "../../../api/matchApi";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
-import { VerifiedBadge } from "../../../components/VerifiedBadge";
+import { TrustBadge } from "../../../components/TrustBadge";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -225,7 +225,7 @@ export function MatchDetailScreen({
                   {match.name}
                   {age ? `, ${age}` : ""}
                 </Text>
-                {match.verified && <VerifiedBadge size={22} />}
+                {match.verified && <TrustBadge blueTick={match.blueTick} size={22} label />}
               </View>
 
               <Text

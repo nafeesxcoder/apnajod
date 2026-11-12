@@ -9,6 +9,7 @@
  */
 const crypto = require("crypto");
 const { query } = require("../config/db");
+const billingService = require("./billingService");
 const { normalizeIndianPhone } = require("../utils/otp");
 
 const SELF_FOLLOW = "You cannot follow your own account.";
@@ -195,7 +196,8 @@ async function decorate(viewerId, rows) {
 async function getProfileCard(userId) {
   const [profile] = await query(
     `SELECT first_name, age, city, profession, religion, community,
-            about, verified, hobbies
+            about, verified, hobbies,
+            ${billingService.blueTickSql("user_id", "verified")} AS blue_tick
        FROM profiles
       WHERE user_id = ?`,
     [userId],
@@ -225,6 +227,7 @@ async function getProfileCard(userId) {
     community: profile?.community || "",
     about: profile?.about || "",
     verified: profile?.verified === 1,
+    blueTick: Number(profile?.blue_tick) === 1,
     hobbies: Array.isArray(hobbies) ? hobbies : [],
     photos: photos.map((row) => row.photo_url).filter(Boolean),
   };

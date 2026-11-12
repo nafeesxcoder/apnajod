@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { PersonPage } from "../../../api/socialApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
-import { VerifiedBadge } from "../../../components/VerifiedBadge";
+import { TrustBadge } from "../../../components/TrustBadge";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -203,7 +203,7 @@ export function PersonScreen({
               {user.name}
               {profile.age ? `, ${profile.age}` : ""}
             </Text>
-            {profile.verified && <VerifiedBadge size={22} />}
+            {profile.verified && <TrustBadge blueTick={profile.blueTick} size={22} label />}
           </View>
 
           <Text

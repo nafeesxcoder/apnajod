@@ -32,6 +32,8 @@ export type ProfileCard = {
   community: string;
   about: string;
   verified: boolean;
+  /** Approved selfie AND Plus/Pro, worked out on the server. */
+  blueTick?: boolean;
   hobbies: string[];
   photos: string[];
 };

@@ -45,7 +45,7 @@ const screensThatMarkPeople = [
  * selection tick - those live in the chat and the sign-up screens, which are
  * not in this list - so a checkmark here is always a claim about a person.
  */
-const TRUST_MARKS = /name="[a-z-]*checkmark[a-z-]*"|name="verified"|<VerifiedBadge|>\s*Verified\s*</g;
+const TRUST_MARKS = /name="[a-z-]*checkmark[a-z-]*"|name="verified"|<TrustBadge|>\s*Verified\s*</g;
 
 describe('the verified badge', () => {
   it('is drawn only for someone who is actually verified', () => {
@@ -117,5 +117,20 @@ describe('the verification status', () => {
         `a profile load sets verified without the status: ${line}`,
       ).toBe(true);
     }
+  });
+});
+
+describe('the blue tick', () => {
+  const badge = compact(read('src/components/TrustBadge.tsx'));
+  const premium = read('src/features/premium/screens/PremiumScreen.tsx');
+
+  it('never draws for someone who is not verified, even if paid', () => {
+    // Paying alone must not buy "this person is real".
+    expect(badge).toContain('if(!verified)returnnull;');
+  });
+
+  it('is offered with the selfie requirement stated before paying', () => {
+    expect(premium).toContain('The blue tick needs a verified selfie');
+    expect(premium).toContain('onVerify');
   });
 });

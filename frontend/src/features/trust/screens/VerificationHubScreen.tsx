@@ -113,8 +113,9 @@ export function VerificationHubScreen({
               marginBottom: 32,
             }}
           >
-            Take a clear selfie to get a verified badge. It builds trust with
-            your matches. Just one step.
+            Take a clear selfie to get the green Real shield next to your name,
+            so matches know you are a real person. Verified members with Plus
+            also get the blue tick and show up at the top of search.
           </Text>
 
           {/* Main Card */}

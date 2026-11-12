@@ -43,6 +43,7 @@ function matchServiceWith({ allowance, premium = false, rows = () => [] }) {
       "./billingService": {
         likeAllowance: async () => allowance,
         isPremium: async () => premium,
+        blueTickSql: () => "0",
       },
       "../config/billing": { freeVisibleLikers: () => 1 },
     }),
@@ -149,7 +150,7 @@ test("a boosted profile is ordered above everyone else", async () => {
         return [];
       },
     },
-    "./billingService": { isPremium: async () => false },
+    "./billingService": { isPremium: async () => false, blueTickSql: () => "0" },
   });
   await profileService.findMatches("me", 10);
   const deck = sqls.find((sql) => /AS off_preference/.test(sql));
@@ -170,7 +171,7 @@ test("the age range is the paid part of the filters, gender is not", async () =>
           return [];
         },
       },
-      "./billingService": { isPremium: async () => premium },
+      "./billingService": { isPremium: async () => premium, blueTickSql: () => "0" },
     });
     await profileService.findMatches("me", 10);
     return sqls.find((sql) => /AS off_preference/.test(sql));
@@ -195,7 +196,7 @@ test("nothing is locked while the likers gate is off", async () => {
       };
     }
     if (id === "./pushService") return { notifyUser: async () => undefined };
-    if (id === "./billingService") return { isPremium: async () => false };
+    if (id === "./billingService") return { isPremium: async () => false, blueTickSql: () => "0" };
     // 0 is the shipped default: no way to pay yet, so nothing is hidden.
     if (id === "../config/billing") return { freeVisibleLikers: () => 0 };
     return original.apply(this, arguments);
@@ -210,4 +211,35 @@ test("nothing is locked while the likers gate is off", async () => {
   const likes = await service.getIncomingLikes("me");
   assert.ok(likes.every((like) => like.locked === false), "no row is locked");
   assert.ok(likes.every((like) => like.name), "every row keeps its name");
+});
+
+test("blue tick members rank first among people who fit, never above them", async () => {
+  const sqls = [];
+  const profileService = load("../src/services/profileService", {
+    "../config/db": {
+      query: async (sql) => {
+        sqls.push(sql.replace(/\s+/g, " ").trim());
+        return [];
+      },
+    },
+    "./billingService": { isPremium: async () => false, blueTickSql: () => "1" },
+  });
+  await profileService.findMatches("me", 10);
+  const deck = sqls.find((sql) => /AS off_preference/.test(sql));
+  assert.match(deck, /AS blue_tick/, "the deck should carry the tick");
+  assert.match(
+    deck,
+    /ORDER BY boosted DESC, off_preference ASC, .*blue_tick DESC/,
+    "a tick lifts someone among people who fit, not past a boost or a preference",
+  );
+});
+
+test("the blue tick needs an approved selfie and a running paid plan", () => {
+  const billing = load("../src/services/billingService", {
+    "../config/db": { query: async () => [] },
+  });
+  const sql = billing.blueTickSql("u.id", "p.verified").replace(/\s+/g, " ");
+  assert.match(sql, /COALESCE\(p\.verified, 0\) = 1 AND EXISTS/, "paying alone is not enough");
+  assert.match(sql, /bt\.feature = 'premium'/, "it reads the paid plan");
+  assert.match(sql, /expires_at > UTC_TIMESTAMP/, "a lapsed plan drops the tick");
 });

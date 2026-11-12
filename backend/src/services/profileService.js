@@ -31,12 +31,14 @@ async function getFullProfile(userId) {
   );
 
   const hobbies = profile?.hobbies ? safeParseJson(profile.hobbies, []) : [];
+  const trust = await billingService.trustStatus(userId);
 
   return {
     profile: profile
       ? {
           ...profile,
           hobbies,
+          blue_tick: trust.blueTick,
         }
       : null,
     photos: photos.map((p) => p.photo_url),
@@ -280,6 +282,7 @@ async function findMatches(userId, limit = 20) {
        u.id AS user_id, u.username,
        p.first_name, p.gender, p.age, p.height, p.city, p.profession,
        p.religion, p.community, p.about, p.verified, p.hobbies,
+       ${billingService.blueTickSql("u.id", "p.verified")} AS blue_tick,
        EXISTS (
          SELECT 1 FROM boosts b
           WHERE b.user_id = u.id AND b.ends_at > UTC_TIMESTAMP(6)
@@ -300,6 +303,11 @@ async function findMatches(userId, limit = 20) {
      ORDER BY
        boosted DESC,
        off_preference ASC,
+       -- Blue tick members come first among the people who fit. They paid
+       -- for priority, and they are selfie-verified, so this also puts
+       -- real people at the top. They never jump above someone who fits
+       -- the viewer's preferences.
+       blue_tick DESC,
        (p.first_name IS NULL OR p.first_name = '') ASC,
        p.updated_at DESC,
        u.created_at DESC
@@ -363,6 +371,7 @@ async function findMatches(userId, limit = 20) {
       intent: intentRow?.intent || "",
       match: "Great Match",
       verified: candidate.verified === 1,
+      blueTick: Number(candidate.blue_tick) === 1,
       vibes,
       photo: photos[0] || "",
       photos,

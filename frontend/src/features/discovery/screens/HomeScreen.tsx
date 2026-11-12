@@ -26,7 +26,7 @@ import type { Screen } from "../../../app/navigation/types";
 import { colors, palette, fonts, radius, typeScale } from "../../../theme";
 import { IntentPassportCard } from "../components/IntentPassportCard";
 import { AppCanvas } from "../../../components/AppCanvas";
-import { VerifiedBadge } from "../../../components/VerifiedBadge";
+import { TrustBadge } from "../../../components/TrustBadge";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
@@ -438,7 +438,7 @@ export function HomeScreen({
                         >
                           {featured.name}, {featured.age}
                         </Text>
-                        {featured.verified && <VerifiedBadge size={24} />}
+                        {featured.verified && <TrustBadge blueTick={featured.blueTick} size={24} />}
                       </View>
                       <Text
                         style={{
@@ -552,7 +552,7 @@ export function HomeScreen({
                             >
                               {match.name}, {match.age}
                             </Text>
-                            {match.verified && <VerifiedBadge size={16} />}
+                            {match.verified && <TrustBadge blueTick={match.blueTick} size={16} />}
                           </View>
                           <Text
                             style={{

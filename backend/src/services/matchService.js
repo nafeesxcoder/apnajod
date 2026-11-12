@@ -159,6 +159,7 @@ async function getIncomingLikes(userId, limit = 100) {
        u.username, u.avatar_url,
        p.first_name, p.age, p.city, p.profession, p.gender, p.about,
        p.verified, p.hobbies,
+       ${billingService.blueTickSql("d.actor_id", "p.verified")} AS blue_tick,
        EXISTS (
          SELECT 1 FROM mutual_matches m
           WHERE (m.user_a_id = d.actor_id AND m.user_b_id = d.target_id)
@@ -253,6 +254,7 @@ async function getIncomingLikes(userId, limit = 100) {
       gender: row.gender || "nonbinary",
       about: row.about || "",
       verified: row.verified === 1,
+      blueTick: Number(row.blue_tick) === 1,
       hobbies: Array.isArray(hobbies) ? hobbies : [],
       photo: photos[0] || row.avatar_url || "",
       photos,
