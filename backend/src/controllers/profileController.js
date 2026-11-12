@@ -37,6 +37,10 @@ const updateProfile = asyncHandler(async (req, res) => {
   });
   res.json({ ok: true });
 });
+const getVerificationPose = asyncHandler(async (req, res) => {
+  const pose = await profileService.issueVerificationPose(req.user.id);
+  res.json({ ok: true, pose });
+});
 const submitVerification = asyncHandler(async (req, res) => {
   const { selfieUrl } = req.body;
   if (!selfieUrl || typeof selfieUrl !== "string")
@@ -99,6 +103,7 @@ module.exports = {
   getMyProfile,
   updateProfile,
   submitVerification,
+  getVerificationPose,
   updatePhotos,
   uploadPhoto,
   updateVibes,

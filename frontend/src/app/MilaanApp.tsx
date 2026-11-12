@@ -3348,6 +3348,10 @@ function MilaanApp() {
             selfieUri={selfieUri}
             verificationStatus={verificationStatus}
             onBack={() => setScreen("profile")}
+            onRequestPose={async () => {
+              if (!accessToken) throw new Error("Please sign in again.");
+              return profileApi.verificationPose(accessToken);
+            }}
             onVerify={async (uri) => {
               if (!accessToken) {
                 setAppNotice({

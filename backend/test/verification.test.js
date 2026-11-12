@@ -23,6 +23,8 @@ const servicePath = require.resolve("../src/services/profileService");
 
 /** Every statement the service sent, with its parameters. */
 let sent = [];
+/** What the stubbed database answers, when a test needs more than []. */
+let stubResult = null;
 
 function loadServiceWithStubbedDb() {
   delete require.cache[dbPath];
@@ -34,6 +36,7 @@ function loadServiceWithStubbedDb() {
     exports: {
       query: async (sql, params) => {
         sent.push({ sql, params: params || [] });
+        if (typeof stubResult === "function") return stubResult(sql, params);
         return [];
       },
       pool: { end: async () => {} },
@@ -44,6 +47,7 @@ function loadServiceWithStubbedDb() {
 
 beforeEach(() => {
   sent = [];
+  stubResult = null;
 });
 
 after(() => {
@@ -83,6 +87,7 @@ test("an unknown status is refused rather than written", async () => {
 
 test("submitting a selfie never verifies on its own", async () => {
   const profileService = loadServiceWithStubbedDb();
+  stubResult = () => ({ affectedRows: 1 });
   await profileService.submitVerification("user-1", "/uploads/selfie.jpg");
   assert.equal(sent.length, 1);
   const sql = sent[0].sql.replace(/\s+/g, " ");
@@ -96,4 +101,51 @@ test("the pending queue only returns people actually waiting", async () => {
   const sql = sent[0].sql.replace(/\s+/g, " ");
   assert.match(sql, /verification_status = 'pending'/);
   assert.match(sql, /deleted_at IS NULL/, "a deleted account is not a queue item");
+});
+
+test("a selfie is only accepted against a fresh pose", async () => {
+  const profileService = loadServiceWithStubbedDb();
+  stubResult = () => ({ affectedRows: 1 });
+  await profileService.submitVerification("user-1", "/uploads/selfie.jpg");
+  const sql = sent[0].sql.replace(/\s+/g, " ");
+  assert.match(sql, /verification_pose IS NOT NULL/);
+  assert.match(sql, /verification_pose_issued_at > UTC_TIMESTAMP\(\) - INTERVAL \d+ MINUTE/);
+  assert.match(sql, /verification_pose_issued_at = NULL/, "a pose is spent once used");
+});
+
+test("an expired or missing pose is refused, not queued", async () => {
+  const profileService = loadServiceWithStubbedDb();
+  stubResult = () => ({ affectedRows: 0 });
+  await assert.rejects(
+    () => profileService.submitVerification("user-1", "/uploads/selfie.jpg"),
+    (error) => error.statusCode === 409 && /pose/i.test(error.message),
+  );
+});
+
+test("a new pose is never the same as the last one", async () => {
+  const profileService = loadServiceWithStubbedDb();
+  const last = profileService.VERIFICATION_POSES[0].code;
+  stubResult = (sql) =>
+    /^SELECT verification_pose/.test(sql.trim()) ? [{ verification_pose: last }] : { affectedRows: 1 };
+  for (const r of [0, 0.5, 0.999]) {
+    const pose = await profileService.issueVerificationPose("user-1", () => r);
+    assert.notEqual(pose.code, last);
+    assert.ok(pose.emoji && pose.text, "the member is told what to do");
+  }
+});
+
+test("the review queue carries the pose and the profile photos", async () => {
+  const profileService = loadServiceWithStubbedDb();
+  stubResult = (sql) => {
+    if (/FROM profiles p/.test(sql)) {
+      return [{ user_id: "u1", verification_pose: "ok_sign", avatar_url: "" }];
+    }
+    if (/FROM profile_photos/.test(sql)) {
+      return [{ user_id: "u1", photo_url: "https://x/p1.jpg" }];
+    }
+    return [];
+  };
+  const [item] = await profileService.listPendingVerifications();
+  assert.equal(item.pose.code, "ok_sign");
+  assert.deepEqual(item.photos, ["https://x/p1.jpg"]);
 });

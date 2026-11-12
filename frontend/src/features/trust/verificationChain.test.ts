@@ -134,3 +134,23 @@ describe('the blue tick', () => {
     expect(premium).toContain('onVerify');
   });
 });
+
+describe('the pose selfie', () => {
+  const hub = read('src/features/trust/screens/VerificationHubScreen.tsx');
+  const admin = read('src/features/admin/screens/AdminDashboardScreen.tsx');
+
+  it('asks for a fresh pose and will not take a selfie without one', () => {
+    expect(hub).toContain('onRequestPose');
+    expect(compact(hub)).toContain('if(!pose){');
+  });
+
+  it('never reuses an old selfie for a new submission', () => {
+    // A selfie taken before this pose was handed out cannot show it.
+    expect(compact(hub)).toContain('useState(needsSelfie?"":selfieUri)');
+  });
+
+  it('shows the reviewer the pose and the profile photos beside the selfie', () => {
+    expect(admin).toContain('Asked pose');
+    expect(admin).toContain('Profile photos');
+  });
+});

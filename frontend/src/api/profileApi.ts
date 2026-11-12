@@ -13,6 +13,14 @@ async function authFetch(path: string, accessToken: string, options: RequestInit
   if (!response.ok) throw new Error(data.error || "Request failed");
   return data;
 }
+/** The pose a member must show in their verification selfie. */
+export type VerificationPose = {
+  code: string;
+  emoji: string;
+  text: string;
+  validMinutes: number;
+};
+
 export const profileApi = {
   async getMyProfile(accessToken: string) {
     return authFetch("/profile/me", accessToken); 
@@ -39,6 +47,13 @@ export const profileApi = {
       method: "PUT",
       body: JSON.stringify(input),
     });
+  },
+  /** A fresh random pose. Each call replaces the last one. */
+  async verificationPose(accessToken: string): Promise<VerificationPose> {
+    const data = await authFetch("/profile/verify/pose", accessToken, {
+      method: "POST",
+    });
+    return data.pose as VerificationPose;
   },
   async submitVerification(accessToken: string, selfieUrl: string) {
     return authFetch("/profile/verify", accessToken, {

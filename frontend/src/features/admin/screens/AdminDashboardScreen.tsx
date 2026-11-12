@@ -1136,8 +1136,18 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
         const name = String(
           pick(v, "name", "first_name", "firstName", "username") ?? "Member",
         );
+        const pose =
+          v?.pose && typeof v.pose === "object"
+            ? (v.pose as { emoji?: string; text?: string })
+            : null;
+        const photos: string[] = (Array.isArray(v?.photos) ? v.photos : [])
+          .filter(
+            (url: unknown): url is string =>
+              typeof url === "string" && /^https?:\/\//i.test(url),
+          )
+          .slice(0, 3);
         return (
-          <Card key={id} style={{ width: 300, gap: 16 }}>
+          <Card key={id} style={{ width: "100%", maxWidth: 560, gap: 16 }}>
             <View
               style={{
                 flexDirection: "row",
@@ -1155,6 +1165,39 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
                 {name}
               </Text>
             </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                backgroundColor: "#EAF5FF",
+                borderRadius: 8,
+                padding: 10,
+              }}
+            >
+              <Text style={{ fontSize: 28 }}>{pose?.emoji ?? "❔"}</Text>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 11,
+                    color: "#0B6BB3",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Asked pose
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 14,
+                    color: COLORS.textMain,
+                  }}
+                >
+                  {pose?.text ?? "No pose on file (old submission) - reject and ask them to retake"}
+                </Text>
+              </View>
+            </View>
             {!selfie && (
               <Text
                 style={{
@@ -1166,18 +1209,93 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
                 No uploaded selfie on file. Ask them to submit again.
               </Text>
             )}
-            {!!selfie && (
-              <Image
-                source={{ uri: String(selfie) }}
-                style={{
-                  width: "100%",
-                  aspectRatio: 1,
-                  borderRadius: 8,
-                  backgroundColor: COLORS.bg,
-                }}
-                resizeMode="cover"
-              />
-            )}
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 12,
+                    color: COLORS.textMuted,
+                  }}
+                >
+                  Selfie
+                </Text>
+                {!!selfie && (
+                  <Image
+                    source={{ uri: String(selfie) }}
+                    style={{
+                      width: "100%",
+                      aspectRatio: 1,
+                      borderRadius: 8,
+                      backgroundColor: COLORS.bg,
+                    }}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 12,
+                    color: COLORS.textMuted,
+                  }}
+                >
+                  Profile photos
+                </Text>
+                {photos.length === 0 ? (
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      color: COLORS.danger,
+                    }}
+                  >
+                    No profile photo to compare with.
+                  </Text>
+                ) : (
+                  <>
+                    <Image
+                      source={{ uri: photos[0] }}
+                      style={{
+                        width: "100%",
+                        aspectRatio: 1,
+                        borderRadius: 8,
+                        backgroundColor: COLORS.bg,
+                      }}
+                      resizeMode="cover"
+                    />
+                    {photos.length > 1 && (
+                      <View style={{ flexDirection: "row", gap: 6 }}>
+                        {photos.slice(1).map((url) => (
+                          <Image
+                            key={url}
+                            source={{ uri: url }}
+                            style={{
+                              flex: 1,
+                              aspectRatio: 1,
+                              borderRadius: 6,
+                              backgroundColor: COLORS.bg,
+                            }}
+                            resizeMode="cover"
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
+            </View>
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 12,
+                color: COLORS.textMuted,
+              }}
+            >
+              Approve only if the selfie shows the asked pose AND it is the same
+              face as the profile photos.
+            </Text>
             <View style={{ flexDirection: "row", gap: 12, marginTop: "auto" }}>
               <View style={{ flex: 1 }}>
                 <SmallButton

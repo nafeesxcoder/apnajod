@@ -15,10 +15,13 @@ export function WebSelfieCamera({
   visible,
   onClose,
   onCapture,
+  hint,
 }: {
   visible: boolean;
   onClose: () => void;
   onCapture: (uri: string) => void;
+  /** What to do in the photo - the verification pose. */
+  hint?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -151,8 +154,17 @@ export function WebSelfieCamera({
             {error}
           </Text>
         ) : (
-          <Text style={{ color: "#DDD", marginTop: 18, fontSize: 14 }}>
-            Look at the camera and keep your face in the circle.
+          <Text
+            style={{
+              color: hint ? "#FFFFFF" : "#DDD",
+              marginTop: 18,
+              fontSize: hint ? 17 : 14,
+              fontWeight: hint ? "700" : "400",
+              textAlign: "center",
+              maxWidth: 320,
+            }}
+          >
+            {hint ?? "Look at the camera and keep your face in the circle."}
           </Text>
         )}
 

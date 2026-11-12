@@ -123,22 +123,91 @@ async function upsertProfile(userId, input) {
   );
 }
 
-async function submitVerification(userId, selfieUrl) {
+/**
+ * Pose selfie.
+ *
+ * A plain selfie proves little: anyone can send a photo of someone else.
+ * Before taking the selfie the member is given one random pose, and the
+ * admin approves only when the selfie shows that pose AND the face matches
+ * the profile photos. A stolen or old photo will not have the pose in it.
+ *
+ * None of these depend on left or right - a front camera mirrors, so the
+ * reviewer could not tell which hand was which.
+ */
+const VERIFICATION_POSES = [
+  { code: "thumbs_up", emoji: "👍", text: "Give a thumbs up next to your face" },
+  { code: "two_fingers", emoji: "✌️", text: "Hold up two fingers (peace sign)" },
+  { code: "three_fingers", emoji: "🤟", text: "Hold up three fingers" },
+  { code: "four_fingers", emoji: "🖐️", text: "Hold up four fingers, thumb folded in" },
+  { code: "open_palm", emoji: "✋", text: "Show your open palm to the camera" },
+  { code: "ok_sign", emoji: "👌", text: "Make an OK sign next to your face" },
+  { code: "point_nose", emoji: "☝️", text: "Point at your nose with one finger" },
+  { code: "hand_on_head", emoji: "🙆", text: "Put one hand on top of your head" },
+  { code: "touch_ear", emoji: "👂", text: "Touch your ear with one hand" },
+  { code: "call_me", emoji: "🤙", text: "Make a call-me sign next to your face" },
+];
+
+/** How long a pose stays valid. Long enough to take the photo, not to fake it. */
+const POSE_VALID_MINUTES = 15;
+
+function poseByCode(code) {
+  return VERIFICATION_POSES.find((pose) => pose.code === code) || null;
+}
+
+/** Hand out a fresh random pose, never the same one twice in a row. */
+async function issueVerificationPose(userId, random = Math.random) {
+  const [row] = await query(
+    "SELECT verification_pose FROM profiles WHERE user_id = ?",
+    [userId],
+  );
+  if (!row) {
+    throw new ApiError(400, "Complete your profile before verifying");
+  }
+  const choices = VERIFICATION_POSES.filter(
+    (pose) => pose.code !== row.verification_pose,
+  );
+  const pose = choices[Math.floor(random() * choices.length)] || choices[0];
   await query(
-    `UPDATE profiles 
-     SET selfie_uri = ?, 
-         verification_status = 'pending', 
-         verified = 0 
-     WHERE user_id = ?`,
+    `UPDATE profiles
+        SET verification_pose = ?,
+            verification_pose_issued_at = UTC_TIMESTAMP()
+      WHERE user_id = ?`,
+    [pose.code, userId],
+  );
+  return { ...pose, validMinutes: POSE_VALID_MINUTES };
+}
+
+/**
+ * Only accepted against a pose issued in the last few minutes. The check
+ * and the write are one statement, so there is no gap between them, and
+ * the pose is spent on success - the same pose cannot be submitted twice.
+ * The pose code itself stays on the row so the reviewer can see it.
+ */
+async function submitVerification(userId, selfieUrl) {
+  const result = await query(
+    `UPDATE profiles
+     SET selfie_uri = ?,
+         verification_status = 'pending',
+         verified = 0,
+         verification_pose_issued_at = NULL
+     WHERE user_id = ?
+       AND verification_pose IS NOT NULL
+       AND verification_pose_issued_at > UTC_TIMESTAMP() - INTERVAL ${POSE_VALID_MINUTES} MINUTE`,
     [selfieUrl, userId],
   );
+  if ((result?.affectedRows ?? 0) === 0) {
+    throw new ApiError(
+      409,
+      "Your pose has expired. Get a new pose and take the selfie again.",
+    );
+  }
 }
 
 async function listPendingVerifications(limit = 50) {
-  return query(
-    `SELECT u.id AS user_id, u.username, u.phone,
+  const rows = await query(
+    `SELECT u.id AS user_id, u.username, u.phone, u.avatar_url,
             p.first_name, p.age, p.city, p.gender, p.selfie_uri,
-            p.verification_status, p.updated_at
+            p.verification_pose, p.verification_status, p.updated_at
        FROM profiles p
        JOIN users u ON u.id = p.user_id
       WHERE p.verification_status = 'pending'
@@ -146,6 +215,32 @@ async function listPendingVerifications(limit = 50) {
       ORDER BY p.updated_at ASC
       LIMIT ${Number(limit)}`,
   );
+  if (!rows.length) return rows;
+
+  // The profile photos go alongside the selfie, so the reviewer compares
+  // faces side by side instead of approving a selfie on its own.
+  const ids = rows.map((row) => row.user_id);
+  const photoRows = await query(
+    `SELECT user_id, photo_url FROM profile_photos
+      WHERE user_id IN (${ids.map(() => "?").join(",")})
+      ORDER BY user_id, position ASC`,
+    ids,
+  );
+  const photosByUser = new Map();
+  for (const photo of photoRows) {
+    const list = photosByUser.get(photo.user_id) ?? [];
+    list.push(photo.photo_url);
+    photosByUser.set(photo.user_id, list);
+  }
+
+  return rows.map((row) => {
+    const photos = photosByUser.get(row.user_id) ?? [];
+    return {
+      ...row,
+      pose: poseByCode(row.verification_pose),
+      photos: photos.length ? photos : [row.avatar_url].filter(Boolean),
+    };
+  });
 }
 
 async function setVerificationStatus(userId, status) {
@@ -394,6 +489,8 @@ async function findMatches(userId, limit = 20) {
 module.exports = {
   getFullProfile,
   upsertProfile,
+  VERIFICATION_POSES,
+  issueVerificationPose,
   submitVerification,
   listPendingVerifications,
   setVerificationStatus,

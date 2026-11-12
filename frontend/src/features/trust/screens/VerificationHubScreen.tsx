@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { WebSelfieCamera } from "../components/WebSelfieCamera";
+import type { VerificationPose } from "../../../api/profileApi";
 
 export function VerificationHubScreen({
   verified,
@@ -20,23 +21,53 @@ export function VerificationHubScreen({
   verificationStatus,
   onBack,
   onVerify,
+  onRequestPose,
 }: {
   verified: boolean;
   selfieUri: string;
   verificationStatus?: "none" | "pending" | "approved" | "rejected";
   onBack: () => void;
   onVerify: (uri: string) => Promise<void>;
+  /** Fetch a fresh random pose from the server. */
+  onRequestPose: () => Promise<VerificationPose>;
 }) {
   const isRejected = verificationStatus === "rejected";
-  // After a rejection the old selfie is the one that failed review, so start
-  // empty and make them take a fresh one before they can resubmit.
-  const [pickedUri, setPickedUri] = useState(isRejected ? "" : selfieUri);
+  const isPending = verificationStatus === "pending";
+  // Anyone still to submit needs a selfie taken with the pose they are about
+  // to be given, so an old selfie (or one that was rejected) is never reused.
+  const needsSelfie = !verified && !isPending;
+  const [pickedUri, setPickedUri] = useState(needsSelfie ? "" : selfieUri);
+  const [pose, setPose] = useState<VerificationPose | null>(null);
+  const [poseLoading, setPoseLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [webCameraOpen, setWebCameraOpen] = useState(false);
 
+  const loadPose = useCallback(async () => {
+    setPoseLoading(true);
+    try {
+      setPose(await onRequestPose());
+      // A new pose means the selfie has to be retaken to match it.
+      setPickedUri("");
+    } catch (err: any) {
+      setError(err?.message || "Could not load your pose. Try again.");
+    } finally {
+      setPoseLoading(false);
+    }
+  }, [onRequestPose]);
+
+  useEffect(() => {
+    if (needsSelfie) void loadPose();
+    // Only on arrival: a pose is handed out once per visit unless asked for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const takeSelfie = async () => {
     setError(null);
+    if (!pose) {
+      setError("Wait for your pose to load first.");
+      return;
+    }
     // In a browser the picker's "camera" is only a file chooser on a laptop,
     // so open the webcam directly for a real live selfie.
     if (Platform.OS === "web") {
@@ -67,7 +98,11 @@ export function VerificationHubScreen({
     try {
       await onVerify(pickedUri);
     } catch (err: any) {
-      setError(err.message || "Could not submit verification.");
+      const message = err?.message || "Could not submit verification.";
+      setError(message);
+      // The pose ran out while they were taking the photo: hand out a new
+      // one straight away rather than leaving them stuck.
+      if (/pose/i.test(message)) void loadPose();
     } finally {
       setIsSubmitting(false);
     }
@@ -113,10 +148,73 @@ export function VerificationHubScreen({
               marginBottom: 32,
             }}
           >
-            Take a clear selfie to get the green Real shield next to your name,
-            so matches know you are a real person. Verified members with Pro
-            also get the blue tick and show up at the top of search.
+            Take a live selfie doing the pose below to get the green Real shield
+            next to your name, so matches know you are a real person. Verified
+            members with Pro also get the blue tick and show up at the top of
+            search.
           </Text>
+
+          {needsSelfie && (
+            <View
+              accessibilityLabel={
+                pose ? `Your pose: ${pose.text}` : "Loading your pose"
+              }
+              style={{
+                backgroundColor: "#EAF5FF",
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#0095F6",
+                padding: 16,
+                marginBottom: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+              }}
+            >
+              {poseLoading || !pose ? (
+                <ActivityIndicator color="#0095F6" />
+              ) : (
+                <Text style={{ fontSize: 44 }}>{pose.emoji}</Text>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: "#0B6BB3",
+                    letterSpacing: 0.6,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Your pose
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: "#151719",
+                    marginTop: 2,
+                  }}
+                >
+                  {pose ? pose.text : "Getting your pose..."}
+                </Text>
+                <Text style={{ fontSize: 12, color: "#5A5E63", marginTop: 4 }}>
+                  Face clearly visible, pose in the same photo.
+                  {pose ? ` Valid for ${pose.validMinutes} minutes.` : ""}
+                </Text>
+              </View>
+              {!!pose && !poseLoading && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Give me a different pose"
+                  onPress={() => void loadPose()}
+                  hitSlop={8}
+                >
+                  <Ionicons name="refresh" size={20} color="#0B6BB3" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {/* Main Card */}
           <View
@@ -156,26 +254,30 @@ export function VerificationHubScreen({
               </View>
             )}
 
-            {/* Take Selfie Button */}
-            <TouchableOpacity
-              onPress={takeSelfie}
-              style={{
-                backgroundColor: "#FFF",
-                borderWidth: 1,
-                borderColor: "#151719",
-                width: "100%",
-                padding: 14,
-                borderRadius: 12,
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <Text
-                style={{ color: "#151719", fontWeight: "600", fontSize: 15 }}
+            {/* Take Selfie Button - hidden once submitted or verified. */}
+            {needsSelfie && (
+              <TouchableOpacity
+                onPress={takeSelfie}
+                disabled={!pose || poseLoading}
+                style={{
+                  opacity: !pose || poseLoading ? 0.5 : 1,
+                  backgroundColor: "#FFF",
+                  borderWidth: 1,
+                  borderColor: "#151719",
+                  width: "100%",
+                  padding: 14,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
               >
-                {pickedUri ? "Retake Selfie" : "Take Selfie"}
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={{ color: "#151719", fontWeight: "600", fontSize: 15 }}
+                >
+                  {pickedUri ? "Retake Selfie" : "Take Selfie"}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Status / Submit Button */}
             {verified ? (
@@ -306,6 +408,7 @@ export function VerificationHubScreen({
           visible={webCameraOpen}
           onClose={() => setWebCameraOpen(false)}
           onCapture={setPickedUri}
+          hint={pose ? `${pose.emoji}  ${pose.text}` : undefined}
         />
       )}
     </AppCanvas>
