@@ -34,7 +34,9 @@ export type BillingSummary = {
   premiumUntil: string | null;
   /** An admin approved their selfie. */
   verified?: boolean;
-  /** Approved selfie AND Plus/Pro running. */
+  /** Pro is running (Pro alone carries the blue tick). */
+  pro?: boolean;
+  /** Approved selfie AND Pro running. */
   blueTick?: boolean;
   likes: { limit: number | null; used: number; remaining: number | null };
   boost: { balance: number; active: { endsAt: string } | null };

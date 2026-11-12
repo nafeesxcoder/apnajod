@@ -234,12 +234,27 @@ test("blue tick members rank first among people who fit, never above them", asyn
   );
 });
 
-test("the blue tick needs an approved selfie and a running paid plan", () => {
+test("the blue tick needs an approved selfie and a running Pro plan", () => {
   const billing = load("../src/services/billingService", {
     "../config/db": { query: async () => [] },
   });
   const sql = billing.blueTickSql("u.id", "p.verified").replace(/\s+/g, " ");
   assert.match(sql, /COALESCE\(p\.verified, 0\) = 1 AND EXISTS/, "paying alone is not enough");
-  assert.match(sql, /bt\.feature = 'premium'/, "it reads the paid plan");
+  assert.match(sql, /bt\.feature = 'pro'/, "only Pro carries the tick");
   assert.match(sql, /expires_at > UTC_TIMESTAMP/, "a lapsed plan drops the tick");
+});
+
+test("Pro keeps every premium perk, so Plus gates accept either plan", async () => {
+  const seen = [];
+  const billing = load("../src/services/billingService", {
+    "../config/db": {
+      query: async (sql, params) => {
+        seen.push({ sql: sql.replace(/\s+/g, " "), params });
+        return [{ 1: 1 }];
+      },
+    },
+  });
+  assert.equal(await billing.isPremium("u1"), true);
+  assert.match(seen[0].sql, /feature IN \(\?, \?\)/);
+  assert.deepEqual(seen[0].params, ["u1", "premium", "pro"]);
 });

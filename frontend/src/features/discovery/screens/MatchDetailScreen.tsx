@@ -225,7 +225,7 @@ export function MatchDetailScreen({
                   {match.name}
                   {age ? `, ${age}` : ""}
                 </Text>
-                {match.verified && <TrustBadge blueTick={match.blueTick} size={22} label />}
+                {match.verified && <TrustBadge blueTick={match.blueTick} size={22} />}
               </View>
 
               <Text

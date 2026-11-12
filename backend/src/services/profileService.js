@@ -303,8 +303,8 @@ async function findMatches(userId, limit = 20) {
      ORDER BY
        boosted DESC,
        off_preference ASC,
-       -- Blue tick members come first among the people who fit. They paid
-       -- for priority, and they are selfie-verified, so this also puts
+       -- Blue tick members come first among the people who fit. They pay
+       -- for Pro, and they are selfie-verified, so this also puts
        -- real people at the top. They never jump above someone who fits
        -- the viewer's preferences.
        blue_tick DESC,

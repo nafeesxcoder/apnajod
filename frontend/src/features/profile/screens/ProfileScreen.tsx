@@ -49,7 +49,7 @@ export function ProfileScreen({
 }: {
   profile: any;
   verified: boolean;
-  /** Approved selfie AND Plus/Pro. */
+  /** Approved selfie AND Pro. */
   blueTick?: boolean;
   profilePhoto?: string;
   navigate: (screen: any) => void;
@@ -254,7 +254,7 @@ export function ProfileScreen({
                 >
                   {name ? (age ? `${name}, ${age}` : name) : "Your profile"}
                 </Text>
-                {verified && <TrustBadge blueTick={blueTick} size={22} label />}
+                {verified && <TrustBadge blueTick={blueTick} size={22} />}
               </View>
 
               <Text
@@ -268,7 +268,7 @@ export function ProfileScreen({
               >
                 {[profile?.city, profile?.profession]
                   .filter(Boolean)
-                  .join("  Ã‚Â·  ") || "Add your city and work"}
+                  .join("  ·  ") || "Add your city and work"}
               </Text>
 
               <View

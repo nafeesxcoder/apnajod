@@ -25,7 +25,7 @@ VALUES
    'subscription', 'premium', 30, 9900, 1, 10),
   ('pro_monthly', 'Pro',
    'Everything in Plus, 3 boosts/week, 5 super likes/week',
-   'subscription', 'premium', 30, 24900, 1, 20)
+   'subscription', 'pro', 30, 24900, 1, 20)
 ON DUPLICATE KEY UPDATE
   title        = VALUES(title),
   blurb        = VALUES(blurb),

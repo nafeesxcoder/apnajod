@@ -15,6 +15,12 @@ const { ApiError } = require("../middleware/errorHandler");
 const limits = require("../config/billing");
 
 const PREMIUM = "premium";
+/**
+ * Pro is everything Premium (Plus) gives, plus the blue tick. It is its
+ * own entitlement so the tick can follow Pro alone while every premium
+ * gate keeps working for both plans.
+ */
+const PRO = "pro";
 const BOOST = "boost";
 
 /**
@@ -59,25 +65,37 @@ async function getPlan(code) {
   return plan || null;
 }
 
-/** Is this member premium right now? */
+/** Is this member premium right now? Plus and Pro both count. */
 async function isPremium(userId) {
+  const [row] = await query(
+    `SELECT 1 FROM entitlements
+      WHERE user_id = ? AND feature IN (?, ?)
+        AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6))
+      LIMIT 1`,
+    [userId, PREMIUM, PRO],
+  );
+  return !!row;
+}
+
+/** Is this member on Pro right now? */
+async function isPro(userId) {
   const [row] = await query(
     `SELECT 1 FROM entitlements
       WHERE user_id = ? AND feature = ?
         AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6))
       LIMIT 1`,
-    [userId, PREMIUM],
+    [userId, PRO],
   );
   return !!row;
 }
 
 /**
- * The blue tick: an approved selfie AND a paid plan running.
+ * The blue tick: an approved selfie AND Pro running. Plus does not carry it.
  *
  * Paying alone never shows it. A blue tick reads as "this person is real",
  * so anyone who could buy it without a verified selfie could buy trust -
  * which on a dating app is how scams start. An unverified member can still
- * pay for Plus; the tick turns on by itself the day the selfie is approved,
+ * pay for Pro; the tick turns on by itself the day the selfie is approved,
  * and goes away by itself when the plan lapses or the approval is undone.
  *
  * Returned as SQL so every list that already reads profiles can carry the
@@ -88,7 +106,7 @@ function blueTickSql(userIdExpr, verifiedExpr) {
   return `(COALESCE(${verifiedExpr}, 0) = 1 AND EXISTS (
     SELECT 1 FROM entitlements bt
      WHERE bt.user_id = ${userIdExpr}
-       AND bt.feature = '${PREMIUM}'
+       AND bt.feature = '${PRO}'
        AND (bt.expires_at IS NULL OR bt.expires_at > UTC_TIMESTAMP(6))
   ))`;
 }
@@ -109,12 +127,15 @@ async function trustStatus(userId) {
 }
 
 async function premiumUntil(userId) {
+  // Whichever paid plan runs longest. A NULL expiry never runs out, so it
+  // sorts first.
   const [row] = await query(
     `SELECT expires_at FROM entitlements
-      WHERE user_id = ? AND feature = ?
+      WHERE user_id = ? AND feature IN (?, ?)
         AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP(6))
+      ORDER BY expires_at IS NULL DESC, expires_at DESC
       LIMIT 1`,
-    [userId, PREMIUM],
+    [userId, PREMIUM, PRO],
   );
   if (!row) return null;
   return row.expires_at ? new Date(row.expires_at).toISOString() : null;
@@ -252,14 +273,16 @@ async function activeBoost(userId) {
  * screen has to assemble this for itself and get it subtly different.
  */
 async function summaryFor(userId) {
-  const [allowance, boosts, boost, trust] = await Promise.all([
+  const [allowance, boosts, boost, trust, pro] = await Promise.all([
     likeAllowance(userId),
     creditBalance(userId, BOOST),
     activeBoost(userId),
     trustStatus(userId),
+    isPro(userId),
   ]);
   return {
     premium: allowance.premium,
+    pro,
     verified: trust.verified,
     blueTick: trust.blueTick,
     premiumUntil: allowance.premium ? await premiumUntil(userId) : null,
@@ -275,11 +298,13 @@ async function summaryFor(userId) {
 
 module.exports = {
   PREMIUM,
+  PRO,
   BOOST,
   startOfIndianDay,
   listPlans,
   getPlan,
   isPremium,
+  isPro,
   blueTickSql,
   trustStatus,
   premiumUntil,

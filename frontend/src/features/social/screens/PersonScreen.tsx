@@ -203,7 +203,7 @@ export function PersonScreen({
               {user.name}
               {profile.age ? `, ${profile.age}` : ""}
             </Text>
-            {profile.verified && <TrustBadge blueTick={profile.blueTick} size={22} label />}
+            {profile.verified && <TrustBadge blueTick={profile.blueTick} size={22} />}
           </View>
 
           <Text

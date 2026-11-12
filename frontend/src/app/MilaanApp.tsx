@@ -549,7 +549,7 @@ function MilaanApp() {
   const [intent, setIntent] = useState("Long-term, leading to Marriage");
   const [alignment, setAlignment] = useState<Record<string, string>>({});
   const [verified, setVerified] = useState(isCustomerShowcase);
-  /** Approved selfie AND Plus/Pro - the server works it out, never the app. */
+  /** Approved selfie AND Pro - the server works it out, never the app. */
   const [blueTick, setBlueTick] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<
     "none" | "pending" | "approved" | "rejected"

@@ -36,8 +36,6 @@ const BLUE_TICK_FEATURE = {
 } as const;
 
 const PLUS_FEATURES = [
-  BLUE_TICK_FEATURE,
-  { text: "Top of search", ok: true },
   { text: "Unlimited likes", ok: true },
   { text: "All likers visible", ok: true },
   { text: "Age filter", ok: true },
@@ -323,7 +321,7 @@ export function PremiumScreen({
                       features={features}
                       selected={selectedCode === plan.code}
                       onSelect={() => setSelectedCode(plan.code)}
-                      blueTick
+                      blueTick={plan.code === "pro_monthly"}
                       highlight={plan.code === "pro_monthly"}
                       badge={isCurrentPlan ? "Current plan" : undefined}
                     />
@@ -646,7 +644,7 @@ function PackGroup({
 /**
  * Where the member stands on the blue tick.
  *
- * The tick needs an approved selfie as well as Plus or Pro, so nobody can
+ * The tick needs an approved selfie as well as Pro, so nobody can
  * buy "this person is real". Paying still works without one - the tick
  * simply turns on the day the selfie is approved - but the member is told
  * that before they pay, not after.
@@ -693,14 +691,14 @@ function BlueTickNote({
       }}
     >
       <Text style={{ fontFamily: fonts.bodySemi, color: palette.navy, fontSize: 14 }}>
-        {summary.premium
+        {summary.pro
           ? "Verify your selfie to switch on your blue tick"
           : "The blue tick needs a verified selfie"}
       </Text>
       <Text style={{ fontFamily: fonts.body, color: palette.slate, fontSize: 13 }}>
-        {summary.premium
-          ? "Your plan is active. The blue tick appears the moment an admin approves your selfie."
-          : "You can buy Plus now and use every feature. The blue tick appears once an admin approves your selfie."}
+        {summary.pro
+          ? "Pro is active. The blue tick appears the moment an admin approves your selfie."
+          : "You can buy Pro now and use every feature. The blue tick appears once an admin approves your selfie."}
       </Text>
       {onVerify && (
         <Pressable
@@ -759,7 +757,7 @@ function BlueTickHero() {
           textAlign: "center",
         }}
       >
-        Included in Plus and Pro. Shows next to your name on every card,
+        Included in Pro. Shows next to your name on every card,
         puts you at the top of search, and tells matches you are a real,
         verified member.
       </Text>
