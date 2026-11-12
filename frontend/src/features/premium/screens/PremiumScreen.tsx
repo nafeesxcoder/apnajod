@@ -29,8 +29,14 @@ const FREE_FEATURES = [
   { text: "0 super likes", ok: false },
 ] as const;
 
+const BLUE_TICK_FEATURE = {
+  text: "Blue tick next to your name",
+  ok: true,
+  tick: true,
+} as const;
+
 const PLUS_FEATURES = [
-  { text: "Blue tick next to your name", ok: true },
+  BLUE_TICK_FEATURE,
   { text: "Top of search", ok: true },
   { text: "Unlimited likes", ok: true },
   { text: "All likers visible", ok: true },
@@ -40,12 +46,16 @@ const PLUS_FEATURES = [
 ] as const;
 
 const PRO_FEATURES = [
-  { text: "Everything in Plus, blue tick included", ok: true },
+  BLUE_TICK_FEATURE,
+  { text: "Top of search", ok: true },
+  { text: "Everything in Plus", ok: true },
   { text: "3 boosts per week", ok: true },
   { text: "5 super likes per week", ok: true },
 ] as const;
 
-const PLAN_FEATURES: Record<string, readonly { text: string; ok: boolean }[]> = {
+type PlanFeature = { text: string; ok: boolean; tick?: boolean };
+
+const PLAN_FEATURES: Record<string, readonly PlanFeature[]> = {
   plus_monthly: PLUS_FEATURES,
   pro_monthly: PRO_FEATURES,
 };
@@ -287,6 +297,8 @@ export function PremiumScreen({
                   </View>
                 )}
 
+                {!summary?.blueTick && <BlueTickHero />}
+
                 <BlueTickNote summary={summary} onVerify={onVerify} />
 
                 <PlanCard
@@ -311,6 +323,7 @@ export function PremiumScreen({
                       features={features}
                       selected={selectedCode === plan.code}
                       onSelect={() => setSelectedCode(plan.code)}
+                      blueTick
                       highlight={plan.code === "pro_monthly"}
                       badge={isCurrentPlan ? "Current plan" : undefined}
                     />
@@ -429,15 +442,18 @@ function PlanCard({
   disabled,
   badge,
   highlight,
+  blueTick,
   onSelect,
 }: {
   title: string;
   price: string;
-  features: readonly { text: string; ok: boolean }[];
+  features: readonly PlanFeature[];
   selected: boolean;
   disabled?: boolean;
   badge?: string;
   highlight?: boolean;
+  /** The plan carries the blue tick: show it beside the plan name. */
+  blueTick?: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -506,15 +522,18 @@ function PlanCard({
           </Text>
         </View>
       )}
-      <Text
-        style={{
-          fontFamily: fonts.bodySemi,
-          fontSize: 16,
-          color: palette.ink,
-        }}
-      >
-        {title}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <Text
+          style={{
+            fontFamily: fonts.bodySemi,
+            fontSize: 16,
+            color: palette.ink,
+          }}
+        >
+          {title}
+        </Text>
+        {blueTick && <TrustBadge blueTick size={18} />}
+      </View>
       <Text
         style={{
           fontFamily: fonts.display,
@@ -531,16 +550,20 @@ function PlanCard({
             key={f.text}
             style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
           >
-            <Ionicons
-              name={f.ok ? "checkmark-circle" : "close-circle"}
-              size={14}
-              color={f.ok ? palette.emerald : palette.slate}
-            />
+            {f.tick ? (
+              <TrustBadge blueTick size={15} />
+            ) : (
+              <Ionicons
+                name={f.ok ? "checkmark-circle" : "close-circle"}
+                size={14}
+                color={f.ok ? palette.emerald : palette.slate}
+              />
+            )}
             <Text
               style={{
-                fontFamily: fonts.body,
+                fontFamily: f.tick ? fonts.bodySemi : fonts.body,
                 fontSize: 13,
-                color: f.ok ? palette.ink : palette.slate,
+                color: f.tick ? BLUE_TICK : f.ok ? palette.ink : palette.slate,
               }}
             >
               {f.text}
@@ -697,6 +720,49 @@ function BlueTickNote({
           </Text>
         </Pressable>
       )}
+    </View>
+  );
+}
+
+/** The first thing on the page: what the blue tick is and where it comes from. */
+function BlueTickHero() {
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        backgroundColor: palette.paper,
+        borderRadius: radius.lg,
+        borderWidth: 2,
+        borderColor: BLUE_TICK,
+        paddingVertical: 20,
+        paddingHorizontal: 16,
+        marginBottom: 16,
+        gap: 6,
+      }}
+    >
+      <TrustBadge blueTick size={48} />
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: 22,
+          color: palette.ink,
+          textAlign: "center",
+        }}
+      >
+        Get the Blue Tick
+      </Text>
+      <Text
+        style={{
+          fontFamily: fonts.body,
+          fontSize: 14,
+          color: palette.slate,
+          textAlign: "center",
+        }}
+      >
+        Included in Plus and Pro. Shows next to your name on every card,
+        puts you at the top of search, and tells matches you are a real,
+        verified member.
+      </Text>
     </View>
   );
 }

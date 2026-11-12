@@ -14,5 +14,5 @@ SET blurb = 'Blue tick (after selfie verification), top of search, unlimited lik
 WHERE code = 'plus_monthly';
 
 UPDATE billing_plans
-SET blurb = 'Everything in Plus, 3 boosts and 5 super likes a week'
+SET blurb = 'Blue tick (after selfie verification), top of search, everything in Plus, 3 boosts and 5 super likes a week'
 WHERE code = 'pro_monthly';
