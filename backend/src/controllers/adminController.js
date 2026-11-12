@@ -1,6 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const adminService = require("../services/adminService");
 const growthService = require("../services/growthService");
+const profileRewardService = require("../services/profileRewardService");
 const { ApiError } = require("../middleware/errorHandler");
 
 const getStats = asyncHandler(async (req, res) => {
@@ -64,6 +65,9 @@ const getVerifications = asyncHandler(async (req, res) => {
 
 const approveVerification = asyncHandler(async (req, res) => {
   await adminService.setVerificationStatus(req.params.id, "approved");
+  // An approved selfie is often the last step to 100% - the member is told
+  // by push, since they are not the one in the app right now.
+  await profileRewardService.rewardIfComplete(req.params.id);
   res.json({ ok: true });
 });
 

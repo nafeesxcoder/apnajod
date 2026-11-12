@@ -49,6 +49,29 @@ export type ReferralSummary = {
   monthlyCap: number;
 };
 
+/** A one-time gift the server paid for this save (e.g. a 100% profile). */
+export type ProfileReward = { kind: "superlike"; quantity: number };
+
+// Several screens save the profile; the app listens here once and shows
+// the "Profile complete!" message whichever save earned it.
+const rewardListeners = new Set<(reward: ProfileReward) => void>();
+
+/** Listen for rewards paid by a profile, photo or intent save. Returns unsubscribe. */
+export function onProfileReward(listener: (reward: ProfileReward) => void): () => void {
+  rewardListeners.add(listener);
+  return () => {
+    rewardListeners.delete(listener);
+  };
+}
+
+function announceReward<T>(data: T): T {
+  const reward = (data as any)?.reward;
+  if (reward && reward.kind === "superlike") {
+    for (const listener of rewardListeners) listener(reward as ProfileReward);
+  }
+  return data;
+}
+
 export const profileApi = {
   /** Invite & earn totals. Null if the server could not be reached. */
   async referrals(accessToken: string): Promise<ReferralSummary | null> {
@@ -69,7 +92,7 @@ export const profileApi = {
     return authFetch("/profile/daily-picks", accessToken);
   },
   async getMyProfile(accessToken: string) {
-    return authFetch("/profile/me", accessToken); 
+    return announceReward(await authFetch("/profile/me", accessToken));
   },
   async discoverMatches(accessToken: string, limit = 20) {
     return authFetch(`/profile/discover?limit=${limit}`, accessToken);
@@ -89,10 +112,12 @@ export const profileApi = {
       bio?: string;
     },
   ) {
-    return authFetch("/profile/profile", accessToken, {
-      method: "PUT",
-      body: JSON.stringify(input),
-    });
+    return announceReward(
+      await authFetch("/profile/profile", accessToken, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    );
   },
   /** A fresh random pose. Each call replaces the last one. */
   async verificationPose(accessToken: string): Promise<VerificationPose> {
@@ -108,10 +133,12 @@ export const profileApi = {
     });
   },
   async updatePhotos(accessToken: string, photos: string[]) {
-    return authFetch("/profile/photos", accessToken, {
-      method: "PUT",
-      body: JSON.stringify({ photos }),
-    });
+    return announceReward(
+      await authFetch("/profile/photos", accessToken, {
+        method: "PUT",
+        body: JSON.stringify({ photos }),
+      }),
+    );
   },
   async updateVibes(accessToken: string, vibes: string[]) {
     return authFetch("/profile/vibes", accessToken, {
@@ -123,10 +150,12 @@ export const profileApi = {
     accessToken: string,
     input: { intent?: string; timeline?: string; children?: string; family?: string; relocation?: string },
   ) {
-    return authFetch("/profile/intent", accessToken, {
-      method: "PUT",
-      body: JSON.stringify(input),
-    });
+    return announceReward(
+      await authFetch("/profile/intent", accessToken, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    );
   },
   async updatePreferences(accessToken: string, input: Record<string, unknown>) {
     return authFetch("/profile/preferences", accessToken, {

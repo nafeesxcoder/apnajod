@@ -59,6 +59,7 @@ export function ProfileScreen({
   accessToken,
   photoCount = 0,
   verificationStatus = "none",
+  completionRewardClaimed = false,
 }: {
   profile: any;
   verified: boolean;
@@ -72,6 +73,8 @@ export function ProfileScreen({
   /** How many profile photos they have, for Profile strength. */
   photoCount?: number;
   verificationStatus?: "none" | "pending" | "approved" | "rejected";
+  /** The one-time Super Like for a 100% profile has been paid. */
+  completionRewardClaimed?: boolean;
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
@@ -453,6 +456,7 @@ export function ProfileScreen({
                   verified,
                 })}
                 onGo={navigate}
+                rewardClaimed={completionRewardClaimed}
               />
 
               {!!(family.note || shareNote) && (

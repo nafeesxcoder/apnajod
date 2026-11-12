@@ -8,7 +8,7 @@ import { SharedProfilePage } from "../features/share/SharedProfilePage";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi, AuthRequestError, isSessionRejected } from "../api/authApi";
-import { profileApi } from "../api/profileApi";
+import { profileApi, onProfileReward } from "../api/profileApi";
 import { uploadPhoto } from "../api/uploadPhoto";
 import {
   matchApi,
@@ -560,6 +560,8 @@ function MilaanApp() {
   const [verified, setVerified] = useState(isCustomerShowcase);
   /** Approved selfie AND Pro - the server works it out, never the app. */
   const [blueTick, setBlueTick] = useState(false);
+  // Whether the one-time "100% profile" Super Like has been paid.
+  const [completionRewardClaimed, setCompletionRewardClaimed] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<
     "none" | "pending" | "approved" | "rejected"
   >("none");
@@ -1036,6 +1038,7 @@ function MilaanApp() {
               }));
               applyVerificationFrom(profileData.profile);
             }
+            setCompletionRewardClaimed(!!profileData?.completionRewardClaimed);
             if (profileData.photos?.length)
               setProfilePhotos(profileData.photos);
             if (profileData.vibes?.length) setVibeList(profileData.vibes);
@@ -1873,6 +1876,22 @@ function MilaanApp() {
   useEffect(() => {
     void refreshSparkWallet();
   }, [refreshSparkWallet]);
+  // Whichever save takes the profile to 100%, say so and show the new
+  // Super Like straight away.
+  useEffect(
+    () =>
+      onProfileReward(() => {
+        setCompletionRewardClaimed(true);
+        void refreshSparkWallet();
+        setAppNotice({
+          title: "Profile complete! 🎉",
+          body: "You earned a free Super Like. Use it on someone special.",
+          icon: "star",
+          tone: "gold",
+        });
+      }),
+    [refreshSparkWallet],
+  );
   if (!fontsLoaded)
     return <View style={{ flex: 1, backgroundColor: colors.black }} />;
   const navigateTo = (target: Screen) => {
@@ -3086,6 +3105,7 @@ function MilaanApp() {
           hobbies: readHobbies(profileData.profile), // <-- YEH ADD KARO
         }));
         applyVerificationFrom(profileData.profile);
+        setCompletionRewardClaimed(!!profileData?.completionRewardClaimed);
         setQuickProfile({
           firstName: profileData.profile.first_name ?? "",
           age: profileData.profile.age ? String(profileData.profile.age) : "",
@@ -3763,6 +3783,7 @@ function MilaanApp() {
             accessToken={accessToken}
             photoCount={profilePhotos.filter(Boolean).length}
             verificationStatus={verificationStatus}
+            completionRewardClaimed={completionRewardClaimed}
           />
         )}
 

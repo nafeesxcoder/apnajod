@@ -7,21 +7,46 @@ import type { StrengthScreen, StrengthStep } from "../../../domain/profileStreng
 /**
  * "Profile strength 65%" on your own profile: one bar, the single most
  * useful next step with a button that goes straight there, and the rest of
- * the open steps behind "Show all". Gone once the profile is complete.
+ * the open steps behind "Show all". Until the one-time reward is paid it
+ * says 100% earns a free Super Like. At 100% it shrinks to one line.
  */
 export function ProfileStrengthCard({
   score,
   steps,
   next,
   onGo,
+  rewardClaimed = false,
 }: {
   score: number;
   steps: StrengthStep[];
   next: StrengthStep | null;
   onGo: (screen: StrengthScreen) => void;
+  rewardClaimed?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
-  if (score >= 100) return null;
+  if (score >= 100) {
+    return (
+      <View
+        accessibilityLabel="Profile strength 100 percent, complete"
+        style={{
+          marginTop: 18,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          borderRadius: radius.md,
+          backgroundColor: palette.paperSand,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <Ionicons name="checkmark-circle" size={18} color={palette.emerald} />
+        <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>
+          Profile strength 100%
+        </Text>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.emerald }}>Complete</Text>
+      </View>
+    );
+  }
 
   const waiting = steps.find((step) => step.waiting);
   const others = steps.filter((step) => !step.done && !step.waiting && step.key !== next?.key);
@@ -41,6 +66,14 @@ export function ProfileStrengthCard({
         <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>Profile strength</Text>
         <Text style={{ fontFamily: fonts.bodySemi, fontSize: 18, color: palette.navy }}>{score}%</Text>
       </View>
+      {!rewardClaimed && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: -4 }}>
+          <Ionicons name="star" size={13} color={palette.marigold} />
+          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+            Reach 100% and get a free Super Like.
+          </Text>
+        </View>
+      )}
       <View
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: score }}

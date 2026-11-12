@@ -3,12 +3,26 @@ const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const profileService = require("../services/profileService");
 const referralService = require("../services/referralService");
+const profileRewardService = require("../services/profileRewardService");
 const env = require("../config/env");
 
 const getMyProfile = asyncHandler(async (req, res) => {
+  // Members whose profile was already complete before this reward existed
+  // get it the next time they open the app.
+  const reward = await profileRewardService.rewardIfComplete(req.user.id);
   const data = await profileService.getFullProfile(req.user.id);
-  res.json({ ok: true, ...data });
+  const completionRewardClaimed = await profileRewardService.claimed(req.user.id);
+  res.json({ ok: true, ...data, completionRewardClaimed, ...(reward ? { reward } : {}) });
 });
+
+/**
+ * After a save: pay the invite reward and the 100% reward if this save is
+ * what earned them. `reward` in the reply lets the app say so at once.
+ */
+async function afterProfileSave(userId) {
+  await referralService.rewardIfReady(userId);
+  return profileRewardService.rewardIfComplete(userId);
+}
 const updateProfile = asyncHandler(async (req, res) => {
   const {
     firstName,
@@ -37,8 +51,8 @@ const updateProfile = asyncHandler(async (req, res) => {
     hobbies,
   });
   // Name and age may be what completes an invited member's profile.
-  await referralService.rewardIfReady(req.user.id);
-  res.json({ ok: true });
+  const reward = await afterProfileSave(req.user.id);
+  res.json({ ok: true, ...(reward ? { reward } : {}) });
 });
 const getVerificationPose = asyncHandler(async (req, res) => {
   const pose = await profileService.issueVerificationPose(req.user.id);
@@ -57,8 +71,8 @@ const updatePhotos = asyncHandler(async (req, res) => {
     throw new ApiError(400, "photos must be an array of URLs");
   await profileService.replacePhotos(req.user.id, photos);
   // A photo may be what completes an invited member's profile.
-  await referralService.rewardIfReady(req.user.id);
-  res.json({ ok: true });
+  const reward = await afterProfileSave(req.user.id);
+  res.json({ ok: true, ...(reward ? { reward } : {}) });
 });
 const uploadPhoto = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "No photo file was received");
@@ -81,7 +95,8 @@ const updateIntent = asyncHandler(async (req, res) => {
     family,
     relocation,
   });
-  res.json({ ok: true });
+  const reward = await profileRewardService.rewardIfComplete(req.user.id);
+  res.json({ ok: true, ...(reward ? { reward } : {}) });
 });
 const updatePreferences = asyncHandler(async (req, res) => {
   await profileService.upsertPreferences(req.user.id, req.body);
