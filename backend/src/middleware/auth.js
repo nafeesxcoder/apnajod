@@ -12,6 +12,15 @@ const { query } = require('../config/db');
 const lastTouchByUser = new Map();
 const TOUCH_THROTTLE_MS = 30 * 1000;
 
+// The admin Growth page counts daily active members from member_active_days:
+// one row per member per India day, written at most once a day each.
+const IST_OFFSET_MS = 330 * 60 * 1000;
+const activeDayByUser = new Map();
+
+function indianDay(ms) {
+  return new Date(ms + IST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
 function touchLastActive(userId) {
   const now = Date.now();
   const last = lastTouchByUser.get(userId) || 0;
@@ -20,6 +29,13 @@ function touchLastActive(userId) {
   query('UPDATE users SET last_active_at = NOW(6) WHERE id = ?', [userId]).catch(
     () => undefined,
   );
+  const day = indianDay(now);
+  if (activeDayByUser.get(userId) !== day) {
+    activeDayByUser.set(userId, day);
+    query('INSERT IGNORE INTO member_active_days (user_id, day) VALUES (?, ?)', [userId, day]).catch(
+      () => activeDayByUser.delete(userId),
+    );
+  }
 }
 
 // A suspension has to bite while the member is still holding a valid access

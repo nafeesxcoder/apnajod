@@ -13,11 +13,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { adminApi } from "../../../api/adminApi";
+import { GrowthTab } from "./GrowthTab";
 import { fonts, radius } from "../../../theme";
 
 // 👇 Naya tab "security" add kiya
 type Tab =
   | "overview"
+  | "growth"
   | "users"
   | "verifications"
   | "reports"
@@ -27,6 +29,7 @@ type Tab =
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "overview", label: "Overview", icon: "grid-outline" },
+  { key: "growth", label: "Growth", icon: "trending-up-outline" },
   { key: "users", label: "Users", icon: "people-outline" },
   {
     key: "verifications",
@@ -343,6 +346,7 @@ export function AdminDashboardScreen({
           {tab === "overview" && (
             <OverviewTab accessToken={accessToken} onNavigate={setTab} />
           )}
+          {tab === "growth" && <GrowthTab accessToken={accessToken} />}
           {tab === "users" && <UsersTab accessToken={accessToken} />}
           {tab === "verifications" && (
             <VerificationsTab accessToken={accessToken} />

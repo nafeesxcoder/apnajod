@@ -1,10 +1,17 @@
 const asyncHandler = require("../utils/asyncHandler");
 const adminService = require("../services/adminService");
+const growthService = require("../services/growthService");
 const { ApiError } = require("../middleware/errorHandler");
 
 const getStats = asyncHandler(async (req, res) => {
   const stats = await adminService.getDashboardStats();
   res.json({ ok: true, stats });
+});
+
+const getGrowth = asyncHandler(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const growth = await growthService.getGrowth({ days: req.query.days });
+  res.json({ ok: true, growth });
 });
 
 const getUsers = asyncHandler(async (req, res) => {
@@ -135,5 +142,5 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

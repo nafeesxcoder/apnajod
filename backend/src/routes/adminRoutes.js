@@ -14,6 +14,7 @@ router.use(requireAuth);
 router.use(requireAdmin);
 
 router.get("/stats", adminController.getStats);
+router.get("/growth", adminController.getGrowth);
 
 router.get("/users", adminController.getUsers);
 router.post("/users/:id/role", adminController.updateUserRole);

@@ -29,6 +29,33 @@ async function publicFetch(path: string, options: RequestInit = {}) {
   return data;
 }
 
+export type GrowthDays = 7 | 14 | 30;
+
+export type GrowthSeriesKey =
+  | "active"
+  | "signups"
+  | "likes"
+  | "matches"
+  | "messages"
+  | "sparks"
+  | "games"
+  | "invites"
+  | "payments"
+  | "revenuePaise"
+  | "dailyQuestion";
+
+export type Growth = {
+  /** India days, oldest first, ending today ("YYYY-MM-DD"). */
+  days: string[];
+  series: Record<GrowthSeriesKey, number[]>;
+  today: { active: number; signups: number; matches: number; messages: number; revenuePaise: number };
+  active: { today: number; last7Days: number; last30Days: number };
+  funnel: { members: number; withProfile: number; withPhoto: number; verified: number; paidEver: number };
+  plans: { plus: number; pro: number };
+  /** First day daily-active counting has data for, or null. */
+  activeTrackingSince: string | null;
+};
+
 export const adminApi = {
   login: async (identifier: string, password: string) => {
     const session = await authApi.login({ identifier, password });
@@ -62,6 +89,9 @@ export const adminApi = {
 
   // Baaki admin APIs
   stats: (token: string) => authFetch("/admin/stats", token),
+  /** Growth page: one number per India day for the last 7, 14 or 30 days. */
+  growth: (token: string, days: GrowthDays): Promise<{ ok: boolean; growth: Growth }> =>
+    authFetch(`/admin/growth?days=${days}`, token),
   users: (token: string, q = "") => authFetch(`/admin/users?q=${encodeURIComponent(q)}`, token),
   verifications: (token: string) => authFetch("/admin/verifications", token),
   approveVerification: (token: string, id: string) => authFetch(`/admin/verifications/${id}/approve`, token, { method: "POST" }),
