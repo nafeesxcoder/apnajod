@@ -2,6 +2,7 @@ const path = require("path");
 const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const profileService = require("../services/profileService");
+const referralService = require("../services/referralService");
 const env = require("../config/env");
 
 const getMyProfile = asyncHandler(async (req, res) => {
@@ -35,6 +36,8 @@ const updateProfile = asyncHandler(async (req, res) => {
     bio,
     hobbies,
   });
+  // Name and age may be what completes an invited member's profile.
+  await referralService.rewardIfReady(req.user.id);
   res.json({ ok: true });
 });
 const getVerificationPose = asyncHandler(async (req, res) => {
@@ -53,6 +56,8 @@ const updatePhotos = asyncHandler(async (req, res) => {
   if (!Array.isArray(photos))
     throw new ApiError(400, "photos must be an array of URLs");
   await profileService.replacePhotos(req.user.id, photos);
+  // A photo may be what completes an invited member's profile.
+  await referralService.rewardIfReady(req.user.id);
   res.json({ ok: true });
 });
 const uploadPhoto = asyncHandler(async (req, res) => {
@@ -100,6 +105,11 @@ const getDailyPicks = asyncHandler(async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
+const getReferrals = asyncHandler(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ ok: true, ...(await referralService.summaryFor(req.user.id)) });
+});
+
 const discoverMatches = asyncHandler(async (req, res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
   const limit = Math.min(50, Number(req.query.limit) || 20);
@@ -107,6 +117,7 @@ const discoverMatches = asyncHandler(async (req, res) => {
   res.json({ ok: true, matches });
 });
 module.exports = {
+  getReferrals,
   getDailyPicks,
   getMyProfile,
   updateProfile,

@@ -29,6 +29,8 @@ import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { useWindowDimensions } from "react-native";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 import { authApi } from "../../../api/authApi";
+import { profileApi, type ReferralSummary } from "../../../api/profileApi";
+import { referralLine } from "../referralLine";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -38,7 +40,7 @@ const brandLogo = require("../../../../assets/apnajoda-logo.png");
 // captureInviteFromUrl, so a signup that comes from this link credits you.
 const SHARE_BASE = "https://apnajoda.com/";
 const SHARE_TEXT =
-  "Join me on Apnajoda. Meaningful connections, meaningful futures.";
+  "Join me on Apnajoda. Meaningful connections, meaningful futures. Sign up with my link and get a free Super Like.";
 
 function hobbyIcon(label: string) {
   const wanted = String(label).trim().toLowerCase();
@@ -70,6 +72,7 @@ export function ProfileScreen({
   const [shareNote, setShareNote] = useState("");
   // One Share button; it asks whether this is for family or for friends.
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [referrals, setReferrals] = useState<ReferralSummary | null>(null);
   // On a laptop the menu is a centred dialog; a bottom sheet there ran off
   // the bottom of the window. Phones keep the sheet.
   const { width: windowWidth } = useWindowDimensions();
@@ -92,6 +95,18 @@ export function ProfileScreen({
       active = false;
     };
   }, [accessToken]);
+
+  // Fresh invite totals each time the Share menu opens.
+  useEffect(() => {
+    if (!shareMenuOpen || !accessToken) return;
+    let active = true;
+    void profileApi.referrals(accessToken).then((summary) => {
+      if (active && summary) setReferrals(summary);
+    });
+    return () => {
+      active = false;
+    };
+  }, [shareMenuOpen, accessToken]);
 
   useEffect(() => {
     if (!shareNote) return;
@@ -600,8 +615,13 @@ export function ProfileScreen({
               {
                 key: "friends",
                 icon: "share-social" as const,
-                title: "Invite friends",
-                body: "Share Apnajoda with friends on WhatsApp, Instagram or Facebook.",
+                title: "Invite friends · earn Boosts",
+                body: [
+                  "Get a free Boost when a friend joins and adds a photo. They get a free Super Like.",
+                  referralLine(referrals),
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
                 onPress: () => {
                   setShareMenuOpen(false);
                   void onShareProfile();

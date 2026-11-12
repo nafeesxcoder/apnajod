@@ -34,3 +34,14 @@ export function storedInvite(): string | null {
     return null;
   }
 }
+
+// Once the account exists the invite has been sent with it; forget it so a
+// later signup on this device is not credited to the same person.
+export function clearInvite(): void {
+  if (Platform.OS !== "web" || typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(KEY);
+  } catch {
+    // Storage can be blocked; nothing to clear then.
+  }
+}

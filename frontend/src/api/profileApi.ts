@@ -41,7 +41,29 @@ export type DailyPicks = {
   picks: DailyPick[];
 };
 
+/** What a member's invite link has done so far. */
+export type ReferralSummary = {
+  joined: number;
+  boostsEarned: number;
+  pending: number;
+  monthlyCap: number;
+};
+
 export const profileApi = {
+  /** Invite & earn totals. Null if the server could not be reached. */
+  async referrals(accessToken: string): Promise<ReferralSummary | null> {
+    try {
+      const data = await authFetch("/profile/referrals", accessToken);
+      return {
+        joined: Number(data?.joined || 0),
+        boostsEarned: Number(data?.boostsEarned || 0),
+        pending: Number(data?.pending || 0),
+        monthlyCap: Number(data?.monthlyCap || 10),
+      };
+    } catch {
+      return null;
+    }
+  },
   /** Aaj ke 5 - built on the server the first time it is asked for each day. */
   async dailyPicks(accessToken: string): Promise<DailyPicks> {
     return authFetch("/profile/daily-picks", accessToken);

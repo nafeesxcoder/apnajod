@@ -90,7 +90,8 @@ export const authApi = {
       "Could not start sign-up",
     );
   },
-  registerVerify(input: { phone: string; username: string; password: string; code: string }) {
+  /** `invite` is the username from an ?invite= link, if they came from one. */
+  registerVerify(input: { phone: string; username: string; password: string; code: string; invite?: string }) {
     return post<AuthSession>("/auth/register/verify", input, "Could not create your account");
   },
 

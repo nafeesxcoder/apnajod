@@ -3,6 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const otpService = require("../services/otpService");
 const userService = require("../services/userService");
+const referralService = require("../services/referralService");
 const sessionService = require("../services/sessionService");
 const oauthService = require("../services/oauthService");
 const env = require("../config/env");
@@ -164,7 +165,7 @@ const registerStart = asyncHandler(async (req, res) => {
 
 // ---------- Step 2 of sign-up: confirm the OTP, create the account ----------
 const registerVerify = asyncHandler(async (req, res) => {
-  const { phone, username, password, code } = req.body;
+  const { phone, username, password, code, invite } = req.body;
 
   const normalizedPhone = normalizeIndianPhone(phone);
   if (!normalizedPhone) {
@@ -207,6 +208,8 @@ const registerVerify = asyncHandler(async (req, res) => {
       username: userService.normalizeUsername(username),
       passwordHash: await userService.hashPassword(password),
     });
+    // Only a brand-new account counts as an invite (see referralService).
+    if (invite) await referralService.recordSignup(user.id, invite);
   }
 
   const tokens = await sessionService.issueSession(user.id);

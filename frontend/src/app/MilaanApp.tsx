@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
+import {
+  captureInviteFromUrl,
+  clearInvite,
+  storedInvite,
+} from "../features/onboarding/inviteTracking";
 import { SharedProfilePage } from "../features/share/SharedProfilePage";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -3237,7 +3241,9 @@ function MilaanApp() {
               const session = await authApi.registerVerify({
                 ...signUpDraft,
                 code,
+                invite: storedInvite() || undefined,
               });
+              clearInvite();
               setSignUpDraft(null);
               setScreen(await adoptSession(session));
             }}

@@ -13,7 +13,7 @@ describe('show my family', () => {
   it('keeps one Share button on your own profile, which asks family or friends', () => {
     const profile = read('src/features/profile/screens/ProfileScreen.tsx');
     expect(profile).toContain('title: "Send to family"');
-    expect(profile).toContain('title: "Invite friends"');
+    expect(profile).toContain('title: "Invite friends · earn Boosts"');
     expect(profile).not.toContain('<FamilyShareButton');
   });
 
