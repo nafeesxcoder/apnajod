@@ -27,9 +27,9 @@ const FAQS: FaqItem[] = [
   {
     id: "payment-not-active",
     icon: "card-outline",
-    question: "My payment went through but Premium is not active?",
+    question: "My payment went through but my plan is not active?",
     answer:
-      "Wait 5 minutes — the Razorpay webhook activates Premium automatically. If it is still not active after 30 minutes, email us with your Razorpay Payment ID (starts with pay_) and we will verify and activate it right away.",
+      "Wait 5 minutes — Plus, Pro, Boosts and Super Likes are added automatically once Razorpay confirms the payment. If it is still not active after 30 minutes, email us with your Razorpay Payment ID (starts with pay_) and we will verify and activate it right away.",
   },
   {
     id: "refund",
@@ -43,7 +43,7 @@ const FAQS: FaqItem[] = [
     icon: "shield-checkmark-outline",
     question: "How long does selfie verification take?",
     answer:
-      "24–48 hours. You will see the blue tick as soon as it is approved. If it is rejected, the reason will be sent to your email.",
+      "24–48 hours. Your profile shows as verified as soon as it is approved, and with Pro you also get the blue tick. If it is not approved, take a new pose selfie and try again.",
   },
   {
     id: "harassment",
@@ -57,7 +57,14 @@ const FAQS: FaqItem[] = [
     icon: "trash-outline",
     question: "How do I delete my account?",
     answer:
-      "Go to Settings → Danger Zone → Delete Account Permanently. There is a 30-day grace period, after which all data is permanently deleted.",
+      "Go to Settings → Danger Zone → Delete Account Permanently. There is a 30-day grace period — sign in again before then to restore it. After that your account, photos and matches are permanently deleted. Payment records are kept for 8 years as Indian tax law requires.",
+  },
+  {
+    id: "grievance",
+    icon: "document-text-outline",
+    question: "How do I raise a complaint with the Grievance Officer?",
+    answer:
+      "Email our Grievance Officer, Nafees Ahmad, at nafeesahadbly@gmail.com with your username, who or what you are reporting, and what happened. We acknowledge within 24 hours and resolve within 15 days. Photos showing someone in a sexual or intimate way, or someone pretending to be you, are acted on within 24 hours.",
   },
   {
     id: "other",
