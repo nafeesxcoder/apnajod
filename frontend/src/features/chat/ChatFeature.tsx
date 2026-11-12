@@ -59,7 +59,7 @@ import {
 } from "../../api/gifApi";
 import { callSession, useCallSession } from "./callSession";
 import { callApi } from "../../api/callApi";
-import { chatApi } from "../../api/chatApi";
+import { chatApi, fetchIcebreakers } from "../../api/chatApi";
 import { matches, type Match } from "../../data";
 import type { PreviewState, Screen } from "../../app/navigation/types";
 import type {
@@ -1017,6 +1017,22 @@ export function ChatScreen({
     end: 0,
   });
   const [text, setText] = useState("");
+  // Opening lines for a chat with no messages yet. See icebreakerService.
+  const [icebreakers, setIcebreakers] = useState<string[]>([]);
+  const chatIsEmpty = messages.length === 0;
+  useEffect(() => {
+    if (!accessToken || !chatIsEmpty || experienceMode === "couple") {
+      setIcebreakers([]);
+      return;
+    }
+    let live = true;
+    void fetchIcebreakers(accessToken, conversationIdFor(match)).then((lines) => {
+      if (live) setIcebreakers(lines);
+    });
+    return () => {
+      live = false;
+    };
+  }, [accessToken, chatIsEmpty, match.id, experienceMode]);
   const [showAttachments, setShowAttachments] = useState(
     previewState === "chat-attachments",
   );
@@ -2877,6 +2893,68 @@ export function ChatScreen({
                 </Text>
               </View>
             )}
+            {!isCoupleMode &&
+              !normalizedSearch &&
+              messages.length === 0 &&
+              icebreakers.length > 0 && (
+                <View
+                  accessibilityLabel="Ways to start the conversation"
+                  style={{
+                    margin: 16,
+                    padding: 16,
+                    borderRadius: 16,
+                    backgroundColor: "#FFFFFF",
+                    borderWidth: 1,
+                    borderColor: "#E3E7EC",
+                    gap: 10,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Mukta_700Bold",
+                      fontSize: 15,
+                      color: "#151719",
+                    }}
+                  >
+                    👋 Say something better than "Hi"
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Mukta_400Regular",
+                      fontSize: 13,
+                      color: "#5A5E63",
+                    }}
+                  >
+                    Tap one to start - you can edit it before sending.
+                  </Text>
+                  {icebreakers.map((line) => (
+                    <Pressable
+                      key={line}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use opening line: ${line}`}
+                      onPress={() => setText(line)}
+                      style={({ pressed }) => ({
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: "#1D4F81",
+                        backgroundColor: pressed ? "#EEF2F6" : "#F8FAFC",
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      })}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Mukta_500Medium",
+                          fontSize: 14,
+                          color: "#1D4F81",
+                        }}
+                      >
+                        {line}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
             {!isCoupleMode && partnerTyping && (
               <View
                 accessible

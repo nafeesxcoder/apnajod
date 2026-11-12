@@ -225,3 +225,23 @@ export const chatApi = {
     return data.url as string;
   },
 };
+/**
+ * Opening lines for an empty chat, built on the server from what the two
+ * people share. Empty on any failure - a chat must never break over this.
+ */
+export async function fetchIcebreakers(
+  accessToken: string,
+  conversationId: string,
+): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `${API_URL}/chat/${encodeURIComponent(conversationId)}/icebreakers`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data?.lines) ? data.lines.filter((line: unknown) => typeof line === "string") : [];
+  } catch {
+    return [];
+  }
+}

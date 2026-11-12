@@ -60,6 +60,15 @@ function previewOf(conversation: ConversationSummary) {
   }
 }
 
+/**
+ * The other person spoke last and is waiting. Shown so a reply does not
+ * get buried - the same signal the "your turn" push is built on.
+ */
+function isYourTurn(conversation: ConversationSummary) {
+  const message = conversation.lastMessage;
+  return !!message && message.mine === false;
+}
+
 function Avatar({ name, url }: { name: string; url: string | null }) {
   const size = 52;
   if (url) {
@@ -227,9 +236,26 @@ export function ChatsScreen({
                           {shortAge(conversation.lastAt)}
                         </Text>
                       </View>
-                      <Text numberOfLines={1} style={social.rowSub}>
-                        {previewOf(conversation)}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {isYourTurn(conversation) && (
+                          <View
+                            accessibilityLabel="Your turn to reply"
+                            style={{
+                              backgroundColor: '#FDF0E1',
+                              borderRadius: 999,
+                              paddingHorizontal: 8,
+                              paddingVertical: 1,
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#9A5B00' }}>
+                              Your turn
+                            </Text>
+                          </View>
+                        )}
+                        <Text numberOfLines={1} style={[social.rowSub, { flexShrink: 1 }]}>
+                          {previewOf(conversation)}
+                        </Text>
+                      </View>
                     </View>
                     {conversation.unread > 0 && (
                       <View style={social.unreadDot}>

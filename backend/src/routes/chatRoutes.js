@@ -22,6 +22,7 @@ router.get('/gifs', gifLimiter, chatController.searchGifs);
 // Declared before the /:conversationId routes so it is not captured by them.
 router.get('/conversations', chatController.listConversations);
 router.get('/:conversationId/messages', chatController.getMessages);
+router.get('/:conversationId/icebreakers', chatController.getIcebreakers);
 router.post('/:conversationId/messages', chatController.postMessage);
 router.post('/:conversationId/date-proposal', chatController.postDateProposal);
 router.put('/date-proposal/status', chatController.putDatePlanStatus);

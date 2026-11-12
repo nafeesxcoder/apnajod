@@ -99,12 +99,20 @@ const putSettingsHandler = wrap(async (req) => {
   return chatService.saveSettings(req.params.conversationId, req.user.id, req.body);
 });
 
+// Opening lines for an empty chat, built from what the two share.
+const getIcebreakers = asyncHandler(async (req, res) => {
+  const icebreakerService = require('../services/icebreakerService');
+  const lines = await icebreakerService.forPair(req.user.id, req.params.conversationId);
+  res.json({ ok: true, lines });
+});
+
 const listConversations = asyncHandler(async (req, res) => {
   const conversations = await chatService.listConversations(req.user.id);
   res.json({ ok: true, conversations });
 });
 
 module.exports = {
+  getIcebreakers,
   listConversations,
   getMessages,
   postMessage,

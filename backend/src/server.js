@@ -8,4 +8,7 @@ realtime.init(server);
 
 server.listen(env.port, () => {
   console.log(`Apnajoda backend running on http://localhost:${env.port}`);
+  // "Your turn" pushes for unanswered chats. Started here, not in app.js,
+  // so tests that load the app never start a timer.
+  require('./services/replyReminderService').start();
 });
