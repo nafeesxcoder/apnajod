@@ -16,7 +16,8 @@ describe('feature focus',()=>{
     const snapshot=buildFeatureFocusSnapshot();
     // 'date_market' is gone with date planning; it sent people to a screen
     // the launch build does not have.
-    expect(chatPrimaryAttachments.map(item=>item.id)).toEqual(['camera','gallery','location','document','more']);
+    // Games moved up from page two; documents moved down.
+    expect(chatPrimaryAttachments.map(item=>item.id)).toEqual(['camera','gallery','games','location','more']);
     expect(snapshot.primaryAttachmentCount).toBe(featureSurfaceBudgets.chat_attachment_primary);
     expect(snapshot.primaryAttachmentOverflow).toBe(0);
     expect(snapshot.duplicatePrimaryAttachmentIds).toHaveLength(0);
@@ -24,7 +25,8 @@ describe('feature focus',()=>{
 
   it('keeps delight and secondary share tools on the second attachment page',()=>{
     const secondaryIds=chatMoreAttachments.map(item=>item.id);
-    expect(['gif','games','snap','face','contact','poll']).toEqual(expect.arrayContaining(secondaryIds.filter(id=>['gif','games','snap','face','contact','poll'].includes(id))));
+    expect(['gif','document','snap','face','contact','poll']).toEqual(expect.arrayContaining(secondaryIds.filter(id=>['gif','document','snap','face','contact','poll'].includes(id))));
+    expect(secondaryIds).not.toContain('games');
     expect(chatMoreAttachments.length).toBeLessThanOrEqual(featureSurfaceBudgets.chat_attachment_more);
   });
 

@@ -20,8 +20,10 @@ export type FeatureSurface='primary_navigation'|'home'|'chat_toolbar'|'chat_atta
 export const chatPrimaryAttachments=[
   {id:'camera',label:'Camera',icon:'camera',color:'#1F5286'},
   {id:'gallery',label:'Photo',icon:'images',color:'#194571'},
+  // Games sit on the first page: two taps from a chat. They start real
+  // conversation, which documents in a dating chat rarely do.
+  {id:'games',label:'Games',icon:'game-controller',color:'#235A92'},
   {id:'location',label:'Location',icon:'location',color:'#AA2A44'},
-  {id:'document',label:'Document',icon:'document-text',color:'#235A92'},
   {id:'more',label:'More',icon:'ellipsis-horizontal',color:'#235A92'},
 ] as const;
 
@@ -29,7 +31,7 @@ export const chatMoreAttachments=[
   {id:'contact',label:'Contact',icon:'person',color:'#275C4A'},
   {id:'poll',label:'Poll',icon:'stats-chart',color:'#AA2A44'},
   {id:'gif',label:'GIF',icon:'happy',color:'#1D4F81'},
-  {id:'games',label:'Games',icon:'game-controller',color:'#235A92'},
+  {id:'document',label:'Document',icon:'document-text',color:'#235A92'},
   {id:'snap',label:'Snap',icon:'aperture',color:'#1D4F81'},
   {id:'face',label:'Face',icon:'person-circle',color:'#153B61'},
   {id:'spark',label:'Spark',icon:'sparkles',color:'#AA2A44'},

@@ -29,7 +29,9 @@ export type ChatMessage = {
   id: string;
   senderId?: string;
   mine?: boolean;
-  type: 'text' | 'image' | 'gif' | 'rose' | 'date' | 'snap' | 'sticker' | 'voice' | 'location' | 'document';
+  type: 'text' | 'image' | 'gif' | 'rose' | 'date' | 'snap' | 'sticker' | 'voice' | 'location' | 'document' | 'game';
+  /** A chat game card - the start of a game, or its result. */
+  game?: { id: string; kind: string; title: string; emoji: string; result: string | null };
   text?: string;
   uri?: string;
   // A Rose / Spark: a free-or-credited expression of interest, not a purchase.

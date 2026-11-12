@@ -107,6 +107,35 @@ const putSettingsHandler = wrap(async (req) => {
   return chatService.saveSettings(req.params.conversationId, req.user.id, req.body);
 });
 
+// Chat games. See gameService / gameRules.
+const startGame = asyncHandler(async (req, res) => {
+  const gameService = require('../services/gameService');
+  const game = await gameService.start(
+    req.user.id,
+    req.params.conversationId,
+    req.body?.kind,
+    req.body?.setup,
+  );
+  res.json({ ok: true, game });
+});
+
+const getGame = asyncHandler(async (req, res) => {
+  const gameService = require('../services/gameService');
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, game: await gameService.get(req.params.gameId, req.user.id) });
+});
+
+const playGame = asyncHandler(async (req, res) => {
+  const gameService = require('../services/gameService');
+  const game = await gameService.play(req.params.gameId, req.user.id, req.body?.move);
+  res.json({ ok: true, game });
+});
+
+const knowMeSetup = asyncHandler(async (req, res) => {
+  const gameService = require('../services/gameService');
+  res.json({ ok: true, questions: gameService.knowMeSetup() });
+});
+
 // Opening lines for an empty chat, built from what the two share.
 const getIcebreakers = asyncHandler(async (req, res) => {
   const icebreakerService = require('../services/icebreakerService');
@@ -120,6 +149,10 @@ const listConversations = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  startGame,
+  getGame,
+  playGame,
+  knowMeSetup,
   getIcebreakers,
   listConversations,
   getMessages,

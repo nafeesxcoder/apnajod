@@ -120,6 +120,13 @@ import {
 import { dateLifecycleCopy } from "../../domain/dateLifecycle";
 import { conversationIdFor } from "../../domain/matchIdentity";
 import {
+  GamePlaySheet,
+  KnowMeSetupSheet,
+  LiveGameCard,
+  LiveGamesSection,
+} from "./games/LiveGames";
+import { gamesApi, type GameKind } from "../../api/gamesApi";
+import {
   chatMoreAttachments,
   chatPrimaryAttachments,
 } from "../../domain/featureFocus";
@@ -1022,6 +1029,25 @@ export function ChatScreen({
     end: 0,
   });
   const [text, setText] = useState("");
+  // Play-together games. The server keeps the state; see LiveGames.
+  const [knowMeSetupOpen, setKnowMeSetupOpen] = useState(false);
+  const [playGameId, setPlayGameId] = useState<string | null>(null);
+  const [liveGameError, setLiveGameError] = useState("");
+  const startLiveGame = async (kind: GameKind) => {
+    setLiveGameError("");
+    setGamesOpen(false);
+    setShowAttachments(false);
+    if (kind === "know_me") {
+      setKnowMeSetupOpen(true);
+      return;
+    }
+    try {
+      const game = await gamesApi.start(accessToken, conversationIdFor(match), kind);
+      setPlayGameId(game.id);
+    } catch (error) {
+      setLiveGameError(error instanceof Error ? error.message : "Could not start the game.");
+    }
+  };
   // Opening lines for a chat with no messages yet. See icebreakerService.
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const chatIsEmpty = messages.length === 0;
@@ -2837,6 +2863,9 @@ export function ChatScreen({
                   gameReplies={gameRepliesByParent[message.id] ?? []}
                   onReplyJump={jumpToMessage}
                   onGameReply={(answer) => sendGameReply(message, answer)}
+                  onOpenLiveGame={
+                    accessToken && !isCoupleMode ? (id) => setPlayGameId(id) : undefined
+                  }
                   onPress={() => selectMessage(message)}
                   onSwipeReply={() => setReplyTarget(message)}
                   onSwipeEdit={
@@ -2978,6 +3007,31 @@ export function ChatScreen({
                   >
                     Tap one to start - you can edit it before sending.
                   </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Start with a quick game"
+                    onPress={() => setGamesOpen(true)}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      borderRadius: 12,
+                      backgroundColor: pressed ? "#E8EEF5" : "#F1F4F8",
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    })}
+                  >
+                    <Text style={{ fontSize: 18 }}>🎮</Text>
+                    <Text
+                      style={{
+                        fontFamily: "Mukta_600SemiBold",
+                        fontSize: 14,
+                        color: "#1D4F81",
+                      }}
+                    >
+                      Or start with a quick game
+                    </Text>
+                  </Pressable>
                   {icebreakers.map((line) => (
                     <Pressable
                       key={line}
@@ -3006,6 +3060,23 @@ export function ChatScreen({
                   ))}
                 </View>
               )}
+            {!!liveGameError && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${liveGameError}. Tap to dismiss.`}
+                onPress={() => setLiveGameError("")}
+                style={{
+                  alignSelf: "center",
+                  marginVertical: 8,
+                  borderRadius: 999,
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  backgroundColor: "#FBE9EC",
+                }}
+              >
+                <Text style={{ fontSize: 13, color: "#B3261E" }}>🎮 {liveGameError}</Text>
+              </Pressable>
+            )}
             {!isCoupleMode && !normalizedSearch && theyAreWaiting && !partnerTyping && (
               <View
                 accessible
@@ -3472,7 +3543,36 @@ export function ChatScreen({
             visible={gamesOpen}
             onClose={() => setGamesOpen(false)}
             onPlay={startGame}
+            onPickLive={
+              accessToken && !isCoupleMode ? (kind) => void startLiveGame(kind) : undefined
+            }
           />
+          {!!accessToken && !isCoupleMode && (
+            <>
+              <KnowMeSetupSheet
+                visible={knowMeSetupOpen}
+                accessToken={accessToken}
+                partnerName={match.name}
+                onClose={() => setKnowMeSetupOpen(false)}
+                onStart={async (setup) => {
+                  const game = await gamesApi.start(
+                    accessToken,
+                    conversationIdFor(match),
+                    "know_me",
+                    setup,
+                  );
+                  setKnowMeSetupOpen(false);
+                  setPlayGameId(game.id);
+                }}
+              />
+              <GamePlaySheet
+                gameId={playGameId}
+                accessToken={accessToken}
+                partnerName={match.name}
+                onClose={() => setPlayGameId(null)}
+              />
+            </>
+          )}
           <SnapStudio
             visible={snapOpen}
             onClose={() => setSnapOpen(false)}
@@ -3588,6 +3688,7 @@ function ChatBubble({
   gameReplies = [],
   onReplyJump,
   onGameReply,
+  onOpenLiveGame,
   onPress,
   onOpenImage,
   onOpenVideo,
@@ -3606,6 +3707,8 @@ function ChatBubble({
   gameReplies?: ChatMessage[];
   onReplyJump?: (messageId: string) => void;
   onGameReply?: (answer: string) => void;
+  /** Open a play-together game from its card. */
+  onOpenLiveGame?: (gameId: string) => void;
   onPress?: () => void;
   onOpenImage?: (uri: string) => void;
   onOpenVideo?: (uri: string) => void;
@@ -3923,6 +4026,15 @@ function ChatBubble({
             )}
           {emojiOnly && (
             <AnimatedEmojiMessage emoji={emojiText} sticker={stickerPayload} />
+          )}
+          {message.type === "game" && !!message.game && (
+            <LiveGameCard
+              game={message.game}
+              mine={mine}
+              onOpen={
+                onOpenLiveGame ? () => onOpenLiveGame(message.game!.id) : undefined
+              }
+            />
           )}
           {!!gamePayload && (
             <GameChatCard
@@ -7628,10 +7740,13 @@ function GameSheet({
   visible,
   onClose,
   onPlay,
+  onPickLive,
 }: {
   visible: boolean;
   onClose: () => void;
   onPlay: (game: CoupleGame, prompt: string) => void;
+  /** The play-together games. Only offered in a real, signed-in chat. */
+  onPickLive?: (kind: GameKind) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [promptIndex, setPromptIndex] = useState(0);
@@ -7856,6 +7971,7 @@ function GameSheet({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={gameStyles.grid}
             >
+              {!!onPickLive && <LiveGamesSection onPick={onPickLive} />}
               {coupleGames.map((game) => (
                 <Pressable
                   accessibilityRole="button"

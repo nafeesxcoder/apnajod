@@ -21,6 +21,10 @@ router.get('/gifs/status', chatController.gifStatus);
 router.get('/gifs', gifLimiter, chatController.searchGifs);
 // Declared before the /:conversationId routes so it is not captured by them.
 router.get('/conversations', chatController.listConversations);
+router.get('/games/know-me-questions', chatController.knowMeSetup);
+router.get('/games/:gameId', chatController.getGame);
+router.post('/games/:gameId/move', chatController.playGame);
+router.post('/:conversationId/games', chatController.startGame);
 router.get('/:conversationId/messages', chatController.getMessages);
 router.get('/:conversationId/icebreakers', chatController.getIcebreakers);
 router.post('/:conversationId/messages', chatController.postMessage);
