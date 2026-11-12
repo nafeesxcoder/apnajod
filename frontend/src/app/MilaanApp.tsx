@@ -1854,6 +1854,20 @@ function MilaanApp() {
       active = false;
     };
   }, [hydrated, screen, conversationPartner.id, accessToken]);
+  // Every hook must run on every render, so these sit above the early
+  // return below. Placed after it, they only ran once the fonts had loaded,
+  // React saw a different number of hooks and the whole app crashed.
+  const refreshSparkWallet = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      setSparkWallet(await matchApi.sparkWallet(accessToken));
+    } catch {
+      // Leave the last known count; the send itself is checked on the server.
+    }
+  }, [accessToken]);
+  useEffect(() => {
+    void refreshSparkWallet();
+  }, [refreshSparkWallet]);
   if (!fontsLoaded)
     return <View style={{ flex: 1, backgroundColor: colors.black }} />;
   const navigateTo = (target: Screen) => {
@@ -2170,17 +2184,6 @@ function MilaanApp() {
   const visibleMatches = rankedMatches.filter(
     (match) => !dismissedIds.includes(match.id),
   );
-  const refreshSparkWallet = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      setSparkWallet(await matchApi.sparkWallet(accessToken));
-    } catch {
-      // Leave the last known count; the send itself is checked on the server.
-    }
-  }, [accessToken]);
-  useEffect(() => {
-    void refreshSparkWallet();
-  }, [refreshSparkWallet]);
   // Signed in, the server is the only source of truth. The local ledger is
   // for the preview build only - it is what let a reinstall hand out a
   // second free Spark.

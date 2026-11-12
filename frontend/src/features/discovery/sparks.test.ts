@@ -47,3 +47,21 @@ describe('the Daily Question', () => {
     expect(read('src/features/admin/screens/AdminDashboardScreen.tsx')).toContain('function QuestionsTab');
   });
 });
+
+describe('the app shell', () => {
+  it('calls no hooks after the fonts early return', () => {
+    // A hook placed after `if (!fontsLoaded) return` only runs once the
+    // fonts are in, React sees a different hook count between renders and
+    // the whole app falls over (React error #310). This took the live site
+    // down once.
+    const app = read('src/app/MilaanApp.tsx');
+    const start = app.indexOf('function MilaanApp()');
+    const early = app.indexOf('if (!fontsLoaded)', start);
+    const end = app.indexOf('\nexport default function App', early);
+    expect(start).toBeGreaterThan(-1);
+    expect(early).toBeGreaterThan(start);
+    const afterReturn = app.slice(early, end);
+    const hookCalls = afterReturn.match(/^ {2}(?:const [^=]+= )?use[A-Z]\w*\(/gm) ?? [];
+    expect(hookCalls).toEqual([]);
+  });
+});
