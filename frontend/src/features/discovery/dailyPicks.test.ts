@@ -17,8 +17,13 @@ describe('Aaj ke 5', () => {
   });
 
   it('never breaks Home if the picks cannot load', () => {
-    expect(row).toContain('if (!accessToken || !data || data.picks.length === 0) return null;');
+    expect(row).toContain('if (!accessToken || !data) return null;');
     expect(row).toContain('.catch(() => {');
+  });
+
+  it('still shows the card, with the next drop time, when there are no picks today', () => {
+    expect(row).toContain('if (data.picks.length === 0) {');
+    expect(row).toContain('Next picks in {timeUntil(data.nextAt)}');
   });
 
   it('keeps every hook above its early return', () => {

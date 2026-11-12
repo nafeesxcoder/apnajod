@@ -20,7 +20,8 @@ function timeUntil(iso: string, now = Date.now()) {
  * Five profiles picked for this member, new every night at 9 PM. The row
  * shows which ones they have already acted on, and when the next five
  * arrive - that countdown is what brings people back in the evening.
- * Nothing renders if the picks cannot load or there are none.
+ * Nothing renders if the picks cannot load. With no picks today it still
+ * shows the card, so members know the feature is there and when to look.
  */
 export function DailyPicksRow({
   accessToken,
@@ -54,7 +55,41 @@ export function DailyPicksRow({
     return () => clearInterval(timer);
   }, []);
 
-  if (!accessToken || !data || data.picks.length === 0) return null;
+  if (!accessToken || !data) return null;
+
+  if (data.picks.length === 0) {
+    return (
+      <View
+        accessibilityLabel="Aaj ke 5, no picks right now"
+        style={{
+          marginBottom: 24,
+          borderRadius: radius.lg,
+          backgroundColor: palette.paperSand,
+          padding: 16,
+          gap: 4,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ fontFamily: fonts.display, fontSize: 20, color: palette.ink }}>
+            ✨ Aaj ke 5
+          </Text>
+          <Text style={{ fontFamily: fonts.body, fontSize: typeScale.caption, color: palette.slate }}>
+            Next picks in {timeUntil(data.nextAt)}
+          </Text>
+        </View>
+        <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: palette.ink }}>
+          No new picks for you right now. Five handpicked profiles land here
+          every night at 9 PM as new people join.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ marginBottom: 24 }}>
