@@ -386,17 +386,17 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                 {
                   icon: "shield-checkmark-outline" as const,
                   label: "Privacy Policy",
-                  url: "https://apnajoda.com/privacy",
+                  url: "https://apnajoda.com/privacy.html",
                 },
                 {
                   icon: "document-text-outline" as const,
                   label: "Terms of Service",
-                  url: "https://apnajoda.com/terms",
+                  url: "https://apnajoda.com/terms.html",
                 },
                 {
                   icon: "cash-outline" as const,
                   label: "Refund Policy",
-                  url: "https://apnajoda.com/refund",
+                  url: "https://apnajoda.com/refund.html",
                 },
               ].map((item) => (
                 <Pressable

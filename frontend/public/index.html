@@ -2,6 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      /* apnajoda.com/privacy, /terms and /refund are plain pages saved as
+         privacy.html etc. The server answers any unknown path with this app,
+         so send those three to their page before the app starts loading. */
+      (function () {
+        var m = /^\/(privacy|terms|refund)\/?$/i.exec(location.pathname);
+        if (m) location.replace("/" + m[1].toLowerCase() + ".html" + location.search + location.hash);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#1F4D7A" />
     <link rel="manifest" href="/manifest.webmanifest" />
