@@ -9,6 +9,8 @@ const completeRouteInventory = [
   // The follow graph alongside it.
   'chats','find','person','chat',
   'profile','settings','safety','verifyHub',
+  // Back so a suspended member can appeal from inside the app.
+  'support',
 ] as const;
 
 describe('complete route inventory', () => {
@@ -39,7 +41,7 @@ describe('complete route inventory', () => {
     // history and come back when a city has the people to fill them.
     for (const held of [
       'datePlan','events','coach','blueprint','journey','readiness',
-      'executive','community','circle','dateSafety','support','admin',
+      'executive','community','circle','dateSafety','admin',
       'explore','modeSelect','pricing','coupleSetup',
     ]) {
       expect(previewScreens).not.toContain(held);

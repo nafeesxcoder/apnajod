@@ -382,37 +382,41 @@ export function PremiumScreen({
                   </Text>
                 )}
 
-                <Pressable
-                  onPress={() => void handleBuy()}
-                  disabled={!selectedCode || buying}
-                  style={{
-                    backgroundColor: palette.navy,
-                    paddingVertical: 16,
-                    borderRadius: radius.pill,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "row",
-                    gap: 8,
-                    marginTop: 20,
-                    minHeight: 52,
-                    opacity: !selectedCode || buying ? 0.5 : 1,
-                  }}
-                >
-                  {buying ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
-                  )}
-                  <Text
+                {/* One flag closes payments (say, while Razorpay KYC is
+                    pending): the button goes with it, never a Buy that fails. */}
+                {billingApi.checkoutAvailable && (
+                  <Pressable
+                    onPress={() => void handleBuy()}
+                    disabled={!selectedCode || buying}
                     style={{
-                      color: "#FFFFFF",
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 16,
+                      backgroundColor: palette.navy,
+                      paddingVertical: 16,
+                      borderRadius: radius.pill,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      gap: 8,
+                      marginTop: 20,
+                      minHeight: 52,
+                      opacity: !selectedCode || buying ? 0.5 : 1,
                     }}
                   >
-                    {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
-                  </Text>
-                </Pressable>
+                    {buying ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+                    )}
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 16,
+                      }}
+                    >
+                      {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
+                    </Text>
+                  </Pressable>
+                )}
 
                 {!billingApi.checkoutAvailable && (
                   <Text
