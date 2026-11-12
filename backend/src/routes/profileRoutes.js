@@ -6,6 +6,7 @@ const router = express.Router();
 router.use(requireAuth);
 router.get("/me", profileController.getMyProfile);
 router.get("/discover", profileController.discoverMatches);
+router.get("/daily-picks", profileController.getDailyPicks);
 router.put("/profile", profileController.updateProfile);
 router.put("/photos", profileController.updatePhotos);
 router.post("/verify/pose", profileController.getVerificationPose);

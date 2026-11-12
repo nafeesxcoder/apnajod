@@ -21,7 +21,31 @@ export type VerificationPose = {
   validMinutes: number;
 };
 
+/** One of today's five, as the server stored it, plus where it stands now. */
+export type DailyPick = Record<string, any> & {
+  id: string;
+  name: string;
+  age: number;
+  city: string;
+  photo: string;
+  verified?: boolean;
+  blueTick?: boolean;
+  /** "new", or the member's decision: "interested" / "pass". */
+  pickStatus: "new" | "interested" | "pass";
+};
+
+export type DailyPicks = {
+  day: string;
+  /** When the next five arrive (9 PM India time), ISO. */
+  nextAt: string;
+  picks: DailyPick[];
+};
+
 export const profileApi = {
+  /** Aaj ke 5 - built on the server the first time it is asked for each day. */
+  async dailyPicks(accessToken: string): Promise<DailyPicks> {
+    return authFetch("/profile/daily-picks", accessToken);
+  },
   async getMyProfile(accessToken: string) {
     return authFetch("/profile/me", accessToken); 
   },

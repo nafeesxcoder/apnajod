@@ -93,6 +93,13 @@ const completeOnboarding = asyncHandler(async (req, res) => {
   await profileService.markOnboardingComplete(req.user.id);
   res.json({ ok: true });
 });
+const getDailyPicks = asyncHandler(async (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  const dailyPicksService = require("../services/dailyPicksService");
+  const result = await dailyPicksService.forMember(req.user.id);
+  res.json({ ok: true, ...result });
+});
+
 const discoverMatches = asyncHandler(async (req, res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
   const limit = Math.min(50, Number(req.query.limit) || 20);
@@ -100,6 +107,7 @@ const discoverMatches = asyncHandler(async (req, res) => {
   res.json({ ok: true, matches });
 });
 module.exports = {
+  getDailyPicks,
   getMyProfile,
   updateProfile,
   submitVerification,

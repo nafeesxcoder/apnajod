@@ -1020,6 +1020,16 @@ export function ChatScreen({
   // Opening lines for a chat with no messages yet. See icebreakerService.
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const chatIsEmpty = messages.length === 0;
+  // They spoke last and it has been over an hour: say so, gently, at the
+  // bottom of the thread. The push reminder is the same idea for when the
+  // app is closed.
+  const lastShown = [...messages]
+    .reverse()
+    .find((m) => !m.deletedForEveryone && !m.hiddenForMe && !m.deletedAt);
+  const theyAreWaiting =
+    !!lastShown &&
+    lastShown.mine === false &&
+    Date.now() - lastShown.createdAt > 60 * 60 * 1000;
   useEffect(() => {
     if (!accessToken || !chatIsEmpty || experienceMode === "couple") {
       setIcebreakers([]);
@@ -2955,6 +2965,30 @@ export function ChatScreen({
                   ))}
                 </View>
               )}
+            {!isCoupleMode && !normalizedSearch && theyAreWaiting && !partnerTyping && (
+              <View
+                accessible
+                accessibilityLabel={`${match.name} is waiting for your reply`}
+                style={{
+                  alignSelf: "center",
+                  marginVertical: 12,
+                  borderRadius: 999,
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  backgroundColor: "#FDF0E1",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Mukta_600SemiBold",
+                    fontSize: 13,
+                    color: "#9A5B00",
+                  }}
+                >
+                  💬 {match.name} is waiting for your reply
+                </Text>
+              </View>
+            )}
             {!isCoupleMode && partnerTyping && (
               <View
                 accessible

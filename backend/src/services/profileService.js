@@ -467,6 +467,9 @@ async function findMatches(userId, limit = 20) {
       match: "Great Match",
       verified: candidate.verified === 1,
       blueTick: Number(candidate.blue_tick) === 1,
+      // Outside the viewer's stated preferences (shown only when the deck
+      // would otherwise run dry). Daily picks leave these out.
+      offPreference: Number(candidate.off_preference) === 1,
       vibes,
       photo: photos[0] || "",
       photos,

@@ -29,6 +29,7 @@ import { AppCanvas } from "../../../components/AppCanvas";
 import { TrustBadge } from "../../../components/TrustBadge";
 
 import { DailyQuestionCard } from "../components/DailyQuestionCard";
+import { DailyPicksRow } from "../components/DailyPicksRow";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
@@ -356,6 +357,10 @@ export function HomeScreen({
                 accessToken={accessToken}
                 onRewarded={onSparkRewarded}
               />
+            )}
+
+            {!preview && (
+              <DailyPicksRow accessToken={accessToken} onOpen={openDetail} />
             )}
 
             {/* Intent passport — flatten happens in IntentPassportCard.tsx */}

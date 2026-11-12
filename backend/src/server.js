@@ -11,4 +11,6 @@ server.listen(env.port, () => {
   // "Your turn" pushes for unanswered chats. Started here, not in app.js,
   // so tests that load the app never start a timer.
   require('./services/replyReminderService').start();
+  // The 9 PM "Aaj ke 5 are here" push.
+  require('./services/dailyPicksService').start();
 });

@@ -27,3 +27,12 @@ describe('icebreakers and your turn', () => {
     expect(list).toContain('Your turn');
   });
 });
+
+describe('waiting for a reply, inside the chat', () => {
+  it('shows only when they spoke last over an hour ago', () => {
+    const chat = read('src/features/chat/ChatFeature.tsx');
+    expect(chat).toContain('lastShown.mine === false');
+    expect(chat).toContain('Date.now() - lastShown.createdAt > 60 * 60 * 1000');
+    expect(chat).toContain('is waiting for your reply');
+  });
+});
