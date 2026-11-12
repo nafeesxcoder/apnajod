@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const { query } = require('../config/db');
 async function findUserByPhone(phone) {
@@ -174,12 +176,66 @@ function isWithinGracePeriod(deletedAt) {
   return daysSince <= 30;
 }
 
-// Permanently removes users whose 30-day grace period has expired.
-// Foreign keys are ON DELETE CASCADE, so profile/photos/vibes/etc. are removed automatically.
-async function purgeExpiredDeletedUsers() {
-  const result = await query(
-    `DELETE FROM users WHERE deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL 30 DAY)`,
+// ---------- Permanent delete after the 30-day grace period ----------
+
+const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
+
+/**
+ * The file on this server behind an uploaded media URL, or null if the URL
+ * is not one of our uploads. Only a bare file name inside uploads/photos or
+ * uploads/chat is ever returned, so a strange URL cannot point anywhere else.
+ */
+function uploadedFilePath(url) {
+  const match = /\/uploads\/(photos|chat)\/([A-Za-z0-9._-]+)$/.exec(
+    String(url || '').split(/[?#]/)[0],
   );
+  if (!match || match[2].startsWith('.')) return null;
+  return path.join(UPLOADS_DIR, match[1], match[2]);
+}
+
+// pool.execute does not expand arrays, so IN lists get one ? per id.
+const marks = (list) => list.map(() => '?').join(', ');
+
+async function mediaOf(userIds) {
+  const [photos, selfies, posts] = await Promise.all([
+    query(`SELECT photo_url AS url FROM profile_photos WHERE user_id IN (${marks(userIds)})`, userIds),
+    query(`SELECT selfie_uri AS url FROM profiles WHERE user_id IN (${marks(userIds)})`, userIds),
+    query(`SELECT media_url AS url FROM posts WHERE user_id IN (${marks(userIds)})`, userIds),
+  ]);
+  return [...photos, ...selfies, ...posts]
+    .map((row) => uploadedFilePath(row.url))
+    .filter(Boolean);
+}
+
+/**
+ * Permanently removes accounts deleted more than 30 days ago, as the
+ * privacy policy promises. Foreign keys cascade, so profile, photos, likes
+ * and the rest go with the user row - except payments, which are kept for
+ * tax records (042_keep_payment_records.sql). Their photo, selfie and post
+ * files are removed from disk too. Runs in batches; returns how many went.
+ */
+async function purgeExpiredDeletedUsers({ batch = 200 } = {}) {
+  const expired = await query(
+    `SELECT id FROM users
+      WHERE deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
+      LIMIT ${Number(batch)}`,
+  );
+  if (!expired.length) return 0;
+  const ids = expired.map((row) => row.id);
+  const files = await mediaOf(ids);
+
+  // Re-check deleted_at, so someone who logged back in a moment ago stays.
+  const result = await query(
+    `DELETE FROM users
+      WHERE id IN (${marks(ids)}) AND deleted_at IS NOT NULL
+        AND deleted_at < DATE_SUB(NOW(), INTERVAL 30 DAY)`,
+    ids,
+  );
+  if ((result.affectedRows || 0) === ids.length) {
+    // Files only once the rows are gone - and if any account was kept,
+    // leave every file rather than guess whose is whose.
+    await Promise.all(files.map((file) => fs.promises.unlink(file).catch(() => undefined)));
+  }
   return result.affectedRows || 0;
 }
 
@@ -217,6 +273,7 @@ module.exports = {
   restoreUser,
   isWithinGracePeriod,
   purgeExpiredDeletedUsers,
+  uploadedFilePath,
   deactivateUser,
   reactivateUser,
 };

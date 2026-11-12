@@ -13,4 +13,6 @@ server.listen(env.port, () => {
   require('./services/replyReminderService').start();
   // The 9 PM "Aaj ke 5 are here" push.
   require('./services/dailyPicksService').start();
+  // Accounts deleted more than 30 days ago are removed for good.
+  require('./jobs/cleanupDeletedUsers').start();
 });
