@@ -3761,6 +3761,8 @@ function MilaanApp() {
             profilePhoto={profilePhotos[0]}
             navigate={navigateTo}
             accessToken={accessToken}
+            photoCount={profilePhotos.filter(Boolean).length}
+            verificationStatus={verificationStatus}
           />
         )}
 

@@ -31,6 +31,8 @@ import type { IntentBadgeInput } from "../../../domain/intentBadges";
 import { authApi } from "../../../api/authApi";
 import { profileApi, type ReferralSummary } from "../../../api/profileApi";
 import { referralLine } from "../referralLine";
+import { ProfileStrengthCard } from "../components/ProfileStrengthCard";
+import { profileStrength } from "../../../domain/profileStrength";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -55,6 +57,8 @@ export function ProfileScreen({
   profilePhoto,
   navigate,
   accessToken,
+  photoCount = 0,
+  verificationStatus = "none",
 }: {
   profile: any;
   verified: boolean;
@@ -65,6 +69,9 @@ export function ProfileScreen({
   profilePhoto?: string;
   navigate: (screen: any) => void;
   accessToken?: string;
+  /** How many profile photos they have, for Profile strength. */
+  photoCount?: number;
+  verificationStatus?: "none" | "pending" | "approved" | "rejected";
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
@@ -430,6 +437,23 @@ export function ProfileScreen({
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              <ProfileStrengthCard
+                {...profileStrength({
+                  firstName: profile?.firstName,
+                  age: profile?.age,
+                  gender: profile?.gender,
+                  city: profile?.city,
+                  profession: profile?.profession,
+                  bio,
+                  hobbies,
+                  photoCount,
+                  alignment: intentInput,
+                  verificationStatus,
+                  verified,
+                })}
+                onGo={navigate}
+              />
 
               {!!(family.note || shareNote) && (
                 <Text
