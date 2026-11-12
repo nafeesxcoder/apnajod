@@ -299,6 +299,12 @@ export function PremiumScreen({
 
                 <BlueTickNote summary={summary} onVerify={onVerify} />
 
+                <CreditsCard
+                  summary={summary}
+                  accessToken={accessToken}
+                  onChanged={setSummary}
+                />
+
                 <PlanCard
                   title="Free"
                   price="₹0"
@@ -761,6 +767,132 @@ function BlueTickHero() {
         puts you at the top of search, and tells matches you are a real,
         verified member.
       </Text>
+    </View>
+  );
+}
+
+/**
+ * What the member has to spend, and the one button that spends a boost.
+ *
+ * Boost and Super Like packs were sold with no way to use a boost anywhere
+ * in the app. Plus and Pro also hand out both every week, so the counts
+ * here are the first place a member sees that allowance arrive.
+ */
+function CreditsCard({
+  summary,
+  accessToken,
+  onChanged,
+}: {
+  summary: BillingSummary | null;
+  accessToken: string;
+  onChanged: (summary: BillingSummary) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  if (!summary) return null;
+  const boosts = summary.boost?.balance ?? 0;
+  const superlikes = summary.superlikes ?? 0;
+  const active = summary.boost?.active ?? null;
+  if (!summary.premium && boosts === 0 && superlikes === 0 && !active) return null;
+
+  const until = active
+    ? new Date(active.endsAt).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "";
+
+  const boostNow = async () => {
+    setBusy(true);
+    setMessage("");
+    try {
+      await billingApi.startBoost(accessToken);
+      onChanged(await billingApi.me(accessToken));
+      setMessage("You are boosted. More people will see you first.");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not start a boost.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View
+      style={{
+        backgroundColor: palette.paper,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: palette.rule,
+        padding: 16,
+        marginBottom: 16,
+        gap: 12,
+      }}
+    >
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
+        Your Boosts and Super Likes
+      </Text>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        {[
+          { icon: "🚀", label: "Boosts", value: boosts },
+          { icon: "⭐", label: "Super Likes", value: superlikes },
+        ].map((item) => (
+          <View
+            key={item.label}
+            style={{
+              flex: 1,
+              backgroundColor: palette.paperSand,
+              borderRadius: radius.md,
+              padding: 12,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+            <Text style={{ fontFamily: fonts.display, fontSize: 24, color: palette.ink }}>
+              {item.value}
+            </Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+              {item.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {summary.premium && (
+        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+          {summary.pro ? "Pro adds 3 Boosts and 5 Super Likes" : "Plus adds 1 Boost and 2 Super Likes"}{" "}
+          every Monday. Unused ones carry over.
+        </Text>
+      )}
+      {active ? (
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.emerald }}>
+          🚀 Boost live until {until}
+        </Text>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start a boost now"
+          disabled={busy || boosts === 0}
+          onPress={() => void boostNow()}
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 8,
+            backgroundColor: boosts > 0 ? palette.navy : palette.rule,
+            borderRadius: radius.pill,
+            paddingVertical: 12,
+          }}
+        >
+          {busy && <ActivityIndicator color="#FFFFFF" size="small" />}
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>
+            {boosts > 0 ? "Boost me now - jump to the top" : "No boosts left"}
+          </Text>
+        </Pressable>
+      )}
+      {!!message && (
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.ink }}>
+          {message}
+        </Text>
+      )}
     </View>
   );
 }

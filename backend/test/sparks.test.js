@@ -74,6 +74,7 @@ function sparkServiceWith(db, credits = { spark: 0, superlike: 0 }) {
     "./pushService": { notifyUser: async () => undefined },
     "./billingService": {
       indianDay: () => "2026-11-12",
+      ensureWeeklyAllowance: async () => ({ granted: false }),
       creditBalance: async (_u, kind) => credits[kind] ?? 0,
       spendCredit: async (_u, kind) => {
         if ((credits[kind] ?? 0) <= 0) return false;

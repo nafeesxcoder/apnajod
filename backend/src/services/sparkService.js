@@ -40,6 +40,8 @@ async function freeSparkUsedToday(userId, now = new Date()) {
 
 /** What this member can send right now. */
 async function wallet(userId, now = new Date()) {
+  // Plus and Pro get Super Likes every week. They land before the count.
+  await billingService.ensureWeeklyAllowance(userId, now);
   const [freeUsed, sparks, superlikes] = await Promise.all([
     freeSparkUsedToday(userId, now),
     billingService.creditBalance(userId, SPARK),
@@ -103,6 +105,7 @@ async function sendSparkPaid(actorId, targetId, note, now) {
 }
 
 async function sendSuperLikePaid(actorId, targetId, note) {
+  await billingService.ensureWeeklyAllowance(actorId);
   if (!(await billingService.spendCredit(actorId, SUPERLIKE))) {
     throw new ApiError(402, "You have no Super Likes left. Get a pack from Premium.");
   }

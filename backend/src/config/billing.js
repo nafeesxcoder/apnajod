@@ -36,6 +36,15 @@ module.exports = {
    */
   freeVisibleLikers: () => number("FREE_VISIBLE_LIKERS", 0),
 
+  /**
+   * What each paid plan hands out every week (Monday, India time). These
+   * match what the Premium screen promises - change both together.
+   */
+  weeklyAllowance: {
+    premium: { boost: 1, superlike: 2 },
+    pro: { boost: 3, superlike: 5 },
+  },
+
   /** India only, so the day that a like allowance resets on is the IST day. */
   indiaOffsetMinutes: 330,
 };

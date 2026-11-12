@@ -22,6 +22,7 @@ const PREMIUM = "premium";
  */
 const PRO = "pro";
 const BOOST = "boost";
+const SUPERLIKE = "superlike";
 
 /**
  * Midnight in India, as a UTC instant.
@@ -243,8 +244,68 @@ async function likeAllowance(userId, now = new Date()) {
   };
 }
 
+/** Monday of this week in India, as YYYY-MM-DD. */
+function indianWeekStart(now = new Date()) {
+  const day = indianDay(now);
+  const date = new Date(`${day}T00:00:00Z`);
+  const sinceMonday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - sinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+
+function isDuplicate(error) {
+  return error && (error.code === "ER_DUP_ENTRY" || error.errno === 1062);
+}
+
+/**
+ * Hand out this week's Boosts and Super Likes, once, to a Plus or Pro member.
+ *
+ * Called whenever those credits are about to be read or spent, so there is
+ * no weekly job to schedule or forget - the first time a member shows up in
+ * a new week, their allowance lands. The row is written first and the
+ * credits added only if that write succeeded, so a week can never pay out
+ * twice. A member who upgrades from Plus to Pro mid-week gets the
+ * difference, not a second full allowance.
+ *
+ * Credits carry over: anything not used this week is still there next week.
+ */
+async function ensureWeeklyAllowance(userId, now = new Date()) {
+  const pro = await isPro(userId);
+  const plan = pro ? PRO : (await isPremium(userId)) ? PREMIUM : null;
+  if (!plan) return { granted: false };
+
+  const weekStart = indianWeekStart(now);
+  const amounts = limits.weeklyAllowance[plan];
+  let give = amounts;
+  try {
+    await query(
+      "INSERT INTO weekly_allowance_grants (user_id, week_start, plan) VALUES (?, ?, ?)",
+      [userId, weekStart, plan],
+    );
+  } catch (error) {
+    if (!isDuplicate(error)) throw error;
+    if (plan !== PRO) return { granted: false };
+    // Already paid this week. Only a Plus week becoming Pro is owed more.
+    const result = await query(
+      `UPDATE weekly_allowance_grants SET plan = ?
+        WHERE user_id = ? AND week_start = ? AND plan = ?`,
+      [PRO, userId, weekStart, PREMIUM],
+    );
+    if ((result?.affectedRows ?? 0) === 0) return { granted: false };
+    const plus = limits.weeklyAllowance[PREMIUM];
+    give = {
+      boost: Math.max(0, amounts.boost - plus.boost),
+      superlike: Math.max(0, amounts.superlike - plus.superlike),
+    };
+  }
+  if (give.boost > 0) await addCredits(userId, BOOST, give.boost);
+  if (give.superlike > 0) await addCredits(userId, SUPERLIKE, give.superlike);
+  return { granted: true, plan, weekStart, ...give };
+}
+
 /** Start a boost, spending one credit. */
 async function startBoost(userId) {
+  await ensureWeeklyAllowance(userId);
   const [live] = await query(
     "SELECT ends_at FROM boosts WHERE user_id = ? AND ends_at > UTC_TIMESTAMP(6) LIMIT 1",
     [userId],
@@ -279,12 +340,15 @@ async function activeBoost(userId) {
  * screen has to assemble this for itself and get it subtly different.
  */
 async function summaryFor(userId) {
-  const [allowance, boosts, boost, trust, pro] = await Promise.all([
+  // This week's Boosts and Super Likes land before the balances are read.
+  await ensureWeeklyAllowance(userId);
+  const [allowance, boosts, boost, trust, pro, superlikes] = await Promise.all([
     likeAllowance(userId),
     creditBalance(userId, BOOST),
     activeBoost(userId),
     trustStatus(userId),
     isPro(userId),
+    creditBalance(userId, SUPERLIKE),
   ]);
   return {
     premium: allowance.premium,
@@ -298,6 +362,7 @@ async function summaryFor(userId) {
       remaining: allowance.remaining,
     },
     boost: { balance: boosts, active: boost },
+    superlikes,
     freeVisibleLikers: limits.freeVisibleLikers(),
   };
 }
@@ -307,6 +372,9 @@ module.exports = {
   PREMIUM,
   PRO,
   BOOST,
+  SUPERLIKE,
+  indianWeekStart,
+  ensureWeeklyAllowance,
   startOfIndianDay,
   listPlans,
   getPlan,

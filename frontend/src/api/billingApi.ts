@@ -40,6 +40,8 @@ export type BillingSummary = {
   blueTick?: boolean;
   likes: { limit: number | null; used: number; remaining: number | null };
   boost: { balance: number; active: { endsAt: string } | null };
+  /** Super Likes left - weekly ones from Plus/Pro plus any bought. */
+  superlikes?: number;
 };
 
 export type RazorpayOrder = {

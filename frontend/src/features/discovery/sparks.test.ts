@@ -65,3 +65,17 @@ describe('the app shell', () => {
     expect(hookCalls).toEqual([]);
   });
 });
+
+describe('Boosts and Super Likes on Premium', () => {
+  const premium = read('src/features/premium/screens/PremiumScreen.tsx');
+
+  it('lets a member actually use a boost they have', () => {
+    // Boost packs were sold with no button anywhere to spend one.
+    expect(premium).toContain('billingApi.startBoost(accessToken)');
+  });
+
+  it('shows the weekly allowance the plan promises', () => {
+    expect(premium).toContain('Plus adds 1 Boost and 2 Super Likes');
+    expect(premium).toContain('Pro adds 3 Boosts and 5 Super Likes');
+  });
+});
