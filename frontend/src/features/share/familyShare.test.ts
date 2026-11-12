@@ -10,8 +10,23 @@ describe('show my family', () => {
     expect(person).toMatch(/likeStatus === "accepted" && \(\s*<FamilyShareButton/);
   });
 
-  it('lets members send their own profile from their profile page', () => {
-    expect(read('src/features/profile/screens/ProfileScreen.tsx')).toContain('label="Send my profile to family"');
+  it('keeps one Share button on your own profile, which asks family or friends', () => {
+    const profile = read('src/features/profile/screens/ProfileScreen.tsx');
+    expect(profile).toContain('title: "Send to family"');
+    expect(profile).toContain('title: "Invite friends"');
+    expect(profile).not.toContain('<FamilyShareButton');
+  });
+
+  it('shows intent badges in their own section under About, not in the profile header', () => {
+    for (const file of [
+      'src/features/profile/screens/ProfileScreen.tsx',
+      'src/features/social/screens/PersonScreen.tsx',
+      'src/features/discovery/screens/MatchDetailScreen.tsx',
+    ]) {
+      const source = read(file);
+      expect(source).toContain('<IntentSection');
+      expect(source).not.toContain('<IntentBadges center');
+    }
   });
 
   it('opens the shared profile on its own, with no sign-in, only for a well-formed token', () => {

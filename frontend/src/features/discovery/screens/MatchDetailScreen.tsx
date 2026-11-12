@@ -20,7 +20,7 @@ import { matchApi } from "../../../api/matchApi";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { TrustBadge } from "../../../components/TrustBadge";
-import { IntentBadges } from "../../../components/IntentBadges";
+import { IntentSection } from "../../../components/IntentBadges";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -243,17 +243,6 @@ export function MatchDetailScreen({
                   .join("  ·  ") || "City and work not added"}
               </Text>
 
-              <IntentBadges
-                center
-                input={{
-                  intent: match.intent,
-                  timeline: match.timeline,
-                  children: match.children,
-                  family: match.family,
-                  relocation: match.relocation,
-                }}
-              />
-
               <View
                 style={{
                   flexDirection: "row",
@@ -414,6 +403,16 @@ export function MatchDetailScreen({
                   {bio || "No bio yet."}
                 </Text>
               </View>
+
+              <IntentSection
+                input={{
+                  intent: match.intent,
+                  timeline: match.timeline,
+                  children: match.children,
+                  family: match.family,
+                  relocation: match.relocation,
+                }}
+              />
 
               {photos.length > 0 && (
                 <View style={{ marginTop: 24 }}>

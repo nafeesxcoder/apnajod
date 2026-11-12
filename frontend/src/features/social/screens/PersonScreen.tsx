@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { PersonPage } from "../../../api/socialApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
-import { IntentBadges } from "../../../components/IntentBadges";
+import { IntentSection } from "../../../components/IntentBadges";
 import { FamilyShareButton } from "../../../components/FamilyShareButton";
 
 const MAX_WIDTH = 720;
@@ -237,16 +237,6 @@ export function PersonScreen({
             </Text>
           )}
 
-          {!!profile.intent && <IntentBadges center input={profile.intent} />}
-
-          {likeStatus === "accepted" && (
-            <FamilyShareButton
-              accessToken={accessToken}
-              targetId={userId}
-              name={profile.firstName || user.username}
-              label="Show my family"
-            />
-          )}
 
           {likeStatus !== "none" && (
             <View
@@ -388,6 +378,15 @@ export function PersonScreen({
             </View>
           )}
 
+          {likeStatus === "accepted" && (
+            <FamilyShareButton
+              accessToken={accessToken}
+              targetId={userId}
+              name={profile.firstName || user.username}
+              label="Show my family"
+            />
+          )}
+
           {!!profile.about && (
             <View
               style={{
@@ -419,6 +418,8 @@ export function PersonScreen({
               </Text>
             </View>
           )}
+
+          {!!profile.intent && <IntentSection input={profile.intent} />}
 
           {profile.hobbies.length > 0 && (
             <View

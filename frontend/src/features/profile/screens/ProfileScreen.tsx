@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Platform,
   Share,
+  Modal,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,8 +24,8 @@ import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
-import { IntentBadges } from "../../../components/IntentBadges";
-import { FamilyShareButton } from "../../../components/FamilyShareButton";
+import { IntentSection } from "../../../components/IntentBadges";
+import { useFamilyShare } from "../../../components/FamilyShareButton";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 import { authApi } from "../../../api/authApi";
 
@@ -65,6 +67,12 @@ export function ProfileScreen({
   const [postsReloadKey, setPostsReloadKey] = useState(0);
   const [username, setUsername] = useState("");
   const [shareNote, setShareNote] = useState("");
+  // One Share button; it asks whether this is for family or for friends.
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const family = useFamilyShare({
+    accessToken,
+    name: profile?.firstName || "me",
+  });
 
   useEffect(() => {
     if (!accessToken) return;
@@ -277,7 +285,6 @@ export function ProfileScreen({
                   .join("  ·  ") || "Add your city and work"}
               </Text>
 
-              {!!intentInput && <IntentBadges center input={intentInput} />}
 
               <View
                 style={{
@@ -370,7 +377,9 @@ export function ProfileScreen({
                 <TouchableOpacity
                   accessibilityRole="button"
                   accessibilityLabel="Share profile"
-                  onPress={() => void onShareProfile()}
+                  onPress={() =>
+                    family.available ? setShareMenuOpen(true) : void onShareProfile()
+                  }
                   style={{
                     flex: 1,
                     flexDirection: "row",
@@ -402,13 +411,7 @@ export function ProfileScreen({
                 </TouchableOpacity>
               </View>
 
-              <FamilyShareButton
-                accessToken={accessToken}
-                name={profile?.firstName || "me"}
-                label="Send my profile to family"
-              />
-
-              {!!shareNote && (
+              {!!(family.note || shareNote) && (
                 <Text
                   style={{
                     fontFamily: fonts.body,
@@ -418,7 +421,7 @@ export function ProfileScreen({
                     marginTop: 8,
                   }}
                 >
-                  {shareNote}
+                  {family.note || shareNote}
                 </Text>
               )}
 
@@ -451,6 +454,8 @@ export function ProfileScreen({
                   {bio || "Add a short bio so people know the real you."}
                 </Text>
               </View>
+
+              {!!intentInput && <IntentSection input={intentInput} />}
 
               <TouchableOpacity
                 accessibilityRole="button"
@@ -519,7 +524,98 @@ export function ProfileScreen({
         </ScrollView>
 
         <BottomNav active="profile" navigate={navigate} />
-      </SafeAreaView>
+        <Modal
+        visible={shareMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShareMenuOpen(false)}
+      >
+        <Pressable
+          accessibilityLabel="Close"
+          onPress={() => setShareMenuOpen(false)}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.35)",
+            justifyContent: "flex-end",
+            alignItems: "center",
+          }}
+        >
+          <Pressable
+            onPress={() => undefined}
+            style={{
+              width: "100%",
+              maxWidth: 480,
+              backgroundColor: palette.paper,
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+              padding: 20,
+              paddingBottom: 32,
+              gap: 10,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 20,
+                color: palette.ink,
+                marginBottom: 4,
+              }}
+            >
+              Share your profile
+            </Text>
+            {[
+              {
+                key: "family",
+                icon: "people" as const,
+                title: "Send to family",
+                body: "A private link they can open without the app. Works for 7 days.",
+                onPress: () => {
+                  setShareMenuOpen(false);
+                  void family.share();
+                },
+              },
+              {
+                key: "friends",
+                icon: "share-social" as const,
+                title: "Invite friends",
+                body: "Share Apnajoda with friends on WhatsApp, Instagram or Facebook.",
+                onPress: () => {
+                  setShareMenuOpen(false);
+                  void onShareProfile();
+                },
+              },
+            ].map((option) => (
+              <TouchableOpacity
+                key={option.key}
+                accessibilityRole="button"
+                accessibilityLabel={option.title}
+                onPress={option.onPress}
+                disabled={option.key === "family" && family.busy}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: 14,
+                  borderRadius: radius.md,
+                  backgroundColor: palette.paperSand,
+                }}
+              >
+                <Ionicons name={option.icon} size={22} color={palette.navy} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
+                    {option.title}
+                  </Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+                    {option.body}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={palette.slate} />
+              </TouchableOpacity>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </SafeAreaView>
     </AppCanvas>
   );
 }

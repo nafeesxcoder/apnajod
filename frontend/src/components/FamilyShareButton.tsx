@@ -9,26 +9,22 @@ import { fonts, palette, radius } from "../theme";
  * account. Your own profile any time; someone else's once you are a match
  * - the server enforces that, this only shows what it says.
  */
-export function FamilyShareButton({
+export function useFamilyShare({
   accessToken,
   targetId,
   name,
-  label,
 }: {
   accessToken?: string;
   /** Leave out to share your own profile. */
   targetId?: string;
   /** Whose profile, for the message text. */
   name: string;
-  label: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
 
-  if (!accessToken) return null;
-
   const share = async () => {
-    if (busy) return;
+    if (busy || !accessToken) return;
     setBusy(true);
     setNote("");
     try {
@@ -50,7 +46,7 @@ export function FamilyShareButton({
       } else {
         await Linking.openURL(`https://wa.me/?text=${encodeURIComponent(message)}`);
       }
-      setNote("Link ready. It works for 7 days.");
+      setNote("Family link ready. It works for 7 days.");
     } catch (error: any) {
       if (error?.name === "AbortError") return;
       setNote(error instanceof Error ? error.message : "Could not make the link. Try again.");
@@ -58,6 +54,23 @@ export function FamilyShareButton({
       setBusy(false);
     }
   };
+
+  return { share, busy, note, available: !!accessToken };
+}
+
+export function FamilyShareButton({
+  accessToken,
+  targetId,
+  name,
+  label,
+}: {
+  accessToken?: string;
+  targetId?: string;
+  name: string;
+  label: string;
+}) {
+  const { share, busy, note, available } = useFamilyShare({ accessToken, targetId, name });
+  if (!available) return null;
 
   return (
     <View style={{ alignItems: "center", marginTop: 12, gap: 6 }}>
