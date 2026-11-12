@@ -596,6 +596,10 @@ async function listConversations(userId, limit = 100) {
   );
   if (!rows.length) return [];
 
+  // 🔥 for every chat in one go. Lazy-required: streakService needs the
+  // db module only, but keeping it out of the top keeps load order simple.
+  const streaks = await require("./streakService").forMember(userId);
+
   const out = [];
   for (const row of rows) {
     const [, a, b] = String(row.conversation_id).split(":");
@@ -627,12 +631,14 @@ async function listConversations(userId, limit = 100) {
       lastMessage: last ? rowToMessage(last, userId) : null,
       lastAt: Number(row.last_at) || 0,
       unread: Number(row.unread) || 0,
+      streak: streaks.get(row.conversation_id) ?? { count: 0, atRisk: false, show: false },
     });
   }
   return out;
 }
 
 module.exports = {
+  storageKey,
   listConversations,
   assertParticipant,
   assertParticipantByConversationId,

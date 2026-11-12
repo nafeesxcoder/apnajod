@@ -37,7 +37,12 @@ export type ConversationSummary = {
   lastMessage: ChatMessage | null;
   lastAt: number;
   unread: number;
+  /** Days in a row both people wrote. Shown from 2 days. */
+  streak?: ChatStreak;
 };
+
+/** 🔥 - `atRisk` means it is alive from yesterday but neither has finished today. */
+export type ChatStreak = { count: number; atRisk: boolean; show: boolean };
 
 export const chatApi = {
   /**
@@ -243,5 +248,24 @@ export async function fetchIcebreakers(
     return Array.isArray(data?.lines) ? data.lines.filter((line: unknown) => typeof line === "string") : [];
   } catch {
     return [];
+  }
+}
+
+/** The 🔥 for one open chat. A failed call is simply no streak. */
+export async function fetchStreak(
+  accessToken: string,
+  conversationId: string,
+): Promise<ChatStreak | null> {
+  try {
+    const response = await fetch(
+      `${API_URL}/chat/${encodeURIComponent(conversationId)}/streak`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (!response.ok) return null;
+    const body = await response.json();
+    const data = body?.data;
+    return data && typeof data.count === "number" ? (data as ChatStreak) : null;
+  } catch {
+    return null;
   }
 }

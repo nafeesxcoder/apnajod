@@ -83,6 +83,14 @@ const putMessageState = wrap(async (req) => {
   return chatService.setMessageState(req.params.conversationId, req.user.id, req.params.messageId, req.body);
 });
 
+// The 🔥 count for the open chat. Only for someone in it.
+const getStreak = wrap(async (req) => {
+  const peerId = req.params.conversationId;
+  await chatService.assertParticipant(peerId, req.user.id);
+  const streakService = require('../services/streakService');
+  return streakService.forConversation(req.user.id, chatService.storageKey(req.user.id, peerId));
+});
+
 const getPresence = wrap(async (req) => {
   return chatService.getPartnerPresence(req.params.conversationId, req.user.id);
 });
@@ -120,6 +128,7 @@ module.exports = {
   putDatePlanStatus,
   postLocation,
   getPresence,
+  getStreak,
   postTyping,
   putEditMessage,
   deleteMessageHandler,

@@ -59,7 +59,12 @@ import {
 } from "../../api/gifApi";
 import { callSession, useCallSession } from "./callSession";
 import { callApi } from "../../api/callApi";
-import { chatApi, fetchIcebreakers } from "../../api/chatApi";
+import {
+  chatApi,
+  fetchIcebreakers,
+  fetchStreak,
+  type ChatStreak,
+} from "../../api/chatApi";
 import { matches, type Match } from "../../data";
 import type { PreviewState, Screen } from "../../app/navigation/types";
 import type {
@@ -1043,6 +1048,22 @@ export function ChatScreen({
       live = false;
     };
   }, [accessToken, chatIsEmpty, match.id, experienceMode]);
+  // 🔥 in the header. Re-read when the message count changes, since a reply
+  // can be what completes today.
+  const [streak, setStreak] = useState<ChatStreak | null>(null);
+  useEffect(() => {
+    if (!accessToken || experienceMode === "couple") {
+      setStreak(null);
+      return;
+    }
+    let live = true;
+    void fetchStreak(accessToken, conversationIdFor(match)).then((value) => {
+      if (live) setStreak(value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [accessToken, match.id, experienceMode, messages.length]);
   const [showAttachments, setShowAttachments] = useState(
     previewState === "chat-attachments",
   );
@@ -2436,12 +2457,32 @@ export function ChatScreen({
               onPress={() => setSettingsOpen(true)}
               style={{ flex: 1 }}
             >
-              <Text
-                numberOfLines={1}
-                style={{ fontFamily: fonts.display, fontSize: 17, color: colors.text }}
-              >
-                {displayName}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flexShrink: 1,
+                    fontFamily: fonts.display,
+                    fontSize: 17,
+                    color: colors.text,
+                  }}
+                >
+                  {displayName}
+                </Text>
+                {!!streak?.show && (
+                  <Text
+                    accessibilityLabel={
+                      streak.atRisk
+                        ? `${streak.count} day streak, reply today to keep it`
+                        : `${streak.count} day streak`
+                    }
+                    style={{ fontSize: 14, fontWeight: "700", color: "#C2410C" }}
+                  >
+                    🔥 {streak.count}
+                    {streak.atRisk ? " ⏳" : ""}
+                  </Text>
+                )}
+              </View>
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
               >

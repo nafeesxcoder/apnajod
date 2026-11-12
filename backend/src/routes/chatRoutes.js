@@ -28,6 +28,7 @@ router.post('/:conversationId/date-proposal', chatController.postDateProposal);
 router.put('/date-proposal/status', chatController.putDatePlanStatus);
 router.post('/:conversationId/location', chatController.postLocation);
 router.get('/:conversationId/presence', chatController.getPresence);
+router.get('/:conversationId/streak', chatController.getStreak);
 router.post('/:conversationId/typing', chatController.postTyping);
 router.put('/:conversationId/messages/:messageId', chatController.putEditMessage);
 router.delete('/:conversationId/messages/:messageId', chatController.deleteMessageHandler);

@@ -232,9 +232,24 @@ export function ChatsScreen({
                         <Text numberOfLines={1} style={social.rowTitle}>
                           {conversation.user.name}
                         </Text>
-                        <Text style={social.rowTime}>
-                          {shortAge(conversation.lastAt)}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {!!conversation.streak?.show && (
+                            <Text
+                              accessibilityLabel={
+                                conversation.streak.atRisk
+                                  ? `${conversation.streak.count} day streak, reply today to keep it`
+                                  : `${conversation.streak.count} day streak`
+                              }
+                              style={{ fontSize: 12, fontWeight: '700', color: '#C2410C' }}
+                            >
+                              🔥 {conversation.streak.count}
+                              {conversation.streak.atRisk ? ' ⏳' : ''}
+                            </Text>
+                          )}
+                          <Text style={social.rowTime}>
+                            {shortAge(conversation.lastAt)}
+                          </Text>
+                        </View>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {isYourTurn(conversation) && (
