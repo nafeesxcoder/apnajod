@@ -13,6 +13,7 @@ const followRoutes = require("./routes/followRoutes");
 const postRoutes = require("./routes/postRoutes");
 const billingRoutes = require("./routes/billingRoutes");
 const dailyQuestionRoutes = require("./routes/dailyQuestionRoutes");
+const shareRoutes = require("./routes/shareRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 const { corsOptions, securityHeaders } = require("./config/security");
@@ -47,6 +48,7 @@ app.use("/social", followRoutes);
 app.use("/posts", postRoutes);
 app.use("/billing", billingRoutes);
 app.use("/daily-question", dailyQuestionRoutes);
+app.use("/share", shareRoutes);
 app.use("/admin", adminRoutes);
 
 // 404 handler

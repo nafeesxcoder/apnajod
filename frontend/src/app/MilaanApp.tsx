@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { captureInviteFromUrl } from "../features/onboarding/inviteTracking";
+import { SharedProfilePage } from "../features/share/SharedProfilePage";
 import { Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi, AuthRequestError, isSessionRejected } from "../api/authApi";
@@ -3545,6 +3546,7 @@ function MilaanApp() {
             onLoad={(userId) => socialApi.person(accessToken, userId)}
             onFollow={(userId) => likeFromSearch(userId)}
             onMessage={(page) => openConversationWith(page.user)}
+            accessToken={accessToken}
           />
         )}
 
@@ -3749,6 +3751,7 @@ function MilaanApp() {
             profile={profileDraft}
             verified={verified}
             blueTick={blueTick}
+            intentInput={{ intent, ...alignment }}
             profilePhoto={profilePhotos[0]}
             navigate={navigateTo}
             accessToken={accessToken}
@@ -3882,10 +3885,24 @@ function MilaanApp() {
     </SafeAreaProvider>
   );
 }
+/**
+ * A "show my family" link (?share=<token>) opens the shared profile on its
+ * own - no sign-in, none of the app around it.
+ */
+const sharedProfileToken: string | null = (() => {
+  if (Platform.OS !== "web" || typeof window === "undefined") return null;
+  const token = new URLSearchParams(window.location.search).get("share");
+  return token && /^[a-f0-9]{32}$/.test(token) ? token : null;
+})();
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <MilaanApp />
+      {sharedProfileToken ? (
+        <SharedProfilePage token={sharedProfileToken} />
+      ) : (
+        <MilaanApp />
+      )}
     </ErrorBoundary>
   );
 }

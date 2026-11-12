@@ -13,6 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { PersonPage } from "../../../api/socialApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
+import { IntentBadges } from "../../../components/IntentBadges";
+import { FamilyShareButton } from "../../../components/FamilyShareButton";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -24,7 +26,10 @@ export function PersonScreen({
   onFollow,
   onMessage,
   onBlock,
+  accessToken,
 }: {
+  /** For "show my family" - only offered once you are a match. */
+  accessToken?: string;
   userId: string;
   onBack: () => void;
   onLoad: (userId: string) => Promise<PersonPage>;
@@ -230,6 +235,17 @@ export function PersonScreen({
             >
               {[profile.city, profile.profession].filter(Boolean).join("  ·  ")}
             </Text>
+          )}
+
+          {!!profile.intent && <IntentBadges center input={profile.intent} />}
+
+          {likeStatus === "accepted" && (
+            <FamilyShareButton
+              accessToken={accessToken}
+              targetId={userId}
+              name={profile.firstName || user.username}
+              label="Show my family"
+            />
           )}
 
           {likeStatus !== "none" && (

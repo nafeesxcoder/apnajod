@@ -34,6 +34,14 @@ export type ProfileCard = {
   verified: boolean;
   /** Approved selfie AND Pro, worked out on the server. */
   blueTick?: boolean;
+  /** Their intent and alignment answers, for the intent badges. */
+  intent?: {
+    intent?: string;
+    timeline?: string;
+    children?: string;
+    family?: string;
+    relocation?: string;
+  } | null;
   hobbies: string[];
   photos: string[];
 };

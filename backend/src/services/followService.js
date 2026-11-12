@@ -206,6 +206,11 @@ async function getProfileCard(userId) {
     "SELECT photo_url FROM profile_photos WHERE user_id = ? ORDER BY position ASC",
     [userId],
   );
+  // Their own intent answers, for the intent badges on their profile.
+  const [intent] = await query(
+    "SELECT intent, timeline, children, family, relocation FROM profile_intent WHERE user_id = ?",
+    [userId],
+  );
 
   let hobbies = [];
   if (Array.isArray(profile?.hobbies)) {
@@ -230,6 +235,15 @@ async function getProfileCard(userId) {
     blueTick: Number(profile?.blue_tick) === 1,
     hobbies: Array.isArray(hobbies) ? hobbies : [],
     photos: photos.map((row) => row.photo_url).filter(Boolean),
+    intent: intent
+      ? {
+          intent: intent.intent || "",
+          timeline: intent.timeline || "",
+          children: intent.children || "",
+          family: intent.family || "",
+          relocation: intent.relocation || "",
+        }
+      : null,
   };
 }
 

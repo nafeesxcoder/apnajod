@@ -22,6 +22,9 @@ import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
+import { IntentBadges } from "../../../components/IntentBadges";
+import { FamilyShareButton } from "../../../components/FamilyShareButton";
+import type { IntentBadgeInput } from "../../../domain/intentBadges";
 import { authApi } from "../../../api/authApi";
 
 const MAX_WIDTH = 720;
@@ -43,6 +46,7 @@ export function ProfileScreen({
   profile,
   verified,
   blueTick = false,
+  intentInput,
   profilePhoto,
   navigate,
   accessToken,
@@ -51,6 +55,8 @@ export function ProfileScreen({
   verified: boolean;
   /** Approved selfie AND Pro. */
   blueTick?: boolean;
+  /** Their own intent and alignment answers, shown as badges. */
+  intentInput?: IntentBadgeInput;
   profilePhoto?: string;
   navigate: (screen: any) => void;
   accessToken?: string;
@@ -271,6 +277,8 @@ export function ProfileScreen({
                   .join("  ·  ") || "Add your city and work"}
               </Text>
 
+              {!!intentInput && <IntentBadges center input={intentInput} />}
+
               <View
                 style={{
                   flexDirection: "row",
@@ -393,6 +401,12 @@ export function ProfileScreen({
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              <FamilyShareButton
+                accessToken={accessToken}
+                name={profile?.firstName || "me"}
+                label="Send my profile to family"
+              />
 
               {!!shareNote && (
                 <Text
