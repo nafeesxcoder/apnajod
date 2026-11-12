@@ -4,6 +4,23 @@ const billingService = require("./billingService");
 const { ApiError } = require("../middleware/errorHandler");
 
 const BIO_MAX_LENGTH = 500;
+// Apnajoda is for adults. The app checks this too, but the API is the only
+// check that cannot be skipped by calling it directly.
+const MIN_AGE = 18;
+const MAX_AGE = 70;
+
+/**
+ * The age to save, or null when none was sent (which keeps the saved one).
+ * Anything sent must be a whole number from 18 to 70.
+ */
+function cleanAge(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const age = Number(value);
+  if (!Number.isInteger(age) || age < MIN_AGE || age > MAX_AGE) {
+    throw new ApiError(400, `You must be ${MIN_AGE} or older to use Apnajoda.`);
+  }
+  return age;
+}
 
 async function getFullProfile(userId) {
   const [profile] = await query("SELECT * FROM profiles WHERE user_id = ?", [
@@ -94,6 +111,8 @@ async function upsertProfile(userId, input) {
     );
   }
 
+  const profileAge = cleanAge(age);
+
   const profileHobbies = Array.isArray(hobbies)
     ? JSON.stringify(hobbies)
     : null;
@@ -102,7 +121,7 @@ async function upsertProfile(userId, input) {
     `INSERT INTO profiles (user_id, first_name, gender, age, height, city, profession, religion, community, about, hobbies)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
-       first_name = VALUES(first_name), gender = VALUES(gender), age = VALUES(age),
+       first_name = VALUES(first_name), gender = VALUES(gender), age = COALESCE(VALUES(age), age),
        height = VALUES(height), city = VALUES(city), profession = VALUES(profession),
        religion = VALUES(religion), community = VALUES(community),
        about = COALESCE(VALUES(about), about),
@@ -111,7 +130,7 @@ async function upsertProfile(userId, input) {
       userId,
       firstName || null,
       gender || null,
-      age || null,
+      profileAge,
       height || null,
       city || null,
       profession || null,
@@ -392,6 +411,8 @@ async function findMatches(userId, limit = 20) {
      WHERE u.id != ?
        AND u.deleted_at IS NULL
        AND u.deactivated_at IS NULL
+       -- Never show anyone under 18, even one saved before the age check.
+       AND (p.age IS NULL OR p.age >= ${MIN_AGE})
        AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
        AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
        AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ?)
@@ -492,6 +513,7 @@ async function findMatches(userId, limit = 20) {
 module.exports = {
   getFullProfile,
   upsertProfile,
+  cleanAge,
   VERIFICATION_POSES,
   issueVerificationPose,
   submitVerification,
