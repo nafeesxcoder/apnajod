@@ -30,13 +30,17 @@ describe('profile strength', () => {
     expect(next?.screen).toBe('profileSetup');
   });
 
-  it('a one-word bio, two hobbies or one photo are not enough', () => {
-    const { steps } = profileStrength({ ...complete, bio: 'Hi', hobbies: ['A', 'B'], photoCount: 1 });
+  it('a one-word bio or two hobbies are not enough', () => {
+    const { steps } = profileStrength({ ...complete, bio: 'Hi', hobbies: ['A', 'B'] });
     const done = Object.fromEntries(steps.map((s) => [s.key, s.done]));
     expect(done.bio).toBe(false);
     expect(done.hobbies).toBe(false);
-    expect(done.morePhotos).toBe(false);
-    expect(done.photo).toBe(true);
+  });
+
+  it('one photo is all a profile can have, so one photo is full marks', () => {
+    const { score, steps } = profileStrength({ ...complete, photoCount: 1 });
+    expect(score).toBe(100);
+    expect(steps.some((s) => /more photos/i.test(s.label))).toBe(false);
   });
 
   it('a selfie under review is not nagged about, and is not counted yet', () => {

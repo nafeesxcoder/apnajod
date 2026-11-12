@@ -5,7 +5,8 @@
  * Every step is something other members actually see or that changes who
  * sees you: photos, a bio and verification all count towards "Aaj ke 5"
  * (dailyPicksService.score), and the blue tick needs a verified selfie.
- * Weights add up to exactly 100.
+ * Weights add up to exactly 100. Only steps the app lets a member complete
+ * are listed - profiles take one photo, so there is no "add more photos".
  */
 export type StrengthScreen = "profileSetup" | "alignment" | "verifyHub";
 
@@ -37,7 +38,6 @@ export type StrengthInput = {
 
 export const BIO_MIN = 30;
 export const HOBBIES_MIN = 3;
-export const PHOTOS_GOOD = 3;
 
 const filled = (value: unknown) => String(value ?? "").trim().length > 0;
 
@@ -57,7 +57,7 @@ export function profileStrength(input: StrengthInput): {
       key: "photo",
       label: "Add a profile photo",
       why: "Profiles without a photo are never shown in Aaj ke 5.",
-      points: 25,
+      points: 30,
       done: input.photoCount >= 1,
       screen: "profileSetup",
     },
@@ -87,14 +87,6 @@ export function profileStrength(input: StrengthInput): {
       screen: "verifyHub",
     },
     {
-      key: "morePhotos",
-      label: `Add ${PHOTOS_GOOD} or more photos`,
-      why: "More photos, more reasons to say yes.",
-      points: 10,
-      done: input.photoCount >= PHOTOS_GOOD,
-      screen: "profileSetup",
-    },
-    {
       key: "hobbies",
       label: `Pick ${HOBBIES_MIN} or more hobbies`,
       why: "Shared hobbies become your opening lines in chat.",
@@ -114,7 +106,7 @@ export function profileStrength(input: StrengthInput): {
       key: "intent",
       label: "Answer the future questions",
       why: "Timeline, children, family, relocation - so you match on what matters.",
-      points: 5,
+      points: 10,
       done: answers >= 3,
       screen: "alignment",
     },
