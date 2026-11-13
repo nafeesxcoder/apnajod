@@ -241,6 +241,8 @@ export function HomeScreen({
               <View style={{ marginRight: 12 }}>
                 <AddPostButton
                   accessToken={accessToken}
+                  // A new post shows at the top of the feed straight away.
+                  onPosted={() => setFeedReload((n) => n + 1)}
                   size={34}
                   iconSize={22}
                   color={colors.text}

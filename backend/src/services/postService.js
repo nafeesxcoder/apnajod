@@ -99,9 +99,9 @@ const FEED_PAGE = 10;
 const CURSOR = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?$/;
 
 /**
- * The Home feed, newest first, like Instagram's: every post from a public
- * account, plus posts from the people you have matched with (private or
- * not). Never your own, never a blocked member's either way round, never a
+ * The Home feed, newest first, like Instagram's: your own posts, every post
+ * from a public account, and posts from the people you have matched with
+ * (private or not). Never a blocked member's either way round, never a
  * deleted or deactivated account's, never an under-18 profile's.
  *
  * Paged by time: `before` is the `next` cursor from the previous page.
@@ -113,10 +113,10 @@ async function getFeed(viewerId, before = null, limit = FEED_PAGE) {
     `SELECT ${POST_COLUMNS},
             DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s.%f') AS cursor_at
        ${POST_FROM}
-      WHERE p.user_id <> ?
-        AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
+      WHERE u.deleted_at IS NULL AND u.deactivated_at IS NULL
         AND (pr.age IS NULL OR pr.age >= 18)
-        AND (u.is_private = 0
+        AND (p.user_id = ?
+             OR u.is_private = 0
              OR EXISTS (SELECT 1 FROM mutual_matches mm
                          WHERE (mm.user_a_id = ? AND mm.user_b_id = u.id)
                             OR (mm.user_a_id = u.id AND mm.user_b_id = ?)))

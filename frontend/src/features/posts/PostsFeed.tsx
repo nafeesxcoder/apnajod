@@ -7,6 +7,7 @@ import { PressScale } from "../../components/motion";
 import { fonts, palette, radius, typeScale } from "../../theme";
 import { primePostSizes } from "../profile/components/PostImage";
 import { PostCard } from "./PostCard";
+import { userIdFromToken } from "./profileLink";
 
 /**
  * The posts on Home, like Instagram's feed: everyone public, plus the people
@@ -63,6 +64,7 @@ export function PostsFeed({
   }, [loadMoreSignal]);
 
   if (!accessToken) return null;
+  const me = userIdFromToken(accessToken);
 
   return (
     <View style={{ width: "100%", marginTop: 8 }}>
@@ -79,7 +81,7 @@ export function PostsFeed({
       ) : posts.length === 0 ? (
         <FeedNote
           icon="images-outline"
-          text="No posts yet. When public accounts and your matches post, they show up here."
+          text="No posts yet. Your posts, public accounts' posts and your matches' posts show up here."
         />
       ) : (
         <View style={{ gap: 10 }}>
@@ -88,6 +90,7 @@ export function PostsFeed({
               key={post.id}
               post={post}
               accessToken={accessToken}
+              isOwner={post.author?.userId === me}
               onChange={(changed) =>
                 setPosts((current) => current.map((item) => (item.id === changed.id ? changed : item)))
               }

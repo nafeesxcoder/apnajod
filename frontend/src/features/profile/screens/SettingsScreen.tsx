@@ -443,8 +443,8 @@ export function SettingsScreen({
                     }}
                   >
                     {isPrivate
-                      ? "Nobody can find you by username. You still appear to people browsing."
-                      : "Anyone can find you by searching your username."}
+                      ? "Only your matches see your posts, and nobody can find you by username. You still appear to people browsing."
+                      : "Anyone can see your posts and find you by your username, like Instagram."}
                   </Text>
                 </View>
                 <Switch
