@@ -52,9 +52,13 @@ describe('a profile shows only what the member added', () => {
 describe('posts', () => {
   const section = read('src/features/profile/components/PostsSection.tsx');
   const addButton = read('src/features/profile/components/AddPostButton.tsx');
+  // The + opens the New post sheet; choosing the size, the caption, the
+  // upload and the post itself all happen in there.
+  const newPost = read('src/features/profile/components/NewPostSheet.tsx');
 
   it('can be added, re-captioned and deleted by their owner', () => {
-    expect(compact(addButton)).toContain('postApi.create(');
+    expect(addButton).toContain('<NewPostSheet');
+    expect(compact(newPost)).toContain('postApi.create(');
     expect(compact(section)).toContain('postApi.updateCaption(');
     expect(compact(section)).toContain('postApi.remove(');
     expect(section).toContain('Edit caption');
@@ -64,8 +68,8 @@ describe('posts', () => {
   it('uploads the photo before posting it', () => {
     // Posting the picker's own uri would store a path only that device can
     // resolve - the same break the selfie queue had.
-    const uploadAt = addButton.indexOf('uploadPhoto(');
-    const createAt = addButton.indexOf('postApi.create(');
+    const uploadAt = newPost.indexOf('uploadPhoto(');
+    const createAt = newPost.indexOf('postApi.create(');
     expect(uploadAt).toBeGreaterThan(-1);
     expect(createAt).toBeGreaterThan(uploadAt);
   });

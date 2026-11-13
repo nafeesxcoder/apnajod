@@ -1,6 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const postService = require("../services/postService");
+const { cleanAspect } = require("../utils/postAspect");
 
 /** A caption is a line under a photo, not an essay. */
 const MAX_CAPTION = 300;
@@ -25,6 +26,7 @@ const createPost = asyncHandler(async (req, res) => {
     req.user.id,
     mediaUrl,
     cleanCaption(req.body.caption),
+    cleanAspect(req.body.aspectRatio),
   );
   res.json({ ok: true, post });
 });

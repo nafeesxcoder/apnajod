@@ -4,6 +4,8 @@ export type Post = {
   id: string;
   media_url: string;
   caption: string;
+  /** Width / height the post was cropped to: 1, 0.8 (4:5) or 1.91. Older posts: 1. */
+  aspect_ratio?: number;
   created_at: string;
 };
 
@@ -26,11 +28,14 @@ async function authFetch(
 }
 
 export const postApi = {
-  /** The photo must already be uploaded; pass the URL the upload returned. */
-  async create(accessToken: string, mediaUrl: string, caption: string) {
+  /**
+   * The photo must already be uploaded; pass the URL the upload returned.
+   * aspectRatio is the shape it was cropped to (1, 0.8 or 1.91).
+   */
+  async create(accessToken: string, mediaUrl: string, caption: string, aspectRatio = 1) {
     return authFetch("/posts", accessToken, {
       method: "POST",
-      body: JSON.stringify({ mediaUrl, caption }),
+      body: JSON.stringify({ mediaUrl, caption, aspectRatio }),
     });
   },
 

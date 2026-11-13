@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Platform, Text, TouchableOpacity, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
-import { postApi } from "../../../api/postApi";
-import { uploadPhoto } from "../../../api/uploadPhoto";
-import { CaptionEditor } from "./CaptionEditor";
+import { NewPostSheet, type PickedPhoto } from "./NewPostSheet";
 
 const DANGER = "#B3261E";
 
@@ -34,49 +32,44 @@ export function AddPostButton({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [postId, setPostId] = useState<string | null>(null);
-  const [caption, setCaption] = useState("");
+  // The New post sheet: open with the picked photo on the web, or empty in
+  // the phone app, where the photo is picked inside it at the chosen size.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
 
   const pick = async () => {
     if (!accessToken || busy) return;
+    setError(null);
+    if (Platform.OS !== "web") {
+      setPhoto(null);
+      setSheetOpen(true);
+      return;
+    }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setError("Allow photo access to post a picture.");
       return;
     }
+    // No editing here: the size and the crop are chosen in the New post sheet.
     const picked = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.85,
+      allowsEditing: false,
+      quality: 1,
     });
-    if (picked.canceled || !picked.assets[0]) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      // Uploaded first: the server stores a URL, never the device path.
-      const url = await uploadPhoto(picked.assets[0].uri, accessToken);
-      const created = await postApi.create(accessToken, url, "");
-      onPosted?.();
-      // Straight into the caption, which is the point of posting it.
-      setPostId(created.post?.id ?? null);
-      setCaption("");
-    } catch (err: any) {
-      setError(err.message || "Could not post that photo.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveCaption = async () => {
-    if (!accessToken || !postId) return;
+    const asset = picked.canceled ? null : picked.assets[0];
+    if (!asset) return;
     setBusy(true);
     try {
-      await postApi.updateCaption(accessToken, postId, caption);
-      setPostId(null);
-      onPosted?.();
-    } catch (err: any) {
-      setError(err.message || "Could not save that.");
+      const size =
+        asset.width && asset.height
+          ? { width: asset.width, height: asset.height }
+          : await new Promise<{ width: number; height: number }>((resolve, reject) =>
+              Image.getSize(asset.uri, (width, height) => resolve({ width, height }), reject),
+            );
+      setPhoto({ uri: asset.uri, ...size });
+      setSheetOpen(true);
+    } catch {
+      setError("That photo could not be opened.");
     } finally {
       setBusy(false);
     }
@@ -123,14 +116,18 @@ export function AddPostButton({
         </Text>
       )}
 
-      <CaptionEditor
-        visible={!!postId}
-        value={caption}
-        busy={busy}
-        onChange={setCaption}
-        onCancel={() => setPostId(null)}
-        onSave={saveCaption}
-      />
+      {!!accessToken && (
+        <NewPostSheet
+          visible={sheetOpen}
+          accessToken={accessToken}
+          photo={photo}
+          onClose={() => {
+            setSheetOpen(false);
+            setPhoto(null);
+          }}
+          onPosted={onPosted}
+        />
+      )}
     </View>
   );
 }

@@ -1372,6 +1372,7 @@ export const callStyles=StyleSheet.create({
   callPulse:{position:'absolute',width:155,height:155,borderRadius:78,borderWidth:1,borderColor:'rgba(31,82,134,.45)'},
   callPulseConnected:{borderColor:'rgba(75,141,119,.72)',shadowColor:'#4B8D77',shadowOpacity:.35,shadowRadius:16},
   audioCenter:{alignItems:'center',justifyContent:'center',gap:16,paddingHorizontal:24,paddingTop:36},
+  echoTip:{fontFamily:'Mukta_500Medium',fontSize:13,lineHeight:18,color:'#D8DBDE',textAlign:'center',maxWidth:300},
   pipBoxFull:{position:'absolute',right:16,width:92,height:124,borderRadius:16,backgroundColor:'rgba(255,255,255,.10)',borderWidth:1,borderColor:'#D3D6DA',alignItems:'center',justifyContent:'center',overflow:'hidden'},
   bottomBarFull:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:18,paddingBottom:22,paddingTop:12},
   circleBtn:{width:56,height:56,borderRadius:28,alignItems:'center',justifyContent:'center',backgroundColor:'rgba(255,255,255,.16)'},

@@ -285,7 +285,9 @@ export function PostsSection({
                   )}
                   <Image
                     source={{ uri: item.media_url }}
-                    style={{ width: "100%", aspectRatio: 1, backgroundColor: LINE }}
+                    // Each post at the shape it was cropped to; the grid
+                    // above stays square, like Instagram's.
+                    style={{ width: "100%", aspectRatio: item.aspect_ratio || 1, backgroundColor: LINE }}
                     resizeMode="cover"
                   />
                   {!!item.caption && (

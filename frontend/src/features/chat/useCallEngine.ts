@@ -1,5 +1,18 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
+
+/** Turns echo cancellation back on for any mic track that came up without it. */
+export async function ensureEchoCancellation(stream: MediaStream): Promise<void> {
+  for (const track of stream.getAudioTracks()) {
+    const settings = typeof track.getSettings === "function" ? track.getSettings() : null;
+    if (!settings || settings.echoCancellation !== false) continue;
+    try {
+      await track.applyConstraints({ echoCancellation: true, noiseSuppression: true });
+    } catch {
+      // Nothing more a web page can do; the call goes on as it is.
+    }
+  }
+}
 import { callApi } from "../../api/callApi";
 
 export type CallPhase =
@@ -389,6 +402,11 @@ export function useCallEngine({
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
+      // Some phone browsers accept the echo-cancellation request above and
+      // then quietly run the mic without it. Ask the track what it is
+      // really doing, and if echo cancellation is off, ask again - without
+      // it the other person hears their own voice come back.
+      await ensureEchoCancellation(stream);
       localStreamRef.current = stream;
       setLocalStream(stream);
       setIsFrontCamera(true);

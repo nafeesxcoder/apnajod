@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
+const { cleanAspect, roundAspect } = require("../utils/postAspect");
 
 /**
  * Posts: the photos a member adds to their profile over time, with a line of
@@ -10,20 +11,22 @@ const { query } = require("../config/db");
  * about, so they are visible to other members — a post only you can see is
  * not worth writing.
  */
-async function createPost(userId, mediaUrl, caption) {
+async function createPost(userId, mediaUrl, caption, aspectRatio = 1) {
   const id = crypto.randomUUID();
+  const aspect = cleanAspect(aspectRatio);
   await query(
-    "INSERT INTO posts (id, user_id, media_url, caption) VALUES (?, ?, ?, ?)",
-    [id, userId, mediaUrl, caption || ""],
+    "INSERT INTO posts (id, user_id, media_url, caption, aspect_ratio) VALUES (?, ?, ?, ?, ?)",
+    [id, userId, mediaUrl, caption || "", aspect],
   );
-  return { id, mediaUrl, caption: caption || "" };
+  return { id, mediaUrl, caption: caption || "", aspect_ratio: aspect };
 }
 
 async function getUserPosts(userId) {
-  return query(
-    "SELECT id, media_url, caption, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC",
+  const rows = await query(
+    "SELECT id, media_url, caption, aspect_ratio, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC",
     [userId],
   );
+  return rows.map((row) => ({ ...row, aspect_ratio: roundAspect(row.aspect_ratio) }));
 }
 
 /**

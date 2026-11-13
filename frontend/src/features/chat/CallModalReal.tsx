@@ -142,6 +142,10 @@ function RTCAudioSink({
   });
 }
 
+/** "Phone" mode: a normal talking level, loud enough to hear, quiet enough
+ * that little of it leaks back into the microphone as an echo. */
+export const PHONE_VOLUME = 0.45;
+
 function CircleButton({
   icon,
   onPress,
@@ -149,7 +153,9 @@ function CircleButton({
   active,
   big,
   compact,
+  label,
 }: {
+  label?: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   danger?: boolean;
@@ -162,6 +168,7 @@ function CircleButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={[
         callStyles.circleBtn,
@@ -221,7 +228,12 @@ export function CallModal({
   // seconds into a connected video call and reappear on tap, so the video
   // itself fills the whole screen instead of sitting in a boxed preview.
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [speakerOn, setSpeakerOn] = useState(true);
+  // A voice call starts in "phone" mode - a normal, quieter level - and a
+  // video call on the loudspeaker, like WhatsApp. A web page cannot pick the
+  // earpiece (the phone's browser decides that), so phone mode is a lower
+  // volume: the other person's voice comes out softer and far less of it
+  // reaches the microphone and goes back to them as an echo.
+  const [speakerOn, setSpeakerOn] = useState(mode === "video");
   // Audio OUTPUT device for this call (speaker, earpiece, or a paired
   // Bluetooth headset). Lets someone route call audio to Bluetooth even
   // when the OS doesn't default to it for this page.
@@ -257,6 +269,8 @@ export function CallModal({
   useEffect(() => {
     setSeconds(0);
     setMinimized(false);
+    setSpeakerOn(mode === "video");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callId]);
 
   // The caller hears the same ringing tone on every call until the other
@@ -374,6 +388,11 @@ export function CallModal({
   // The call is a video call as soon as either person has a camera on, and a
   // voice call again when both are off, so the screen follows the engine.
   const kind = engine.kind;
+  // A voice call that turns into a video call moves to the loudspeaker,
+  // like WhatsApp - the phone is no longer at your ear.
+  useEffect(() => {
+    if (kind === "video") setSpeakerOn(true);
+  }, [kind]);
   const isFullScreenVideo =
     kind === "video" &&
     engine.phase !== "permission-error" &&
@@ -470,12 +489,10 @@ export function CallModal({
       : null;
 
   // There is no browser API to actually switch a phone's physical output
-  // between its loudspeaker and earpiece — that routing is controlled by
-  // the OS, not the page. 0.35 was barely audible as "off" on real
-  // devices, so this now drops it much further to make the toggle feel
-  // like it's actually doing something, while staying non-zero so the
-  // call isn't silently unusable if someone taps it by accident.
-  const remoteVolume = speakerOn || bluetoothRouted ? 1 : 0.06;
+  // between its loudspeaker and earpiece - that routing is controlled by
+  // the OS, not the page. So "speaker" is full volume and "phone" is a
+  // normal talking level (PHONE_VOLUME), still clearly audible.
+  const remoteVolume = speakerOn || bluetoothRouted ? 1 : PHONE_VOLUME;
   const showControls = controlsVisible || !isFullScreenVideo;
 
   return (
@@ -652,6 +669,13 @@ export function CallModal({
                   ]}
                 />
               </View>
+              {engine.phase === "connected" && !bluetoothAvailable && (
+                <Text style={callStyles.echoTip}>
+                  {speakerOn
+                    ? "On speaker. Hearing an echo? Use earphones or switch to phone."
+                    : "Hearing an echo? Earphones stop it completely."}
+                </Text>
+              )}
               {(engine.phase === "permission-error" ||
                 engine.phase === "unsupported") && (
                 <View style={callStyles.permissionCard}>
@@ -745,7 +769,8 @@ export function CallModal({
                 </>
               ) : (
                 <CircleButton
-                  icon={speakerOn ? "volume-high" : "volume-mute"}
+                  label={speakerOn ? "Speaker on. Switch to phone" : "Phone mode. Switch to speaker"}
+                  icon={speakerOn ? "volume-high" : "volume-low"}
                   active={speakerOn}
                   onPress={() => setSpeakerOn((value) => !value)}
                 />

@@ -2817,8 +2817,17 @@ export function ChatScreen({
             }}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
+            // Never "on-drag" on the web: react-native-web dismisses the
+            // keyboard on EVERY scroll event, not just a finger drag. Opening
+            // the keyboard shrinks the page, the message list scrolls to keep
+            // its place, and that scroll closed the keyboard again - so in any
+            // chat long enough to scroll, the keyboard would not stay up.
             keyboardDismissMode={
-              Platform.OS === "ios" ? "interactive" : "on-drag"
+              Platform.OS === "ios"
+                ? "interactive"
+                : Platform.OS === "android"
+                  ? "on-drag"
+                  : "none"
             }
             onContentSizeChange={() => {
               if (Date.now() < holdAutoScrollUntil.current) return;
