@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { Linking, Platform, Pressable, Share, Text, View } from "react-native";
+﻿import { useState } from "react";
+import { Linking, Platform, Share, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { shareApi } from "../api/shareApi";
 import { fonts, palette, radius } from "../theme";
+import { PressScale } from "./motion";
 
 /**
  * "Show my family" - makes a 7-day link to a profile and hands it to
@@ -74,29 +76,30 @@ export function FamilyShareButton({
 
   return (
     <View style={{ alignItems: "center", marginTop: 12, gap: 6 }}>
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={label}
         disabled={busy}
         onPress={() => void share()}
-        style={({ pressed }) => ({
+        style={{
           flexDirection: "row",
           alignItems: "center",
           gap: 6,
           borderRadius: radius.pill,
           borderWidth: 1,
-          borderColor: palette.emerald,
-          backgroundColor: pressed ? palette.paperSand : "transparent",
+          borderColor: palette.crimson,
+          backgroundColor: palette.paper,
           paddingHorizontal: 16,
-          paddingVertical: 9,
+          paddingVertical: 10,
+          minHeight: 44,
           opacity: busy ? 0.6 : 1,
-        })}
+        }}
       >
-        <Text style={{ fontSize: 15 }}>👨‍👩‍👧</Text>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.emerald }}>
+        <Ionicons name="people-outline" size={16} color={palette.crimson} />
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.crimson }}>
           {busy ? "Making link..." : label}
         </Text>
-      </Pressable>
+      </PressScale>
       {!!note && (
         <Text
           style={{

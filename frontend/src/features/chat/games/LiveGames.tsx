@@ -16,6 +16,8 @@ import {
   type KnowMeQuestion,
 } from "../../../api/gamesApi";
 import { fonts, palette, radius } from "../../../theme";
+import { whiteCard } from "../../../components/brand";
+import { PressScale, Reveal } from "../../../components/motion";
 
 /**
  * Games two matched people play inside their chat.
@@ -23,11 +25,36 @@ import { fonts, palette, radius } from "../../../theme";
  * The server keeps the state and the hidden answers; these screens only
  * draw what it sends and send moves back. Nothing is bet or won.
  */
-export const LIVE_GAMES: { kind: GameKind; emoji: string; title: string; blurb: string }[] = [
-  { kind: "this_or_that", emoji: "🔀", title: "This or That", blurb: "5 quick picks. See how alike you are." },
-  { kind: "know_me", emoji: "🧠", title: "How well do you know me", blurb: "Answer 5 about yourself. They guess." },
-  { kind: "would_you_rather", emoji: "🤔", title: "Would you rather", blurb: "3 big choices, revealed together." },
-  { kind: "tic_tac_toe", emoji: "⭕", title: "Tic-tac-toe", blurb: "The classic. You go first." },
+export const LIVE_GAMES: {
+  kind: GameKind;
+  emoji: string;
+  title: string;
+  blurb: string;
+}[] = [
+  {
+    kind: "this_or_that",
+    emoji: "🔀",
+    title: "This or That",
+    blurb: "5 quick picks. See how alike you are.",
+  },
+  {
+    kind: "know_me",
+    emoji: "🧠",
+    title: "How well do you know me",
+    blurb: "Answer 5 about yourself. They guess.",
+  },
+  {
+    kind: "would_you_rather",
+    emoji: "🤔",
+    title: "Would you rather",
+    blurb: "3 big choices, revealed together.",
+  },
+  {
+    kind: "tic_tac_toe",
+    emoji: "⏳",
+    title: "Tic-tac-toe",
+    blurb: "The classic. You go first.",
+  },
 ];
 
 const POLL_MS = 2500;
@@ -49,7 +76,12 @@ function Sheet({
   const { width, height } = useWindowDimensions();
   const centred = width >= 700;
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <Pressable
         accessibilityLabel="Close"
         onPress={onClose}
@@ -84,14 +116,28 @@ function Sheet({
               paddingBottom: 8,
             }}
           >
-            <Text style={{ fontFamily: fonts.display, fontSize: 20, color: palette.ink, flex: 1 }}>
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: 20,
+                color: palette.ink,
+                flex: 1,
+              }}
+            >
               {title}
             </Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              onPress={onClose}
+              hitSlop={10}
+            >
               <Ionicons name="close" size={22} color={palette.slate} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 8, gap: 12 }}>
+          <ScrollView
+            contentContainerStyle={{ padding: 20, paddingTop: 8, gap: 12 }}
+          >
             {children}
           </ScrollView>
         </Pressable>
@@ -119,7 +165,7 @@ function PrimaryButton({
       disabled={off}
       onPress={onPress}
       style={{
-        backgroundColor: off ? palette.rule : palette.navy,
+        backgroundColor: off ? palette.rule : palette.crimson,
         borderRadius: radius.pill,
         paddingVertical: 13,
         alignItems: "center",
@@ -127,10 +173,15 @@ function PrimaryButton({
         justifyContent: "center",
         gap: 8,
         marginTop: 4,
+        minHeight: 44,
       }}
     >
       {busy && <ActivityIndicator color="#FFFFFF" size="small" />}
-      <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}>{label}</Text>
+      <Text
+        style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -147,8 +198,15 @@ function Choice({
   /** Result colouring: right / wrong / neutral. */
   tone?: "right" | "wrong";
 }) {
-  const border = tone === "right" ? palette.emerald : tone === "wrong" ? palette.crimson : selected ? palette.navy : palette.rule;
-  const background = selected ? palette.paperCool : palette.paper;
+  const border =
+    tone === "right"
+      ? palette.emerald
+      : tone === "wrong"
+        ? palette.crimson
+        : selected
+          ? palette.navy
+          : palette.rule;
+  const background = selected ? palette.crimsonTint : palette.paper;
   return (
     <Pressable
       accessibilityRole="button"
@@ -185,7 +243,14 @@ function Choice({
 
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate, textAlign: "center" }}>
+    <Text
+      style={{
+        fontFamily: fonts.body,
+        fontSize: 14,
+        color: palette.slate,
+        textAlign: "center",
+      }}
+    >
       {children}
     </Text>
   );
@@ -193,34 +258,65 @@ function Note({ children }: { children: React.ReactNode }) {
 
 /* ---------------- picker section (inside the Games sheet) ---------------- */
 
-export function LiveGamesSection({ onPick }: { onPick: (kind: GameKind) => void }) {
+export function LiveGamesSection({
+  onPick,
+}: {
+  onPick: (kind: GameKind) => void;
+}) {
   return (
     <View style={{ gap: 8, marginBottom: 12 }}>
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.slate, letterSpacing: 0.4 }}>
+      <Text
+        style={{
+          fontFamily: fonts.bodySemi,
+          fontSize: 13,
+          color: palette.slate,
+          letterSpacing: 0.4,
+        }}
+      >
         PLAY TOGETHER
       </Text>
-      {LIVE_GAMES.map((game) => (
-        <Pressable
-          key={game.kind}
-          accessibilityRole="button"
-          accessibilityLabel={`Play ${game.title}`}
-          onPress={() => onPick(game.kind)}
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            padding: 12,
-            borderRadius: radius.md,
-            backgroundColor: pressed ? palette.paperCool : palette.paperSand,
-          })}
-        >
-          <Text style={{ fontSize: 26 }}>{game.emoji}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{game.title}</Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{game.blurb}</Text>
-          </View>
-          <Ionicons name="play-circle" size={24} color={palette.navy} />
-        </Pressable>
+      {LIVE_GAMES.map((game, idx) => (
+        <Reveal key={game.kind} delay={idx * 60}>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={`Play ${game.title}`}
+            onPress={() => onPick(game.kind)}
+            style={[
+              whiteCard,
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                padding: 12,
+                borderRadius: radius.md,
+                minHeight: 60,
+              },
+            ]}
+          >
+            <Text style={{ fontSize: 26 }}>{game.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 15,
+                  color: palette.ink,
+                }}
+              >
+                {game.title}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  color: palette.slate,
+                }}
+              >
+                {game.blurb}
+              </Text>
+            </View>
+            <Ionicons name="play-circle" size={24} color={palette.crimson} />
+          </PressScale>
+        </Reveal>
       ))}
       <Text
         style={{
@@ -244,7 +340,13 @@ export function LiveGameCard({
   mine,
   onOpen,
 }: {
-  game: { id: string; kind: string; title: string; emoji: string; result: string | null };
+  game: {
+    id: string;
+    kind: string;
+    title: string;
+    emoji: string;
+    result: string | null;
+  };
   mine: boolean;
   onOpen?: () => void;
 }) {
@@ -253,19 +355,34 @@ export function LiveGameCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={game.result ? `${game.title} result: ${game.result}` : `Open ${game.title}`}
+      accessibilityLabel={
+        game.result
+          ? `${game.title} result: ${game.result}`
+          : `Open ${game.title}`
+      }
       onPress={onOpen}
       disabled={!onOpen}
       style={{ minWidth: 200, gap: 6, paddingVertical: 2 }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Text style={{ fontSize: 24 }}>{game.emoji}</Text>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: ink, flexShrink: 1 }}>
+        <Text
+          style={{
+            fontFamily: fonts.bodySemi,
+            fontSize: 15,
+            color: ink,
+            flexShrink: 1,
+          }}
+        >
           {game.title}
         </Text>
       </View>
       <Text style={{ fontFamily: fonts.body, fontSize: 14, color: ink }}>
-        {game.result ? game.result : mine ? "You started a game" : "Wants to play with you!"}
+        {game.result
+          ? game.result
+          : mine
+            ? "You started a game"
+            : "Wants to play with you!"}
       </Text>
       {!!onOpen && (
         <View
@@ -274,15 +391,27 @@ export function LiveGameCard({
             borderRadius: radius.pill,
             paddingHorizontal: 12,
             paddingVertical: 5,
-            backgroundColor: mine ? "rgba(255,255,255,0.18)" : palette.paperSand,
+            backgroundColor: mine
+              ? "rgba(255,255,255,0.18)"
+              : palette.crimsonTint,
           }}
         >
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: mine ? "#FFFFFF" : palette.navy }}>
+          <Text
+            style={{
+              fontFamily: fonts.bodySemi,
+              fontSize: 13,
+              color: mine ? "#FFFFFF" : palette.crimson,
+            }}
+          >
             {game.result ? "See answers" : "Open game"}
           </Text>
         </View>
       )}
-      {!onOpen && <Text style={{ fontSize: 12, color: soft }}>Open on the app to play</Text>}
+      {!onOpen && (
+        <Text style={{ fontSize: 12, color: soft }}>
+          Open on the app to play
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -319,20 +448,30 @@ export function KnowMeSetupSheet({
         setQuestions(qs);
         setAnswers(qs.map(() => null));
       })
-      .catch((e) => live && setError(e instanceof Error ? e.message : "Could not load questions."));
+      .catch(
+        (e) =>
+          live &&
+          setError(
+            e instanceof Error ? e.message : "Could not load questions.",
+          ),
+      );
     return () => {
       live = false;
     };
   }, [visible, accessToken]);
 
-  const ready = !!questions && answers.length > 0 && answers.every((a) => a !== null);
+  const ready =
+    !!questions && answers.length > 0 && answers.every((a) => a !== null);
 
   const start = async () => {
     if (!questions || !ready) return;
     setBusy(true);
     setError("");
     try {
-      await onStart({ questions: questions.map((q) => q.index), answers: answers as number[] });
+      await onStart({
+        questions: questions.map((q) => q.index),
+        answers: answers as number[],
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the game.");
     } finally {
@@ -342,11 +481,19 @@ export function KnowMeSetupSheet({
 
   return (
     <Sheet visible={visible} title="🧠 About you first" onClose={onClose}>
-      <Note>Answer honestly. {partnerName} will try to guess your answers.</Note>
+      <Note>
+        Answer honestly. {partnerName} will try to guess your answers.
+      </Note>
       {!questions && !error && <ActivityIndicator color={palette.navy} />}
       {questions?.map((question, qi) => (
         <View key={question.index} style={{ gap: 8 }}>
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
+          <Text
+            style={{
+              fontFamily: fonts.bodySemi,
+              fontSize: 15,
+              color: palette.ink,
+            }}
+          >
             {qi + 1}. {question.q}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -355,14 +502,22 @@ export function KnowMeSetupSheet({
                 <Choice
                   label={option}
                   selected={answers[qi] === oi}
-                  onPress={() => setAnswers((current) => current.map((a, i) => (i === qi ? oi : a)))}
+                  onPress={() =>
+                    setAnswers((current) =>
+                      current.map((a, i) => (i === qi ? oi : a)),
+                    )
+                  }
                 />
               </View>
             ))}
           </View>
         </View>
       ))}
-      {!!error && <Text style={{ color: palette.crimson, textAlign: "center" }}>{error}</Text>}
+      {!!error && (
+        <Text style={{ color: palette.crimson, textAlign: "center" }}>
+          {error}
+        </Text>
+      )}
       {!!questions && (
         <PrimaryButton
           label={`Send to ${partnerName}`}
@@ -395,12 +550,38 @@ function PickGame({
     const ready = picks.every((p) => p !== null);
     return (
       <>
-        <Note>Pick one from each. {partnerName} won't see your answers until they answer too.</Note>
+        <Note>
+          Pick one from each. {partnerName} won't see your answers until they
+          answer too.
+        </Note>
         {pairs.map((pair, i) => (
-          <View key={pair.join("|")} style={{ flexDirection: "row", gap: 8, alignItems: "stretch" }}>
-            <Choice label={pair[0]} selected={picks[i] === 0} onPress={() => setPicks((c) => c.map((p, j) => (j === i ? 0 : p)))} />
-            <Text style={{ alignSelf: "center", color: palette.slate, fontFamily: fonts.bodySemi }}>or</Text>
-            <Choice label={pair[1]} selected={picks[i] === 1} onPress={() => setPicks((c) => c.map((p, j) => (j === i ? 1 : p)))} />
+          <View
+            key={pair.join("|")}
+            style={{ flexDirection: "row", gap: 8, alignItems: "stretch" }}
+          >
+            <Choice
+              label={pair[0]}
+              selected={picks[i] === 0}
+              onPress={() =>
+                setPicks((c) => c.map((p, j) => (j === i ? 0 : p)))
+              }
+            />
+            <Text
+              style={{
+                alignSelf: "center",
+                color: palette.slate,
+                fontFamily: fonts.bodySemi,
+              }}
+            >
+              or
+            </Text>
+            <Choice
+              label={pair[1]}
+              selected={picks[i] === 1}
+              onPress={() =>
+                setPicks((c) => c.map((p, j) => (j === i ? 1 : p)))
+              }
+            />
           </View>
         ))}
         <PrimaryButton
@@ -424,7 +605,10 @@ function PickGame({
     return (
       <>
         <Note>Your answers are locked in 🔒</Note>
-        <Note>Waiting for {partnerName} to answer. Results show up here and in the chat.</Note>
+        <Note>
+          Waiting for {partnerName} to answer. Results show up here and in the
+          chat.
+        </Note>
         <ActivityIndicator color={palette.navy} />
       </>
     );
@@ -432,8 +616,16 @@ function PickGame({
 
   return (
     <>
-      <Text style={{ fontFamily: fonts.display, fontSize: 22, textAlign: "center", color: palette.ink }}>
-        {game.matches}/{pairs.length} the same {game.matches === pairs.length ? "🎉" : ""}
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: 22,
+          textAlign: "center",
+          color: palette.ink,
+        }}
+      >
+        {game.matches}/{pairs.length} the same{" "}
+        {game.matches === pairs.length ? "🎉" : ""}
       </Text>
       {pairs.map((pair, i) => {
         const same = game.myPicks?.[i] === game.partnerPicks?.[i];
@@ -442,7 +634,7 @@ function PickGame({
             key={pair.join("|")}
             style={{
               borderRadius: radius.md,
-              backgroundColor: same ? "#E6F4EE" : palette.paperSand,
+              backgroundColor: same ? "#E6F4EE" : palette.crimsonTint,
               padding: 12,
               gap: 4,
             }}
@@ -451,8 +643,15 @@ function PickGame({
               {same ? "✅ " : ""}
               {pair[0]} or {pair[1]}
             </Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
-              You: {pair[game.myPicks?.[i] ?? 0]} · {partnerName}: {pair[game.partnerPicks?.[i] ?? 0]}
+            <Text
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 13,
+                color: palette.slate,
+              }}
+            >
+              You: {pair[game.myPicks?.[i] ?? 0]} · {partnerName}:{" "}
+              {pair[game.partnerPicks?.[i] ?? 0]}
             </Text>
           </View>
         );
@@ -471,7 +670,9 @@ function KnowMeGame({
   onPlay: (move: { guesses: number[] }) => Promise<void>;
 }) {
   const questions = game.questions ?? [];
-  const [guesses, setGuesses] = useState<(number | null)[]>(questions.map(() => null));
+  const [guesses, setGuesses] = useState<(number | null)[]>(
+    questions.map(() => null),
+  );
   const [busy, setBusy] = useState(false);
   const done = game.status === "done";
 
@@ -482,8 +683,19 @@ function KnowMeGame({
         <Note>How well do you know {partnerName}? Guess their answers.</Note>
         {questions.map((question, qi) => (
           <View key={question.q} style={{ gap: 8 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
-              {qi + 1}. {question.q.replace(/\bMy\b/g, "Their").replace(/\bmy\b/g, "their").replace(/\bAm I\b/g, "Are they").replace(/\bI\b/g, "they")}
+            <Text
+              style={{
+                fontFamily: fonts.bodySemi,
+                fontSize: 15,
+                color: palette.ink,
+              }}
+            >
+              {qi + 1}.{" "}
+              {question.q
+                .replace(/\bMy\b/g, "Their")
+                .replace(/\bmy\b/g, "their")
+                .replace(/\bAm I\b/g, "Are they")
+                .replace(/\bI\b/g, "they")}
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {question.options.map((option, oi) => (
@@ -491,7 +703,9 @@ function KnowMeGame({
                   <Choice
                     label={option}
                     selected={guesses[qi] === oi}
-                    onPress={() => setGuesses((c) => c.map((g, i) => (i === qi ? oi : g)))}
+                    onPress={() =>
+                      setGuesses((c) => c.map((g, i) => (i === qi ? oi : g)))
+                    }
                   />
                 </View>
               ))}
@@ -520,8 +734,14 @@ function KnowMeGame({
       <>
         <Note>Your answers are in 🔒 Waiting for {partnerName} to guess.</Note>
         {questions.map((question, qi) => (
-          <Text key={question.q} style={{ fontFamily: fonts.body, color: palette.ink }}>
-            {question.q} <Text style={{ fontFamily: fonts.bodySemi }}>{question.options[game.truth?.[qi] ?? 0]}</Text>
+          <Text
+            key={question.q}
+            style={{ fontFamily: fonts.body, color: palette.ink }}
+          >
+            {question.q}{" "}
+            <Text style={{ fontFamily: fonts.bodySemi }}>
+              {question.options[game.truth?.[qi] ?? 0]}
+            </Text>
           </Text>
         ))}
         <ActivityIndicator color={palette.navy} />
@@ -531,17 +751,33 @@ function KnowMeGame({
 
   return (
     <>
-      <Text style={{ fontFamily: fonts.display, fontSize: 22, textAlign: "center", color: palette.ink }}>
-        {game.role === "guesser" ? "You" : partnerName} got {game.score}/{questions.length} right
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: 22,
+          textAlign: "center",
+          color: palette.ink,
+        }}
+      >
+        {game.role === "guesser" ? "You" : partnerName} got {game.score}/
+        {questions.length} right
       </Text>
       {questions.map((question, qi) => {
         const right = game.guesses?.[qi] === game.truth?.[qi];
         return (
           <View key={question.q} style={{ gap: 6 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, color: palette.ink }}>{question.q}</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, color: palette.ink }}>
+              {question.q}
+            </Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <Choice label={`Answer: ${question.options[game.truth?.[qi] ?? 0]}`} tone="right" />
-              <Choice label={`Guess: ${question.options[game.guesses?.[qi] ?? 0]}`} tone={right ? "right" : "wrong"} />
+              <Choice
+                label={`Answer: ${question.options[game.truth?.[qi] ?? 0]}`}
+                tone="right"
+              />
+              <Choice
+                label={`Guess: ${question.options[game.guesses?.[qi] ?? 0]}`}
+                tone={right ? "right" : "wrong"}
+              />
             </View>
           </View>
         );
@@ -564,18 +800,31 @@ function TicTacToe({
   const status = game.winner
     ? game.winner === "draw"
       ? "It's a draw 🤝"
-      : game.youWon
-        ? "You won! 🏆"
-        : `${partnerName} won this one 😄`
+      : `${partnerName} won this one 😄`
     : game.yourTurn
       ? `Your turn - you are ${game.mySymbol}`
       : `${partnerName}'s turn...`;
   return (
     <>
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, textAlign: "center", color: palette.ink }}>
+      <Text
+        style={{
+          fontFamily: fonts.bodySemi,
+          fontSize: 16,
+          textAlign: "center",
+          color: palette.ink,
+        }}
+      >
         {status}
       </Text>
-      <View style={{ alignSelf: "center", width: 264, flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+      <View
+        style={{
+          alignSelf: "center",
+          width: 264,
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 6,
+        }}
+      >
         {board.map((cell, i) => {
           const winning = !!game.line?.includes(i);
           const canTap = !!game.yourTurn && !cell && !busy;
@@ -583,7 +832,9 @@ function TicTacToe({
             <Pressable
               key={i}
               accessibilityRole="button"
-              accessibilityLabel={cell ? `Square ${i + 1}, ${cell}` : `Square ${i + 1}, empty`}
+              accessibilityLabel={
+                cell ? `Square ${i + 1}, ${cell}` : `Square ${i + 1}, empty`
+              }
               disabled={!canTap}
               onPress={async () => {
                 setBusy(true);
@@ -597,7 +848,13 @@ function TicTacToe({
                 width: 84,
                 height: 84,
                 borderRadius: radius.md,
-                backgroundColor: winning ? "#E6F4EE" : canTap ? palette.paperSand : palette.paperCool,
+                backgroundColor: winning
+                  ? "#E6F4EE"
+                  : canTap
+                    ? palette.crimsonTint
+                    : palette.paper,
+                borderWidth: 1,
+                borderColor: palette.rule,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -615,7 +872,9 @@ function TicTacToe({
           );
         })}
       </View>
-      {!game.winner && !game.yourTurn && <ActivityIndicator color={palette.navy} />}
+      {!game.winner && !game.yourTurn && (
+        <ActivityIndicator color={palette.navy} />
+      )}
     </>
   );
 }
@@ -659,7 +918,8 @@ export function GamePlaySheet({
     !!game &&
     game.status === "active" &&
     ((game.kind === "tic_tac_toe" && !game.yourTurn) ||
-      ((game.kind === "this_or_that" || game.kind === "would_you_rather") && !!game.myPicks) ||
+      ((game.kind === "this_or_that" || game.kind === "would_you_rather") &&
+        !!game.myPicks) ||
       (game.kind === "know_me" && game.role === "subject"));
 
   useEffect(() => {
@@ -668,13 +928,19 @@ export function GamePlaySheet({
     return () => clearInterval(timer);
   }, [gameId, waiting, refresh]);
 
-  const play = async (move: { picks?: number[]; guesses?: number[]; cell?: number }) => {
+  const play = async (move: {
+    picks?: number[];
+    guesses?: number[];
+    cell?: number;
+  }) => {
     if (!gameId) return;
     try {
       setGame(await gamesApi.play(accessToken, gameId, move));
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "That move did not go through.");
+      setError(
+        e instanceof Error ? e.message : "That move did not go through.",
+      );
       void refresh();
     }
   };
@@ -683,16 +949,31 @@ export function GamePlaySheet({
   return (
     <Sheet visible={!!gameId} title={title} onClose={onClose}>
       {!game && !error && <ActivityIndicator color={palette.navy} />}
-      {!!game && (game.kind === "this_or_that" || game.kind === "would_you_rather") && (
-        <PickGame key={game.id} game={game} partnerName={partnerName} onPlay={play} />
-      )}
+      {!!game &&
+        (game.kind === "this_or_that" || game.kind === "would_you_rather") && (
+          <PickGame
+            key={game.id}
+            game={game}
+            partnerName={partnerName}
+            onPlay={play}
+          />
+        )}
       {!!game && game.kind === "know_me" && (
-        <KnowMeGame key={game.id} game={game} partnerName={partnerName} onPlay={play} />
+        <KnowMeGame
+          key={game.id}
+          game={game}
+          partnerName={partnerName}
+          onPlay={play}
+        />
       )}
       {!!game && game.kind === "tic_tac_toe" && (
         <TicTacToe game={game} partnerName={partnerName} onPlay={play} />
       )}
-      {!!error && <Text style={{ color: palette.crimson, textAlign: "center" }}>{error}</Text>}
+      {!!error && (
+        <Text style={{ color: palette.crimson, textAlign: "center" }}>
+          {error}
+        </Text>
+      )}
     </Sheet>
   );
 }

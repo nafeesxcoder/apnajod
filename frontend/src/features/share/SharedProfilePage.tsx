@@ -9,9 +9,12 @@ import {
   Text,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { shareApi, type SharedProfileView } from "../../api/shareApi";
 import { intentBadges } from "../../domain/intentBadges";
 import { palette, radius } from "../../theme";
+import { brand, whiteCard } from "../../components/brand";
+import { GlowPulse, PressScale } from "../../components/motion";
 
 /**
  * What family sees when they open a "show my family" link.
@@ -42,7 +45,10 @@ export function SharedProfilePage({ token }: { token: string }) {
         if (live) setData(result);
       })
       .catch((e) => {
-        if (live) setError(e instanceof Error ? e.message : "This link is not available.");
+        if (live)
+          setError(
+            e instanceof Error ? e.message : "This link is not available.",
+          );
       });
     return () => {
       live = false;
@@ -60,7 +66,11 @@ export function SharedProfilePage({ token }: { token: string }) {
   const shell = (children: React.ReactNode) => (
     <ScrollView
       style={{ flex: 1, backgroundColor: palette.paperBase }}
-      contentContainerStyle={{ alignItems: "center", padding: 16, paddingBottom: 48 }}
+      contentContainerStyle={{
+        alignItems: "center",
+        padding: 16,
+        paddingBottom: 48,
+      }}
     >
       <View style={{ width: "100%", maxWidth: 480, gap: 16 }}>
         <Text
@@ -81,23 +91,35 @@ export function SharedProfilePage({ token }: { token: string }) {
 
   if (error) {
     return shell(
-      <View style={{ alignItems: "center", gap: 12, padding: 24 }}>
-        <Text style={{ fontSize: 40 }}>🔗</Text>
-        <Text style={{ fontSize: 17, fontWeight: "600", color: palette.ink, textAlign: "center" }}>
+      <View style={[whiteCard, { alignItems: "center", gap: 12, padding: 24 }]}>
+        <Ionicons name="link-outline" size={40} color={palette.navy} />
+        <Text
+          style={{
+            fontSize: 17,
+            fontWeight: "600",
+            color: palette.ink,
+            textAlign: "center",
+          }}
+        >
           {error}
         </Text>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
+          accessibilityLabel="Go to Apnajoda"
           onPress={home}
           style={{
-            backgroundColor: palette.navy,
+            backgroundColor: palette.crimson,
             borderRadius: radius.pill,
             paddingHorizontal: 20,
             paddingVertical: 12,
+            minHeight: 44,
+            justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Go to Apnajoda</Text>
-        </Pressable>
+          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+            Go to Apnajoda
+          </Text>
+        </PressScale>
       </View>,
     );
   }
@@ -123,26 +145,37 @@ export function SharedProfilePage({ token }: { token: string }) {
       </Text>
 
       <View
-        style={{
-          backgroundColor: palette.paper,
-          borderRadius: radius.xl,
-          overflow: "hidden",
-          borderWidth: 1,
-          borderColor: palette.rule,
-        }}
+        style={[whiteCard, { borderRadius: radius.xl, overflow: "hidden" }]}
       >
         {photos.length > 0 ? (
           <Image
             accessibilityLabel={`${p.firstName}'s photo`}
             source={{ uri: photos[photo] }}
-            style={{ width: "100%", aspectRatio: 4 / 5, backgroundColor: palette.paperSand }}
+            style={{
+              width: "100%",
+              aspectRatio: 4 / 5,
+              backgroundColor: palette.crimsonTint,
+            }}
             resizeMode="cover"
           />
         ) : (
-          <View style={{ width: "100%", aspectRatio: 4 / 5, backgroundColor: palette.paperSand }} />
+          <View
+            style={{
+              width: "100%",
+              aspectRatio: 4 / 5,
+              backgroundColor: palette.crimsonTint,
+            }}
+          />
         )}
         {photos.length > 1 && (
-          <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, padding: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 8,
+              padding: 10,
+            }}
+          >
             {photos.map((url, index) => (
               <Pressable
                 key={url}
@@ -157,7 +190,8 @@ export function SharedProfilePage({ token }: { token: string }) {
                     height: 52,
                     borderRadius: 10,
                     borderWidth: 2,
-                    borderColor: index === photo ? palette.navy : "transparent",
+                    borderColor:
+                      index === photo ? palette.crimson : "transparent",
                   }}
                 />
               </Pressable>
@@ -166,23 +200,54 @@ export function SharedProfilePage({ token }: { token: string }) {
         )}
 
         <View style={{ padding: 18, gap: 8 }}>
-          <Text style={{ fontSize: 24, fontWeight: "700", color: palette.ink }}>
-            {p.firstName}
-            {p.age ? `, ${p.age}` : ""}
-            {p.verified ? "  ✅" : ""}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text
+              style={{ fontSize: 24, fontWeight: "700", color: palette.ink }}
+            >
+              {p.firstName}
+              {p.age ? `, ${p.age}` : ""}
+            </Text>
+            {p.verified && (
+              <View
+                accessibilityLabel="Verified"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: "#1DA1F2",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
           {!!(p.city || p.profession) && (
             <Text style={{ fontSize: 15, color: palette.slate }}>
               {[p.city, p.profession].filter(Boolean).join("  ·  ")}
             </Text>
           )}
           {p.verified && (
-            <Text style={{ fontSize: 13, color: palette.emerald, fontWeight: "600" }}>
+            <Text
+              style={{
+                fontSize: 13,
+                color: palette.emerald,
+                fontWeight: "600",
+              }}
+            >
               Selfie verified by Apnajoda
             </Text>
           )}
           {badges.length > 0 && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 6,
+                marginTop: 4,
+              }}
+            >
               {badges.map((badge) => (
                 <View
                   key={badge.key}
@@ -190,10 +255,16 @@ export function SharedProfilePage({ token }: { token: string }) {
                     borderRadius: radius.pill,
                     paddingHorizontal: 10,
                     paddingVertical: 4,
-                    backgroundColor: palette.paperSand,
+                    backgroundColor: brand.pillBg,
                   }}
                 >
-                  <Text style={{ fontSize: 13, color: palette.ink, fontWeight: "600" }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: brand.pillText,
+                      fontWeight: "600",
+                    }}
+                  >
                     {badge.label}
                   </Text>
                 </View>
@@ -201,7 +272,14 @@ export function SharedProfilePage({ token }: { token: string }) {
             </View>
           )}
           {!!p.about && (
-            <Text style={{ fontSize: 15, lineHeight: 22, color: palette.ink, marginTop: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                lineHeight: 22,
+                color: palette.ink,
+                marginTop: 6,
+              }}
+            >
               {p.about}
             </Text>
           )}
@@ -209,23 +287,30 @@ export function SharedProfilePage({ token }: { token: string }) {
       </View>
 
       <Text style={{ textAlign: "center", fontSize: 12, color: palette.slate }}>
-        This private link stops working on {formatDate(data.expiresAt)}. Please do not
-        forward it outside your family.
+        This private link stops working on {formatDate(data.expiresAt)}. Please
+        do not forward it outside your family.
       </Text>
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
+        accessibilityLabel="Find your match on Apnajoda"
         onPress={home}
         style={{
           alignSelf: "center",
-          backgroundColor: palette.navy,
+          backgroundColor: palette.crimson,
           borderRadius: radius.pill,
           paddingHorizontal: 22,
           paddingVertical: 12,
+          minHeight: 44,
+          justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Find your match on Apnajoda</Text>
-      </Pressable>
+        <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.12} />
+        <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+          Find your match on Apnajoda
+        </Text>
+      </PressScale>
     </>,
   );
 }

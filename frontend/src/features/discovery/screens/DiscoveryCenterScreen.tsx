@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ScrollView,
   Text,
@@ -11,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { fonts, palette, radius, typeScale } from "../../../theme";
+import { whiteCard } from "../../../components/brand";
+import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
 import type { MatchFilters } from "../../../storage";
 
 const MAX_WIDTH = 720;
@@ -290,8 +292,6 @@ export function DiscoveryCenterScreen({
               width: "100%",
               maxWidth: MAX_WIDTH,
               alignSelf: "center",
-              backgroundColor: palette.paper,
-              borderRadius: radius.xl,
               paddingHorizontal: SIDE_PADDING,
               paddingVertical: 20,
             }}
@@ -305,19 +305,24 @@ export function DiscoveryCenterScreen({
                 marginBottom: 20,
               }}
             >
-              <TouchableOpacity
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                hitSlop={12}
                 onPress={onBack}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: palette.paperSand,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: palette.paper,
+                  borderWidth: 1,
+                  borderColor: palette.rule,
                   justifyContent: "center",
                   alignItems: "center",
                 }}
               >
                 <Ionicons name="arrow-back" size={18} color={palette.ink} />
-              </TouchableOpacity>
+              </PressScale>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -341,234 +346,260 @@ export function DiscoveryCenterScreen({
               </View>
             </View>
 
-            <SectionHeader
-              title="Looking for"
-              subtitle="Who do you want to meet?"
-            />
-            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-              <Chip
-                icon="woman-outline"
-                label="Women"
-                active={filters.lookingFor === "Women"}
-                onPress={() => updateFilter("lookingFor", "Women")}
+            <Reveal delay={0}>
+              <SectionHeader
+                title="Looking for"
+                subtitle="Who do you want to meet?"
               />
-              <Chip
-                icon="man-outline"
-                label="Men"
-                active={filters.lookingFor === "Men"}
-                onPress={() => updateFilter("lookingFor", "Men")}
-              />
-              <Chip
-                icon="people-outline"
-                label="Everyone"
-                active={filters.lookingFor === "Everyone"}
-                onPress={() => updateFilter("lookingFor", "Everyone")}
-              />
-            </View>
-
-            <SectionHeader
-              title="Age range"
-              subtitle="Choose your preferred age"
-            />
-            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-              {AGE_OPTIONS.map((option) => (
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                 <Chip
-                  key={option.label}
-                  icon="calendar-outline"
-                  label={option.label}
-                  active={
-                    filters.minAge === option.min &&
-                    filters.maxAge === option.max
-                  }
-                  onPress={() => {
-                    updateFilter("minAge", option.min);
-                    updateFilter("maxAge", option.max);
-                  }}
+                  icon="woman-outline"
+                  label="Women"
+                  active={filters.lookingFor === "Women"}
+                  onPress={() => updateFilter("lookingFor", "Women")}
                 />
-              ))}
-            </View>
-
-            <SectionHeader title="City" subtitle="Where should they be from?" />
-            <View style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <TextInput
-                  value={cityInput}
-                  onChangeText={(text) => {
-                    setCityInput(text);
-                    setShowSuggestions(true);
-                  }}
-                  placeholder="Search city..."
-                  style={{
-                    flex: 1,
-                    backgroundColor: palette.paperSand,
-                    borderWidth: 1,
-                    borderColor: palette.rule,
-                    borderRadius: radius.md,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    fontSize: 14,
-                    fontFamily: fonts.body,
-                    color: palette.ink,
-                    outlineStyle: "none" as any,
-                  }}
-                  placeholderTextColor={palette.navySoft}
-                  onFocus={() => setShowSuggestions(true)}
+                <Chip
+                  icon="man-outline"
+                  label="Men"
+                  active={filters.lookingFor === "Men"}
+                  onPress={() => updateFilter("lookingFor", "Men")}
                 />
-                <TouchableOpacity
-                  onPress={() => {
-                    if (cityInput.trim()) addCity(cityInput.trim());
-                  }}
-                  style={{
-                    backgroundColor: palette.navy,
-                    paddingHorizontal: 20,
-                    justifyContent: "center",
-                    borderRadius: radius.md,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 14,
-                    }}
-                  >
-                    Add
-                  </Text>
-                </TouchableOpacity>
+                <Chip
+                  icon="people-outline"
+                  label="Everyone"
+                  active={filters.lookingFor === "Everyone"}
+                  onPress={() => updateFilter("lookingFor", "Everyone")}
+                />
               </View>
+            </Reveal>
 
-              {showSuggestions &&
-                cityInput.length > 0 &&
-                filteredCities.length > 0 && (
-                  <View
+            <Reveal delay={80}>
+              <SectionHeader
+                title="Age range"
+                subtitle="Choose your preferred age"
+              />
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {AGE_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.label}
+                    icon="calendar-outline"
+                    label={option.label}
+                    active={
+                      filters.minAge === option.min &&
+                      filters.maxAge === option.max
+                    }
+                    onPress={() => {
+                      updateFilter("minAge", option.min);
+                      updateFilter("maxAge", option.max);
+                    }}
+                  />
+                ))}
+              </View>
+            </Reveal>
+
+            <Reveal delay={160}>
+              <SectionHeader
+                title="City"
+                subtitle="Where should they be from?"
+              />
+              <View style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TextInput
+                    value={cityInput}
+                    onChangeText={(text) => {
+                      setCityInput(text);
+                      setShowSuggestions(true);
+                    }}
+                    placeholder="Search city..."
                     style={{
-                      marginTop: 8,
-                      backgroundColor: palette.paper,
-                      borderRadius: radius.md,
+                      flex: 1,
+                      backgroundColor: palette.paperSand,
                       borderWidth: 1,
                       borderColor: palette.rule,
-                      overflow: "hidden",
+                      borderRadius: radius.md,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      fontSize: 14,
+                      fontFamily: fonts.body,
+                      color: palette.ink,
+                      outlineStyle: "none" as any,
+                    }}
+                    placeholderTextColor={palette.navySoft}
+                    onFocus={() => setShowSuggestions(true)}
+                  />
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel="Add city"
+                    onPress={() => {
+                      if (cityInput.trim()) addCity(cityInput.trim());
+                    }}
+                    style={{
+                      backgroundColor: palette.crimson,
+                      paddingHorizontal: 20,
+                      justifyContent: "center",
+                      borderRadius: radius.md,
+                      minHeight: 44,
                     }}
                   >
-                    {filteredCities.map((city) => (
-                      <TouchableOpacity
-                        key={city}
-                        onPress={() => addCity(city)}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          paddingHorizontal: 16,
-                          paddingVertical: 12,
-                          borderBottomWidth: 1,
-                          borderBottomColor: palette.rule,
-                        }}
-                      >
-                        <Ionicons
-                          name="location-outline"
-                          size={16}
-                          color={palette.navy}
-                          style={{ marginRight: 8 }}
-                        />
-                        <Text
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 14,
+                      }}
+                    >
+                      Add
+                    </Text>
+                  </PressScale>
+                </View>
+
+                {showSuggestions &&
+                  cityInput.length > 0 &&
+                  filteredCities.length > 0 && (
+                    <View
+                      style={[
+                        whiteCard,
+                        {
+                          marginTop: 8,
+                          borderRadius: radius.md,
+                          overflow: "hidden",
+                        },
+                      ]}
+                    >
+                      {filteredCities.map((city) => (
+                        <TouchableOpacity
+                          key={city}
+                          onPress={() => addCity(city)}
                           style={{
-                            fontSize: 14,
-                            fontFamily: fonts.body,
-                            color: palette.ink,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingHorizontal: 16,
+                            paddingVertical: 12,
+                            borderBottomWidth: 1,
+                            borderBottomColor: palette.rule,
                           }}
                         >
-                          {city}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-            </View>
+                          <Ionicons
+                            name="location-outline"
+                            size={16}
+                            color={palette.crimson}
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontFamily: fonts.body,
+                              color: palette.ink,
+                            }}
+                          >
+                            {city}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+              </View>
+            </Reveal>
 
-            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-              {filters.cities.map((city) => (
-                <View
-                  key={city}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: palette.paperSand,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: radius.pill,
-                    marginRight: 8,
-                    marginBottom: 8,
-                  }}
-                >
+            <Reveal delay={240}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {filters.cities.map((city) => (
+                  <View
+                    key={city}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: palette.crimsonTint,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: radius.pill,
+                      marginRight: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontFamily: fonts.bodySemi,
+                        color: palette.crimson,
+                        marginRight: 6,
+                      }}
+                    >
+                      {city}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeCity(city)}>
+                      <Ionicons
+                        name="close-circle"
+                        size={16}
+                        color={palette.crimson}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {filters.cities.length === 0 && (
                   <Text
                     style={{
                       fontSize: 13,
-                      fontFamily: fonts.bodySemi,
-                      color: palette.ink,
-                      marginRight: 6,
+                      color: palette.slate,
+                      fontStyle: "italic",
+                      fontFamily: fonts.body,
                     }}
                   >
-                    {city}
+                    No city selected (Anywhere)
                   </Text>
-                  <TouchableOpacity onPress={() => removeCity(city)}>
-                    <Ionicons
-                      name="close-circle"
-                      size={16}
-                      color={palette.slate}
-                    />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {filters.cities.length === 0 && (
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: palette.slate,
-                    fontStyle: "italic",
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  No city selected (Anywhere)
-                </Text>
-              )}
-            </View>
+                )}
+              </View>
+            </Reveal>
 
-            <SectionHeader
-              title="What are you looking for?"
-              subtitle="Choose your relationship goal"
-            />
-            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-              {INTENT_OPTIONS.map((intent) => (
-                <Chip
-                  key={intent.label}
-                  icon={intent.icon}
-                  label={intent.label}
-                  active={filters.intents.includes(intent.label)}
-                  onPress={() => toggleArrayFilter("intents", intent.label)}
-                />
-              ))}
-            </View>
+            <Reveal delay={320}>
+              <SectionHeader
+                title="What are you looking for?"
+                subtitle="Choose your relationship goal"
+              />
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {INTENT_OPTIONS.map((intent) => (
+                  <Chip
+                    key={intent.label}
+                    icon={intent.icon}
+                    label={intent.label}
+                    active={filters.intents.includes(intent.label)}
+                    onPress={() => toggleArrayFilter("intents", intent.label)}
+                  />
+                ))}
+              </View>
+            </Reveal>
 
-            <TouchableOpacity
-              onPress={onBack}
-              style={{
-                backgroundColor: palette.navy,
-                paddingVertical: 14,
-                borderRadius: radius.pill,
-                alignItems: "center",
-                marginTop: 32,
-                minHeight: 48,
-              }}
-            >
-              <Text
+            <Reveal delay={400}>
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel="Apply Filters"
+                onPress={onBack}
                 style={{
-                  color: "#FFFFFF",
-                  fontFamily: fonts.bodySemi,
-                  fontSize: 15,
+                  backgroundColor: palette.crimson,
+                  paddingVertical: 14,
+                  borderRadius: radius.pill,
+                  alignItems: "center",
+                  marginTop: 32,
+                  minHeight: 48,
+                  overflow: "hidden",
                 }}
               >
-                Apply Filters
-              </Text>
-            </TouchableOpacity>
+                <GlowPulse
+                  color={palette.crimson}
+                  radius={radius.pill}
+                  spread={1.12}
+                />
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontFamily: fonts.bodySemi,
+                    fontSize: 15,
+                  }}
+                >
+                  Apply Filters
+                </Text>
+              </PressScale>
+            </Reveal>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -622,19 +653,23 @@ function Chip({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       onPress={onPress}
       style={{
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 14,
-        paddingVertical: 9,
+        paddingVertical: 10,
         borderRadius: radius.pill,
         borderWidth: 1,
-        borderColor: active ? palette.navy : palette.rule,
-        backgroundColor: active ? palette.navy : palette.paper,
+        borderColor: active ? palette.crimson : palette.rule,
+        backgroundColor: active ? palette.crimson : palette.paper,
         marginRight: 8,
         marginBottom: 8,
+        minHeight: 40,
       }}
     >
       <Ionicons
@@ -652,6 +687,6 @@ function Chip({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressScale>
   );
 }

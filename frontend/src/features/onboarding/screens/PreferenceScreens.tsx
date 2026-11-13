@@ -1,11 +1,13 @@
 ﻿import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { FormPage } from "../../../components/forms/FormScaffold";
 import { vibes } from "../../../data";
 import { fonts, palette, radius } from "../../../theme";
 import { AppCanvas } from "../../../components/AppCanvas";
+import { whiteCard } from "../../../components/brand";
+import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -27,7 +29,7 @@ function IconBadge({
         borderRadius: size / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: active ? palette.navy : palette.paperSand,
+        backgroundColor: active ? palette.crimson : palette.crimsonTint,
       }}
     >
       <Ionicons
@@ -84,8 +86,6 @@ function WarmCard({ children }: { children: React.ReactNode }) {
         width: "100%",
         maxWidth: MAX_WIDTH,
         alignSelf: "center",
-        backgroundColor: palette.paper,
-        borderRadius: radius.xl,
         paddingHorizontal: SIDE_PADDING,
         paddingVertical: 20,
       }}
@@ -107,11 +107,14 @@ function PrimaryButton({
   icon?: keyof typeof Ionicons.glyphMap;
 }) {
   return (
-    <Pressable
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
       onPress={onPress}
       disabled={disabled}
       style={{
-        backgroundColor: palette.navy,
+        backgroundColor: palette.crimson,
         paddingVertical: 14,
         paddingHorizontal: 20,
         borderRadius: radius.pill,
@@ -122,8 +125,12 @@ function PrimaryButton({
         minHeight: 52,
         marginTop: 24,
         opacity: disabled ? 0.4 : 1,
+        overflow: "hidden",
       }}
     >
+      {!disabled && (
+        <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.12} />
+      )}
       <Ionicons name={icon} size={18} color="#FFFFFF" />
       <Text
         style={{
@@ -134,7 +141,7 @@ function PrimaryButton({
       >
         {label}
       </Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -231,65 +238,76 @@ export function VibesScreen({
             {vibes.map((vibe, index) => {
               const selected = value.includes(vibe);
               return (
-                <Pressable
+                <Reveal
                   key={vibe}
-                  onPress={() => toggle(vibe)}
-                  style={{
-                    width: "48%",
-                    backgroundColor: selected
-                      ? palette.navy
-                      : palette.paperSand,
-                    borderRadius: radius.lg,
-                    padding: 12,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 8,
-                  }}
+                  delay={Math.min(index, 8) * 40}
+                  style={{ width: "48%", marginBottom: 8 }}
                 >
-                  <IconBadge
-                    icon={vibeIcons[index] ?? "heart"}
-                    size={32}
-                    active={selected}
-                  />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        fontFamily: fonts.bodySemi,
-                        fontSize: 13,
-                        color: selected ? "#FFFFFF" : palette.ink,
-                      }}
-                    >
-                      {vibe}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 11,
-                        color: selected ? "#F4E9E0" : palette.slate,
-                        marginTop: 1,
-                      }}
-                    >
-                      {selected ? "Locked in" : vibeDescriptions[index]}
-                    </Text>
-                  </View>
-                  {selected && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={18}
-                      color="#FFFFFF"
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={vibe}
+                    accessibilityState={{ selected }}
+                    onPress={() => toggle(vibe)}
+                    style={{
+                      width: "100%",
+                      backgroundColor: selected
+                        ? palette.crimson
+                        : palette.paper,
+                      borderRadius: radius.lg,
+                      padding: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                      borderWidth: selected ? 0 : 1,
+                      borderColor: palette.rule,
+                      minHeight: 56,
+                      ...(selected ? {} : whiteCard),
+                    }}
+                  >
+                    <IconBadge
+                      icon={vibeIcons[index] ?? "heart"}
+                      size={32}
+                      active={selected}
                     />
-                  )}
-                </Pressable>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          fontFamily: fonts.bodySemi,
+                          fontSize: 13,
+                          color: selected ? "#FFFFFF" : palette.ink,
+                        }}
+                      >
+                        {vibe}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontFamily: fonts.body,
+                          fontSize: 11,
+                          color: selected ? "#F7E3E7" : palette.slate,
+                          marginTop: 1,
+                        }}
+                      >
+                        {selected ? "Locked in" : vibeDescriptions[index]}
+                      </Text>
+                    </View>
+                    {selected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                    )}
+                  </PressScale>
+                </Reveal>
               );
             })}
           </View>
 
           <View
             style={{
-              backgroundColor: palette.paperSand,
+              backgroundColor: palette.crimsonTint,
               borderRadius: radius.lg,
               padding: 14,
               flexDirection: "row",
@@ -304,7 +322,7 @@ export function VibesScreen({
                 flex: 1,
                 fontFamily: fonts.body,
                 fontSize: 13,
-                color: palette.slate,
+                color: palette.inkSoft,
                 lineHeight: 19,
               }}
             >
@@ -401,7 +419,7 @@ export function IntentScreen({
 
           <View
             style={{
-              backgroundColor: palette.paperSand,
+              backgroundColor: palette.crimsonTint,
               borderRadius: radius.lg,
               padding: 14,
               flexDirection: "row",
@@ -425,52 +443,60 @@ export function IntentScreen({
           </View>
 
           <View style={{ gap: 10 }}>
-            {options.map((option) => {
+            {options.map((option, idx) => {
               const selected = value === option.value;
               return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => onChange(option.value)}
-                  style={{
-                    backgroundColor: selected
-                      ? palette.navy
-                      : palette.paperSand,
-                    borderRadius: radius.lg,
-                    padding: 16,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <IconBadge icon={option.icon} size={36} active={selected} />
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemi,
-                        fontSize: 15,
-                        color: selected ? "#FFFFFF" : palette.ink,
-                      }}
-                    >
-                      {option.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 12,
-                        color: selected ? "#F4E9E0" : palette.slate,
-                        marginTop: 2,
-                        lineHeight: 17,
-                      }}
-                    >
-                      {option.description}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={selected ? "checkmark-circle" : "ellipse-outline"}
-                    size={22}
-                    color={selected ? "#FFFFFF" : palette.slate}
-                  />
-                </Pressable>
+                <Reveal key={option.value} delay={idx * 60}>
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={option.title}
+                    accessibilityState={{ selected }}
+                    onPress={() => onChange(option.value)}
+                    style={{
+                      backgroundColor: selected
+                        ? palette.crimson
+                        : palette.paper,
+                      borderRadius: radius.lg,
+                      padding: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      borderWidth: selected ? 0 : 1,
+                      borderColor: palette.rule,
+                      minHeight: 64,
+                      ...(selected ? {} : whiteCard),
+                    }}
+                  >
+                    <IconBadge icon={option.icon} size={36} active={selected} />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontFamily: fonts.bodySemi,
+                          fontSize: 15,
+                          color: selected ? "#FFFFFF" : palette.ink,
+                        }}
+                      >
+                        {option.title}
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: fonts.body,
+                          fontSize: 12,
+                          color: selected ? "#F7E3E7" : palette.slate,
+                          marginTop: 2,
+                          lineHeight: 17,
+                        }}
+                      >
+                        {option.description}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={selected ? "checkmark-circle" : "ellipse-outline"}
+                      size={22}
+                      color={selected ? "#FFFFFF" : palette.slate}
+                    />
+                  </PressScale>
+                </Reveal>
               );
             })}
           </View>
@@ -551,7 +577,7 @@ export function AlignmentScreen({
       <FormPage step={6}>
         <WarmCard>
           <View style={{ alignItems: "center", marginBottom: 16 }}>
-            <IconBadge icon={current.icon} size={52} />
+            <IconBadge icon={current.icon} size={52} active />
           </View>
           <Text
             style={{
@@ -625,43 +651,57 @@ export function AlignmentScreen({
             {current.options.map((option, index) => {
               const isSelected = selected === option;
               return (
-                <Pressable
-                  key={option}
-                  onPress={() => onChange({ ...value, [current.key]: option })}
-                  style={{
-                    backgroundColor: isSelected
-                      ? palette.navy
-                      : palette.paperSand,
-                    borderRadius: radius.lg,
-                    padding: 14,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <IconBadge
-                    icon={
-                      index === 0 ? "heart" : index === 1 ? "leaf" : "sparkles"
+                <Reveal key={option} delay={index * 60}>
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={option}
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() =>
+                      onChange({ ...value, [current.key]: option })
                     }
-                    size={32}
-                    active={isSelected}
-                  />
-                  <Text
                     style={{
-                      flex: 1,
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 14,
-                      color: isSelected ? "#FFFFFF" : palette.ink,
+                      backgroundColor: isSelected
+                        ? palette.crimson
+                        : palette.paper,
+                      borderRadius: radius.lg,
+                      padding: 14,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      borderWidth: isSelected ? 0 : 1,
+                      borderColor: palette.rule,
+                      minHeight: 60,
+                      ...(isSelected ? {} : whiteCard),
                     }}
                   >
-                    {option}
-                  </Text>
-                  <Ionicons
-                    name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-                    size={22}
-                    color={isSelected ? "#FFFFFF" : palette.slate}
-                  />
-                </Pressable>
+                    <IconBadge
+                      icon={
+                        index === 0
+                          ? "heart"
+                          : index === 1
+                            ? "leaf"
+                            : "sparkles"
+                      }
+                      size={32}
+                      active={isSelected}
+                    />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontFamily: fonts.bodySemi,
+                        fontSize: 14,
+                        color: isSelected ? "#FFFFFF" : palette.ink,
+                      }}
+                    >
+                      {option}
+                    </Text>
+                    <Ionicons
+                      name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                      size={22}
+                      color={isSelected ? "#FFFFFF" : palette.slate}
+                    />
+                  </PressScale>
+                </Reveal>
               );
             })}
           </View>

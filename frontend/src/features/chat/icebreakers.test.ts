@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+﻿import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -16,7 +16,7 @@ describe('icebreakers and your turn', () => {
 
   it('never breaks the chat when the lines cannot load', () => {
     const api = read('src/api/chatApi.ts');
-    const fn = api.slice(api.indexOf('export async function fetchIcebreakers'));
+    const fn = api.slice(api.indexOf('export async function fetchIcebreakers')).replace(/\r\n/g, '\n');
     expect(fn).toContain('if (!response.ok) return [];');
     expect(fn).toContain('catch {\n    return [];');
   });
