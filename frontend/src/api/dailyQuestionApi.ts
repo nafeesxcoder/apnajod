@@ -28,6 +28,8 @@ export type DailyQuestionToday = {
   answer: string | null;
   /** Sparks paid for answering. */
   reward: number;
+  /** How many members answered today's question so far. */
+  answeredToday?: number;
 };
 
 export const dailyQuestionApi = {

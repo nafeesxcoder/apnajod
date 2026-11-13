@@ -28,6 +28,7 @@ import { Marcellus_400Regular } from "@expo-google-fonts/marcellus";
 import * as ImagePicker from "expo-image-picker";
 
 import { Match, matches } from "../data";
+import { profileStrength } from "../domain/profileStrength";
 import { colors } from "../theme";
 import {
   ChatMessage,
@@ -3429,6 +3430,20 @@ function MilaanApp() {
             onSkip={passMatch}
             onRose={openRose}
             onSparkRewarded={() => void refreshSparkWallet()}
+            strength={profileStrength({
+              firstName: profileDraft.firstName,
+              age: profileDraft.age,
+              gender: profileDraft.gender,
+              city: profileDraft.city,
+              profession: profileDraft.profession,
+              bio: (profileDraft as any).bio,
+              hobbies: (profileDraft as any).hobbies,
+              photoCount: profilePhotos.filter(Boolean).length,
+              alignment,
+              verificationStatus,
+              verified,
+            })}
+            completionRewardClaimed={completionRewardClaimed}
             navigate={navigateTo}
           />
         )}
@@ -3781,9 +3796,6 @@ function MilaanApp() {
             profilePhoto={profilePhotos[0]}
             navigate={navigateTo}
             accessToken={accessToken}
-            photoCount={profilePhotos.filter(Boolean).length}
-            verificationStatus={verificationStatus}
-            completionRewardClaimed={completionRewardClaimed}
           />
         )}
 

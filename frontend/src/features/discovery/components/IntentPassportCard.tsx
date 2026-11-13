@@ -7,6 +7,8 @@ import {
   type IntentPassportInput,
 } from "../../../domain/intentPassport";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { brand, whiteCard } from "../../../components/brand";
 
 export function IntentPassportCard({
   input,
@@ -21,14 +23,10 @@ export function IntentPassportCard({
   const visibleFields = compact ? passport.fields.slice(0, 3) : passport.fields;
 
   return (
-    <View
-      style={{
-        backgroundColor: palette.paperSand,
-        borderRadius: radius.lg,
-        padding: compact ? 18 : 22,
-        marginBottom: 20,
-      }}
-    >
+    <View style={{ ...whiteCard, overflow: "hidden", marginBottom: 16 }}>
+      {/* The navy-to-crimson bar that marks an information card. */}
+      <LinearGradient colors={brand.barGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 5 }} />
+      <View style={{ padding: compact ? 18 : 22 }}>
       {/* Header: icon + summary in sentence case, edit affordance */}
       <View
         style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}
@@ -69,7 +67,7 @@ export function IntentPassportCard({
             width: 34,
             height: 34,
             borderRadius: radius.pill,
-            backgroundColor: palette.paper,
+            backgroundColor: palette.paperSand,
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -105,9 +103,10 @@ export function IntentPassportCard({
               numberOfLines={2}
               style={{
                 flex: 1,
-                fontFamily: fonts.bodyMedium,
+                fontFamily: field.complete ? fonts.bodySemi : fonts.bodyMedium,
                 fontSize: typeScale.body,
-                color: field.complete ? colors.text : colors.muted,
+                // Answers alternate navy and crimson, the card's two colours.
+                color: field.complete ? (i % 2 ? palette.crimson : palette.navy) : colors.muted,
                 fontStyle: field.complete ? "normal" : "italic",
               }}
             >
@@ -147,6 +146,7 @@ export function IntentPassportCard({
           </Text>
         </View>
       )}
+      </View>
     </View>
   );
 }

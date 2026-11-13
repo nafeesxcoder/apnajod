@@ -55,12 +55,12 @@ describe('profile strength', () => {
     expect(profileStrength({ ...complete, alignment: {} }).next?.screen).toBe('alignment');
   });
 
-  it('shows on your own profile with your real photo count and verification', () => {
-    const profile = read('src/features/profile/screens/ProfileScreen.tsx');
-    expect(profile).toContain('<ProfileStrengthCard');
+  it('shows on Home only, with your real photo count and verification', () => {
+    expect(read('src/features/discovery/screens/HomeScreen.tsx')).toContain('<ProfileStrengthCard');
+    expect(read('src/features/profile/screens/ProfileScreen.tsx')).not.toContain('ProfileStrengthCard');
     const app = read('src/app/MilaanApp.tsx');
-    expect(app).toContain('photoCount={profilePhotos.filter(Boolean).length}');
-    expect(app).toContain('verificationStatus={verificationStatus}');
+    expect(app).toContain('strength={profileStrength({');
+    expect(app).toContain('photoCount: profilePhotos.filter(Boolean).length,');
   });
 });
 

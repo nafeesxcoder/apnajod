@@ -30,6 +30,11 @@ import { TrustBadge } from "../../../components/TrustBadge";
 
 import { DailyQuestionCard } from "../components/DailyQuestionCard";
 import { DailyPicksRow } from "../components/DailyPicksRow";
+import { brand, cardShadow, whiteCard } from "../../../components/brand";
+import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
+import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
+import { InviteCard } from "../../profile/components/InviteCard";
+import type { profileStrength } from "../../../domain/profileStrength";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
 type MemberMatchLoadState = "preview" | "loading" | "ready" | "error";
@@ -60,7 +65,11 @@ export function HomeScreen({
   accessToken,
   crossedPaths,
   openDetail,
+  onInterested,
+  onSkip,
   onSparkRewarded,
+  strength,
+  completionRewardClaimed = false,
   navigate,
 }: {
   preview: boolean;
@@ -85,6 +94,10 @@ export function HomeScreen({
   onRose?: (m: Match) => void;
   /** A Spark was just earned (daily question) - refresh the count. */
   onSparkRewarded?: () => void;
+  /** Profile strength - shown on Home only (not on Profile). */
+  strength?: ReturnType<typeof profileStrength>;
+  /** The one-time Super Like for a 100% profile has been paid. */
+  completionRewardClaimed?: boolean;
   navigate: (s: Screen) => void;
 }) {
   const navInset = useNavInset();
@@ -316,16 +329,18 @@ export function HomeScreen({
                   width: 44,
                   height: 44,
                   borderRadius: radius.pill,
-                  backgroundColor: palette.paperSand,
+                  backgroundColor: brand.pillBg,
                   justifyContent: "center",
                   alignItems: "center",
                   marginRight: 14,
                 }}
               >
                 {loading ? (
-                  <ActivityIndicator color={palette.navy} />
+                  <ActivityIndicator color={palette.crimson} />
                 ) : (
-                  <Ionicons name="heart" size={22} color={palette.navy} />
+                  <HeartBeat>
+                    <Ionicons name="heart" size={22} color={palette.crimson} />
+                  </HeartBeat>
                 )}
               </View>
               <View style={{ flex: 1 }}>
@@ -352,34 +367,56 @@ export function HomeScreen({
               </View>
             </View>
 
+            {/* Cards arrive one after another (components/motion.tsx). */}
             {!preview && (
-              <DailyQuestionCard
-                accessToken={accessToken}
-                onRewarded={onSparkRewarded}
-              />
+              <Reveal delay={60}>
+                <DailyQuestionCard
+                  accessToken={accessToken}
+                  onRewarded={onSparkRewarded}
+                />
+              </Reveal>
+            )}
+
+            {strength && (
+              <Reveal delay={120}>
+                <ProfileStrengthCard
+                  {...strength}
+                  onGo={(screen) => navigate(screen as Screen)}
+                  rewardClaimed={completionRewardClaimed}
+                />
+              </Reveal>
             )}
 
             {!preview && (
-              <DailyPicksRow accessToken={accessToken} onOpen={openDetail} />
+              <Reveal delay={180}>
+                <DailyPicksRow accessToken={accessToken} onOpen={openDetail} />
+              </Reveal>
             )}
 
             {/* Intent passport — flatten happens in IntentPassportCard.tsx */}
-            <IntentPassportCard
-              input={passportInput}
-              compact
-              onEdit={() => navigate("alignment")}
-            />
+            <Reveal delay={240}>
+              <IntentPassportCard
+                input={passportInput}
+                compact
+                onEdit={() => navigate("alignment")}
+              />
+            </Reveal>
+
+            {!preview && (
+              <Reveal delay={300}>
+                <InviteCard accessToken={accessToken} />
+              </Reveal>
+            )}
 
             {crossedPaths && (
               <Pressable
                 onPress={() => navigate("discovery")}
                 style={{
+                  ...whiteCard,
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: palette.paperSand,
                   padding: 16,
-                  borderRadius: radius.md,
-                  marginBottom: 20,
+                  marginBottom: 16,
                 }}
               >
                 <Ionicons
@@ -406,99 +443,120 @@ export function HomeScreen({
               </Pressable>
             )}
 
-            {/* Top match — hero */}
+            {/* Top match — the photo card, with Pass and a beating Like */}
             {featured && (
-              <View style={{ marginBottom: 32 }}>
-                <Pressable
+              <Reveal delay={360} style={{ marginBottom: 28 }}>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${featured.name}'s profile`}
                   onPress={() => openDetail(featured)}
+                  scaleTo={0.985}
                   style={{
-                    borderRadius: radius.xl,
+                    borderRadius: 22,
                     overflow: "hidden",
                     backgroundColor: palette.paperSand,
+                    ...cardShadow,
                   }}
                 >
-                  <View style={{ position: "relative" }}>
-                    <Image
-                      source={{ uri: featured.photo }}
-                      style={{
-                        width: "100%",
-                        height: isDesktopHome ? 520 : 460,
-                      }}
-                      resizeMode="cover"
-                    />
-                    <LinearGradient
-                      colors={["transparent", "rgba(0,0,0,0.85)"]}
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 200,
-                        justifyContent: "flex-end",
-                        padding: 24,
-                      }}
-                    >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 8,
-                        }}
-                      >
+                  <Image
+                    source={{ uri: featured.photo }}
+                    style={{
+                      width: "100%",
+                      height: isDesktopHome ? 520 : 460,
+                    }}
+                    resizeMode="cover"
+                  />
+                  <LinearGradient
+                    colors={["rgba(10,20,32,0)", "rgba(10,20,32,0.85)"]}
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      paddingTop: 90,
+                      paddingHorizontal: 20,
+                      paddingBottom: 20,
+                      flexDirection: "row",
+                      alignItems: "flex-end",
+                      gap: 12,
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                         <Text
                           style={{
                             fontFamily: fonts.display,
-                            fontSize: typeScale.display,
+                            fontSize: typeScale.display - 4,
                             color: "#FFF",
                             flexShrink: 1,
                           }}
                         >
                           {featured.name}, {featured.age}
                         </Text>
-                        {featured.verified && <TrustBadge blueTick={featured.blueTick} size={24} />}
+                        {featured.verified && <TrustBadge blueTick={featured.blueTick} size={22} />}
                       </View>
                       <Text
                         style={{
                           fontFamily: fonts.body,
                           fontSize: typeScale.label,
-                          color: "#F4E9E0",
-                          marginTop: 6,
+                          color: "#E7EDF3",
+                          marginTop: 4,
                         }}
                       >
-                        {featured.profession} · {featured.city}
+                        {[featured.profession, featured.city].filter(Boolean).join(" · ")}
                       </Text>
-                    </LinearGradient>
-                  </View>
-                  <View style={{ padding: 20 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: palette.navy,
-                        paddingVertical: 16,
-                        borderRadius: radius.md,
-                      }}
-                    >
-                      <Ionicons
-                        name="person-outline"
-                        size={18}
-                        color="#FFF"
-                        style={{ marginRight: 8 }}
-                      />
                       <Text
                         style={{
-                          color: "#FFF",
                           fontFamily: fonts.bodySemi,
-                          fontSize: typeScale.body,
+                          fontSize: 12,
+                          color: "#FFFFFF",
+                          marginTop: 8,
+                          opacity: 0.9,
                         }}
                       >
-                        View profile
+                        Tap to view profile ›
                       </Text>
                     </View>
-                  </View>
-                </Pressable>
-              </View>
+                    {onSkip && (
+                      <PressScale
+                        accessibilityRole="button"
+                        accessibilityLabel={`Pass on ${featured.name}`}
+                        onPress={() => onSkip(featured)}
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 26,
+                          backgroundColor: "#FFFFFF",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons name="close" size={24} color={palette.ink} />
+                      </PressScale>
+                    )}
+                    {onInterested && (
+                      <PressScale
+                        accessibilityRole="button"
+                        accessibilityLabel={`Interested in ${featured.name}`}
+                        onPress={() => onInterested(featured)}
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 26,
+                          backgroundColor: palette.crimson,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <GlowPulse color={palette.crimson} radius={26} />
+                        <HeartBeat>
+                          <Ionicons name="heart" size={24} color="#FFFFFF" />
+                        </HeartBeat>
+                      </PressScale>
+                    )}
+                  </LinearGradient>
+                </PressScale>
+              </Reveal>
             )}
 
             {/* More introductions */}
@@ -522,15 +580,17 @@ export function HomeScreen({
                   }}
                 >
                   {others.map((match) => (
-                    <Pressable
+                    <PressScale
                       key={match.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${match.name}'s profile`}
                       onPress={() => openDetail(match)}
+                      containerStyle={{ width: "48%", marginBottom: 18 }}
                       style={{
-                        width: "48%",
-                        marginBottom: 18,
-                        borderRadius: radius.lg,
+                        borderRadius: 18,
                         overflow: "hidden",
                         backgroundColor: palette.paperSand,
+                        ...cardShadow,
                       }}
                     >
                       <View style={{ position: "relative" }}>
@@ -582,7 +642,7 @@ export function HomeScreen({
                           </Text>
                         </LinearGradient>
                       </View>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
               </View>

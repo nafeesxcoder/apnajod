@@ -10,10 +10,11 @@ describe('show my family', () => {
     expect(person).toMatch(/likeStatus === "accepted" && \(\s*<FamilyShareButton/);
   });
 
-  it('keeps one Share button on your own profile, which asks family or friends', () => {
+  it('keeps one Send to family button on your own profile; inviting friends lives on Home', () => {
     const profile = read('src/features/profile/screens/ProfileScreen.tsx');
-    expect(profile).toContain('title: "Send to family"');
-    expect(profile).toContain('title: "Invite friends · earn Boosts"');
+    expect(profile).toContain('onPress={() => void family.share()}');
+    expect(profile).toContain('Send to family');
+    expect(profile).not.toContain('Invite friends');
     expect(profile).not.toContain('<FamilyShareButton');
   });
 

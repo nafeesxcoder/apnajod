@@ -1,14 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   Image,
   ScrollView,
   TouchableOpacity,
-  Platform,
-  Share,
-  Modal,
-  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,23 +22,12 @@ import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
-import { useWindowDimensions } from "react-native";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
-import { authApi } from "../../../api/authApi";
-import { profileApi, type ReferralSummary } from "../../../api/profileApi";
-import { referralLine } from "../referralLine";
-import { ProfileStrengthCard } from "../components/ProfileStrengthCard";
-import { profileStrength } from "../../../domain/profileStrength";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
 const brandLogo = require("../../../../assets/apnajoda-logo.png");
 
-// Invite links point at the public site. ?invite=<username> is read by
-// captureInviteFromUrl, so a signup that comes from this link credits you.
-const SHARE_BASE = "https://apnajoda.com/";
-const SHARE_TEXT =
-  "Join me on Apnajoda. Meaningful connections, meaningful futures. Sign up with my link and get a free Super Like.";
 
 function hobbyIcon(label: string) {
   const wanted = String(label).trim().toLowerCase();
@@ -57,9 +42,6 @@ export function ProfileScreen({
   profilePhoto,
   navigate,
   accessToken,
-  photoCount = 0,
-  verificationStatus = "none",
-  completionRewardClaimed = false,
 }: {
   profile: any;
   verified: boolean;
@@ -70,86 +52,15 @@ export function ProfileScreen({
   profilePhoto?: string;
   navigate: (screen: any) => void;
   accessToken?: string;
-  /** How many profile photos they have, for Profile strength. */
-  photoCount?: number;
-  verificationStatus?: "none" | "pending" | "approved" | "rejected";
-  /** The one-time Super Like for a 100% profile has been paid. */
-  completionRewardClaimed?: boolean;
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
-  const [username, setUsername] = useState("");
-  const [shareNote, setShareNote] = useState("");
-  // One Share button; it asks whether this is for family or for friends.
-  const [shareMenuOpen, setShareMenuOpen] = useState(false);
-  const [referrals, setReferrals] = useState<ReferralSummary | null>(null);
-  // On a laptop the menu is a centred dialog; a bottom sheet there ran off
-  // the bottom of the window. Phones keep the sheet.
-  const { width: windowWidth } = useWindowDimensions();
-  const shareMenuCentred = windowWidth >= 700;
+  // Share sends the profile to family. Inviting friends and Profile
+  // strength live on Home - one place each, not two.
   const family = useFamilyShare({
     accessToken,
     name: profile?.firstName || "me",
   });
-
-  useEffect(() => {
-    if (!accessToken) return;
-    let active = true;
-    authApi
-      .me(accessToken)
-      .then((res: any) => {
-        if (active) setUsername(String(res?.user?.username ?? ""));
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [accessToken]);
-
-  // Fresh invite totals each time the Share menu opens.
-  useEffect(() => {
-    if (!shareMenuOpen || !accessToken) return;
-    let active = true;
-    void profileApi.referrals(accessToken).then((summary) => {
-      if (active && summary) setReferrals(summary);
-    });
-    return () => {
-      active = false;
-    };
-  }, [shareMenuOpen, accessToken]);
-
-  useEffect(() => {
-    if (!shareNote) return;
-    const timer = setTimeout(() => setShareNote(""), 4000);
-    return () => clearTimeout(timer);
-  }, [shareNote]);
-
-  const shareLink = username
-    ? `${SHARE_BASE}?invite=${encodeURIComponent(username)}`
-    : SHARE_BASE;
-
-  const onShareProfile = async () => {
-    try {
-      if (Platform.OS === "web") {
-        const nav: any = typeof navigator !== "undefined" ? navigator : null;
-        if (nav?.share) {
-          await nav.share({ title: "Apnajoda", text: SHARE_TEXT, url: shareLink });
-          return;
-        }
-        if (nav?.clipboard?.writeText) {
-          await nav.clipboard.writeText(`${SHARE_TEXT} ${shareLink}`);
-          setShareNote("Link copied. Paste it in WhatsApp, Instagram or Facebook.");
-          return;
-        }
-        setShareNote(shareLink);
-        return;
-      }
-      await Share.share({ message: `${SHARE_TEXT} ${shareLink}` });
-    } catch (error: any) {
-      if (error?.name === "AbortError") return;
-      setShareNote("Could not share. Please try again.");
-    }
-  };
 
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
@@ -404,12 +315,12 @@ export function ProfileScreen({
                   </Text>
                 </TouchableOpacity>
 
+                {family.available && (
                 <TouchableOpacity
                   accessibilityRole="button"
-                  accessibilityLabel="Share profile"
-                  onPress={() =>
-                    family.available ? setShareMenuOpen(true) : void onShareProfile()
-                  }
+                  accessibilityLabel="Send my profile to family"
+                  disabled={family.busy}
+                  onPress={() => void family.share()}
                   style={{
                     flex: 1,
                     flexDirection: "row",
@@ -425,7 +336,7 @@ export function ProfileScreen({
                   }}
                 >
                   <Ionicons
-                    name="share-social"
+                    name="people"
                     size={16}
                     color={palette.navy}
                   />
@@ -436,30 +347,14 @@ export function ProfileScreen({
                       fontSize: 13,
                     }}
                   >
-                    Share profile
+                    Send to family
                   </Text>
                 </TouchableOpacity>
+                )}
               </View>
 
-              <ProfileStrengthCard
-                {...profileStrength({
-                  firstName: profile?.firstName,
-                  age: profile?.age,
-                  gender: profile?.gender,
-                  city: profile?.city,
-                  profession: profile?.profession,
-                  bio,
-                  hobbies,
-                  photoCount,
-                  alignment: intentInput,
-                  verificationStatus,
-                  verified,
-                })}
-                onGo={navigate}
-                rewardClaimed={completionRewardClaimed}
-              />
 
-              {!!(family.note || shareNote) && (
+              {!!family.note && (
                 <Text
                   style={{
                     fontFamily: fonts.body,
@@ -469,7 +364,7 @@ export function ProfileScreen({
                     marginTop: 8,
                   }}
                 >
-                  {family.note || shareNote}
+                  {family.note}
                 </Text>
               )}
 
@@ -572,120 +467,6 @@ export function ProfileScreen({
         </ScrollView>
 
         <BottomNav active="profile" navigate={navigate} />
-        <Modal
-        visible={shareMenuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShareMenuOpen(false)}
-      >
-        <Pressable
-          accessibilityLabel="Close"
-          onPress={() => setShareMenuOpen(false)}
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.35)",
-            justifyContent: shareMenuCentred ? "center" : "flex-end",
-            alignItems: "center",
-            padding: shareMenuCentred ? 24 : 0,
-          }}
-        >
-          <Pressable
-            onPress={() => undefined}
-            style={{
-              width: "100%",
-              maxWidth: 440,
-              backgroundColor: palette.paper,
-              borderRadius: shareMenuCentred ? radius.xl : 0,
-              borderTopLeftRadius: radius.xl,
-              borderTopRightRadius: radius.xl,
-              padding: 20,
-              paddingBottom: shareMenuCentred ? 20 : 32,
-              gap: 10,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 4,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: 20,
-                  color: palette.ink,
-                }}
-              >
-                Share your profile
-              </Text>
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-                onPress={() => setShareMenuOpen(false)}
-                hitSlop={10}
-              >
-                <Ionicons name="close" size={22} color={palette.slate} />
-              </TouchableOpacity>
-            </View>
-            {[
-              {
-                key: "family",
-                icon: "people" as const,
-                title: "Send to family",
-                body: "A private link they can open without the app. Works for 7 days.",
-                onPress: () => {
-                  setShareMenuOpen(false);
-                  void family.share();
-                },
-              },
-              {
-                key: "friends",
-                icon: "share-social" as const,
-                title: "Invite friends · earn Boosts",
-                body: [
-                  "Get a free Boost when a friend joins and adds a photo. They get a free Super Like.",
-                  referralLine(referrals),
-                ]
-                  .filter(Boolean)
-                  .join("\n"),
-                onPress: () => {
-                  setShareMenuOpen(false);
-                  void onShareProfile();
-                },
-              },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                accessibilityRole="button"
-                accessibilityLabel={option.title}
-                onPress={option.onPress}
-                disabled={option.key === "family" && family.busy}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: 14,
-                  borderRadius: radius.md,
-                  backgroundColor: palette.paperSand,
-                }}
-              >
-                <Ionicons name={option.icon} size={22} color={palette.navy} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
-                    {option.title}
-                  </Text>
-                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
-                    {option.body}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={palette.slate} />
-              </TouchableOpacity>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
     </AppCanvas>
   );

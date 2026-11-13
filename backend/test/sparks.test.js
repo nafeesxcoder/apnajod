@@ -184,6 +184,9 @@ function questionServiceWith({ rows, answered = null }) {
         if (s.startsWith("SELECT question_id, answer FROM daily_question_answers")) {
           return answered ? [answered] : [];
         }
+        if (s.startsWith("SELECT COUNT(*) AS n FROM daily_question_answers WHERE answered_day")) {
+          return [{ n: 412 }];
+        }
         if (s.startsWith("INSERT INTO daily_question_answers")) {
           if (answered) throw dup();
           inserts.push(params);
@@ -248,4 +251,11 @@ test("an answer that is not one of the options, or for another day's question, i
   const other = QUESTIONS.find((q) => q.id !== today.id);
   await assert.rejects(() => service.answer("me", other.id, "x"), (e) => e.statusCode === 409);
   assert.deepEqual(credited, []);
+});
+
+test("the card shows a real count of how many answered today", async () => {
+  const { service } = questionServiceWith({ rows: QUESTIONS });
+  const card = await service.forMember("me");
+  assert.equal(card.answeredToday, 412);
+  assert.equal(card.answered, false);
 });

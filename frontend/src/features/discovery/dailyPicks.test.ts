@@ -13,7 +13,7 @@ describe('Aaj ke 5', () => {
   });
 
   it('shows when the next five arrive', () => {
-    expect(row).toContain('New picks in {timeUntil(data.nextAt)}');
+    expect(row).toContain('header(`New in ${timeUntil(data.nextAt)}`)');
   });
 
   it('never breaks Home if the picks cannot load', () => {
@@ -23,7 +23,7 @@ describe('Aaj ke 5', () => {
 
   it('still shows the card, with the next drop time, when there are no picks today', () => {
     expect(row).toContain('if (data.picks.length === 0) {');
-    expect(row).toContain('Next picks in {timeUntil(data.nextAt)}');
+    expect(row).toContain('header(`Next in ${timeUntil(data.nextAt)}`)');
   });
 
   it('keeps every hook above its early return', () => {

@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { fonts, palette, radius } from "../../../theme";
+import { brand, whiteCard } from "../../../components/brand";
+import { PressScale } from "../../../components/motion";
 import type { StrengthScreen, StrengthStep } from "../../../domain/profileStrength";
 
 /**
- * "Profile strength 65%" on your own profile: one bar, the single most
+ * "Profile strength 65%" on Home (only on Home): one bar, the single most
  * useful next step with a button that goes straight there, and the rest of
  * the open steps behind "Show all". Until the one-time reward is paid it
  * says 100% earns a free Super Like. At 100% it shrinks to one line.
@@ -29,11 +32,10 @@ export function ProfileStrengthCard({
       <View
         accessibilityLabel="Profile strength 100 percent, complete"
         style={{
-          marginTop: 18,
+          ...whiteCard,
+          marginBottom: 16,
           paddingHorizontal: 14,
           paddingVertical: 10,
-          borderRadius: radius.md,
-          backgroundColor: palette.paperSand,
           flexDirection: "row",
           alignItems: "center",
           gap: 8,
@@ -55,10 +57,9 @@ export function ProfileStrengthCard({
     <View
       accessibilityLabel={`Profile strength ${score} percent`}
       style={{
-        marginTop: 18,
+        ...whiteCard,
+        marginBottom: 16,
         padding: 16,
-        borderRadius: radius.md,
-        backgroundColor: palette.paperSand,
         gap: 10,
       }}
     >
@@ -77,9 +78,14 @@ export function ProfileStrengthCard({
       <View
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: score }}
-        style={{ height: 8, borderRadius: 4, backgroundColor: palette.paper, overflow: "hidden" }}
+        style={{ height: 8, borderRadius: 4, backgroundColor: palette.paperSand, overflow: "hidden" }}
       >
-        <View style={{ width: `${score}%`, height: "100%", borderRadius: 4, backgroundColor: palette.navy }} />
+        <LinearGradient
+          colors={brand.barGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ width: `${score}%`, height: "100%", borderRadius: 4 }}
+        />
       </View>
 
       {next && (
@@ -92,7 +98,7 @@ export function ProfileStrengthCard({
               {next.why}
             </Text>
           </View>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={next.label}
             onPress={() => onGo(next.screen)}
@@ -105,7 +111,7 @@ export function ProfileStrengthCard({
             }}
           >
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Do it</Text>
-          </Pressable>
+          </PressScale>
         </View>
       )}
 

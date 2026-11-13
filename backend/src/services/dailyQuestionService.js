@@ -55,12 +55,17 @@ async function forMember(userId, now = new Date()) {
   if (!question) {
     return { question: null, answered: false, answer: null, reward: REWARD_SPARKS };
   }
-  const [row] = await query(
-    "SELECT question_id, answer FROM daily_question_answers WHERE user_id = ? AND answered_day = ?",
-    [userId, question.day],
-  );
+  const [[row], [count]] = await Promise.all([
+    query(
+      "SELECT question_id, answer FROM daily_question_answers WHERE user_id = ? AND answered_day = ?",
+      [userId, question.day],
+    ),
+    // "412 answered today" on the card - a real count, not a guess.
+    query("SELECT COUNT(*) AS n FROM daily_question_answers WHERE answered_day = ?", [question.day]),
+  ]);
   return {
     question: { id: question.id, text: question.question, options: question.options },
+    answeredToday: Number(count?.n || 0),
     // One answer a day. If an admin changed the rotation after they
     // answered, they are still done for today - just not on this question.
     answered: !!row,
