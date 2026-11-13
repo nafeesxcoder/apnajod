@@ -54,3 +54,14 @@ describe("stories", () => {
     expect(home).toContain("<StoriesTray");
   });
 });
+
+describe("taking a story photo on a laptop", () => {
+  const camera = read("WebCamera.tsx");
+  it("opens the webcam there, and leaves phones to their camera app", () => {
+    expect(camera).toContain('window.matchMedia("(pointer: coarse)").matches');
+    expect(tray).toContain('if (from === "camera" && needsWebCamera()) {');
+  });
+  it("lets go of the camera when it closes or the photo is taken", () => {
+    expect(camera).toContain("stream.current?.getTracks().forEach((track) => track.stop());");
+  });
+});

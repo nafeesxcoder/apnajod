@@ -10,6 +10,7 @@ import { fonts, palette } from "../../theme";
 import { Avatar } from "../posts/PostSheets";
 import { Sheet } from "../posts/PostSheets";
 import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
+import { WebCamera, needsWebCamera } from "./WebCamera";
 import { StoryViewer } from "./StoryViewer";
 import { liveStories, loadSeen } from "./storySeen";
 
@@ -37,6 +38,7 @@ export function StoriesTray({
   const [viewing, setViewing] = useState<number | null>(null);
   const [picked, setPicked] = useState<PickedStoryPhoto | null>(null);
   const [choosing, setChoosing] = useState(false);
+  const [webcam, setWebcam] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -68,6 +70,11 @@ export function StoriesTray({
   const pick = async (from: "camera" | "gallery") => {
     setChoosing(false);
     setError("");
+    // A laptop's browser cannot take a photo itself: open the webcam here.
+    if (from === "camera" && needsWebCamera()) {
+      setWebcam(true);
+      return;
+    }
     try {
       const permission =
         from === "camera"
@@ -175,6 +182,18 @@ export function StoriesTray({
               .filter((person) => person.stories.length > 0),
           )
         }
+      />
+      <WebCamera
+        visible={webcam}
+        onClose={() => setWebcam(false)}
+        onCapture={(photo) => {
+          setWebcam(false);
+          setPicked(photo);
+        }}
+        onGallery={() => {
+          setWebcam(false);
+          setTimeout(() => void pick("gallery"), 50);
+        }}
       />
       <StoryEditor photo={picked} accessToken={accessToken} onClose={() => setPicked(null)} onShared={() => void load()} />
       <Sheet visible={choosing} title="Add to your story" onClose={() => setChoosing(false)}>
