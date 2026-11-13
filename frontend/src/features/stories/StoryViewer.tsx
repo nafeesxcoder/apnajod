@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Easing, Image, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, Modal, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { safetyApi } from "../../api/safetyApi";
@@ -10,6 +10,9 @@ import { timeAgo } from "../posts/postFormat";
 import { openProfile } from "../posts/profileLink";
 import { markSeen } from "./storySeen";
 import { storySeconds } from "./music/clip";
+import { LiveSticker } from "./LiveSticker";
+import { AnswerSheet, ResponsesSheet } from "./StoryResponses";
+import { FRAME_ASPECT } from "./editor/model";
 import { createClipPlayer, type ClipPlayer } from "./music/clipPlayer";
 
 export { STORY_SECONDS } from "./music/clip";
@@ -46,6 +49,11 @@ export function StoryViewer({
   const [reporting, setReporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [muted, setMuted] = useState(false);
+  const { width: screenWidth } = useWindowDimensions();
+  // Poll results after you vote, by "story|sticker".
+  const [results, setResults] = useState<Record<string, { counts: [number, number]; myVote: number | null }>>({});
+  const [asking, setAsking] = useState<{ storyId: string; stickerId: string; prompt: string } | null>(null);
+  const [responsesFor, setResponsesFor] = useState<string | null>(null);
   const progress = useRef(new Animated.Value(0)).current;
   const done = useRef(0);
   useEffect(() => {
@@ -108,7 +116,7 @@ export function StoryViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id]);
 
-  const paused = !loaded || held || menu || reporting || deleting;
+  const paused = !loaded || held || menu || reporting || deleting || !!asking || !!responsesFor;
 
   // The story's song: from its start, for as long as the story plays.
   const clip = useRef<ClipPlayer | null>(null);
@@ -194,6 +202,85 @@ export function StoryViewer({
                 style={{ flex: 7 }}
               />
             </View>
+
+            {/* Poll, question and @mention stickers - live, so they can be tapped.
+                They sit where they were put on the 9:16 story, which is shown whole. */}
+            {loaded && !!story.stickers?.length && (() => {
+              const fw = Math.min(screenWidth, height * FRAME_ASPECT);
+              const fh = fw / FRAME_ASPECT;
+              return (
+                <View
+                  pointerEvents="box-none"
+                  style={{ position: "absolute", left: (screenWidth - fw) / 2, top: (height - fh) / 2, width: fw, height: fh }}
+                >
+                  {story.stickers!.map((sticker) => {
+                    const key = `${story.id}|${sticker.id}`;
+                    const result = sticker.kind === "poll" ? results[key] ?? { counts: sticker.counts ?? [0, 0], myVote: sticker.myVote ?? null } : null;
+                    return (
+                      <View
+                        key={sticker.id}
+                        pointerEvents="box-none"
+                        style={{ position: "absolute", left: sticker.x * fw - fw, top: sticker.y * fh, width: fw * 2, height: 0, alignItems: "center", justifyContent: "center" }}
+                      >
+                        <View style={{ transform: [{ rotate: `${sticker.rotation}deg` }, { scale: sticker.scale }] }}>
+                          <LiveSticker
+                            item={sticker}
+                            width={fw}
+                            actions={{
+                              mine: !!person?.mine,
+                              counts: result?.counts,
+                              myVote: result?.myVote,
+                              onVote: (choice) => {
+                                if (!result || result.myVote !== null) return;
+                                const counts: [number, number] = [...result.counts] as [number, number];
+                                counts[choice] += 1;
+                                setResults((r) => ({ ...r, [key]: { counts, myVote: choice } }));
+                                storyApi
+                                  .vote(accessToken, story.id, sticker.id, choice)
+                                  .then((answer) => setResults((r) => ({ ...r, [key]: { counts: answer.counts, myVote: answer.myVote } })))
+                                  .catch(() => undefined);
+                              },
+                              onAsk: () => sticker.kind === "question" && setAsking({ storyId: story.id, stickerId: sticker.id, prompt: sticker.prompt }),
+                              onResponses: () => setResponsesFor(story.id),
+                              onOpenProfile:
+                                sticker.kind === "mention"
+                                  ? () => {
+                                      onClose();
+                                      setTimeout(() => openProfile(sticker.userId), 80);
+                                    }
+                                  : undefined,
+                            }}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })()}
+
+            {/* Your own story with a poll or question: see who voted and the answers. */}
+            {loaded && person?.mine && story.stickers?.some((s) => s.kind === "poll" || s.kind === "question") && (
+              <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 22, alignItems: "center" }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Responses"
+                onPress={() => setResponsesFor(story.id)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingHorizontal: 18,
+                  minHeight: 40,
+                  borderRadius: 20,
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                }}
+              >
+                <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>Responses</Text>
+              </Pressable>
+              </View>
+            )}
 
             {/* Top: one bar per story, then who and when. */}
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, paddingTop: 10, paddingHorizontal: 8, gap: 10 }}>
@@ -305,6 +392,14 @@ export function StoryViewer({
           )}
         </View>
       </Sheet>
+
+      <AnswerSheet target={asking} accessToken={accessToken} onClose={() => setAsking(null)} />
+      <ResponsesSheet
+        storyId={responsesFor}
+        stickers={story?.stickers ?? []}
+        accessToken={accessToken}
+        onClose={() => setResponsesFor(null)}
+      />
 
       {person && story && !person.mine && (
         <StoryReportSheet

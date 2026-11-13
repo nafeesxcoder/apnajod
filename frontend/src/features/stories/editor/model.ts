@@ -10,7 +10,29 @@ export type TextBg = "none" | "solid" | "soft";
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
 export type TextItem = Placed & { kind: "text"; text: string; font: FontKey; color: string; bg: TextBg };
 export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "music"; value: string };
-export type Item = TextItem | StickerItem;
+/**
+ * Stickers people can use on the story - a poll, a question box, an
+ * @mention. They are not drawn into the photo: they are sent alongside it
+ * and shown live on top, so people can tap them.
+ */
+export type PollItem = Placed & { kind: "poll"; question: string; options: [string, string] };
+export type QuestionItem = Placed & { kind: "question"; prompt: string };
+export type MentionItem = Placed & { kind: "mention"; userId: string; username: string };
+export type LiveItem = PollItem | QuestionItem | MentionItem;
+export type Item = TextItem | StickerItem | LiveItem;
+
+export const isLive = (item: Item): item is LiveItem => item.kind === "poll" || item.kind === "question" || item.kind === "mention";
+
+/** The live stickers as the server takes them. */
+export function liveStickers(state: EditorState): LiveItem[] {
+  return state.items.filter(isLive).map((item) => ({ ...item }));
+}
+
+/** Sizes of the live stickers, as fractions of the story's width. */
+export const POLL_WIDTH = 0.66;
+export const QUESTION_WIDTH = 0.62;
+export const MENTION_SIZE = 0.055;
+export const MAX_MENTIONS = 5;
 
 export type Stroke = {
   id: string;
@@ -64,7 +86,7 @@ export function addItem(state: EditorState, item: Item): EditorState {
   return { ...state, items: [...state.items.filter((each) => each.id !== item.id), item] };
 }
 
-export function updateItem(state: EditorState, id: string, patch: Partial<Placed> & Partial<TextItem>): EditorState {
+export function updateItem(state: EditorState, id: string, patch: Partial<Placed> & Partial<Omit<TextItem, "kind">> & Record<string, unknown>): EditorState {
   return {
     ...state,
     items: state.items.map((item) =>

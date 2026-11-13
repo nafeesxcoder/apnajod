@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { fonts, palette } from "../../../theme";
 import { Sheet } from "../../posts/PostSheets";
@@ -16,11 +17,25 @@ export function StickerSheet({
   visible,
   onClose,
   onPick,
+  onLive,
 }: {
   visible: boolean;
   onClose: () => void;
   onPick: (kind: "emoji" | "time" | "date", value: string) => void;
+  /** Poll, question box or @mention - each opens its own editor. */
+  onLive: (kind: "poll" | "question" | "mention") => void;
 }) {
+  const live = (kind: "poll" | "question" | "mention", icon: "stats-chart" | "help-circle" | "at", label: string) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label} sticker`}
+      onPress={() => onLive(kind)}
+      style={{ flex: 1, minHeight: 64, borderRadius: 14, backgroundColor: palette.crimsonTint, alignItems: "center", justifyContent: "center", gap: 4 }}
+    >
+      <Ionicons name={icon} size={22} color={palette.crimson} />
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.crimson }}>{label}</Text>
+    </Pressable>
+  );
   const pill = (kind: "time" | "date", value: string) => (
     <Pressable
       accessibilityRole="button"
@@ -34,6 +49,11 @@ export function StickerSheet({
   return (
     <Sheet visible={visible} title="Stickers" onClose={onClose}>
       <View style={{ padding: 14, gap: 14 }}>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {live("poll", "stats-chart", "Poll")}
+          {live("question", "help-circle", "Question")}
+          {live("mention", "at", "Mention")}
+        </View>
         <View style={{ flexDirection: "row", gap: 10 }}>
           {pill("time", timeSticker())}
           {pill("date", dateSticker())}

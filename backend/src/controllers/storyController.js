@@ -19,7 +19,7 @@ const createStory = asyncHandler(async (req, res) => {
       trackId: req.body.musicTrackId,
       start: req.body.musicStart,
       length: req.body.musicLength,
-    });
+    }, req.body.stickers);
     res.json({ ok: true, story });
   } catch (error) {
     rethrow(error);
@@ -38,4 +38,30 @@ const deleteStory = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { createStory, getTray, deleteStory };
+const stickerService = require('../services/storyStickerService');
+
+const voteStory = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await stickerService.vote(req.user.id, req.params.id, String(req.body.stickerId || ''), req.body.choice)) });
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+const answerStory = asyncHandler(async (req, res) => {
+  try {
+    res.json(await stickerService.answer(req.user.id, req.params.id, String(req.body.stickerId || ''), req.body.body));
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+const storyResponses = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await stickerService.responses(req.user.id, req.params.id)) });
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+module.exports = { createStory, getTray, deleteStory, voteStory, answerStory, storyResponses };

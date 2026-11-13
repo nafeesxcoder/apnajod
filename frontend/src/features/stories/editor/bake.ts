@@ -9,6 +9,7 @@ import {
   MUSIC_SIZE,
   PILL_SIZE,
   TEXT_SIZE,
+  isLive,
   type EditorState,
   outputSize,
   photoRect,
@@ -115,7 +116,9 @@ export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<st
   // Text and stickers, each turned and sized round its own middle.
   context.textAlign = "center";
   context.textBaseline = "middle";
+  // Poll, question and @mention stickers are not drawn in: they stay live on top.
   for (const item of state.items) {
+    if (isLive(item)) continue;
     context.save();
     context.translate(item.x * W, item.y * H);
     context.rotate((item.rotation * Math.PI) / 180);

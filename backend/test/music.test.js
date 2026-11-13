@@ -24,7 +24,7 @@ test("a story keeps only the song, the start and the length, deleted with it", (
   assert.match(migration, /ALTER TABLE stories ADD COLUMN music_track_id CHAR\(36\) NULL/);
   assert.match(migration, /ALTER TABLE stories ADD COLUMN music_length TINYINT UNSIGNED NULL/);
   assert.doesNotMatch(migration, /story_music_files|BLOB/i);
-  assert.match(story, /music_track_id, music_start, music_length\)/);
+  assert.match(story, /music_track_id, music_start, music_length/);
 });
 
 test("the clip is checked before the story is saved, and a bad one leaves no file", () => {

@@ -35,22 +35,29 @@ import {
   overTrash,
   photoRect,
   pushHistory,
+  isLive,
+  liveStickers,
+  MAX_MENTIONS,
   removeItem,
   setMusic,
   toFront,
   updateItem,
   type EditorState,
+  type PollItem,
+  type QuestionItem,
   type Stroke,
   type TextItem,
 } from "./model";
 import { StickerSheet } from "./StickerSheet";
 import { MusicSheet } from "../music/MusicSheet";
+import { LiveComposer, type PollDraft, type QuestionDraft } from "./LiveComposer";
+import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
 import { TextComposer, type TextDraft } from "./TextComposer";
 
 export type PickedStoryPhoto = { uri: string; width: number; height: number };
 
-type Mode = "idle" | "text" | "draw" | "filters";
+type Mode = "idle" | "text" | "draw" | "filters" | "live";
 type Tool = "pen" | "marker" | "eraser";
 type Pose = { x: number; y: number; scale: number; rotation: number };
 
@@ -102,6 +109,11 @@ export function StoryEditor({
   const [editing, setEditing] = useState<string | null>(null);
   const [stickers, setStickers] = useState(false);
   const [musicOpen, setMusicOpen] = useState(false);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  // The poll / question being made or changed (with the sticker's id when changing one).
+  const [liveDraft, setLiveDraft] = useState<{ kind: "poll" | "question"; id: string | null } | null>(null);
+  // While the photo is put together, live stickers are hidden (they stay live, not drawn in).
+  const [hideLive, setHideLive] = useState(false);
   const [discard, setDiscard] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -245,14 +257,21 @@ export function StoryEditor({
     let made: string | null = null;
     try {
       // Nothing changed: the photo goes up exactly as picked.
-      const uri = isEdited(state) ? (made = await bakeStory({ uri: photo.uri, state, backdrop, frameRef })) : photo.uri;
-      await storyApi.create(accessToken, uri, state.music);
+      let uri = photo.uri;
+      if (isEdited(state)) {
+        setHideLive(true);
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        uri = made = await bakeStory({ uri: photo.uri, state, backdrop, frameRef });
+        setHideLive(false);
+      }
+      await storyApi.create(accessToken, uri, state.music, liveStickers(state));
       onShared();
       onClose();
     } catch (e: any) {
       setError(e?.message || "Your story could not be shared.");
     } finally {
       if (made && Platform.OS === "web") URL.revokeObjectURL(made);
+      setHideLive(false);
       setBusy(false);
     }
   };
@@ -314,7 +333,7 @@ export function StoryEditor({
             ))}
             {live && <StrokeView stroke={live} frame={frame} />}
             {state.items.map((item) =>
-              item.id === editing ? null : (
+              item.id === editing || (hideLive && isLive(item)) ? null : (
                 <DraggableItem
                   key={item.id}
                   item={item}
@@ -340,6 +359,10 @@ export function StoryEditor({
                       setEditing(id);
                       setMode("text");
                     } else if (tapped?.kind === "music") setMusicOpen(true);
+                    else if (tapped?.kind === "poll" || tapped?.kind === "question") {
+                      setLiveDraft({ kind: tapped.kind, id });
+                      setMode("live");
+                    }
                   }}
                 />
               ),
@@ -497,6 +520,37 @@ export function StoryEditor({
             </View>
           )}
 
+          {mode === "live" && liveDraft && (
+            <LiveComposer
+              kind={liveDraft.kind}
+              poll={(() => {
+                const item = state.items.find((each) => each.id === liveDraft.id) as PollItem | undefined;
+                return item?.kind === "poll" ? { question: item.question, options: item.options } : null;
+              })()}
+              question={(() => {
+                const item = state.items.find((each) => each.id === liveDraft.id) as QuestionItem | undefined;
+                return item?.kind === "question" ? { prompt: item.prompt } : null;
+              })()}
+              onCancel={() => {
+                setLiveDraft(null);
+                setMode("idle");
+              }}
+              onDone={(draft) => {
+                const id = liveDraft.id;
+                if (id) commit(updateItem(stateRef.current, id, draft as Record<string, unknown>));
+                else if (liveDraft.kind === "poll") {
+                  const d = draft as PollDraft;
+                  commit(addItem(stateRef.current, { id: newId(), kind: "poll", question: d.question, options: d.options, x: 0.5, y: 0.4, scale: 1, rotation: 0 }));
+                } else {
+                  const d = draft as QuestionDraft;
+                  commit(addItem(stateRef.current, { id: newId(), kind: "question", prompt: d.prompt, x: 0.5, y: 0.4, scale: 1, rotation: 0 }));
+                }
+                setLiveDraft(null);
+                setMode("idle");
+              }}
+            />
+          )}
+
           {mode === "text" && (
             <TextComposer
               initial={editingItem ? { text: editingItem.text, font: editingItem.font, color: editingItem.color, bg: editingItem.bg } : null}
@@ -510,9 +564,47 @@ export function StoryEditor({
       <StickerSheet
         visible={stickers}
         onClose={() => setStickers(false)}
+        onLive={(kind) => {
+          setStickers(false);
+          if (kind === "mention") {
+            if (stateRef.current.items.filter((item) => item.kind === "mention").length >= MAX_MENTIONS) {
+              setError(`You can mention up to ${MAX_MENTIONS} people.`);
+              return;
+            }
+            setMentionOpen(true);
+            return;
+          }
+          // One poll and one question per story: tapping again changes it.
+          const existing = stateRef.current.items.find((item) => item.kind === kind);
+          setLiveDraft({ kind, id: existing?.id ?? null });
+          setMode("live");
+        }}
         onPick={(kind, value) => {
           setStickers(false);
           commit(addItem(stateRef.current, { id: newId(), kind, value, x: 0.5, y: 0.45, scale: 1, rotation: 0 }));
+        }}
+      />
+
+      <MentionSheet
+        visible={mentionOpen}
+        accessToken={accessToken}
+        onClose={() => setMentionOpen(false)}
+        onPick={(user) => {
+          setMentionOpen(false);
+          if (stateRef.current.items.some((item) => item.kind === "mention" && item.userId === user.userId)) return;
+          const count = stateRef.current.items.filter((item) => item.kind === "mention").length;
+          commit(
+            addItem(stateRef.current, {
+              id: newId(),
+              kind: "mention",
+              userId: user.userId,
+              username: user.username,
+              x: 0.5,
+              y: 0.72 + 0.06 * count,
+              scale: 1,
+              rotation: 0,
+            }),
+          );
         }}
       />
 

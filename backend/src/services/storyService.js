@@ -9,7 +9,8 @@ const { query } = require('../config/db');
  * story is remembered only on the viewer's own phone.
  *
  * Who sees a story is the same rule as posts: everyone for a public
- * account, only matches for a private one, never across a block.
+ * account, only matches for a private one, never across a block - and
+ * anyone @mentioned in that one story.
  */
 
 const STORY_HOURS = 24;
@@ -27,7 +28,7 @@ async function removeFile(file) {
   await fs.promises.unlink(file).catch(() => undefined);
 }
 
-async function create(userId, file, publicBase, music = {}) {
+async function create(userId, file, publicBase, music = {}, rawStickers = null) {
   const { STORY_DIR } = require('../middleware/storyUpload');
   // A song clip, checked before anything is saved (5 to 30 seconds).
   let clip = null;
@@ -47,14 +48,18 @@ async function create(userId, file, publicBase, music = {}) {
     error.status = 429;
     throw error;
   }
+  // Poll, question and @mention stickers: checked, mentions of real members only.
+  const stickerService = require('./storyStickerService');
+  const stickers = await stickerService.keepRealMentions(userId, stickerService.cleanStickers(rawStickers));
   const id = crypto.randomUUID();
   const mediaUrl = `${publicBase}/uploads/stories/${file.filename}`;
   await query(
-    `INSERT INTO stories (id, user_id, media_url, expires_at, music_track_id, music_start, music_length)
-     VALUES (?, ?, ?, NOW(6) + INTERVAL ${STORY_HOURS} HOUR, ?, ?, ?)`,
-    [id, userId, mediaUrl, clip?.trackId ?? null, clip?.start ?? null, clip?.length ?? null],
+    `INSERT INTO stories (id, user_id, media_url, expires_at, music_track_id, music_start, music_length, stickers)
+     VALUES (?, ?, ?, NOW(6) + INTERVAL ${STORY_HOURS} HOUR, ?, ?, ?, ?)`,
+    [id, userId, mediaUrl, clip?.trackId ?? null, clip?.start ?? null, clip?.length ?? null, stickers.length ? JSON.stringify(stickers) : null],
   );
-  return { id, mediaUrl, music: clip };
+  await stickerService.saveMentions(id, userId, stickers);
+  return { id, mediaUrl, music: clip, stickers };
 }
 
 /**
@@ -65,7 +70,7 @@ async function create(userId, file, publicBase, music = {}) {
 async function tray(viewerId) {
   const rows = await query(
     `SELECT s.id, s.user_id, s.media_url, s.created_at, s.expires_at,
-            s.music_start, s.music_length,
+            s.music_start, s.music_length, s.stickers,
             mt.id AS music_id, mt.title AS music_title, mt.artist AS music_artist, mt.media_url AS music_url,
             u.username,
             COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
@@ -83,14 +88,16 @@ async function tray(viewerId) {
              OR u.is_private = 0
              OR EXISTS (SELECT 1 FROM mutual_matches mm
                          WHERE (mm.user_a_id = ? AND mm.user_b_id = u.id)
-                            OR (mm.user_a_id = u.id AND mm.user_b_id = ?)))
+                            OR (mm.user_a_id = u.id AND mm.user_b_id = ?))
+             OR EXISTS (SELECT 1 FROM story_mentions sm WHERE sm.story_id = s.id AND sm.user_id = ?))
         AND NOT EXISTS (SELECT 1 FROM blocks b
                          WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                             OR (b.blocker_id = u.id AND b.blocked_id = ?))
       ORDER BY s.created_at ASC
       LIMIT 500`,
-    [viewerId, viewerId, viewerId, viewerId, viewerId],
+    [viewerId, viewerId, viewerId, viewerId, viewerId, viewerId],
   );
+  const stickerService = require('./storyStickerService');
   const people = new Map();
   for (const row of rows) {
     if (!people.has(row.user_id)) {
@@ -105,6 +112,7 @@ async function tray(viewerId) {
       mediaUrl: row.media_url,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
+      stickers: stickerService.parseStickers(row.stickers),
       music: row.music_id
         ? {
             trackId: row.music_id,
@@ -117,6 +125,8 @@ async function tray(viewerId) {
         : null,
     });
   }
+  // Poll results: how many voted each way, and your own vote.
+  await stickerService.withResults(viewerId, [...people.values()].flatMap((person) => person.stories));
   const latest = (person) => new Date(person.stories[person.stories.length - 1].createdAt).getTime();
   return [...people.values()].sort((a, b) => (a.mine ? -1 : b.mine ? 1 : latest(b) - latest(a)));
 }

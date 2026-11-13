@@ -94,7 +94,8 @@ describe("story editor", () => {
 
   it("uploads an untouched photo as picked and only bakes an edited one", () => {
     const editor = read("StoryEditor.tsx");
-    expect(editor).toContain("isEdited(state) ? (made = await bakeStory(");
+    expect(editor).toContain("let uri = photo.uri;\n      if (isEdited(state)) {");
+    expect(editor).toContain("uri = made = await bakeStory(");
     expect(read("bake.native.ts")).toContain("captureRef(");
     expect(read("bake.ts")).toContain('canvas.toBlob(resolve, "image/jpeg", 0.92)');
   });

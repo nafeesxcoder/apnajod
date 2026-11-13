@@ -3,6 +3,7 @@ import { PanResponder, Platform, Text, View, type GestureResponderEvent } from "
 
 import { fonts, palette } from "../../../theme";
 import { EMOJI_CSS, PILL_PAD, STORY_FONTS, TEXT_PAD, textLines } from "./fonts";
+import { LiveSticker } from "../LiveSticker";
 import {
   EMOJI_SIZE,
   LINE_HEIGHT,
@@ -10,6 +11,7 @@ import {
   PILL_SIZE,
   TEXT_SIZE,
   clampScale,
+  isLive,
   type Item,
   type Stroke,
   textColors,
@@ -53,6 +55,7 @@ export function ItemBody({ item, frame }: { item: Item; frame: Frame }) {
       </View>
     );
   }
+  if (isLive(item)) return <LiveSticker item={item} width={frame.width} />;
   if (item.kind === "emoji") {
     const size = EMOJI_SIZE * frame.width;
     return (
@@ -191,7 +194,17 @@ export function DraggableItem({
       <View
         ref={ref}
         {...(disabled ? {} : responder.panHandlers)}
-        accessibilityLabel={item.kind === "text" ? `Text: ${item.text}` : `Sticker ${item.value}`}
+        accessibilityLabel={
+          item.kind === "text"
+            ? `Text: ${item.text}`
+            : item.kind === "poll"
+              ? `Poll: ${item.question || item.options.join(" or ")}`
+              : item.kind === "question"
+                ? `Question: ${item.prompt}`
+                : item.kind === "mention"
+                  ? `Mention @${item.username}`
+                  : `Sticker ${item.value}`
+        }
         style={{
           transform: [{ rotate: `${pose.rotation}deg` }, { scale: pose.scale }],
           ...(Platform.OS === "web" ? ({ cursor: disabled ? "default" : "move", touchAction: "none", userSelect: "none" } as object) : null),

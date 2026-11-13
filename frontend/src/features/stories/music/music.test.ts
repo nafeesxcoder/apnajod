@@ -44,7 +44,7 @@ describe("story music", () => {
     const api = read("../../../api/storyApi.ts");
     expect(api).toContain('body.append("musicTrackId", music.trackId);');
     expect(api).toContain('body.append("musicLength", String(music.length));');
-    expect(read("../editor/StoryEditor.tsx")).toContain("await storyApi.create(accessToken, uri, state.music);");
+    expect(read("../editor/StoryEditor.tsx")).toContain("await storyApi.create(accessToken, uri, state.music, liveStickers(state));");
   });
 
   it("lets viewers turn the sound off, and pauses the song with the story", () => {
