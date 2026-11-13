@@ -13,7 +13,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LinearGradient } from "expo-linear-gradient";
 import type { ContactsMatchResult, SocialUser } from "../../../api/socialApi";
+import { brand, cardShadow, whiteCard } from "../../../components/brand";
+import { HeartBeat, PressScale, Reveal, SpinRing } from "../../../components/motion";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 
 const MAX_WIDTH = 720;
@@ -185,8 +188,6 @@ export function FindPeopleScreen({
               width: "100%",
               maxWidth: MAX_WIDTH,
               alignSelf: "center",
-              backgroundColor: palette.paper,
-              borderRadius: radius.xl,
               paddingHorizontal: SIDE_PADDING,
               paddingVertical: 20,
             }}
@@ -200,22 +201,23 @@ export function FindPeopleScreen({
                 marginBottom: 20,
               }}
             >
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
-                hitSlop={12}
+                hitSlop={8}
                 onPress={onBack}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: palette.paperSand,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: palette.paper,
                   justifyContent: "center",
                   alignItems: "center",
+                  ...cardShadow,
                 }}
               >
-                <Ionicons name="arrow-back" size={18} color={palette.ink} />
-              </Pressable>
+                <Ionicons name="arrow-back" size={20} color={palette.ink} />
+              </PressScale>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -302,7 +304,7 @@ export function FindPeopleScreen({
                   <Text
                     accessibilityRole="alert"
                     style={{
-                      color: palette.clay,
+                      color: palette.crimson,
                       fontFamily: fonts.body,
                       fontSize: 13,
                       marginBottom: 12,
@@ -356,36 +358,38 @@ export function FindPeopleScreen({
                       }}
                     >
                       {SUGGESTIONS.map((s) => (
-                        <Pressable
+                        <PressScale
                           key={s}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Search for ${s}`}
                           onPress={() => setTerm(s)}
                           style={{
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
+                            minHeight: 36,
+                            justifyContent: "center",
+                            paddingHorizontal: 14,
                             borderRadius: radius.pill,
-                            backgroundColor: palette.paperSand,
+                            backgroundColor: palette.paper,
                             borderWidth: 1,
-                            borderColor: palette.rule,
+                            borderColor: palette.crimsonTint,
                           }}
                         >
                           <Text
                             style={{
-                              fontFamily: fonts.bodyMedium,
+                              fontFamily: fonts.bodySemi,
                               fontSize: 12,
-                              color: palette.navy,
+                              color: palette.crimson,
                             }}
                           >
                             {s}
                           </Text>
-                        </Pressable>
+                        </PressScale>
                       ))}
                     </View>
                   </View>
                 ) : results.length === 0 ? (
                   <View
                     style={{
-                      backgroundColor: palette.paperSand,
-                      borderRadius: radius.lg,
+                      ...whiteCard,
                       padding: 24,
                       alignItems: "center",
                     }}
@@ -409,14 +413,15 @@ export function FindPeopleScreen({
                   </View>
                 ) : (
                   <View style={{ gap: 8 }}>
-                    {results.map((user) => (
-                      <PersonRow
-                        key={user.userId}
-                        user={user}
-                        busy={!!pending[user.userId]}
-                        onOpen={() => onOpenPerson(user.userId)}
-                        onFollow={() => void follow(user)}
-                      />
+                    {results.map((user, index) => (
+                      <Reveal key={user.userId} delay={Math.min(index, 8) * 50}>
+                        <PersonRow
+                          user={user}
+                          busy={!!pending[user.userId]}
+                          onOpen={() => onOpenPerson(user.userId)}
+                          onFollow={() => void follow(user)}
+                        />
+                      </Reveal>
                     ))}
                   </View>
                 )}
@@ -427,11 +432,15 @@ export function FindPeopleScreen({
                 <View
                   style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}
                 >
-                  <Pressable
+                  <PressScale
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: tab === "discover" }}
+                    accessibilityLabel="Discover"
                     onPress={() => setTab("discover")}
+                    containerStyle={{ flex: 1 }}
                     style={{
-                      flex: 1,
-                      paddingVertical: 10,
+                      minHeight: 44,
+                      justifyContent: "center",
                       borderRadius: radius.pill,
                       backgroundColor:
                         tab === "discover" ? palette.navy : palette.paper,
@@ -449,16 +458,20 @@ export function FindPeopleScreen({
                     >
                       Discover
                     </Text>
-                  </Pressable>
-                  <Pressable
+                  </PressScale>
+                  <PressScale
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: tab === "contacts" }}
+                    accessibilityLabel="My contacts"
                     onPress={() => {
                       setTab("contacts");
                       if (contacts === null && contactsSupported)
                         void loadContacts();
                     }}
+                    containerStyle={{ flex: 1 }}
                     style={{
-                      flex: 1,
-                      paddingVertical: 10,
+                      minHeight: 44,
+                      justifyContent: "center",
                       borderRadius: radius.pill,
                       backgroundColor:
                         tab === "contacts" ? palette.navy : palette.paper,
@@ -476,7 +489,7 @@ export function FindPeopleScreen({
                     >
                       My contacts
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 </View>
 
                 {tab === "discover" ? (
@@ -488,15 +501,18 @@ export function FindPeopleScreen({
                       contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
                     >
                       {FILTERS.map((f) => (
-                        <Pressable
+                        <PressScale
                           key={f.id}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: filter === f.id }}
+                          accessibilityLabel={f.label}
                           onPress={() => setFilter(f.id)}
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
                             gap: 6,
+                            minHeight: 36,
                             paddingHorizontal: 14,
-                            paddingVertical: 8,
                             borderRadius: radius.pill,
                             backgroundColor:
                               filter === f.id ? palette.navy : palette.paper,
@@ -518,7 +534,7 @@ export function FindPeopleScreen({
                           >
                             {f.label}
                           </Text>
-                        </Pressable>
+                        </PressScale>
                       ))}
                     </ScrollView>
 
@@ -541,17 +557,22 @@ export function FindPeopleScreen({
                             gap: 12,
                           }}
                         >
-                          {discoverUsers.slice(0, 4).map((user) => (
-                            <Pressable
+                          {discoverUsers.slice(0, 4).map((user, index) => (
+                            <Reveal
                               key={user.userId}
+                              delay={index * 70}
+                              style={{ width: "48%", marginBottom: 10 }}
+                            >
+                            <PressScale
+                              accessibilityRole="button"
+                              accessibilityLabel={`Open ${user.username}`}
                               onPress={() => onOpenPerson(user.userId)}
                               style={{
-                                width: "48%",
                                 height: 220,
-                                borderRadius: radius.lg,
+                                borderRadius: 18,
                                 overflow: "hidden",
                                 backgroundColor: palette.paperSand,
-                                marginBottom: 10,
+                                ...cardShadow,
                               }}
                             >
                               {user.avatarUrl ? (
@@ -581,7 +602,10 @@ export function FindPeopleScreen({
                                   </Text>
                                 </View>
                               )}
-                              <View
+                              <LinearGradient
+                                colors={brand.heroGradient}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
                                 style={{
                                   position: "absolute",
                                   left: 0,
@@ -589,7 +613,6 @@ export function FindPeopleScreen({
                                   bottom: 0,
                                   paddingHorizontal: 10,
                                   paddingVertical: 10,
-                                  backgroundColor: palette.navy,
                                 }}
                               >
                                 <Text
@@ -607,14 +630,15 @@ export function FindPeopleScreen({
                                   style={{
                                     fontFamily: fonts.body,
                                     fontSize: 11,
-                                    color: "#F4E9E0",
+                                    color: brand.onHeroSoft,
                                     marginTop: 1,
                                   }}
                                 >
                                   {user.name}
                                 </Text>
-                              </View>
-                            </Pressable>
+                              </LinearGradient>
+                            </PressScale>
+                            </Reveal>
                           ))}
                         </View>
                       </>
@@ -623,8 +647,7 @@ export function FindPeopleScreen({
                     {discoverUsers.length === 0 && (
                       <View
                         style={{
-                          backgroundColor: palette.paperSand,
-                          borderRadius: radius.lg,
+                          ...whiteCard,
                           padding: 24,
                           alignItems: "center",
                         }}
@@ -649,16 +672,18 @@ export function FindPeopleScreen({
                     )}
 
                     {contactsSupported && (
-                      <Pressable
+                      <PressScale
+                        accessibilityRole="button"
+                        accessibilityLabel="Find friends from contacts"
                         onPress={() => {
                           setTab("contacts");
                           if (contacts === null) void loadContacts();
                         }}
+                        containerStyle={{ marginTop: 16 }}
                         style={{
-                          marginTop: 16,
-                          paddingVertical: 14,
+                          minHeight: 48,
                           borderRadius: radius.pill,
-                          backgroundColor: palette.paperSand,
+                          ...whiteCard,
                           flexDirection: "row",
                           alignItems: "center",
                           justifyContent: "center",
@@ -679,7 +704,7 @@ export function FindPeopleScreen({
                         >
                           Find friends from contacts
                         </Text>
-                      </Pressable>
+                      </PressScale>
                     )}
                   </>
                 ) : (
@@ -688,8 +713,7 @@ export function FindPeopleScreen({
                     {!contactsSupported ? (
                       <View
                         style={{
-                          backgroundColor: palette.paperSand,
-                          borderRadius: radius.lg,
+                          ...whiteCard,
                           padding: 24,
                           alignItems: "center",
                         }}
@@ -720,8 +744,7 @@ export function FindPeopleScreen({
                     ) : contacts === null ? (
                       <View
                         style={{
-                          backgroundColor: palette.paperSand,
-                          borderRadius: radius.lg,
+                          ...whiteCard,
                           padding: 24,
                           alignItems: "center",
                         }}
@@ -731,7 +754,7 @@ export function FindPeopleScreen({
                             width: 64,
                             height: 64,
                             borderRadius: 32,
-                            backgroundColor: palette.paper,
+                            backgroundColor: brand.pillBg,
                             justifyContent: "center",
                             alignItems: "center",
                             marginBottom: 14,
@@ -740,7 +763,7 @@ export function FindPeopleScreen({
                           <Ionicons
                             name="people-circle-outline"
                             size={32}
-                            color={palette.navy}
+                            color={palette.crimson}
                           />
                         </View>
                         <Text
@@ -767,11 +790,13 @@ export function FindPeopleScreen({
                         >
                           We check your contacts once. Nothing is stored.
                         </Text>
-                        <Pressable
+                        <PressScale
+                          accessibilityRole="button"
+                          accessibilityLabel="Check my contacts"
                           onPress={() => void loadContacts()}
                           style={{
-                            backgroundColor: palette.navy,
-                            paddingVertical: 12,
+                            backgroundColor: palette.crimson,
+                            minHeight: 44,
                             paddingHorizontal: 24,
                             borderRadius: radius.pill,
                             flexDirection: "row",
@@ -782,14 +807,14 @@ export function FindPeopleScreen({
                           <Ionicons name="sync" size={18} color="#FFFFFF" />
                           <Text
                             style={{
-                              color: palette.ink,
+                              color: "#FFFFFF",
                               fontFamily: fonts.bodySemi,
                               fontSize: 14,
                             }}
                           >
                             Check my contacts
                           </Text>
-                        </Pressable>
+                        </PressScale>
                       </View>
                     ) : (
                       <View style={{ gap: 20 }}>
@@ -808,14 +833,15 @@ export function FindPeopleScreen({
                               {contacts.matched.length} on Apnajoda
                             </Text>
                             <View style={{ gap: 8 }}>
-                              {contacts.matched.map((user) => (
-                                <PersonRow
-                                  key={user.userId}
-                                  user={user}
-                                  busy={!!pending[user.userId]}
-                                  onOpen={() => onOpenPerson(user.userId)}
-                                  onFollow={() => void follow(user)}
-                                />
+                              {contacts.matched.map((user, index) => (
+                                <Reveal key={user.userId} delay={Math.min(index, 8) * 50}>
+                                  <PersonRow
+                                    user={user}
+                                    busy={!!pending[user.userId]}
+                                    onOpen={() => onOpenPerson(user.userId)}
+                                    onFollow={() => void follow(user)}
+                                  />
+                                </Reveal>
                               ))}
                             </View>
                           </View>
@@ -839,17 +865,17 @@ export function FindPeopleScreen({
                                 : "friends"}
                             </Text>
                             <View style={{ gap: 8 }}>
-                              {contacts.unmatched.map((phone) => (
-                                <View
+                              {contacts.unmatched.map((phone, index) => (
+                                <Reveal
                                   key={phone}
+                                  delay={Math.min(index, 8) * 50}
                                   style={{
+                                    ...whiteCard,
                                     flexDirection: "row",
                                     alignItems: "center",
                                     gap: 10,
                                     paddingVertical: 12,
                                     paddingHorizontal: 12,
-                                    borderRadius: radius.lg,
-                                    backgroundColor: palette.paperSand,
                                   }}
                                 >
                                   <View
@@ -857,7 +883,7 @@ export function FindPeopleScreen({
                                       width: 40,
                                       height: 40,
                                       borderRadius: 20,
-                                      backgroundColor: palette.paper,
+                                      backgroundColor: palette.paperSand,
                                       justifyContent: "center",
                                       alignItems: "center",
                                     }}
@@ -889,12 +915,15 @@ export function FindPeopleScreen({
                                       Not on Apnajoda yet
                                     </Text>
                                   </View>
-                                  <Pressable
+                                  <PressScale
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Invite ${formatPhone(phone)} on WhatsApp`}
                                     onPress={() => inviteOnWhatsApp(phone)}
                                     style={{
+                                      minHeight: 44,
                                       paddingHorizontal: 14,
-                                      paddingVertical: 9,
                                       borderRadius: radius.pill,
+                                      // WhatsApp's own green - the one colour outside the palette.
                                       backgroundColor: "#25D366",
                                       flexDirection: "row",
                                       alignItems: "center",
@@ -908,15 +937,15 @@ export function FindPeopleScreen({
                                     />
                                     <Text
                                       style={{
-                                        color: palette.ink,
+                                        color: "#FFFFFF",
                                         fontFamily: fonts.bodySemi,
                                         fontSize: 13,
                                       }}
                                     >
                                       Invite
                                     </Text>
-                                  </Pressable>
-                                </View>
+                                  </PressScale>
+                                </Reveal>
                               ))}
                             </View>
                           </View>
@@ -926,8 +955,7 @@ export function FindPeopleScreen({
                           contacts.unmatched.length === 0 && (
                             <View
                               style={{
-                                backgroundColor: palette.paperSand,
-                                borderRadius: radius.lg,
+                                ...whiteCard,
                                 padding: 24,
                                 alignItems: "center",
                               }}
@@ -987,42 +1015,40 @@ function PersonRow({
   return (
     <View
       style={{
+        ...whiteCard,
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
         paddingVertical: 12,
         paddingHorizontal: 12,
-        borderRadius: radius.lg,
-        backgroundColor: palette.paperSand,
       }}
     >
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={`Open ${user.username}`}
         onPress={onOpen}
-        style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
+        scaleTo={0.985}
+        containerStyle={{ flex: 1 }}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
       >
+        <SpinRing size={50} spin={false}>
         {user.avatarUrl ? (
           <Image
             source={{ uri: user.avatarUrl }}
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 23,
-              backgroundColor: palette.paper,
+              width: "100%",
+              height: "100%",
+              backgroundColor: palette.paperSand,
             }}
           />
         ) : (
           <View
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 23,
-              backgroundColor: palette.paper,
+              width: "100%",
+              height: "100%",
+              backgroundColor: palette.paperSand,
               justifyContent: "center",
               alignItems: "center",
-              borderWidth: 1,
-              borderColor: palette.rule,
             }}
           >
             <Text
@@ -1036,6 +1062,7 @@ function PersonRow({
             </Text>
           </View>
         )}
+        </SpinRing>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <Text
             numberOfLines={1}
@@ -1058,19 +1085,21 @@ function PersonRow({
             {status === "likes_you" ? `${user.name} · likes you` : user.name}
           </Text>
         </View>
-      </Pressable>
+      </PressScale>
       {onFollow && (
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={`${label} ${user.username}`}
           disabled={busy || settled}
           onPress={onFollow}
           style={{
             minWidth: 84,
+            minHeight: 44,
+            flexDirection: "row",
+            gap: 6,
             paddingHorizontal: 14,
-            paddingVertical: 9,
             borderRadius: radius.pill,
-            backgroundColor: settled ? palette.paper : palette.navy,
+            backgroundColor: settled ? palette.paper : palette.crimson,
             borderWidth: settled ? 1 : 0,
             borderColor: palette.rule,
             alignItems: "center",
@@ -1080,17 +1109,24 @@ function PersonRow({
           {busy ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text
-              style={{
-                fontFamily: fonts.bodySemi,
-                fontSize: 13,
-                color: settled ? palette.slate : "#FFFFFF",
-              }}
-            >
-              {label}
-            </Text>
+            <>
+              {!settled && (
+                <HeartBeat>
+                  <Ionicons name="heart" size={14} color="#FFFFFF" />
+                </HeartBeat>
+              )}
+              <Text
+                style={{
+                  fontFamily: fonts.bodySemi,
+                  fontSize: 13,
+                  color: settled ? palette.slate : "#FFFFFF",
+                }}
+              >
+                {label}
+              </Text>
+            </>
           )}
-        </Pressable>
+        </PressScale>
       )}
     </View>
   );
