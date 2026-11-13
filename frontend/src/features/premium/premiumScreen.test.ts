@@ -40,8 +40,10 @@ describe('the Premium screen', () => {
   });
 
   it('shows the Buy button only while checkout is open', () => {
+    // The Buy button is a PressScale now (it sinks when pressed, like every
+    // button in the redesign); it is still the only thing behind the flag.
     expect(screen).toMatch(
-      /\{billingApi\.checkoutAvailable && \(\s*<Pressable\s*onPress=\{\(\) => void handleBuy\(\)\}/,
+      /\{billingApi\.checkoutAvailable && \(\s*<PressScale[\s\S]{0,200}?onPress=\{\(\) => void handleBuy\(\)\}/,
     );
   });
 

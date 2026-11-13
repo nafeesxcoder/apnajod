@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
-  Pressable,
   ScrollView,
   Switch,
   Image,
@@ -10,9 +9,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { AppCanvas } from "../../../components/AppCanvas";
-import { fonts, palette, radius, typeScale } from "../../../theme";
+import { brand, cardShadow, whiteCard } from "../../../components/brand";
+import { PressScale, Reveal } from "../../../components/motion";
+import { fonts, palette, typeScale } from "../../../theme";
 import { pushApi } from "../../../api/pushApi";
 
 const MAX_WIDTH = 720;
@@ -29,6 +31,111 @@ function urlBase64ToUint8Array(base64String: string) {
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
+}
+
+/*
+ * Navy x Crimson settings: each group is a white card with a small label
+ * above it; every row has its icon in a pink circle and sinks when pressed.
+ * These live outside the screen so they are not re-created on every
+ * render (that remounted the switches and replayed the animations).
+ */
+function SettingsRow({
+  icon,
+  label,
+  onPress,
+  danger = false,
+  isLast = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+  isLast?: boolean;
+}) {
+  return (
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      scaleTo={0.985}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
+        paddingHorizontal: 16,
+        minHeight: 56,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: palette.rule,
+      }}
+    >
+      <IconDot icon={icon} />
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: fonts.bodyMedium,
+          fontSize: 15,
+          color: danger ? palette.crimson : palette.ink,
+        }}
+      >
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={16} color={danger ? palette.crimson : palette.slate} />
+    </PressScale>
+  );
+}
+
+function IconDot({ icon }: { icon: keyof typeof Ionicons.glyphMap }) {
+  return (
+    <View
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: brand.pillBg,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Ionicons name={icon} size={18} color={palette.crimson} />
+    </View>
+  );
+}
+
+function SectionLabel({ title }: { title: string }) {
+  return (
+    <Text
+      accessibilityRole="header"
+      style={{
+        fontFamily: fonts.bodySemi,
+        fontSize: 12,
+        letterSpacing: 0.8,
+        textTransform: "uppercase",
+        color: palette.slate,
+        marginTop: 22,
+        marginBottom: 8,
+        marginLeft: 4,
+      }}
+    >
+      {title}
+    </Text>
+  );
+}
+
+function SettingsCard({ children, delay = 0, danger }: { children: React.ReactNode; delay?: number; danger?: boolean }) {
+  return (
+    <Reveal delay={delay}>
+      <View
+        style={{
+          ...whiteCard,
+          overflow: "hidden",
+          borderWidth: danger ? 1 : 0,
+          borderColor: palette.crimsonTint,
+        }}
+      >
+        {children}
+      </View>
+    </Reveal>
+  );
 }
 
 export function SettingsScreen({
@@ -139,79 +246,6 @@ export function SettingsScreen({
     }
   };
 
-  const Row = ({
-    icon,
-    label,
-    onPress,
-    danger = false,
-    isLast = false,
-  }: {
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    onPress: () => void;
-    danger?: boolean;
-    isLast?: boolean;
-  }) => (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: palette.rule,
-      }}
-    >
-      <Ionicons
-        name={icon}
-        size={20}
-        color={danger ? palette.clay : palette.navy}
-        style={{ marginRight: 14 }}
-      />
-      <Text
-        style={{
-          flex: 1,
-          fontFamily: fonts.bodyMedium,
-          fontSize: 15,
-          color: danger ? palette.clay : palette.ink,
-        }}
-      >
-        {label}
-      </Text>
-      <Ionicons name="chevron-forward" size={16} color={palette.slate} />
-    </Pressable>
-  );
-
-  const SectionHeader = ({ title }: { title: string }) => (
-    <Text
-      style={{
-        fontFamily: fonts.display,
-        fontSize: typeScale.section,
-        color: palette.ink,
-        marginTop: 24,
-        marginBottom: 10,
-      }}
-    >
-      {title}
-    </Text>
-  );
-
-  const Card = ({ children }: { children: React.ReactNode }) => (
-    <View
-      style={{
-        backgroundColor: palette.paper,
-        borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: palette.rule,
-        marginBottom: 12,
-        overflow: "hidden",
-      }}
-    >
-      {children}
-    </View>
-  );
-
   return (
     <AppCanvas>
       <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase }}>
@@ -228,10 +262,8 @@ export function SettingsScreen({
               width: "100%",
               maxWidth: MAX_WIDTH,
               alignSelf: "center",
-              backgroundColor: palette.paper,
-              borderRadius: radius.xl,
               paddingHorizontal: SIDE_PADDING,
-              paddingVertical: 20,
+              paddingVertical: 12,
             }}
           >
             {/* Header */}
@@ -243,19 +275,22 @@ export function SettingsScreen({
                 marginBottom: 20,
               }}
             >
-              <Pressable
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel="Back to profile"
                 onPress={() => navigate("profile")}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: palette.paperSand,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: palette.paper,
                   justifyContent: "center",
                   alignItems: "center",
+                  ...cardShadow,
                 }}
               >
-                <Ionicons name="arrow-back" size={18} color={palette.ink} />
-              </Pressable>
+                <Ionicons name="arrow-back" size={20} color={palette.ink} />
+              </PressScale>
               <Text
                 style={{
                   fontFamily: fonts.display,
@@ -267,93 +302,99 @@ export function SettingsScreen({
               </Text>
             </View>
 
-            {/* App Info */}
-            <View style={{ alignItems: "center", paddingBottom: 24 }}>
-              <Image
-                source={require("../../../../assets/apnajoda-mark.png")}
-                style={{ width: 84, height: 84 }}
-                resizeMode="contain"
-                accessibilityLabel="Apnajoda"
-              />
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 12,
-                  color: palette.slate,
-                  marginTop: 4,
-                }}
+            {/* App info: the navy hero of this screen */}
+            <Reveal>
+              <LinearGradient
+                colors={brand.heroGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ borderRadius: 20, padding: 20, flexDirection: "row", alignItems: "center", gap: 16 }}
               >
-                Version 1.0.0
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 12,
-                  color: palette.slate,
-                  fontStyle: "italic",
-                  marginTop: 4,
-                }}
-              >
-                Meaningful connections. Meaningful futures.
-              </Text>
-            </View>
+                <View
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    backgroundColor: "#FFFFFF",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Image
+                    source={require("../../../../assets/apnajoda-mark.png")}
+                    style={{ width: 48, height: 48 }}
+                    resizeMode="contain"
+                    accessibilityLabel="Apnajoda"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: fonts.display, fontSize: 22, color: brand.onHero }}>Apnajoda</Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 13, color: brand.onHeroSoft, marginTop: 2 }}>
+                    Meaningful connections. Meaningful futures.
+                  </Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: brand.onHeroSoft, marginTop: 4 }}>
+                    Version 1.0.0
+                  </Text>
+                </View>
+              </LinearGradient>
+            </Reveal>
 
             {onOpenAdmin && (
               <>
-                <SectionHeader title="Admin" />
-                <Card>
-                  <Row
+                <SectionLabel title="Admin" />
+                <SettingsCard delay={60}>
+                  <SettingsRow
                     icon="shield-checkmark-outline"
                     label="Admin Panel"
                     onPress={onOpenAdmin}
                     isLast
                   />
-                </Card>
+                </SettingsCard>
               </>
             )}
 
             {/* Account */}
-            <SectionHeader title="Account" />
-            <Card>
-              <Row
+            <SectionLabel title="Account" />
+            <SettingsCard delay={120}>
+              <SettingsRow
                 icon="person-outline"
                 label="Edit Profile"
                 onPress={() => navigate("profileSetup")}
               />
-              <Row
+              <SettingsRow
                 icon="shield-checkmark-outline"
                 label="Trust Hub & Verification"
                 onPress={() => navigate("verifyHub")}
               />
-              <Row
+              <SettingsRow
                 icon="options-outline"
                 label="Match Filters & Preferences"
                 onPress={() => navigate("discovery")}
                 isLast
               />
-            </Card>
+            </SettingsCard>
 
             {/* Discover */}
-            <SectionHeader title="Discover" />
-            <Card>
-              <Row
+            <SectionLabel title="Discover" />
+            <SettingsCard delay={180}>
+              <SettingsRow
                 icon="heart-outline"
                 label="Who Chose You"
                 onPress={() => navigate("likes")}
               />
-              <Row
+              <SettingsRow
                 icon="search-outline"
                 label="Find Someone"
                 onPress={() => navigate("find")}
                 isLast
               />
-            </Card>
+            </SettingsCard>
 
             {/* Notifications (web push) */}
             {pushSupported && (
               <>
-                <SectionHeader title="Notifications" />
-                <Card>
+                <SectionLabel title="Notifications" />
+                <SettingsCard delay={240}>
                   <View
                     style={{
                       flexDirection: "row",
@@ -362,12 +403,9 @@ export function SettingsScreen({
                       paddingVertical: 14,
                     }}
                   >
-                    <Ionicons
-                      name={notifOn ? "notifications-outline" : "notifications-off-outline"}
-                      size={20}
-                      color={palette.navy}
-                      style={{ marginRight: 14 }}
-                    />
+                    <View style={{ marginRight: 14 }}>
+                      <IconDot icon={notifOn ? "notifications-outline" : "notifications-off-outline"} />
+                    </View>
                     <View style={{ flex: 1, paddingRight: 12 }}>
                       <Text
                         style={{
@@ -382,7 +420,7 @@ export function SettingsScreen({
                         style={{
                           fontFamily: fonts.body,
                           fontSize: 12,
-                          color: notifNote ? palette.clay : palette.slate,
+                          color: notifNote ? palette.crimson : palette.slate,
                           marginTop: 3,
                         }}
                       >
@@ -401,13 +439,13 @@ export function SettingsScreen({
                       thumbColor="#FFFFFF"
                     />
                   </View>
-                </Card>
+                </SettingsCard>
               </>
             )}
 
             {/* Privacy & Safety */}
-            <SectionHeader title="Privacy & Safety" />
-            <Card>
+            <SectionLabel title="Privacy & Safety" />
+            <SettingsCard delay={300}>
               <View
                 style={{
                   flexDirection: "row",
@@ -418,12 +456,9 @@ export function SettingsScreen({
                   borderBottomColor: palette.rule,
                 }}
               >
-                <Ionicons
-                  name={isPrivate ? "lock-closed-outline" : "lock-open-outline"}
-                  size={20}
-                  color={palette.navy}
-                  style={{ marginRight: 14 }}
-                />
+                <View style={{ marginRight: 14 }}>
+                  <IconDot icon={isPrivate ? "lock-closed-outline" : "lock-open-outline"} />
+                </View>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text
                     style={{
@@ -463,48 +498,48 @@ export function SettingsScreen({
                   thumbColor="#FFFFFF"
                 />
               </View>
-              <Row
+              <SettingsRow
                 icon="shield-outline"
                 label="Safety & Privacy"
                 onPress={() => navigate("safety")}
                 isLast
               />
-            </Card>
+            </SettingsCard>
 
-            {/* Support â€” single link */}
-            <SectionHeader title="Support" />
-            <Card>
-              <Row
+            {/* Support - single link */}
+            <SectionLabel title="Support" />
+            <SettingsCard delay={360}>
+              <SettingsRow
                 icon="help-circle-outline"
                 label="Help & Support"
                 onPress={() => navigate("support")}
                 isLast
               />
-            </Card>
+            </SettingsCard>
 
             {/* Danger Zone */}
-            <SectionHeader title="Danger zone" />
-            <Card>
-              <Row
+            <SectionLabel title="Danger zone" />
+            <SettingsCard delay={420} danger>
+              <SettingsRow
                 icon="log-out-outline"
                 label="Log out"
                 onPress={onLogout}
                 danger
               />
-              <Row
+              <SettingsRow
                 icon="pause-circle-outline"
                 label="Deactivate account"
                 onPress={onDeactivate}
                 danger
               />
-              <Row
+              <SettingsRow
                 icon="trash-outline"
                 label="Delete account permanently"
                 onPress={onDeletePermanently}
                 danger
                 isLast
               />
-            </Card>
+            </SettingsCard>
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -1,7 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   Text,
   View,
@@ -17,6 +16,9 @@ import {
 } from "../../../api/billingApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
+import { LinearGradient } from "expo-linear-gradient";
+import { brand, cardShadow, whiteCard } from "../../../components/brand";
+import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
 
 const COLUMN = 800;
 
@@ -214,24 +216,23 @@ export function PremiumScreen({
             paddingVertical: 12,
           }}
         >
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel="Go back"
-            hitSlop={12}
+            hitSlop={8}
             onPress={onBack}
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
               backgroundColor: palette.paper,
-              borderWidth: 1,
-              borderColor: palette.rule,
               justifyContent: "center",
               alignItems: "center",
+              ...cardShadow,
             }}
           >
-            <Ionicons name="arrow-back" size={18} color={palette.ink} />
-          </Pressable>
+            <Ionicons name="arrow-back" size={20} color={palette.ink} />
+          </PressScale>
           <Text
             style={{
               fontFamily: fonts.display,
@@ -250,35 +251,48 @@ export function PremiumScreen({
           <View style={{ width: "100%", maxWidth: COLUMN, alignSelf: "center" }}>
             {loading ? (
               <View style={{ paddingVertical: 60, alignItems: "center" }}>
-                <ActivityIndicator color={palette.navy} />
+                <ActivityIndicator color={palette.crimson} />
               </View>
             ) : error ? (
               <Text
                 accessibilityRole="alert"
-                style={{ color: palette.clay, fontFamily: fonts.body }}
+                style={{ color: palette.crimson, fontFamily: fonts.body }}
               >
                 {error}
               </Text>
             ) : (
               <>
                 {summary?.premium && (
-                  <View
+                  <Reveal
                     style={{
-                      backgroundColor: palette.paperSand,
-                      borderRadius: radius.lg,
+                      ...whiteCard,
                       padding: 14,
                       marginBottom: 16,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemi,
-                        color: palette.navy,
-                        fontSize: 14,
-                      }}
-                    >
-                      You have {currentPlanName}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <View
+                        style={{
+                          backgroundColor: brand.pillBg,
+                          borderRadius: radius.pill,
+                          paddingHorizontal: 10,
+                          paddingVertical: 3,
+                        }}
+                      >
+                        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 11, color: brand.pillText }}>
+                          Current plan
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          fontFamily: fonts.bodySemi,
+                          color: palette.ink,
+                          fontSize: 14,
+                        }}
+                      >
+                        You have {currentPlanName}
+                      </Text>
+                    </View>
                     {summary.premiumUntil && (
                       <Text
                         style={{
@@ -292,20 +306,29 @@ export function PremiumScreen({
                         {new Date(summary.premiumUntil).toLocaleDateString()}
                       </Text>
                     )}
-                  </View>
+                  </Reveal>
                 )}
 
-                {!summary?.blueTick && <BlueTickHero />}
+                {!summary?.blueTick && (
+                  <Reveal delay={60}>
+                    <BlueTickHero />
+                  </Reveal>
+                )}
 
-                <BlueTickNote summary={summary} onVerify={onVerify} />
+                <Reveal delay={120}>
+                  <BlueTickNote summary={summary} onVerify={onVerify} />
+                </Reveal>
 
-                <CreditsCard
-                  summary={summary}
-                  accessToken={accessToken}
-                  onChanged={setSummary}
-                />
+                <Reveal delay={180}>
+                  <CreditsCard
+                    summary={summary}
+                    accessToken={accessToken}
+                    onChanged={setSummary}
+                  />
+                </Reveal>
 
                 <PlanCard
+                  delay={240}
                   title="Free"
                   price="₹0"
                   features={FREE_FEATURES}
@@ -315,13 +338,14 @@ export function PremiumScreen({
                   onSelect={() => {}}
                 />
 
-                {subscriptions.map((plan) => {
+                {subscriptions.map((plan, index) => {
                   const features = PLAN_FEATURES[plan.code] ?? [];
                   const isCurrentPlan =
                     summary?.premium && selectedCode === plan.code;
                   return (
                     <PlanCard
                       key={plan.code}
+                      delay={300 + index * 60}
                       title={plan.title}
                       price={`${rupees(plan.amount_paise)}/month`}
                       features={features}
@@ -371,7 +395,7 @@ export function PremiumScreen({
                   <Text
                     accessibilityRole="alert"
                     style={{
-                      color: palette.clay,
+                      color: palette.crimson,
                       fontFamily: fonts.body,
                       fontSize: 13,
                       textAlign: "center",
@@ -385,22 +409,27 @@ export function PremiumScreen({
                 {/* One flag closes payments (say, while Razorpay KYC is
                     pending): the button goes with it, never a Buy that fails. */}
                 {billingApi.checkoutAvailable && (
-                  <Pressable
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={buying ? "Opening Razorpay" : "Buy with Razorpay"}
                     onPress={() => void handleBuy()}
                     disabled={!selectedCode || buying}
+                    containerStyle={{ marginTop: 20 }}
                     style={{
-                      backgroundColor: palette.navy,
+                      backgroundColor: palette.crimson,
                       paddingVertical: 16,
                       borderRadius: radius.pill,
                       alignItems: "center",
                       justifyContent: "center",
                       flexDirection: "row",
                       gap: 8,
-                      marginTop: 20,
                       minHeight: 52,
                       opacity: !selectedCode || buying ? 0.5 : 1,
                     }}
                   >
+                    {!!selectedCode && !buying && (
+                      <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
+                    )}
                     {buying ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
@@ -415,7 +444,7 @@ export function PremiumScreen({
                     >
                       {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 )}
 
                 {!billingApi.checkoutAvailable && (
@@ -452,7 +481,9 @@ function PlanCard({
   highlight,
   blueTick,
   onSelect,
+  delay = 0,
 }: {
+  delay?: number;
   title: string;
   price: string;
   features: readonly PlanFeature[];
@@ -465,42 +496,49 @@ function PlanCard({
   onSelect: () => void;
 }) {
   return (
-    <Pressable
+    <Reveal delay={delay} style={{ marginBottom: 12 }}>
+    <PressScale
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
       accessibilityLabel={`${title}, ${price}`}
       onPress={disabled ? undefined : onSelect}
       disabled={disabled}
+      scaleTo={0.985}
       style={{
-        backgroundColor: selected ? palette.paperSand : palette.paper,
-        borderRadius: radius.lg,
-        borderWidth: selected || highlight ? 2 : 1,
-        borderColor: selected
-          ? palette.navy
-          : highlight
-            ? palette.crimson
-            : palette.rule,
+        ...whiteCard,
+        // The chosen plan wears a crimson ring and a pink wash.
+        backgroundColor: selected ? palette.crimsonTint : palette.paper,
+        borderWidth: 2,
+        borderColor: selected ? palette.crimson : highlight ? palette.navy : "transparent",
         padding: 16,
-        marginBottom: 12,
+        overflow: "hidden",
       }}
     >
+      {highlight && (
+        <LinearGradient
+          colors={brand.barGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4 }}
+        />
+      )}
       {badge && (
         <View
           style={{
             position: "absolute",
             top: 12,
             right: 12,
-            backgroundColor: palette.slate,
+            backgroundColor: brand.pillBg,
             borderRadius: radius.pill,
-            paddingHorizontal: 8,
+            paddingHorizontal: 9,
             paddingVertical: 3,
           }}
         >
           <Text
             style={{
               fontFamily: fonts.bodySemi,
-              fontSize: 10,
-              color: "#FFFFFF",
+              fontSize: 11,
+              color: brand.pillText,
             }}
           >
             {badge}
@@ -513,9 +551,9 @@ function PlanCard({
             position: "absolute",
             top: 12,
             right: 12,
-            backgroundColor: palette.navy,
+            backgroundColor: palette.crimson,
             borderRadius: radius.pill,
-            paddingHorizontal: 8,
+            paddingHorizontal: 9,
             paddingVertical: 3,
           }}
         >
@@ -545,8 +583,8 @@ function PlanCard({
       <Text
         style={{
           fontFamily: fonts.display,
-          fontSize: 22,
-          color: palette.navy,
+          fontSize: 24,
+          color: palette.crimson,
           marginTop: 2,
         }}
       >
@@ -579,7 +617,8 @@ function PlanCard({
           </View>
         ))}
       </View>
-    </Pressable>
+    </PressScale>
+    </Reveal>
   );
 }
 
@@ -610,17 +649,18 @@ function PackGroup({
         {packs.map((plan) => {
           const selected = selectedCode === plan.code;
           return (
-            <Pressable
+            <PressScale
               key={plan.code}
               accessibilityRole="button"
               accessibilityState={{ selected }}
+              accessibilityLabel={`${plan.title}, ${rupees(plan.amount_paise)}`}
               onPress={() => onSelect(plan.code)}
+              containerStyle={{ flex: 1 }}
               style={{
-                flex: 1,
-                backgroundColor: selected ? palette.paperSand : palette.paper,
-                borderRadius: radius.lg,
-                borderWidth: selected ? 2 : 1,
-                borderColor: selected ? palette.navy : palette.rule,
+                ...whiteCard,
+                backgroundColor: selected ? palette.crimsonTint : palette.paper,
+                borderWidth: 2,
+                borderColor: selected ? palette.crimson : "transparent",
                 padding: 14,
               }}
             >
@@ -637,13 +677,13 @@ function PackGroup({
                 style={{
                   fontFamily: fonts.display,
                   fontSize: 20,
-                  color: palette.navy,
+                  color: palette.crimson,
                   marginTop: 4,
                 }}
               >
                 {rupees(plan.amount_paise)}
               </Text>
-            </Pressable>
+            </PressScale>
           );
         })}
       </View>
@@ -671,11 +711,10 @@ function BlueTickNote({
     return (
       <View
         style={{
+          ...whiteCard,
           flexDirection: "row",
           alignItems: "center",
           gap: 8,
-          backgroundColor: palette.paperSand,
-          borderRadius: radius.lg,
           padding: 14,
           marginBottom: 16,
         }}
@@ -691,8 +730,7 @@ function BlueTickNote({
   return (
     <View
       style={{
-        backgroundColor: palette.paperSand,
-        borderRadius: radius.lg,
+        ...whiteCard,
         borderWidth: 1,
         borderColor: BLUE_TICK,
         padding: 14,
@@ -711,22 +749,23 @@ function BlueTickNote({
           : "You can buy Pro now and use every feature. The blue tick appears once an admin approves your selfie."}
       </Text>
       {onVerify && (
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel="Verify my selfie"
           onPress={onVerify}
+          containerStyle={{ alignSelf: "flex-start" }}
           style={{
-            alignSelf: "flex-start",
-            backgroundColor: palette.navy,
+            backgroundColor: palette.crimson,
             borderRadius: radius.pill,
-            paddingHorizontal: 16,
-            paddingVertical: 8,
+            paddingHorizontal: 18,
+            minHeight: 40,
+            justifyContent: "center",
           }}
         >
           <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 13 }}>
             Verify my selfie
           </Text>
-        </Pressable>
+        </PressScale>
       )}
     </View>
   );
@@ -734,26 +773,38 @@ function BlueTickNote({
 
 /** The first thing on the page: what the blue tick is and where it comes from. */
 function BlueTickHero() {
+  // The navy hero of this screen: Pro and its blue tick.
   return (
-    <View
+    <LinearGradient
+      colors={brand.heroGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={{
         alignItems: "center",
-        backgroundColor: palette.paper,
-        borderRadius: radius.lg,
-        borderWidth: 2,
-        borderColor: BLUE_TICK,
-        paddingVertical: 20,
-        paddingHorizontal: 16,
+        borderRadius: 20,
+        paddingVertical: 24,
+        paddingHorizontal: 18,
         marginBottom: 16,
-        gap: 6,
+        gap: 8,
       }}
     >
-      <TrustBadge blueTick size={48} />
+      <View
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: 36,
+          backgroundColor: "#FFFFFF",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <TrustBadge blueTick size={48} />
+      </View>
       <Text
         style={{
           fontFamily: fonts.display,
-          fontSize: 22,
-          color: palette.ink,
+          fontSize: 24,
+          color: brand.onHero,
           textAlign: "center",
         }}
       >
@@ -763,7 +814,8 @@ function BlueTickHero() {
         style={{
           fontFamily: fonts.body,
           fontSize: 14,
-          color: palette.slate,
+          lineHeight: 20,
+          color: brand.onHeroSoft,
           textAlign: "center",
         }}
       >
@@ -771,7 +823,7 @@ function BlueTickHero() {
         puts you at the top of search, and tells matches you are a real,
         verified member.
       </Text>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -823,10 +875,7 @@ function CreditsCard({
   return (
     <View
       style={{
-        backgroundColor: palette.paper,
-        borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: palette.rule,
+        ...whiteCard,
         padding: 16,
         marginBottom: 16,
         gap: 12,
@@ -837,20 +886,20 @@ function CreditsCard({
       </Text>
       <View style={{ flexDirection: "row", gap: 12 }}>
         {[
-          { icon: "🚀", label: "Boosts", value: boosts },
-          { icon: "⭐", label: "Super Likes", value: superlikes },
+          { icon: "rocket-outline" as const, label: "Boosts", value: boosts },
+          { icon: "star" as const, label: "Super Likes", value: superlikes },
         ].map((item) => (
           <View
             key={item.label}
             style={{
               flex: 1,
-              backgroundColor: palette.paperSand,
+              backgroundColor: brand.pillBg,
               borderRadius: radius.md,
               padding: 12,
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+            <Ionicons name={item.icon} size={20} color={palette.crimson} />
             <Text style={{ fontFamily: fonts.display, fontSize: 24, color: palette.ink }}>
               {item.value}
             </Text>
@@ -868,10 +917,10 @@ function CreditsCard({
       )}
       {active ? (
         <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.emerald }}>
-          🚀 Boost live until {until}
+          Boost live until {until}
         </Text>
       ) : (
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel="Start a boost now"
           disabled={busy || boosts === 0}
@@ -881,16 +930,20 @@ function CreditsCard({
             justifyContent: "center",
             flexDirection: "row",
             gap: 8,
-            backgroundColor: boosts > 0 ? palette.navy : palette.rule,
+            // No boosts left: a quiet sand button with readable slate text.
+            backgroundColor: boosts > 0 ? palette.crimson : palette.paperSand,
             borderRadius: radius.pill,
-            paddingVertical: 12,
+            minHeight: 46,
           }}
         >
           {busy && <ActivityIndicator color="#FFFFFF" size="small" />}
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>
+          {!busy && boosts > 0 && <Ionicons name="rocket" size={16} color="#FFFFFF" />}
+          <Text
+            style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: boosts > 0 ? "#FFFFFF" : palette.slate }}
+          >
             {boosts > 0 ? "Boost me now - jump to the top" : "No boosts left"}
           </Text>
-        </Pressable>
+        </PressScale>
       )}
       {!!message && (
         <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.ink }}>

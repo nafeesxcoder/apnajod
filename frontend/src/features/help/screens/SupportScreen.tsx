@@ -3,7 +3,10 @@ import { Pressable, ScrollView, Text, View, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
+import { LinearGradient } from "expo-linear-gradient";
 import { AppCanvas } from "../../../components/AppCanvas";
+import { brand, cardShadow, whiteCard } from "../../../components/brand";
+import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 
 const MAX_WIDTH = 720;
@@ -117,10 +120,8 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
               width: "100%",
               maxWidth: MAX_WIDTH,
               alignSelf: "center",
-              backgroundColor: palette.paper,
-              borderRadius: radius.xl,
               paddingHorizontal: SIDE_PADDING,
-              paddingVertical: 20,
+              paddingVertical: 12,
             }}
           >
             {/* Header */}
@@ -132,22 +133,23 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                 marginBottom: 20,
               }}
             >
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
-                hitSlop={12}
+                hitSlop={8}
                 onPress={onBack}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: palette.paperSand,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: palette.paper,
                   justifyContent: "center",
                   alignItems: "center",
+                  ...cardShadow,
                 }}
               >
-                <Ionicons name="arrow-back" size={18} color={palette.ink} />
-              </Pressable>
+                <Ionicons name="arrow-back" size={20} color={palette.ink} />
+              </PressScale>
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -171,54 +173,71 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
               </View>
             </View>
 
-            {/* Hero card */}
-            <View
-              style={{
-                backgroundColor: palette.paperSand,
-                borderRadius: radius.lg,
-                padding: 18,
-                marginBottom: 24,
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: palette.paper,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
+            {/* Hero: the navy card of this screen, with the way to reach us */}
+            <Reveal>
+              <LinearGradient
+                colors={brand.heroGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ borderRadius: 20, padding: 20, marginBottom: 24 }}
               >
-                <Ionicons
-                  name="chatbubbles-outline"
-                  size={22}
-                  color={palette.navy}
-                />
-              </View>
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: typeScale.section,
-                  color: palette.ink,
-                  marginBottom: 6,
-                }}
-              >
-                How can we help?
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  color: palette.slate,
-                  lineHeight: 19,
-                }}
-              >
-                Common questions are answered below. If your issue isn't listed,
-                email us — we read every message.
-              </Text>
-            </View>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: "rgba(255,255,255,0.14)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <Ionicons name="chatbubbles-outline" size={22} color={brand.onHero} />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: fonts.display,
+                    fontSize: typeScale.section,
+                    color: brand.onHero,
+                    marginBottom: 6,
+                  }}
+                >
+                  How can we help?
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    color: brand.onHeroSoft,
+                    lineHeight: 19,
+                    marginBottom: 16,
+                  }}
+                >
+                  Common questions are answered below. If your issue isn't listed,
+                  email us - we read every message and reply within 24 hours.
+                </Text>
+                <PressScale
+                  onPress={openEmail}
+                  accessibilityRole="button"
+                  accessibilityLabel="Email Apnajoda support"
+                  containerStyle={{ alignSelf: "flex-start" }}
+                  style={{
+                    backgroundColor: palette.crimson,
+                    borderRadius: radius.pill,
+                    minHeight: 46,
+                    paddingHorizontal: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.12} />
+                  <Ionicons name="mail-outline" size={18} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}>Email us</Text>
+                </PressScale>
+              </LinearGradient>
+            </Reveal>
 
             {/* FAQ list */}
             <Text
@@ -232,15 +251,15 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
               Common questions
             </Text>
 
-            <View style={{ gap: 8 }}>
-              {FAQS.map((faq) => {
+            <View style={{ gap: 10 }}>
+              {FAQS.map((faq, index) => {
                 const open = openId === faq.id;
                 return (
-                  <View
+                  <Reveal
                     key={faq.id}
+                    delay={60 + Math.min(index, 8) * 50}
                     style={{
-                      backgroundColor: palette.paperSand,
-                      borderRadius: radius.lg,
+                      ...whiteCard,
                       overflow: "hidden",
                     }}
                   >
@@ -253,23 +272,24 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                         flexDirection: "row",
                         alignItems: "center",
                         padding: 14,
+                        minHeight: 56,
                         gap: 12,
                       }}
                     >
                       <View
                         style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          backgroundColor: palette.paper,
+                          width: 34,
+                          height: 34,
+                          borderRadius: 17,
+                          backgroundColor: brand.pillBg,
                           justifyContent: "center",
                           alignItems: "center",
                         }}
                       >
                         <Ionicons
                           name={faq.icon}
-                          size={16}
-                          color={palette.navy}
+                          size={17}
+                          color={palette.crimson}
                         />
                       </View>
                       <Text
@@ -286,7 +306,7 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                       <Ionicons
                         name={open ? "chevron-up" : "chevron-down"}
                         size={18}
-                        color={palette.slate}
+                        color={open ? palette.crimson : palette.slate}
                       />
                     </Pressable>
 
@@ -310,63 +330,46 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                         </Text>
                       </View>
                     )}
-                  </View>
+                  </Reveal>
                 );
               })}
             </View>
 
             {/* Contact */}
-            <Text
-              style={{
-                fontFamily: fonts.display,
-                fontSize: typeScale.section,
-                color: palette.ink,
-                marginTop: 28,
-                marginBottom: 10,
-              }}
-            >
-              Still need help?
-            </Text>
-
-            <Pressable
-              onPress={openEmail}
-              accessibilityRole="button"
-              accessibilityLabel="Email Apnajoda support"
-              style={{
-                backgroundColor: palette.navy,
-                borderRadius: radius.pill,
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
-            >
-              <Ionicons name="mail-outline" size={18} color="#FFFFFF" />
-              <Text
+            <Reveal delay={200} style={{ ...whiteCard, marginTop: 24, padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View
                 style={{
-                  color: "#FFFFFF",
-                  fontFamily: fonts.bodySemi,
-                  fontSize: 15,
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  backgroundColor: brand.pillBg,
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
-                Email us
-              </Text>
-            </Pressable>
-
-            <Text
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                color: palette.slate,
-                textAlign: "center",
-                marginTop: 12,
-                lineHeight: 18,
-              }}
-            >
-              nafeesahadbly@gmail.com · We reply within 24 hours
-            </Text>
+                <Ionicons name="mail-outline" size={17} color={palette.crimson} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>Still need help?</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 2 }}>
+                  nafeesahadbly@gmail.com · We reply within 24 hours
+                </Text>
+              </View>
+              <PressScale
+                onPress={openEmail}
+                accessibilityRole="button"
+                accessibilityLabel="Email us"
+                style={{
+                  minHeight: 40,
+                  paddingHorizontal: 16,
+                  borderRadius: radius.pill,
+                  backgroundColor: palette.crimson,
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Email</Text>
+              </PressScale>
+            </Reveal>
 
             {/* Legal */}
             <Text
@@ -381,7 +384,7 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
               Legal
             </Text>
 
-            <View style={{ gap: 8 }}>
+            <Reveal delay={260} style={{ ...whiteCard, overflow: "hidden" }}>
               {[
                 {
                   icon: "shield-checkmark-outline" as const,
@@ -413,22 +416,24 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                   label: "Contact Us",
                   url: "https://apnajoda.com/contact.html",
                 },
-              ].map((item) => (
-                <Pressable
+              ].map((item, index, all) => (
+                <PressScale
                   key={item.label}
                   onPress={() => void Linking.openURL(item.url)}
                   accessibilityRole="link"
                   accessibilityLabel={item.label}
+                  scaleTo={0.985}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: palette.paperSand,
-                    borderRadius: radius.lg,
-                    padding: 14,
+                    paddingHorizontal: 16,
+                    minHeight: 52,
                     gap: 12,
+                    borderBottomWidth: index === all.length - 1 ? 0 : 1,
+                    borderBottomColor: palette.rule,
                   }}
                 >
-                  <Ionicons name={item.icon} size={18} color={palette.navy} />
+                  <Ionicons name={item.icon} size={18} color={palette.crimson} />
                   <Text
                     style={{
                       flex: 1,
@@ -444,9 +449,9 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                     size={16}
                     color={palette.slate}
                   />
-                </Pressable>
+                </PressScale>
               ))}
-            </View>
+            </Reveal>
           </View>
         </ScrollView>
       </SafeAreaView>
