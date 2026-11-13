@@ -1,11 +1,5 @@
-﻿import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+﻿import { Image, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable } from "./components/Pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, radius, typeScale } from "./theme";

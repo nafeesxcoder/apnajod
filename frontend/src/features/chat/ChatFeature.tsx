@@ -9,25 +9,8 @@
 import { SharedPostBubble } from "../posts/SharedPostBubble";
 import { StoryReplyLabel } from "../stories/StoryReplyBar";
 import { postIdFromText } from "../posts/profileLink";
-import {
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Image,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  PanResponder,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, PanResponder, Platform, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Pressable } from "../../components/Pressable";
 import type { GestureResponderEvent } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -4296,7 +4279,7 @@ function ChatBubble({
                 edited
               </Text>
             )}
-            {pinned && <Ionicons name="pin" size={10} color={colors.gold} />}{" "}
+            {pinned && <Ionicons name="pin" size={10} color={colors.gold} />}
             {starred && <Ionicons name="star" size={10} color={colors.gold} />}
             <Text
               style={[styles.time, { fontSize: 11 },
@@ -6020,7 +6003,7 @@ function GifResultTile({
           colors={["transparent", "rgba(14,15,16,.88)"]}
           style={StyleSheet.absoluteFill}
         />
-      )}{" "}
+      )}
       {!!onToggleFavourite && (
         <Pressable
           accessibilityRole="button"
@@ -6589,7 +6572,7 @@ function GifPicker({
                 pageSize={catalogPageSize}
                 onChange={setCatalogOffset}
               />
-            )}{" "}
+            )}
           {libraryMode === "all" && provider.nextOffset !== null && (
             <Pressable
               accessibilityRole="button"
@@ -6894,7 +6877,7 @@ function EmojiMediaPanel({
                 pageSize={catalogPageSize}
                 onChange={setCatalogOffset}
               />
-            )}{" "}
+            )}
             {provider.nextOffset !== null && (
               <Pressable
                 accessibilityRole="button"
@@ -9031,7 +9014,7 @@ function FaceEmojiStudio({
               icon="camera-reverse"
               onPress={() => void capture(true)}
             />
-          )}{" "}
+          )}
           {!!error && <Text style={styles.formError}>{error}</Text>}
         </View>
       </SafeAreaView>
