@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
 const { cleanAspect, roundAspect } = require("../utils/postAspect");
+const { postAccess } = require("../utils/postAccess");
 
 /**
  * Posts: the photos a member adds to their profile over time, with a line of
@@ -21,28 +22,172 @@ async function createPost(userId, mediaUrl, caption, aspectRatio = 1) {
   return { id, mediaUrl, caption: caption || "", aspect_ratio: aspect };
 }
 
-async function getUserPosts(userId) {
+const marks = (list) => list.map(() => "?").join(", ");
+
+/**
+ * The columns every post goes out with, including who posted it (their
+ * first profile photo as the avatar). `p` is posts, `u` users.
+ */
+const POST_COLUMNS = `
+  p.id, p.user_id, p.media_url, p.caption, p.aspect_ratio, p.created_at,
+  u.username,
+  COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS author_name,
+  COALESCE(
+    (SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1),
+    u.avatar_url
+  ) AS author_avatar`;
+const POST_FROM = `
+  FROM posts p
+  JOIN users u ON u.id = p.user_id
+  LEFT JOIN profiles pr ON pr.user_id = p.user_id`;
+
+/**
+ * Adds what Instagram shows under a post: how many likes and comments, and
+ * whether the viewer has liked or saved it. Likes and comments from deleted,
+ * deactivated or blocked members are not counted, so the number matches
+ * the list you see when you open it.
+ */
+async function decoratePosts(viewerId, rows) {
+  if (!rows.length) return [];
+  const ids = rows.map((row) => row.id);
+  const visibleMember = `
+    JOIN users m ON m.id = x.user_id AND m.deleted_at IS NULL AND m.deactivated_at IS NULL
+    WHERE x.post_id IN (${marks(ids)})
+      AND NOT EXISTS (SELECT 1 FROM blocks b
+                       WHERE (b.blocker_id = ? AND b.blocked_id = x.user_id)
+                          OR (b.blocker_id = x.user_id AND b.blocked_id = ?))`;
+  const [likes, comments, mine, saved] = await Promise.all([
+    query(`SELECT x.post_id, COUNT(*) AS n FROM post_likes x ${visibleMember} GROUP BY x.post_id`, [...ids, viewerId, viewerId]),
+    query(`SELECT x.post_id, COUNT(*) AS n FROM post_comments x ${visibleMember} GROUP BY x.post_id`, [...ids, viewerId, viewerId]),
+    query(`SELECT post_id FROM post_likes WHERE user_id = ? AND post_id IN (${marks(ids)})`, [viewerId, ...ids]),
+    query(`SELECT post_id FROM post_saves WHERE user_id = ? AND post_id IN (${marks(ids)})`, [viewerId, ...ids]),
+  ]);
+  const count = (list) => new Map(list.map((row) => [row.post_id, Number(row.n) || 0]));
+  const likeCounts = count(likes);
+  const commentCounts = count(comments);
+  const liked = new Set(mine.map((row) => row.post_id));
+  const savedSet = new Set(saved.map((row) => row.post_id));
+  return rows.map((row) => ({
+    id: row.id,
+    media_url: row.media_url,
+    caption: row.caption || "",
+    aspect_ratio: roundAspect(row.aspect_ratio),
+    created_at: row.created_at,
+    author: {
+      userId: row.user_id,
+      username: row.username,
+      name: row.author_name || row.username,
+      avatarUrl: row.author_avatar || null,
+    },
+    likes: likeCounts.get(row.id) || 0,
+    comments: commentCounts.get(row.id) || 0,
+    liked: liked.has(row.id),
+    saved: savedSet.has(row.id),
+  }));
+}
+
+/** A member's posts, newest first, as `viewerId` sees them (likes, saves). */
+async function getUserPosts(userId, viewerId = userId) {
   const rows = await query(
-    "SELECT id, media_url, caption, aspect_ratio, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC",
+    `SELECT ${POST_COLUMNS} ${POST_FROM} WHERE p.user_id = ? ORDER BY p.created_at DESC`,
     [userId],
   );
-  return rows.map((row) => ({ ...row, aspect_ratio: roundAspect(row.aspect_ratio) }));
+  return decoratePosts(viewerId, rows);
+}
+
+const FEED_PAGE = 10;
+const CURSOR = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?$/;
+
+/**
+ * The Home feed, newest first, like Instagram's: every post from a public
+ * account, plus posts from the people you have matched with (private or
+ * not). Never your own, never a blocked member's either way round, never a
+ * deleted or deactivated account's, never an under-18 profile's.
+ *
+ * Paged by time: `before` is the `next` cursor from the previous page.
+ */
+async function getFeed(viewerId, before = null, limit = FEED_PAGE) {
+  const size = Math.min(30, Math.max(1, Number(limit) || FEED_PAGE));
+  const cursor = typeof before === "string" && CURSOR.test(before) ? before : null;
+  const rows = await query(
+    `SELECT ${POST_COLUMNS},
+            DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s.%f') AS cursor_at
+       ${POST_FROM}
+      WHERE p.user_id <> ?
+        AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
+        AND (pr.age IS NULL OR pr.age >= 18)
+        AND (u.is_private = 0
+             OR EXISTS (SELECT 1 FROM mutual_matches mm
+                         WHERE (mm.user_a_id = ? AND mm.user_b_id = u.id)
+                            OR (mm.user_a_id = u.id AND mm.user_b_id = ?)))
+        AND NOT EXISTS (SELECT 1 FROM blocks b
+                         WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
+                            OR (b.blocker_id = u.id AND b.blocked_id = ?))
+        AND (? IS NULL OR p.created_at < ?)
+      ORDER BY p.created_at DESC, p.id DESC
+      LIMIT ${size + 1}`,
+    [viewerId, viewerId, viewerId, viewerId, viewerId, cursor, cursor],
+  );
+  const page = rows.slice(0, size);
+  const posts = await decoratePosts(viewerId, page);
+  const next = rows.length > size ? page[page.length - 1].cursor_at : null;
+  return { posts, next };
+}
+
+/** One post, if the viewer may see it; otherwise null (never "locked"). */
+async function getPost(viewerId, postId) {
+  const [row] = await query(`SELECT ${POST_COLUMNS} ${POST_FROM} WHERE p.id = ? LIMIT 1`, [postId]);
+  if (!row) return null;
+  if ((await accessFor(viewerId, row.user_id)) !== "open") return null;
+  const [post] = await decoratePosts(viewerId, [row]);
+  return post || null;
+}
+
+async function countPosts(userId) {
+  const [row] = await query("SELECT COUNT(*) AS n FROM posts WHERE user_id = ?", [userId]);
+  return Number(row?.n || 0);
 }
 
 /**
- * Someone else's posts. Hidden either way round a block, so a blocked member
- * cannot keep reading, and a blocker is not shown the person they blocked.
+ * Whether viewerId may see ownerId's posts: "open", "locked" (a private
+ * account they have not matched with) or "hidden" (a block either way round,
+ * or no such account).
+ */
+async function accessFor(viewerId, ownerId) {
+  if (viewerId === ownerId) return "open";
+  const [row] = await query(
+    `SELECT u.is_private,
+            EXISTS (SELECT 1 FROM blocks
+                     WHERE (blocker_id = ? AND blocked_id = u.id)
+                        OR (blocker_id = u.id AND blocked_id = ?)) AS blocked,
+            EXISTS (SELECT 1 FROM mutual_matches
+                     WHERE (user_a_id = ? AND user_b_id = u.id)
+                        OR (user_a_id = u.id AND user_b_id = ?)) AS matched
+       FROM users u
+      WHERE u.id = ? AND u.deleted_at IS NULL AND u.deactivated_at IS NULL`,
+    [viewerId, viewerId, viewerId, viewerId, ownerId],
+  );
+  if (!row) return "hidden";
+  return postAccess({
+    self: false,
+    blocked: !!row.blocked,
+    isPrivate: !!row.is_private,
+    matched: !!row.matched,
+  });
+}
+
+/**
+ * Someone else's posts, by the rule in utils/postAccess: a private account's
+ * posts only reach the people it has matched with, and a block hides them
+ * both ways. A locked account still says how many posts it has, as
+ * Instagram does - never who it has matched with.
  */
 async function getVisiblePosts(viewerId, ownerId) {
-  const blocked = await query(
-    `SELECT 1 FROM blocks
-      WHERE (blocker_id = ? AND blocked_id = ?)
-         OR (blocker_id = ? AND blocked_id = ?)
-      LIMIT 1`,
-    [viewerId, ownerId, ownerId, viewerId],
-  );
-  if (blocked.length) return [];
-  return getUserPosts(ownerId);
+  const access = await accessFor(viewerId, ownerId);
+  if (access === "hidden") return { posts: [], locked: false, count: 0 };
+  if (access === "locked") return { posts: [], locked: true, count: await countPosts(ownerId) };
+  const posts = await getUserPosts(ownerId, viewerId);
+  return { posts, locked: false, count: posts.length };
 }
 
 /**
@@ -80,6 +225,13 @@ module.exports = {
   createPost,
   getUserPosts,
   getVisiblePosts,
+  getPost,
+  getFeed,
+  decoratePosts,
+  POST_COLUMNS,
+  POST_FROM,
+  accessFor,
+  countPosts,
   updatePost,
   deletePost,
 };

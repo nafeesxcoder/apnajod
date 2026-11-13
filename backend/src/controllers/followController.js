@@ -1,6 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const { ApiError } = require("../middleware/errorHandler");
 const followService = require("../services/followService");
+const postService = require("../services/postService");
 
 function rethrow(error) {
   if (error && error.status) throw new ApiError(error.status, error.message);
@@ -34,11 +35,17 @@ const contacts = asyncHandler(async (req, res) => {
 const userProfile = asyncHandler(async (req, res) => {
   const user = await followService.getUser(req.params.userId);
   if (!user) throw new ApiError(404, "That account is not available.");
-  const [permission, profile, like] = await Promise.all([
+  const [permission, profile, like, postAccess, postsCount] = await Promise.all([
     followService.canMessage(req.user.id, user.id),
     followService.getProfileCard(user.id),
     followService.likeState(req.user.id, user.id),
+    postService.accessFor(req.user.id, user.id),
+    postService.countPosts(user.id),
   ]);
+  // A private account, like on Instagram: until you match, you see who they
+  // are (one photo, name, bio) but not their posts or the rest of their photos.
+  const locked = postAccess === "locked";
+  if (locked) profile.photos = profile.photos.slice(0, 1);
   res.json({
     ok: true,
     user: {
@@ -51,6 +58,7 @@ const userProfile = asyncHandler(async (req, res) => {
     profile,
     like,
     state: { self: req.user.id === user.id },
+    posts: { count: postsCount, locked },
     canMessage: permission.allowed,
     messageBlockedReason: permission.allowed ? null : permission.reason,
   });

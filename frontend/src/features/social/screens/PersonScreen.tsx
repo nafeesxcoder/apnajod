@@ -17,6 +17,7 @@ import { IntentSection } from "../../../components/IntentBadges";
 import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { FamilyShareButton } from "../../../components/FamilyShareButton";
+import { PostsSection } from "../../profile/components/PostsSection";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -124,6 +125,8 @@ export function PersonScreen({
   const likeStatus = page.like.status;
   const cover = profile.photos[0] || user.avatarUrl || "";
   const extraPhotos = profile.photos.slice(1);
+  const postCount = page.posts?.count ?? 0;
+  const postsLocked = !!page.posts?.locked;
 
   return (
     <Shell
@@ -224,6 +227,23 @@ export function PersonScreen({
           >
             @{user.username}
           </Text>
+
+          <View
+            accessibilityLabel={`${postCount} ${postCount === 1 ? "post" : "posts"}${postsLocked ? ", private account" : ""}`}
+            style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 8 }}
+          >
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{postCount}</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate }}>
+              {postCount === 1 ? "post" : "posts"}
+            </Text>
+            {postsLocked && (
+              <>
+                <Text style={{ color: palette.slate }}>·</Text>
+                <Ionicons name="lock-closed" size={13} color={palette.slate} />
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate }}>Private</Text>
+              </>
+            )}
+          </View>
 
           {!!(profile.city || profile.profession) && (
             <Text
@@ -480,6 +500,22 @@ export function PersonScreen({
             </View>
           )}
 
+          <View style={{ marginTop: 24 }}>
+            <Text
+              style={{
+                fontFamily: fonts.display,
+                fontSize: typeScale.section,
+                color: palette.ink,
+                marginBottom: 12,
+              }}
+            >
+              Posts
+            </Text>
+            {/* Locked for a private account until you match - checked on the
+                server too, not just hidden here. */}
+            <PostsSection accessToken={accessToken} userId={userId} isOwner={state.self} />
+          </View>
+
           {!state.self && likeStatus !== "accepted" && (
             <View
               style={{
@@ -535,7 +571,7 @@ export function PersonScreen({
               style={{
                 fontFamily: fonts.body,
                 fontSize: 13,
-                color: palette.clay,
+                color: palette.crimson,
                 textAlign: "center",
                 marginTop: 12,
               }}

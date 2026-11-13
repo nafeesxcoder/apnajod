@@ -2478,9 +2478,11 @@ export function ChatScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Conversation with ${displayName}`}
-              accessibilityHint="Edit chat nickname"
+              accessibilityHint={onOpenPartnerProfile ? "Open their profile" : "Edit chat nickname"}
               hitSlop={accessibilityHitSlop}
-              onPress={() => setSettingsOpen(true)}
+              // Like Instagram: the name opens their profile. The nickname is
+              // still in the chat menu.
+              onPress={() => (onOpenPartnerProfile ? onOpenPartnerProfile() : setSettingsOpen(true))}
               style={{ flex: 1 }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

@@ -15,6 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { postApi, type Post } from "../../../api/postApi";
 import { CaptionEditor } from "./CaptionEditor";
+import { PostCard } from "../../posts/PostCard";
+import { primePostSizes } from "./PostImage";
 
 const PINK = "#5087BE";
 const DARK = "#151719";
@@ -47,6 +49,14 @@ export function PostsSection({
   reloadKey?: number;
 }) {
   const [posts, setPosts] = useState<Post[]>([]);
+  // A private account you have not matched with: its posts stay hidden.
+  const [locked, setLocked] = useState(false);
+  // Your own profile has two tabs, like Instagram: your posts, and the
+  // posts you saved (only you see those).
+  const [tab, setTab] = useState<"posts" | "saved">("posts");
+  const [savedPosts, setSavedPosts] = useState<Post[] | null>(null);
+  const showSaved = isOwner && !userId && tab === "saved";
+  const shown = showSaved ? savedPosts ?? [] : posts;
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,10 +101,14 @@ export function PostsSection({
     }
     try {
       setError(null);
-      const rows = userId
-        ? await postApi.of(accessToken, userId)
-        : await postApi.mine(accessToken);
-      setPosts(rows);
+      if (userId) {
+        const result = await postApi.of(accessToken, userId);
+        setPosts(result.posts);
+        setLocked(result.locked);
+      } else {
+        setPosts(await postApi.mine(accessToken));
+        setLocked(false);
+      }
     } catch (err: any) {
       setError(err.message || "Could not load posts.");
     } finally {
@@ -105,6 +119,32 @@ export function PostsSection({
   useEffect(() => {
     void load();
   }, [load, reloadKey]);
+
+  // Read every photo's real shape while the grid shows, so the opened
+  // viewer lays each post out at its final height and does not jump.
+  useEffect(() => {
+    primePostSizes([...posts, ...(savedPosts ?? [])].map((post) => post.media_url));
+  }, [posts, savedPosts]);
+
+  useEffect(() => {
+    if (!showSaved || !accessToken) return;
+    let live = true;
+    postApi
+      .saved(accessToken)
+      .then((rows) => live && setSavedPosts(rows))
+      .catch((err) => live && setError(err?.message || "Could not load saved posts."));
+    return () => {
+      live = false;
+    };
+  }, [showSaved, accessToken, reloadKey]);
+
+  /** A like, save or new comment on a post in the viewer, kept in the grid's copy. */
+  const replacePost = (next: Post) => {
+    setPosts((current) => current.map((post) => (post.id === next.id ? next : post)));
+    setSavedPosts((current) =>
+      current ? (next.saved ? current.map((post) => (post.id === next.id ? next : post)) : current) : current,
+    );
+  };
 
 
   const saveCaption = async () => {
@@ -155,7 +195,86 @@ export function PostsSection({
         </Text>
       )}
 
-      {posts.length === 0 ? (
+      {isOwner && !userId && (
+        <View style={{ flexDirection: "row", marginBottom: 12, borderBottomWidth: 1, borderBottomColor: LINE }}>
+          {(["posts", "saved"] as const).map((key) => {
+            const active = tab === key;
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={key === "posts" ? "Your posts" : "Saved posts, only you can see these"}
+                onPress={() => setTab(key)}
+                style={{
+                  flex: 1,
+                  minHeight: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  gap: 6,
+                  borderBottomWidth: 2,
+                  borderBottomColor: active ? DARK : "transparent",
+                  marginBottom: -1,
+                }}
+              >
+                <Ionicons
+                  name={key === "posts" ? "grid-outline" : active ? "bookmark" : "bookmark-outline"}
+                  size={18}
+                  color={active ? DARK : MUTED}
+                />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: active ? DARK : MUTED }}>
+                  {key === "posts" ? "Posts" : "Saved"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {showSaved && savedPosts === null ? (
+        <ActivityIndicator color={PINK} style={{ marginVertical: 20 }} />
+      ) : showSaved && savedPosts!.length === 0 ? (
+        <View style={{ paddingVertical: 28, alignItems: "center", gap: 6 }}>
+          <Ionicons name="bookmark-outline" size={28} color={MUTED} />
+          <Text style={{ color: MUTED, fontSize: 13, textAlign: "center" }}>
+            Save posts you want to see again. Only you can see what you have saved.
+          </Text>
+        </View>
+      ) : locked ? (
+        <View
+          accessibilityRole="summary"
+          style={{
+            borderWidth: 1,
+            borderColor: LINE,
+            borderRadius: 14,
+            paddingVertical: 28,
+            paddingHorizontal: 16,
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              borderWidth: 2,
+              borderColor: DARK,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="lock-closed-outline" size={26} color={DARK} />
+          </View>
+          <Text style={{ color: DARK, fontSize: 16, fontWeight: "700", marginTop: 6 }}>
+            This account is private
+          </Text>
+          <Text style={{ color: MUTED, fontSize: 13, textAlign: "center", lineHeight: 19 }}>
+            Match with them to see their posts.
+          </Text>
+        </View>
+      ) : posts.length === 0 ? (
         <View
           style={{
             borderWidth: 1,
@@ -176,7 +295,7 @@ export function PostsSection({
         </View>
       ) : (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {posts.map((post, index) => (
+          {shown.map((post, index) => (
             <View key={post.id} style={{ width: "31.5%" }}>
               <View style={{ position: "relative" }}>
                 <Pressable
@@ -190,7 +309,7 @@ export function PostsSection({
                     resizeMode="cover"
                   />
                 </Pressable>
-                {isOwner && (
+                {isOwner && !showSaved && (
                   <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel="Post options"
@@ -255,9 +374,9 @@ export function PostsSection({
             <FlatList
               ref={listRef}
               style={{ flex: 1 }}
-              data={posts}
+              data={shown}
               keyExtractor={(post) => post.id}
-              initialScrollIndex={Math.min(viewingIndex, Math.max(posts.length - 1, 0))}
+              initialScrollIndex={Math.min(viewingIndex, Math.max(shown.length - 1, 0))}
               onScrollToIndexFailed={(info) => {
                 setTimeout(
                   () => listRef.current?.scrollToIndex({ index: info.index, animated: false }),
@@ -266,37 +385,25 @@ export function PostsSection({
               }}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 40 }}
-              renderItem={({ item }) => (
-                <View style={{ width: "100%", maxWidth: 600, alignSelf: "center", marginBottom: 18 }}>
-                  {isOwner && (
-                    <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 12, paddingVertical: 6 }}>
-                      <TouchableOpacity
-                        accessibilityRole="button"
-                        accessibilityLabel="Post options"
-                        hitSlop={10}
-                        onPress={() => {
-                          closeViewer();
-                          setTimeout(() => setMenuFor(item), 350);
-                        }}
-                      >
-                        <Ionicons name="ellipsis-horizontal" size={22} color={DARK} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  <Image
-                    source={{ uri: item.media_url }}
-                    // Each post at the shape it was cropped to; the grid
-                    // above stays square, like Instagram's.
-                    style={{ width: "100%", aspectRatio: item.aspect_ratio || 1, backgroundColor: LINE }}
-                    resizeMode="cover"
-                  />
-                  {!!item.caption && (
-                    <Text style={{ color: DARK, fontSize: 15, lineHeight: 21, paddingHorizontal: 14, paddingTop: 10 }}>
-                      {item.caption}
-                    </Text>
-                  )}
-                </View>
-              )}
+              renderItem={({ item }) =>
+                accessToken ? (
+                  // The full Instagram post: like (or double-tap), comment,
+                  // share, save; tap a name to open that profile.
+                  <View style={{ marginBottom: 10 }}>
+                    <PostCard
+                      post={item}
+                      accessToken={accessToken}
+                      isOwner={isOwner && !showSaved}
+                      onOwnerMenu={(post) => {
+                        closeViewer();
+                        setTimeout(() => setMenuFor(post), 350);
+                      }}
+                      onBeforeOpenProfile={closeViewer}
+                      onChange={replacePost}
+                    />
+                  </View>
+                ) : null
+              }
             />
           )}
         </SafeAreaView>

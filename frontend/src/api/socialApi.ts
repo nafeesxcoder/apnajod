@@ -57,7 +57,12 @@ export type PersonPage = {
   user: SocialUser;
   profile: ProfileCard;
   like: LikeState;
-  counts: { followers: number; following: number };
+  /**
+   * How many posts, and whether you may see them (a private account you
+   * have not matched with is locked). There is no follower or match count:
+   * nobody is shown how many matches someone has.
+   */
+  posts?: { count: number; locked: boolean };
   state: {
     self: boolean;
     following?: boolean;
@@ -108,7 +113,9 @@ export const socialApi = {
       like: data.like ?? {
         iLiked: false, theyLiked: false, matched: false, status: "none",
       },
-      counts: data.counts,
+      posts: data.posts
+        ? { count: Number(data.posts.count) || 0, locked: !!data.posts.locked }
+        : undefined,
       state: data.state,
       canMessage: !!data.canMessage,
       messageBlockedReason: data.messageBlockedReason ?? null,

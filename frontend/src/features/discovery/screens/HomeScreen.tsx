@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -19,6 +20,7 @@ import {
 } from "../../../components/navigation/BottomNav";
 import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
+import { PostsFeed } from "../../posts/PostsFeed";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal, MatchFilters } from "../../../storage";
@@ -101,6 +103,11 @@ export function HomeScreen({
   navigate: (s: Screen) => void;
 }) {
   const navInset = useNavInset();
+  // The posts feed at the bottom: a page more each time Home is scrolled near
+  // its end, and back to the newest on pull-to-refresh.
+  const [feedMore, setFeedMore] = useState(0);
+  const [feedReload, setFeedReload] = useState(0);
+  const feedAskedAt = useRef(0);
   const { isDesktop: isDesktopHome } = useLayout();
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
@@ -152,14 +159,28 @@ export function HomeScreen({
         }}
       >
         <ScrollView
-          onScroll={handleBottomNavScroll}
+          onScroll={(event) => {
+            handleBottomNavScroll(event);
+            // Near the end of Home: load the next page of posts.
+            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 900) {
+              const now = Date.now();
+              if (now - feedAskedAt.current > 1500) {
+                feedAskedAt.current = now;
+                setFeedMore((n) => n + 1);
+              }
+            }
+          }}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={
             <RefreshControl
               refreshing={loading}
-              onRefresh={onRetryMatches}
+              onRefresh={() => {
+                setFeedReload((n) => n + 1);
+                onRetryMatches();
+              }}
               tintColor={palette.crimson}
             />
           }
@@ -732,6 +753,9 @@ export function HomeScreen({
               </View>
             )}
           </View>
+
+          {/* Posts from public accounts and your matches, like Instagram. */}
+          <PostsFeed accessToken={accessToken} loadMoreSignal={feedMore} reloadKey={feedReload} />
         </ScrollView>
 
         <BottomNav active="home" navigate={navigate} />

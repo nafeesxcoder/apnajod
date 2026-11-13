@@ -192,6 +192,8 @@ import {
   AppNoticeSheet,
   type AppNotice,
 } from "../components/feedback/AppNoticeSheet";
+import { setProfileOpener, userIdFromToken } from "../features/posts/profileLink";
+import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModal";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
 
 /* =========================================================
@@ -552,6 +554,19 @@ function MilaanApp() {
   const hasSelected = !!selected.id;
   // --- finding people ---
   const [personId, setPersonId] = useState<string | null>(null);
+  // Where Back on someone's profile goes: the screen it was opened from
+  // (a chat, Find people...), the way Instagram returns you.
+  const [personReturn, setPersonReturn] = useState<Screen>("find");
+  // A tap on a name or photo on a post (its header, a comment, the likes
+  // list) opens that profile. The real opener is set further down, once
+  // openPerson exists; this keeps the registration a hook above the fonts gate.
+  const openProfileRef = useRef<(userId: string) => void>(() => undefined);
+  useEffect(() => {
+    setProfileOpener((userId) => openProfileRef.current(userId));
+    return () => setProfileOpener(null);
+  }, []);
+  // A post opened from a shared link (https://apnajoda.com/?post=<id>).
+  const [sharedPostId, setSharedPostId] = useState<string | null>(() => readPostParam());
   // Private until the server says otherwise: guessing "public" for a moment
   // would show the wrong switch to someone who never chose it.
   const [isPrivateAccount, setIsPrivateAccount] = useState(true);
@@ -3131,7 +3146,13 @@ function MilaanApp() {
   /** Open someone's page. */
   const openPerson = (userId: string) => {
     setPersonId(userId);
+    if (screen !== "person") setPersonReturn(screen);
     setScreen("person");
+  };
+  // Your own name on a post opens your own profile, not a stranger's view of it.
+  openProfileRef.current = (userId: string) => {
+    if (userId === userIdFromToken(accessToken)) setScreen("profile");
+    else openPerson(userId);
   };
 
   /**
@@ -3588,7 +3609,7 @@ function MilaanApp() {
         {screen === "person" && accessToken && personId && (
           <PersonScreen
             userId={personId}
-            onBack={() => setScreen("find")}
+            onBack={() => setScreen(personReturn)}
             onLoad={(userId) => socialApi.person(accessToken, userId)}
             onFollow={(userId) => likeFromSearch(userId)}
             onMessage={(page) => openConversationWith(page.user)}
@@ -3691,6 +3712,14 @@ function MilaanApp() {
                 setSelected(target);
                 setScreen("chat");
               }}
+              // Tap their photo or name at the top of the chat to open their
+              // profile, as in Instagram. Only for a real account (the id is
+              // the member's user id), not the preview people.
+              onOpenPartnerProfile={
+                accessToken && isMemberId(conversationPartner.id)
+                  ? () => openPerson(conversationPartner.id)
+                  : undefined
+              }
               onReport={(reason, details) =>
                 reportMatch(conversationPartner, reason, details)
               }
@@ -3868,6 +3897,13 @@ function MilaanApp() {
         {screen === "support" && (
           <SupportScreen onBack={() => setScreen("settings")} />
         )}
+        {!!sharedPostId && accessToken && onboardingComplete && (
+          <SharedPostModal
+            postId={sharedPostId}
+            accessToken={accessToken}
+            onClose={() => setSharedPostId(null)}
+          />
+        )}
         {selected.id ? (
           <SafetyActions
             visible={detailSafetyOpen}
@@ -3940,6 +3976,12 @@ const sharedProfileToken: string | null = (() => {
   const token = new URLSearchParams(window.location.search).get("share");
   return token && /^[a-f0-9]{32}$/.test(token) ? token : null;
 })();
+
+
+/** A real member's id (a UUID), as opposed to a preview person's "1", "2"... */
+function isMemberId(id: string | undefined): id is string {
+  return !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
 
 export default function App() {
   return (
