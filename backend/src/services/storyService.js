@@ -125,6 +125,20 @@ async function tray(viewerId) {
         : null,
     });
   }
+  // Who you can reply to: your matches (chat is between matches only).
+  const others = [...people.values()].filter((person) => !person.mine).map((person) => person.user.userId);
+  const matched = new Set();
+  if (others.length) {
+    const marks = others.map(() => '?').join(', ');
+    const rows = await query(
+      `SELECT user_a_id, user_b_id FROM mutual_matches
+        WHERE (user_a_id = ? AND user_b_id IN (${marks})) OR (user_b_id = ? AND user_a_id IN (${marks}))`,
+      [viewerId, ...others, viewerId, ...others],
+    );
+    for (const row of rows) matched.add(row.user_a_id === viewerId ? row.user_b_id : row.user_a_id);
+  }
+  for (const person of people.values()) person.canReply = !person.mine && matched.has(person.user.userId);
+
   // Poll results: how many voted each way, and your own vote.
   await stickerService.withResults(viewerId, [...people.values()].flatMap((person) => person.stories));
   const latest = (person) => new Date(person.stories[person.stories.length - 1].createdAt).getTime();

@@ -46,6 +46,8 @@ export type ChatMessage = {
   deletedAt?: number;
   deletedForEveryone?: boolean;
   forwarded?: boolean;
+  /** A reply (or emoji reaction) to the other person's story. Only this label is kept, never the story. */
+  storyReply?: { reaction?: boolean };
   reactions?: Record<string,string>;
   starredByMe?: boolean;
   hiddenForMe?: boolean;

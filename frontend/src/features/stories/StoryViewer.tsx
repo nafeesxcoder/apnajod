@@ -12,6 +12,7 @@ import { markSeen } from "./storySeen";
 import { storySeconds } from "./music/clip";
 import { LiveSticker } from "./LiveSticker";
 import { AnswerSheet, ResponsesSheet } from "./StoryResponses";
+import { StoryReplyBar } from "./StoryReplyBar";
 import { FRAME_ASPECT } from "./editor/model";
 import { createClipPlayer, type ClipPlayer } from "./music/clipPlayer";
 
@@ -54,6 +55,7 @@ export function StoryViewer({
   const [results, setResults] = useState<Record<string, { counts: [number, number]; myVote: number | null }>>({});
   const [asking, setAsking] = useState<{ storyId: string; stickerId: string; prompt: string } | null>(null);
   const [responsesFor, setResponsesFor] = useState<string | null>(null);
+  const [replying, setReplying] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
   const done = useRef(0);
   useEffect(() => {
@@ -116,7 +118,7 @@ export function StoryViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id]);
 
-  const paused = !loaded || held || menu || reporting || deleting || !!asking || !!responsesFor;
+  const paused = !loaded || held || menu || reporting || deleting || !!asking || !!responsesFor || replying;
 
   // The story's song: from its start, for as long as the story plays.
   const clip = useRef<ClipPlayer | null>(null);
@@ -280,6 +282,18 @@ export function StoryViewer({
                 <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>Responses</Text>
               </Pressable>
               </View>
+            )}
+
+            {/* Someone else's story: reply or react in chat. */}
+            {person && !person.mine && (
+              <StoryReplyBar
+                storyId={story.id}
+                ownerId={person.user.userId}
+                username={person.user.username}
+                canReply={!!person.canReply}
+                accessToken={accessToken}
+                onBusy={setReplying}
+              />
             )}
 
             {/* Top: one bar per story, then who and when. */}

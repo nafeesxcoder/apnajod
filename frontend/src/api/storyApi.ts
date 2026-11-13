@@ -26,6 +26,8 @@ export type StoryResponses = {
 export type StoryPerson = {
   user: { userId: string; username: string; name: string; avatarUrl: string | null };
   mine: boolean;
+  /** You can reply in chat (you are matched). */
+  canReply?: boolean;
   stories: StoryItem[];
 };
 

@@ -30,7 +30,7 @@ describe("poll, question and @mention stickers", () => {
     expect(viewer).toContain("if (!result || result.myVote !== null) return;");
     expect(viewer).toContain("storyApi\n                                  .vote(accessToken, story.id, sticker.id, choice)");
     expect(viewer).toContain("setTimeout(() => openProfile(sticker.userId), 80);");
-    expect(viewer).toContain("|| !!asking || !!responsesFor;");
+    expect(viewer).toContain("|| !!asking || !!responsesFor || replying;");
   });
 
   it("show the owner who voted and the answers, only on their own story", () => {

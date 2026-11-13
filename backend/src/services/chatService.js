@@ -365,6 +365,8 @@ async function sendMessage(peerId, userId, message) {
     deletedForEveryone: _deletedForEveryone,
     ...payload
   } = message;
+  // A reply to someone's story: only the label is kept, never the story itself.
+  if (payload.storyReply) payload.storyReply = { reaction: !!payload.storyReply.reaction };
   const retentionMode = await getRetentionMode(conversationId, userId);
   let expiresAt = null;
   let deleteAfterSeen = 0;
@@ -434,9 +436,12 @@ async function notifyRecipient(conversationId, senderId, recipientId, message) {
     [senderId],
   );
   const senderName = profile?.first_name || "Someone";
-  const preview = message.text
-    ? String(message.text).slice(0, 120)
-    : "Sent you a message";
+  const text = message.text ? String(message.text) : "";
+  const preview = !text
+    ? "Sent you a message"
+    : message.storyReply
+      ? (message.storyReply.reaction ? `Reacted ${text} to your story` : `Replied to your story: ${text}`).slice(0, 120)
+      : text.slice(0, 120);
   await pushService.notifyUser(recipientId, {
     title: senderName,
     body: preview,

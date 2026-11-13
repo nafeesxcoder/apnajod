@@ -7,6 +7,7 @@
   useState,
 } from "react";
 import { SharedPostBubble } from "../posts/SharedPostBubble";
+import { StoryReplyLabel } from "../stories/StoryReplyBar";
 import { postIdFromText } from "../posts/profileLink";
 import {
   ActivityIndicator,
@@ -4019,6 +4020,7 @@ function ChatBubble({
               />
             </Pressable>
           )}
+          {!!message.storyReply && <StoryReplyLabel mine={mine} reaction={!!message.storyReply.reaction} plain={isJustEmoji} />}
           {!!sharedPostId && <SharedPostBubble postId={sharedPostId} mine={mine} />}
           {message.type === "text" && !gamePayload && !emojiOnly && !sharedPostId && (
             <Text
