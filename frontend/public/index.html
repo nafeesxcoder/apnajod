@@ -3,11 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <script>
-      /* apnajoda.com/privacy, /terms and /refund are plain pages saved as
-         privacy.html etc. The server answers any unknown path with this app,
-         so send those three to their page before the app starts loading. */
+      /* apnajoda.com/privacy, /terms, /refund, /contact, /shipping and
+         /pricing are plain pages saved as privacy.html etc. The server
+         answers any unknown path with this app, so send those to their page
+         before the app starts loading. */
       (function () {
-        var m = /^\/(privacy|terms|refund)\/?$/i.exec(location.pathname);
+        var m = /^\/(privacy|terms|refund|contact|shipping|pricing)\/?$/i.exec(location.pathname);
         if (m) location.replace("/" + m[1].toLowerCase() + ".html" + location.search + location.hash);
       })();
     </script>

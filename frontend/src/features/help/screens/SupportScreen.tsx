@@ -398,6 +398,21 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                   label: "Refund Policy",
                   url: "https://apnajoda.com/refund.html",
                 },
+                {
+                  icon: "pricetag-outline" as const,
+                  label: "Pricing",
+                  url: "https://apnajoda.com/pricing.html",
+                },
+                {
+                  icon: "flash-outline" as const,
+                  label: "Shipping & Delivery",
+                  url: "https://apnajoda.com/shipping.html",
+                },
+                {
+                  icon: "mail-outline" as const,
+                  label: "Contact Us",
+                  url: "https://apnajoda.com/contact.html",
+                },
               ].map((item) => (
                 <Pressable
                   key={item.label}
