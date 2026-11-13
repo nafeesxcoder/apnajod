@@ -87,6 +87,22 @@ const resolveReport = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+// A reported post: remove it (and tell its owner), or keep it.
+const removePost = asyncHandler(async (req, res) => {
+  const postService = require("../services/postService");
+  try {
+    await postService.removePostByAdmin(req.params.id);
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+  res.json({ ok: true });
+});
+
+const keepPost = asyncHandler(async (req, res) => {
+  const postService = require("../services/postService");
+  res.json(await postService.keepPostByAdmin(req.params.id));
+});
+
 const getAppeals = asyncHandler(async (req, res) => {
   const appealService = require("../services/appealService");
   const appeals = await appealService.listOpenAppeals();
@@ -146,5 +162,5 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

@@ -249,6 +249,8 @@ async function reactivateUser(userId) {
 }
 
 module.exports = {
+  // Where an /uploads/... URL lives on disk (used to delete a removed post's photo).
+  uploadedFilePath,
   findUserByPhone,
   findUserByEmail,
   findUserById,

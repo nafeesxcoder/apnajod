@@ -102,6 +102,9 @@ export const adminApi = {
   createDailyQuestion: (token: string, question: string, options: string[]) => authFetch("/admin/questions", token, { method: "POST", body: JSON.stringify({ question, options }) }),
   setDailyQuestionActive: (token: string, id: number, active: boolean) => authFetch(`/admin/questions/${id}/active`, token, { method: "POST", body: JSON.stringify({ active }) }),
   resolveAppeal: (token: string, id: string, action: "restore" | "reject") => authFetch(`/admin/appeals/${id}/resolve`, token, { method: "POST", body: JSON.stringify({ action }) }),
+  // A reported post: remove it (its owner is told why), or keep it.
+  removePost: (token: string, postId: string) => authFetch(`/admin/posts/${postId}/remove`, token, { method: "POST" }),
+  keepPost: (token: string, postId: string) => authFetch(`/admin/posts/${postId}/keep`, token, { method: "POST" }),
   resolveReport: (token: string, id: string, action: "actioned" | "dismissed") => authFetch(`/admin/reports/${id}/resolve`, token, { method: "POST", body: JSON.stringify({ action }) }),
   setUserRole: (token: string, id: string, role: "user" | "admin") => authFetch(`/admin/users/${id}/role`, token, { method: "POST", body: JSON.stringify({ role }) }),
   banUser: (token: string, id: string) => authFetch(`/admin/users/${id}/ban`, token, { method: "POST" }),

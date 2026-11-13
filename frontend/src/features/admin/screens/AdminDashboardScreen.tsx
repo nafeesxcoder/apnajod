@@ -1495,6 +1495,8 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Removing a post takes two taps: the first arms it, the second removes.
+  const [confirmPost, setConfirmPost] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1524,6 +1526,21 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
       } else {
         await adminApi.resolveReport(accessToken, id, "dismissed");
       }
+      await load();
+    } catch (e) {
+      setError(errText(e, "Action failed"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const actOnPost = async (postId: string, kind: "remove" | "keep") => {
+    setBusyId(postId);
+    setError("");
+    try {
+      if (kind === "remove") await adminApi.removePost(accessToken, postId);
+      else await adminApi.keepPost(accessToken, postId);
+      setConfirmPost(null);
       await load();
     } catch (e) {
       setError(errText(e, "Action failed"));
@@ -1606,6 +1623,65 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
                     • {reason}
                   </Text>
                 ))}
+              </View>
+            )}
+            {Array.isArray(r?.reported_posts) && r.reported_posts.length > 0 && (
+              <View style={{ gap: 10, marginTop: 4 }}>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>
+                  Reported posts
+                </Text>
+                {r.reported_posts.map((post: any) => {
+                  const postId = String(post.post_id);
+                  const postCount = Number(post.report_count ?? 1);
+                  const armed = confirmPost === postId;
+                  return (
+                    <View
+                      key={postId}
+                      style={{
+                        flexDirection: "row",
+                        gap: 12,
+                        padding: 10,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: armed ? COLORS.danger : "#E5E7EB",
+                        backgroundColor: "#FAFAFB",
+                      }}
+                    >
+                      <Image
+                        source={{ uri: String(post.media_url) }}
+                        accessibilityLabel="Reported post photo"
+                        style={{ width: 96, height: 96, borderRadius: 8, backgroundColor: "#E5E7EB" }}
+                      />
+                      <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
+                        <Text numberOfLines={3} style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMain }}>
+                          {post.caption ? `"${post.caption}"` : "No caption"}
+                        </Text>
+                        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: COLORS.danger }}>
+                          {`Reported by ${postCount} ${postCount === 1 ? "person" : "people"}`}
+                          {post.reasons ? ` · ${String(post.reasons).split(" | ").join(", ")}` : ""}
+                        </Text>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                          <SmallButton
+                            label={armed ? "Tap again to remove" : "Remove post"}
+                            tone="danger"
+                            busy={busyId === postId}
+                            onPress={() => (armed ? void actOnPost(postId, "remove") : setConfirmPost(postId))}
+                          />
+                          {armed ? (
+                            <SmallButton label="Cancel" tone="plain" onPress={() => setConfirmPost(null)} />
+                          ) : (
+                            <SmallButton
+                              label="Keep post"
+                              tone="plain"
+                              busy={busyId === postId}
+                              onPress={() => void actOnPost(postId, "keep")}
+                            />
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             )}
             <View

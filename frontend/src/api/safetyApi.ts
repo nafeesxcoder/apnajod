@@ -30,10 +30,12 @@ export const safetyApi = {
     reason: string,
     details: string | undefined,
     reportId: string,
+    /** When the report is about one post, so a moderator sees that post. */
+    postId?: string,
   ) {
     return authFetch("/safety/report", accessToken, {
       method: "POST",
-      body: JSON.stringify({ reportedId, reason, details, reportId }),
+      body: JSON.stringify({ reportedId, reason, details, reportId, postId }),
     });
   },
 

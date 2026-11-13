@@ -659,13 +659,16 @@ export function ReportSheet({
     if (!post.author) return;
     setError("");
     try {
-      await safetyApi.report(
+      const result = await safetyApi.report(
         accessToken,
         post.author.userId,
         reason,
         `Post ${post.id}${post.caption ? `: "${post.caption.slice(0, 200)}"` : ""}`,
         `report-${Date.now()}`,
+        post.id,
       );
+      // The safety API answers instead of throwing; a refusal is a failure.
+      if (!result?.saved) throw new Error(result?.error || "Could not send that report.");
       setDone(true);
     } catch (e: any) {
       setError(e?.message || "Could not send that report.");

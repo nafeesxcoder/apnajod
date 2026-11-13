@@ -14,10 +14,10 @@ function wrap(fn) {
 }
 
 const postReport = wrap(async (req) => {
-  const { reportedId, reason, details, reportId } = req.body;
+  const { reportedId, reason, details, reportId, postId } = req.body;
   if (!reportedId || !reason || !reportId)
     throw new ApiError(400, 'reportedId, reason and reportId are required');
-  return safetyService.submitReport(req.user.id, reportedId, reason, details, reportId);
+  return safetyService.submitReport(req.user.id, reportedId, reason, details, reportId, postId);
 });
 
 const postBlock = wrap(async (req) => {

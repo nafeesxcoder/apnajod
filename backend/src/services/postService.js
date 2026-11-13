@@ -208,7 +208,16 @@ async function updatePost(userId, postId, caption) {
   return { id: postId, caption: caption || "" };
 }
 
+/** Deletes a post's photo from disk (its likes, comments, saves go by cascade). */
+async function removeMediaFile(mediaUrl) {
+  const { uploadedFilePath } = require("./userService");
+  const file = uploadedFilePath(mediaUrl);
+  if (!file) return;
+  await require("fs").promises.unlink(file).catch(() => undefined);
+}
+
 async function deletePost(userId, postId) {
+  const [post] = await query("SELECT media_url FROM posts WHERE id = ? AND user_id = ?", [postId, userId]);
   const result = await query("DELETE FROM posts WHERE id = ? AND user_id = ?", [
     postId,
     userId,
@@ -218,7 +227,45 @@ async function deletePost(userId, postId) {
     error.status = 404;
     throw error;
   }
+  // The photo went with the post: it used to stay on disk for good.
+  if (post) await removeMediaFile(post.media_url);
   return { ok: true };
+}
+
+/**
+ * A moderator removes a reported post: the post, its photo, its likes,
+ * comments and saves go; its reports are closed as "actioned"; and the
+ * member is told why it disappeared.
+ */
+async function removePostByAdmin(postId) {
+  const [post] = await query("SELECT user_id, media_url FROM posts WHERE id = ? LIMIT 1", [postId]);
+  if (!post) {
+    const error = new Error("That post no longer exists.");
+    error.status = 404;
+    throw error;
+  }
+  await query("DELETE FROM posts WHERE id = ?", [postId]);
+  await removeMediaFile(post.media_url);
+  await query(
+    "UPDATE reports SET review_status = 'actioned', reviewed_at = NOW(6) WHERE post_id = ? AND review_status = 'open'",
+    [postId],
+  );
+  await require("./pushService")
+    .notifyUser(post.user_id, {
+      title: "Your post was removed",
+      body: "It went against the Apnajoda community guidelines.",
+    })
+    .catch(() => undefined);
+  return { ok: true };
+}
+
+/** A moderator keeps a reported post: its reports are closed as "dismissed". */
+async function keepPostByAdmin(postId) {
+  const result = await query(
+    "UPDATE reports SET review_status = 'dismissed', reviewed_at = NOW(6) WHERE post_id = ? AND review_status = 'open'",
+    [postId],
+  );
+  return { ok: true, closed: result.affectedRows ?? 0 };
 }
 
 module.exports = {
@@ -234,4 +281,6 @@ module.exports = {
   countPosts,
   updatePost,
   deletePost,
+  removePostByAdmin,
+  keepPostByAdmin,
 };
