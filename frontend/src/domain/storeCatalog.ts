@@ -9,7 +9,7 @@ export type StoreProductSelection = {
   consumable: boolean;
 };
 
-const externalId = (logicalKey: string) => `com.milaan.app.${logicalKey}`;
+const externalId = (logicalKey: string) => `com.apnajoda.app.${logicalKey}`;
 
 export function membershipStoreProduct(planId: MembershipPlanId, billing: BillingCycle, platform: StorePlatform): StoreProductSelection {
   const logicalKey = `membership.${planId}.${billing}`;

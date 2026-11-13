@@ -6,7 +6,7 @@ describe('native store catalog', () => {
     expect(membershipStoreProduct('plus', 'annual', 'apple_iap')).toEqual({
       logicalKey: 'membership.plus.annual',
       productKey: 'membership.plus.annual.apple_iap',
-      externalProductId: 'com.milaan.app.membership.plus.annual',
+      externalProductId: 'com.apnajoda.app.membership.plus.annual',
       purchaseType: 'subs',
       consumable: false,
     });
@@ -14,7 +14,7 @@ describe('native store catalog', () => {
 
   it('marks Spark packs consumable and Executive access subscription-only', () => {
     expect(sparkStoreProduct('spark_15', 'google_play').consumable).toBe(true);
-    expect(sparkStoreProduct('spark_15', 'google_play').externalProductId).toBe('com.milaan.app.spark.15');
+    expect(sparkStoreProduct('spark_15', 'google_play').externalProductId).toBe('com.apnajoda.app.spark.15');
     expect(executiveStoreProduct('apple_iap').purchaseType).toBe('subs');
   });
 

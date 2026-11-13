@@ -108,6 +108,14 @@ describe('app config', () => {
     expect(JSON.stringify(app)).not.toMatch(/milaan/i);
   });
 
+  it('builds the phone app as Apnajoda too (app.config.ts decides the name and package)', () => {
+    const config = read('app.config.ts');
+    expect(config).toContain("production: 'com.apnajoda.app',");
+    expect(config).toContain("production: 'Apnajoda',");
+    expect(config).toContain("slug: 'apnajoda',");
+    expect(config).not.toMatch(/milaan/i);
+  });
+
   it('ships the brand colours to the OS chrome', () => {
     expect(app.primaryColor).toBe(palette.navy);
     expect(app.web.themeColor).toBe(palette.navy);

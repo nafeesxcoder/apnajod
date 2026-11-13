@@ -11,19 +11,19 @@ export default ({config}: ConfigContext): ExpoConfig => {
   const variant = resolveVariant(process.env.APP_VARIANT);
   const easProjectId = process.env.EAS_PROJECT_ID?.trim();
   const identifiers: Record<AppVariant, string> = {
-    development: 'com.milaan.app.dev',
-    pilot: 'com.milaan.app.pilot',
-    production: 'com.milaan.app',
+    development: 'com.apnajoda.app.dev',
+    pilot: 'com.apnajoda.app.pilot',
+    production: 'com.apnajoda.app',
   };
   const names: Record<AppVariant, string> = {
-    development: 'Milaan Dev',
-    pilot: 'Milaan Pilot',
-    production: 'Milaan',
+    development: 'Apnajoda Dev',
+    pilot: 'Apnajoda Pilot',
+    production: 'Apnajoda',
   };
   const schemes: Record<AppVariant, string> = {
-    development: 'milaan-dev',
-    pilot: 'milaan-pilot',
-    production: 'milaan',
+    development: 'apnajoda-dev',
+    pilot: 'apnajoda-pilot',
+    production: 'apnajoda',
   };
   const plugins = [
     ...(config.plugins ?? []),
@@ -34,7 +34,7 @@ export default ({config}: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: names[variant],
-    slug: 'milaan',
+    slug: 'apnajoda',
     scheme: schemes[variant],
     orientation: 'default',
     plugins,
