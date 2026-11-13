@@ -1080,20 +1080,21 @@ function MilaanApp() {
           }
         } catch (error) {
           console.log("Session restore failed:", error);
-          setAppNotice({
-            title: "Session restore failed",
-            body:
-              error instanceof Error
-                ? error.message
-                : "Could not reach the Apnajoda server.",
-            icon: "cloud-offline-outline",
-            tone: "ruby",
-          });
           // Only forget the saved login when the server says it is invalid.
           // A network problem or server error must not sign the person out.
           if (isSessionRejected(error)) {
+            // An old login that has simply run out: not an error to show.
+            // The welcome screen comes up and the person logs in again (the
+            // card used to sit over the log-in buttons on a fresh phone).
             await AsyncStorage.removeItem("milaan_access_token");
             await AsyncStorage.removeItem("milaan_refresh_token");
+          } else {
+            setAppNotice({
+              title: "Could not reach Apnajoda",
+              body: "Check your internet connection, then open the app again.",
+              icon: "cloud-offline-outline",
+              tone: "ruby",
+            });
           }
         }
         const remaining = Math.max(0, 3000 - (Date.now() - started));

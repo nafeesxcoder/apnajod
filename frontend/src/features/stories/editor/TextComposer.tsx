@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { fonts } from "../../../theme";
 import { STORY_FONTS, TEXT_PAD } from "./fonts";
 import { COLORS, FONT_LABELS, type FontKey, LINE_HEIGHT, type TextBg, type TextItem, textColors } from "./model";
+import { keyboardBehavior } from "../../../layout/keyboardBehavior";
 
 export type TextDraft = Pick<TextItem, "text" | "font" | "color" | "bg">;
 
@@ -29,7 +30,7 @@ export function TextComposer({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={keyboardBehavior}
       style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.6)" }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingTop: 12, gap: 8 }}>

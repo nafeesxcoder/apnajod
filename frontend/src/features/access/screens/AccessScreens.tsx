@@ -39,6 +39,7 @@ import { authApi, AuthRequestError } from "../../../api/authApi";
 import { DEFAULT_COUNTRY } from "../../../domain/countries";
 import { access } from "../../../theme/accessStyles";
 import { colors } from "../../../theme";
+import { keyboardBehavior } from "../../../layout/keyboardBehavior";
 
 const wordmarkArt = require("../../../../assets/apnajoda-wordmark.png");
 
@@ -57,7 +58,7 @@ function AccessPage({
     <View style={access.root}>
       <SafeAreaView style={access.safe}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={keyboardBehavior}
           style={access.flex}
         >
           <ScrollView

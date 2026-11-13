@@ -24,6 +24,7 @@ import { safetyApi } from "../../api/safetyApi";
 import { fonts, palette, radius } from "../../theme";
 import { canOpenProfile, openProfile } from "./profileLink";
 import { shareText, timeAgo } from "./postFormat";
+import { keyboardBehavior } from "../../layout/keyboardBehavior";
 
 /**
  * The height you can actually see. On a phone browser the address bar and
@@ -81,7 +82,7 @@ export function Sheet({
   return (
     <Modal visible={visible} transparent animationType={centred ? "fade" : "slide"} onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={keyboardBehavior}
         // Only as tall as what can be seen, so the sheet's bottom is never
         // under the browser's toolbar.
         style={{ height, justifyContent: centred ? "center" : "flex-end", padding: centred ? 24 : 0 }}

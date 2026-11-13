@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { chatApi } from "../../api/chatApi";
 import { fonts } from "../../theme";
+import { keyboardBehavior } from "../../layout/keyboardBehavior";
 
 export const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "👏", "🔥"] as const;
 
@@ -98,7 +99,7 @@ export function StoryReplyBar({
   return (
     <KeyboardAvoidingView
       pointerEvents="box-none"
-      behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
+      behavior={keyboardBehavior}
       style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: 0, justifyContent: "flex-end" }}
     >
       <View style={{ paddingHorizontal: 12, paddingBottom: 14, gap: 10 }}>

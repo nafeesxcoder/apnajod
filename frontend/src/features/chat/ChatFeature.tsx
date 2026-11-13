@@ -140,6 +140,7 @@ import type {
   RealtimeCallEvent,
 } from "./contracts/ChatRuntimePorts";
 import { AppCanvas } from "../../components/AppCanvas";
+import { keyboardBehavior } from "../../layout/keyboardBehavior";
 
 // 🚀 BACKGROUND IMAGE ADDED HERE
 
@@ -4942,7 +4943,7 @@ function MediaCaptionPreview({
       <SafeAreaView style={chatStyles.mediaPreviewRoot}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={keyboardBehavior}
         >
           <View style={chatStyles.mediaPreviewHeader}>
             <Pressable
