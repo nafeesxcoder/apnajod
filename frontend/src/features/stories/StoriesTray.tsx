@@ -8,7 +8,8 @@ import { storyApi, type StoryPerson } from "../../api/storyApi";
 import { brand } from "../../components/brand";
 import { fonts, palette } from "../../theme";
 import { Avatar } from "../posts/PostSheets";
-import { StoryComposer } from "./StoryComposer";
+import { Sheet } from "../posts/PostSheets";
+import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
 import { StoryViewer } from "./StoryViewer";
 import { liveStories, loadSeen } from "./storySeen";
 
@@ -34,7 +35,8 @@ export function StoriesTray({
   const [people, setPeople] = useState<StoryPerson[]>([]);
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const [viewing, setViewing] = useState<number | null>(null);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<PickedStoryPhoto | null>(null);
+  const [choosing, setChoosing] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -62,22 +64,36 @@ export function StoriesTray({
   const others = people.filter((person) => !person.mine);
   const unseen = (person: StoryPerson) => person.stories.some((story) => !seen.has(story.id));
 
-  const pick = async () => {
+  /** Camera or gallery; the photo opens in the story editor at full quality. */
+  const pick = async (from: "camera" | "gallery") => {
+    setChoosing(false);
     setError("");
-    if (Platform.OS === "web") {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    try {
+      const permission =
+        from === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : Platform.OS === "web"
+            ? await ImagePicker.requestMediaLibraryPermissionsAsync()
+            : { granted: true };
       if (!permission.granted) {
-        setError("Allow photo access to add a story.");
+        setError(from === "camera" ? "Allow camera access to take a story." : "Allow photo access to add a story.");
         return;
       }
+      // As picked: no crop, full quality.
+      const options = { mediaTypes: ["images"] as ImagePicker.MediaType[], allowsEditing: false, quality: 1 };
+      const result = from === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+      const asset = result.canceled ? null : result.assets[0];
+      if (!asset) return;
+      const size =
+        asset.width && asset.height
+          ? { width: asset.width, height: asset.height }
+          : await new Promise<{ width: number; height: number }>((resolve, reject) =>
+              Image.getSize(asset.uri, (width, height) => resolve({ width, height }), reject),
+            );
+      setPicked({ uri: asset.uri, ...size });
+    } catch {
+      setError("That photo could not be opened.");
     }
-    // As picked: no crop, full quality.
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false,
-      quality: 1,
-    });
-    if (!result.canceled && result.assets[0]) setPicked(result.assets[0].uri);
   };
 
   return (
@@ -88,7 +104,7 @@ export function StoriesTray({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={mine ? "Watch your story" : "Add to your story"}
-            onPress={() => (mine ? setViewing(people.indexOf(mine)) : void pick())}
+            onPress={() => (mine ? setViewing(people.indexOf(mine)) : setChoosing(true))}
           >
             <Ring active={!!mine && unseen(mine)} grey={!!mine && !unseen(mine)}>
               {myPhoto ? (
@@ -103,7 +119,7 @@ export function StoriesTray({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add to your story"
-            onPress={() => void pick()}
+            onPress={() => setChoosing(true)}
             hitSlop={6}
             style={{
               position: "absolute",
@@ -160,7 +176,28 @@ export function StoriesTray({
           )
         }
       />
-      <StoryComposer uri={picked} accessToken={accessToken} onClose={() => setPicked(null)} onShared={() => void load()} />
+      <StoryEditor photo={picked} accessToken={accessToken} onClose={() => setPicked(null)} onShared={() => void load()} />
+      <Sheet visible={choosing} title="Add to your story" onClose={() => setChoosing(false)}>
+        <View style={{ paddingVertical: 6 }}>
+          {(
+            [
+              ["camera", "camera-outline", "Take a photo"],
+              ["gallery", "images-outline", "Choose from gallery"],
+            ] as const
+          ).map(([from, icon, label]) => (
+            <Pressable
+              key={from}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              onPress={() => void pick(from)}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 18, minHeight: 56 }}
+            >
+              <Ionicons name={icon} size={24} color={palette.ink} />
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Sheet>
     </View>
   );
 }

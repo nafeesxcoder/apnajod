@@ -11,7 +11,7 @@ import { liveStories } from "./storySeen";
 const read = (path: string) => readFileSync(join(__dirname, path), "utf8").replace(/\r\n/g, "\n");
 const tray = read("StoriesTray.tsx");
 const viewer = read("StoryViewer.tsx");
-const composer = read("StoryComposer.tsx");
+const editor = read("editor/StoryEditor.tsx");
 const seen = read("storySeen.ts");
 const api = read("../../api/storyApi.ts");
 const home = read("../discovery/screens/HomeScreen.tsx");
@@ -27,8 +27,7 @@ describe("stories", () => {
   });
 
   it("uploads the photo as picked: no crop, full quality", () => {
-    expect(tray).toContain("allowsEditing: false,");
-    expect(tray).toContain("quality: 1,");
+    expect(tray).toContain("allowsEditing: false, quality: 1 }");
     expect(api).toContain('body.append("photo", file, "story.jpg");');
     expect(api).toContain("`${API_URL}/stories`");
   });
@@ -51,7 +50,7 @@ describe("stories", () => {
   });
 
   it("says the story goes after 24 hours and sits at the top of Home", () => {
-    expect(composer).toContain("Disappears after 24 hours");
+    expect(editor).toContain("disappears after 24 hours");
     expect(home).toContain("<StoriesTray");
   });
 });
