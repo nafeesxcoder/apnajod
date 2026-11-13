@@ -77,6 +77,13 @@
         }
       ]
     ],
-    "locales": {}
+    "locales": {},
+    "extra": {
+      "buildVariant": "production",
+      "eas": {
+        "projectId": "87ac25e0-158f-40b7-8e89-7c0873bddee9"
+      }
+    },
+    "owner": "nafarhaofficials-team"
   }
 }
