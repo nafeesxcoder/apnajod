@@ -23,10 +23,11 @@ describe('frontend architecture boundaries', () => {
     expect(violations).toEqual([]);
   });
 
-  it('ships no concrete backend, database, payment, push, or realtime provider dependency', () => {
+  it('ships no concrete backend, database, payment or realtime provider dependency', () => {
     const packageJson = readFileSync('package.json', 'utf8');
     const appJson = readFileSync('app.json', 'utf8');
-    const banned = ['@supabase/supabase-js', '@stripe/stripe-react-native', 'expo-iap', 'expo-notifications'];
+    // expo-notifications is allowed: phone-app push lives behind src/app/push (see below).
+    const banned = ['@supabase/supabase-js', '@stripe/stripe-react-native', 'expo-iap'];
     for (const dependency of banned) {
       expect(packageJson).not.toContain(dependency);
       expect(appJson).not.toContain(dependency);
@@ -38,7 +39,12 @@ describe('frontend architecture boundaries', () => {
     const violations = sourceFiles('src').flatMap(path => {
       const source = readFileSync(path, 'utf8');
       const imports = [...source.matchAll(/(?:import[\s\S]*?from\s+|require\()['"]([^'"]+)['"]/g)];
-      return imports.filter(([, dependency]) => banned.test(dependency ?? '')).map(([, dependency]) => `${path} -> ${dependency}`);
+      // The one place push notifications may come from: the phone-app push adapter.
+      const pushAdapter = /src[\\/]app[\\/]push[\\/]nativePush\.native\.ts$/.test(path);
+      return imports
+        .filter(([, dependency]) => banned.test(dependency ?? ''))
+        .filter(([, dependency]) => !(pushAdapter && dependency === 'expo-notifications'))
+        .map(([, dependency]) => `${path} -> ${dependency}`);
     });
 
     expect(violations).toEqual([]);

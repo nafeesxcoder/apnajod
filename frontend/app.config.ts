@@ -1,3 +1,4 @@
+import { existsSync } from 'fs';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 type AppVariant = 'development' | 'pilot' | 'production';
@@ -30,6 +31,10 @@ export default ({config}: ConfigContext): ExpoConfig => {
     ['expo-dev-client', {addGeneratedScheme: variant === 'development'}],
   ] as ExpoConfig['plugins'];
   const eas = easProjectId ? {projectId: easProjectId} : undefined;
+  // Firebase's file for Android notifications. On EAS it comes from the file
+  // variable GOOGLE_SERVICES_JSON (it is kept out of git); a local copy also works.
+  const googleServicesFile =
+    process.env.GOOGLE_SERVICES_JSON || (existsSync('./google-services.json') ? './google-services.json' : undefined);
 
   return {
     ...config,
@@ -47,6 +52,7 @@ export default ({config}: ConfigContext): ExpoConfig => {
     android: {
       ...config.android,
       package: identifiers[variant],
+      ...(googleServicesFile ? {googleServicesFile} : {}),
     },
   };
 };

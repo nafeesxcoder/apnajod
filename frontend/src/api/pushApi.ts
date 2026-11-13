@@ -37,6 +37,21 @@ export const pushApi = {
     });
   },
 
+  /** The phone app's Expo push token (Android / iPhone notifications). */
+  async saveDeviceToken(accessToken: string, token: string, platform: string) {
+    return authFetch("/push/device", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ token, platform }),
+    });
+  },
+
+  async removeDeviceToken(accessToken: string, token: string) {
+    return authFetch("/push/device/remove", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  },
+
   async unsubscribe(accessToken: string, endpoint: string) {
     return authFetch("/push/unsubscribe", accessToken, {
       method: "POST",

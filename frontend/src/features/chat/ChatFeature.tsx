@@ -4300,8 +4300,9 @@ function ChatBubble({
             <Text
               style={[styles.time, { fontSize: 11 },
                 {
+                  // A big emoji has no bubble behind it, so its time is grey, not white.
                   color:
-                    mine && !emojiOnly ? "rgba(255,255,255,.82)" : colors.muted,
+                    mine && !emojiOnly && !isJustEmoji ? "rgba(255,255,255,.82)" : colors.muted,
                 },
               ]}
             >

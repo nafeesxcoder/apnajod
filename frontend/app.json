@@ -75,6 +75,13 @@
         {
           "contactsPermission": "Apnajoda uses your contacts to help you find friends who are already on the app. Your contact list is never stored on our servers."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1F4D7A"
+        }
       ]
     ],
     "locales": {},

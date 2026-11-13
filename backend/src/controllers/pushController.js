@@ -24,4 +24,18 @@ const unsubscribe = asyncHandler(async (req, res) => {
   res.json({ ok: true, saved: true, reason: "backend" });
 });
 
-module.exports = { getPublicKey, subscribe, unsubscribe };
+const saveDevice = asyncHandler(async (req, res) => {
+  try {
+    await pushService.saveDeviceToken(req.user.id, req.body?.token, req.body?.platform);
+    res.json({ ok: true, saved: true, reason: "backend" });
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message || "Could not save the device");
+  }
+});
+
+const removeDevice = asyncHandler(async (req, res) => {
+  await pushService.removeDeviceToken(req.user.id, req.body?.token);
+  res.json({ ok: true, saved: true, reason: "backend" });
+});
+
+module.exports = { getPublicKey, subscribe, unsubscribe, saveDevice, removeDevice };

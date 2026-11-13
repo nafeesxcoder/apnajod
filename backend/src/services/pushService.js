@@ -38,7 +38,84 @@ async function removeSubscription(userId, endpoint) {
   return { ok: true };
 }
 
+/* ---------------- Phone app (Expo push) ---------------- */
+
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+/** "ExponentPushToken[...]" / "ExpoPushToken[...]" - what the app gets from Expo. */
+function isExpoToken(token) {
+  return typeof token === "string" && token.length <= 255 && /^Expo(nent)?PushToken\[[^\]]+\]$/.test(token);
+}
+
+async function saveDeviceToken(userId, token, platform) {
+  if (!isExpoToken(token)) {
+    const err = new Error("A valid device push token is required.");
+    err.status = 400;
+    throw err;
+  }
+  const os = ["android", "ios"].includes(platform) ? platform : "android";
+  // One phone, one account: a token moves to whoever signed in last.
+  await query(
+    `INSERT INTO device_push_tokens (token, user_id, platform) VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), platform = VALUES(platform)`,
+    [token, userId, os],
+  );
+  return { ok: true };
+}
+
+async function removeDeviceToken(userId, token) {
+  if (!token) return { ok: true };
+  await query("DELETE FROM device_push_tokens WHERE user_id = ? AND token = ?", [userId, String(token)]);
+  return { ok: true };
+}
+
+/**
+ * The messages Expo's push service takes: title and body shown, the rest
+ * (which chat or post it is about) handed to the app when it is tapped.
+ */
+function expoMessages(tokens, payload) {
+  const { title, body, data, ...rest } = payload || {};
+  const extra = { ...(data && typeof data === "object" ? data : {}), ...rest };
+  return tokens.map((to) => ({
+    to,
+    title: title || "Apnajoda",
+    body: body || "",
+    data: extra,
+    sound: "default",
+    priority: "high",
+    channelId: "default",
+  }));
+}
+
+async function notifyDevices(userId, payload) {
+  const rows = await query("SELECT token FROM device_push_tokens WHERE user_id = ?", [userId]);
+  if (!rows.length) return;
+  const tokens = rows.map((row) => row.token);
+  try {
+    const response = await fetch(EXPO_PUSH_URL, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(expoMessages(tokens, payload)),
+      signal: AbortSignal.timeout(10000),
+    });
+    const result = await response.json().catch(() => ({}));
+    const tickets = Array.isArray(result.data) ? result.data : [];
+    // A phone that no longer has the app: forget its token.
+    const gone = tickets
+      .map((ticket, index) => (ticket?.details?.error === "DeviceNotRegistered" ? tokens[index] : null))
+      .filter(Boolean);
+    if (gone.length) {
+      await query(`DELETE FROM device_push_tokens WHERE token IN (${gone.map(() => "?").join(", ")})`, gone);
+    }
+    console.log(`[PUSH APP] to user ${userId}: ${tickets.filter((t) => t?.status === "ok").length}/${tokens.length}`);
+  } catch (error) {
+    console.log(`[PUSH APP FAILED] to user ${userId}: ${error.message}`);
+  }
+}
+
 async function notifyUser(userId, payload) {
+  // The phone app first - it does not need the website's VAPID keys.
+  await notifyDevices(userId, payload);
   if (!env.push.publicKey || !env.push.privateKey) {
     console.log("[PUSH SKIPPED] VAPID keys are not set in .env");
     return;
@@ -68,4 +145,12 @@ async function notifyUser(userId, payload) {
   }
 }
 
-module.exports = { saveSubscription, removeSubscription, notifyUser };
+module.exports = {
+  saveSubscription,
+  removeSubscription,
+  notifyUser,
+  saveDeviceToken,
+  removeDeviceToken,
+  isExpoToken,
+  expoMessages,
+};

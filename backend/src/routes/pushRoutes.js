@@ -8,5 +8,8 @@ router.get("/public-key", pushController.getPublicKey);
 router.use(requireAuth);
 router.post("/subscribe", pushController.subscribe);
 router.post("/unsubscribe", pushController.unsubscribe);
+// The phone app's Expo push token.
+router.post("/device", pushController.saveDevice);
+router.post("/device/remove", pushController.removeDevice);
 
 module.exports = router;

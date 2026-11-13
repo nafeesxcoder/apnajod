@@ -101,6 +101,7 @@ import {
   isChatSocketConnected,
 } from "../api/chatSocket";
 import { minimizeActiveCallIfAny } from "../features/chat/activeCallBackGuard";
+import { forgetNativePush, startNativePush } from "./push/nativePush";
 import { pushApi } from "../api/pushApi";
 import { safetyApi } from "../api/safetyApi";
 import { conversationIdFor, profileIdFor } from "../domain/matchIdentity";
@@ -1320,6 +1321,15 @@ function MilaanApp() {
         // interrupt anything else in the app.
       }
     })();
+  }, [accessToken]);
+  // The phone app: its own notifications (Expo push), and opening the chat
+  // or post a tapped notification is about.
+  useEffect(() => {
+    if (!accessToken || Platform.OS === "web") return;
+    return startNativePush(accessToken, {
+      onOpenChat: (conversationId) => setPendingNotificationChat(conversationId),
+      onOpenPost: (postId) => setSharedPostId(postId),
+    });
   }, [accessToken]);
   // Notification taps: a cold start arrives as /?chat=<id>, an already-open
   // app gets a message from the service worker. Either way, remember which
@@ -3010,6 +3020,7 @@ function MilaanApp() {
 
   const logout = async () => {
     try {
+      if (accessToken) await forgetNativePush(accessToken);
       if (accessToken) await authApi.logout(accessToken);
     } catch {
       // A failed sign-out call still clears this device.

@@ -3,3 +3,6 @@ dist/
 .expo/
 *.log
 .DS_Store
+
+# Firebase (Android notifications) - uploaded to EAS as a file variable instead
+google-services.json
