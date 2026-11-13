@@ -38,7 +38,7 @@ describe("stories", () => {
   });
 
   it("plays each photo for 5 seconds with tap and hold controls", () => {
-    expect(viewer).toContain("export const STORY_SECONDS = 5;");
+    expect(read("music/clip.ts")).toContain("export const STORY_SECONDS = 5;");
     expect(viewer).toContain('accessibilityLabel="Previous story"');
     expect(viewer).toContain('accessibilityLabel="Next story"');
     expect(viewer).toContain("onLongPress={() => setHeld(true)}");

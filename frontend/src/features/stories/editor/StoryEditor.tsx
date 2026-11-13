@@ -36,6 +36,7 @@ import {
   photoRect,
   pushHistory,
   removeItem,
+  setMusic,
   toFront,
   updateItem,
   type EditorState,
@@ -43,6 +44,8 @@ import {
   type TextItem,
 } from "./model";
 import { StickerSheet } from "./StickerSheet";
+import { MusicSheet } from "../music/MusicSheet";
+import { createClipPlayer } from "../music/clipPlayer";
 import { TextComposer, type TextDraft } from "./TextComposer";
 
 export type PickedStoryPhoto = { uri: string; width: number; height: number };
@@ -98,6 +101,7 @@ export function StoryEditor({
   const [mode, setMode] = useState<Mode>("idle");
   const [editing, setEditing] = useState<string | null>(null);
   const [stickers, setStickers] = useState(false);
+  const [musicOpen, setMusicOpen] = useState(false);
   const [discard, setDiscard] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -125,6 +129,15 @@ export function StoryEditor({
     setBusy(false);
     void backdropFor(photo.uri).then(setBackdrop);
   }, [photo]);
+
+  // The story's song plays (on repeat) while you edit, like Instagram.
+  const song = state.music;
+  useEffect(() => {
+    if (!photo || !song || musicOpen) return;
+    const clip = createClipPlayer(song.url, song.start, song.length, true);
+    clip.play();
+    return () => clip.stop();
+  }, [photo, song?.trackId, song?.start, song?.length, musicOpen]);
 
   const commit = (next: EditorState, keep = true) => {
     if (next === stateRef.current) return;
@@ -233,7 +246,7 @@ export function StoryEditor({
     try {
       // Nothing changed: the photo goes up exactly as picked.
       const uri = isEdited(state) ? (made = await bakeStory({ uri: photo.uri, state, backdrop, frameRef })) : photo.uri;
-      await storyApi.create(accessToken, uri);
+      await storyApi.create(accessToken, uri, state.music);
       onShared();
       onClose();
     } catch (e: any) {
@@ -326,7 +339,7 @@ export function StoryEditor({
                     if (tapped?.kind === "text") {
                       setEditing(id);
                       setMode("text");
-                    }
+                    } else if (tapped?.kind === "music") setMusicOpen(true);
                   }}
                 />
               ),
@@ -370,6 +383,7 @@ export function StoryEditor({
                 {historyCount > 0 && iconButton("Undo", undo, <Ionicons name="arrow-undo" size={21} color="#FFFFFF" />)}
                 {iconButton("Filters", () => setMode("filters"), <Ionicons name="color-filter-outline" size={22} color="#FFFFFF" />)}
                 {iconButton("Draw", () => setMode("draw"), <MaterialCommunityIcons name="draw" size={22} color="#FFFFFF" />)}
+                {iconButton("Music", () => setMusicOpen(true), <Ionicons name="musical-notes" size={21} color="#FFFFFF" />)}
                 {iconButton("Stickers", () => setStickers(true), <Ionicons name="happy-outline" size={23} color="#FFFFFF" />)}
                 {iconButton(
                   "Add text",
@@ -499,6 +513,22 @@ export function StoryEditor({
         onPick={(kind, value) => {
           setStickers(false);
           commit(addItem(stateRef.current, { id: newId(), kind, value, x: 0.5, y: 0.45, scale: 1, rotation: 0 }));
+        }}
+      />
+
+      <MusicSheet
+        visible={musicOpen}
+        accessToken={accessToken}
+        current={state.music}
+        onClose={() => setMusicOpen(false)}
+        onPick={(music) => {
+          setMusicOpen(false);
+          commit(setMusic(stateRef.current, music, newId()));
+        }}
+        onRemove={() => {
+          setMusicOpen(false);
+          const sticker = stateRef.current.items.find((item) => item.kind === "music");
+          commit(sticker ? removeItem(stateRef.current, sticker.id) : { ...stateRef.current, music: null });
         }}
       />
 

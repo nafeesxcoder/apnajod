@@ -15,7 +15,11 @@ const createStory = asyncHandler(async (req, res) => {
     const apiBase = /localhost|127\.0\.0\.1/.test(env.apiUrl || '')
       ? `${req.get('x-forwarded-proto') || req.protocol}://${req.get('host')}`
       : env.apiUrl;
-    const story = await storyService.create(req.user.id, req.file, apiBase);
+    const story = await storyService.create(req.user.id, req.file, apiBase, {
+      trackId: req.body.musicTrackId,
+      start: req.body.musicStart,
+      length: req.body.musicLength,
+    });
     res.json({ ok: true, story });
   } catch (error) {
     rethrow(error);

@@ -99,6 +99,20 @@ export const adminApi = {
   reports: (token: string) => authFetch("/admin/reports", token),
   appeals: (token: string) => authFetch("/admin/appeals", token),
   dailyQuestions: (token: string) => authFetch("/admin/questions", token),
+  // Story music library.
+  musicList: (token: string) => authFetch("/admin/music", token),
+  musicDelete: (token: string, id: string) => authFetch(`/admin/music/${id}`, token, { method: "DELETE" }),
+  musicAdd: async (token: string, file: Blob, fileName: string, title: string, artist: string, durationSec: number) => {
+    const body = new FormData();
+    body.append("title", title);
+    body.append("artist", artist);
+    body.append("durationSec", String(Math.round(durationSec || 0)));
+    body.append("audio", file, fileName);
+    const response = await fetch(`${API_URL}/admin/music`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(response.status === 413 ? "That file is too big (10 MB at most)." : data.error || "Could not add the song");
+    return data;
+  },
   createDailyQuestion: (token: string, question: string, options: string[]) => authFetch("/admin/questions", token, { method: "POST", body: JSON.stringify({ question, options }) }),
   setDailyQuestionActive: (token: string, id: number, active: boolean) => authFetch(`/admin/questions/${id}/active`, token, { method: "POST", body: JSON.stringify({ active }) }),
   resolveAppeal: (token: string, id: string, action: "restore" | "reject") => authFetch(`/admin/appeals/${id}/resolve`, token, { method: "POST", body: JSON.stringify({ action }) }),

@@ -6,6 +6,7 @@ import { EMOJI_CSS, PILL_PAD, STORY_FONTS, TEXT_PAD, lineBoxHeight, textLines } 
 import {
   EMOJI_SIZE,
   LINE_HEIGHT,
+  MUSIC_SIZE,
   PILL_SIZE,
   TEXT_SIZE,
   type EditorState,
@@ -143,7 +144,7 @@ export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<st
       context.font = `${size}px ${EMOJI_CSS}`;
       context.fillText(item.value, 0, 0);
     } else {
-      const size = PILL_SIZE * W;
+      const size = (item.kind === "music" ? MUSIC_SIZE : PILL_SIZE) * W;
       context.font = `${size}px "${fonts.bodyBold}", sans-serif`;
       const width = context.measureText(item.value).width + 2 * PILL_PAD.x * size;
       const height = size * LINE_HEIGHT + 2 * PILL_PAD.y * size;

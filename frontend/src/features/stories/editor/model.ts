@@ -9,7 +9,7 @@ export type TextBg = "none" | "solid" | "soft";
 
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
 export type TextItem = Placed & { kind: "text"; text: string; font: FontKey; color: string; bg: TextBg };
-export type StickerItem = Placed & { kind: "emoji" | "time" | "date"; value: string };
+export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "music"; value: string };
 export type Item = TextItem | StickerItem;
 
 export type Stroke = {
@@ -22,9 +22,12 @@ export type Stroke = {
   points: number[];
 };
 
-export type EditorState = { filter: string; items: Item[]; strokes: Stroke[] };
+/** The song clip a story plays (at most 30 seconds). */
+export type EditorMusic = { trackId: string; title: string; artist: string; url: string; start: number; length: number };
 
-export const EMPTY_STATE: EditorState = { filter: "normal", items: [], strokes: [] };
+export type EditorState = { filter: string; items: Item[]; strokes: Stroke[]; music: EditorMusic | null };
+
+export const EMPTY_STATE: EditorState = { filter: "normal", items: [], strokes: [], music: null };
 
 /** The story frame: 9 wide, 16 tall. */
 export const FRAME_ASPECT = 9 / 16;
@@ -32,6 +35,7 @@ export const FRAME_ASPECT = 9 / 16;
 export const TEXT_SIZE = 0.075;
 export const EMOJI_SIZE = 0.17;
 export const PILL_SIZE = 0.065;
+export const MUSIC_SIZE = 0.045;
 /** Text wraps at this much of the frame's width (before it is scaled). */
 export const TEXT_WRAP = 0.86;
 export const LINE_HEIGHT = 1.25;
@@ -76,7 +80,28 @@ export function updateItem(state: EditorState, id: string, patch: Partial<Placed
 }
 
 export function removeItem(state: EditorState, id: string): EditorState {
-  return { ...state, items: state.items.filter((item) => item.id !== id) };
+  const gone = state.items.find((item) => item.id === id);
+  return {
+    ...state,
+    items: state.items.filter((item) => item.id !== id),
+    // Taking the song's sticker off takes the song off too.
+    music: gone?.kind === "music" ? null : state.music,
+  };
+}
+
+/** What the song sticker says: "♫ Title · Artist", kept short. */
+export function musicLabel(music: Pick<EditorMusic, "title" | "artist">): string {
+  const text = music.artist ? `${music.title} · ${music.artist}` : music.title;
+  return `♫ ${text.length > 34 ? `${text.slice(0, 33)}…` : text}`;
+}
+
+/** Puts a song on the story, with its sticker (or changes the song). */
+export function setMusic(state: EditorState, music: EditorMusic, id: string): EditorState {
+  const sticker = state.items.find((item) => item.kind === "music");
+  const items = sticker
+    ? state.items.map((item) => (item.kind === "music" ? { ...item, value: musicLabel(music) } : item))
+    : [...state.items, { id, kind: "music" as const, value: musicLabel(music), x: 0.5, y: 0.2, scale: 1, rotation: 0 }];
+  return { ...state, music, items };
 }
 
 /** Brings an item to the front (the one you touch goes on top). */

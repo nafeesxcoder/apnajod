@@ -27,8 +27,16 @@ async function removeFile(file) {
   await fs.promises.unlink(file).catch(() => undefined);
 }
 
-async function create(userId, file, publicBase) {
+async function create(userId, file, publicBase, music = {}) {
   const { STORY_DIR } = require('../middleware/storyUpload');
+  // A song clip, checked before anything is saved (5 to 30 seconds).
+  let clip = null;
+  try {
+    clip = await require('./musicService').clipFor(music.trackId, music.start, music.length);
+  } catch (error) {
+    await removeFile(path.join(STORY_DIR, file.filename));
+    throw error;
+  }
   const [{ n } = { n: 0 }] = await query(
     'SELECT COUNT(*) AS n FROM stories WHERE user_id = ? AND expires_at > NOW(6)',
     [userId],
@@ -42,11 +50,11 @@ async function create(userId, file, publicBase) {
   const id = crypto.randomUUID();
   const mediaUrl = `${publicBase}/uploads/stories/${file.filename}`;
   await query(
-    `INSERT INTO stories (id, user_id, media_url, expires_at)
-     VALUES (?, ?, ?, NOW(6) + INTERVAL ${STORY_HOURS} HOUR)`,
-    [id, userId, mediaUrl],
+    `INSERT INTO stories (id, user_id, media_url, expires_at, music_track_id, music_start, music_length)
+     VALUES (?, ?, ?, NOW(6) + INTERVAL ${STORY_HOURS} HOUR, ?, ?, ?)`,
+    [id, userId, mediaUrl, clip?.trackId ?? null, clip?.start ?? null, clip?.length ?? null],
   );
-  return { id, mediaUrl };
+  return { id, mediaUrl, music: clip };
 }
 
 /**
@@ -57,6 +65,8 @@ async function create(userId, file, publicBase) {
 async function tray(viewerId) {
   const rows = await query(
     `SELECT s.id, s.user_id, s.media_url, s.created_at, s.expires_at,
+            s.music_start, s.music_length,
+            mt.id AS music_id, mt.title AS music_title, mt.artist AS music_artist, mt.media_url AS music_url,
             u.username,
             COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
             COALESCE(
@@ -66,6 +76,7 @@ async function tray(viewerId) {
        FROM stories s
        JOIN users u ON u.id = s.user_id
        LEFT JOIN profiles pr ON pr.user_id = u.id
+       LEFT JOIN music_tracks mt ON mt.id = s.music_track_id
       WHERE s.expires_at > NOW(6)
         AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
         AND (s.user_id = ?
@@ -94,6 +105,16 @@ async function tray(viewerId) {
       mediaUrl: row.media_url,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
+      music: row.music_id
+        ? {
+            trackId: row.music_id,
+            title: row.music_title,
+            artist: row.music_artist || '',
+            url: row.music_url,
+            start: Number(row.music_start) || 0,
+            length: Number(row.music_length) || 15,
+          }
+        : null,
     });
   }
   const latest = (person) => new Date(person.stories[person.stories.length - 1].createdAt).getTime();

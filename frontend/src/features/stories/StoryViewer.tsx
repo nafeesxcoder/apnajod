@@ -9,9 +9,10 @@ import { Avatar, REPORT_REASONS, Sheet, useVisibleHeight } from "../posts/PostSh
 import { timeAgo } from "../posts/postFormat";
 import { openProfile } from "../posts/profileLink";
 import { markSeen } from "./storySeen";
+import { storySeconds } from "./music/clip";
+import { createClipPlayer, type ClipPlayer } from "./music/clipPlayer";
 
-/** How long one story photo stays on screen. */
-export const STORY_SECONDS = 5;
+export { STORY_SECONDS } from "./music/clip";
 
 /**
  * Stories full screen, Instagram's way: bars along the top fill as each
@@ -44,6 +45,7 @@ export function StoryViewer({
   const [menu, setMenu] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [muted, setMuted] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
   const done = useRef(0);
   useEffect(() => {
@@ -107,11 +109,35 @@ export function StoryViewer({
   }, [story?.id]);
 
   const paused = !loaded || held || menu || reporting || deleting;
+
+  // The story's song: from its start, for as long as the story plays.
+  const clip = useRef<ClipPlayer | null>(null);
+  useEffect(() => {
+    const music = open ? story?.music : null;
+    if (!music) return;
+    const player = createClipPlayer(music.url, music.start, music.length);
+    player.setMuted(muted);
+    clip.current = player;
+    return () => {
+      player.stop();
+      if (clip.current === player) clip.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, story?.id]);
+  useEffect(() => {
+    if (!clip.current) return;
+    if (paused) clip.current.pause();
+    else clip.current.play();
+  }, [paused, story?.id]);
+  useEffect(() => {
+    clip.current?.setMuted(muted);
+  }, [muted]);
+
   useEffect(() => {
     if (!story || paused) return;
     const animation = Animated.timing(progress, {
       toValue: 1,
-      duration: STORY_SECONDS * 1000 * (1 - done.current),
+      duration: storySeconds(story) * 1000 * (1 - done.current),
       easing: Easing.linear,
       useNativeDriver: false,
     });
@@ -201,13 +227,33 @@ export function StoryViewer({
                   style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}
                 >
                   {person && <Avatar person={person.user} size={34} />}
-                  <Text numberOfLines={1} style={{ flexShrink: 1, color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 14 }}>
-                    {person?.mine ? "Your story" : person?.user.username}
-                  </Text>
-                  <Text style={{ color: "rgba(255,255,255,0.75)", fontFamily: fonts.body, fontSize: 13 }}>
-                    {timeAgo(story.createdAt)}
-                  </Text>
+                  <View style={{ flexShrink: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text numberOfLines={1} style={{ flexShrink: 1, color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 14 }}>
+                        {person?.mine ? "Your story" : person?.user.username}
+                      </Text>
+                      <Text style={{ color: "rgba(255,255,255,0.75)", fontFamily: fonts.body, fontSize: 13 }}>
+                        {timeAgo(story.createdAt)}
+                      </Text>
+                    </View>
+                    {!!story.music && (
+                      <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.9)", fontFamily: fonts.body, fontSize: 12 }}>
+                        ♫ {story.music.title}
+                        {story.music.artist ? ` · ${story.music.artist}` : ""}
+                      </Text>
+                    )}
+                  </View>
                 </Pressable>
+                {!!story.music && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={muted ? "Sound on" : "Sound off"}
+                    onPress={() => setMuted((m) => !m)}
+                    style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Ionicons name={muted ? "volume-mute" : "volume-high"} size={22} color="#FFFFFF" />
+                  </Pressable>
+                )}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Story options"

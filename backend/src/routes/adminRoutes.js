@@ -2,6 +2,8 @@ const express = require("express");
 const adminController = require("../controllers/adminController");
 const { requireAuth } = require("../middleware/auth");
 const { requireAdmin } = require("../middleware/adminAuth");
+const musicController = require("../controllers/musicController");
+const { musicUpload } = require("../middleware/musicUpload");
 
 const router = express.Router();
 
@@ -34,6 +36,11 @@ router.post("/posts/:id/keep", adminController.keepPost);
 router.get("/questions", adminController.getQuestions);
 router.post("/questions", adminController.createQuestion);
 router.post("/questions/:id/active", adminController.setQuestionActive);
+
+// Story music library.
+router.get("/music", musicController.listMusic);
+router.post("/music", musicUpload.single("audio"), musicController.addMusic);
+router.delete("/music/:id", musicController.deleteMusic);
 
 router.get("/appeals", adminController.getAppeals);
 router.post("/appeals/:id/resolve", adminController.resolveAppeal);

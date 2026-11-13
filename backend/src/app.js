@@ -63,6 +63,7 @@ app.use("/safety", safetyRoutes);
 app.use("/social", followRoutes);
 app.use("/posts", postRoutes);
 app.use("/stories", storyRoutes);
+app.use("/music", require("./routes/musicRoutes"));
 app.use("/billing", billingRoutes);
 app.use("/daily-question", dailyQuestionRoutes);
 app.use("/share", shareRoutes);

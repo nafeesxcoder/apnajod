@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { adminApi } from "../../../api/adminApi";
 import { GrowthTab } from "./GrowthTab";
+import { MusicTab } from "./MusicTab";
 import { fonts, radius } from "../../../theme";
 
 // 👇 Naya tab "security" add kiya
@@ -25,6 +26,7 @@ type Tab =
   | "reports"
   | "appeals"
   | "questions"
+  | "music"
   | "security";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
@@ -39,6 +41,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "reports", label: "Reports", icon: "flag-outline" },
   { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
   { key: "questions", label: "Daily Questions", icon: "help-circle-outline" },
+  { key: "music", label: "Music", icon: "musical-notes-outline" },
   { key: "security", label: "Security", icon: "lock-closed-outline" }, // 👈 New
 ];
 
@@ -354,6 +357,7 @@ export function AdminDashboardScreen({
           {tab === "reports" && <ReportsTab accessToken={accessToken} />}
           {tab === "appeals" && <AppealsTab accessToken={accessToken} />}
           {tab === "questions" && <QuestionsTab accessToken={accessToken} />}
+          {tab === "music" && <MusicTab accessToken={accessToken} />}
           {tab === "security" && <SecurityTab accessToken={accessToken} />}
         </ScrollView>
       </View>

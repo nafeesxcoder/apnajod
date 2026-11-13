@@ -1,6 +1,14 @@
 import { API_URL } from "./config";
+import type { StoryMusic } from "./musicApi";
 
-export type StoryItem = { id: string; mediaUrl: string; createdAt: string; expiresAt: string };
+export type StoryItem = {
+  id: string;
+  mediaUrl: string;
+  createdAt: string;
+  expiresAt: string;
+  /** The song clip it plays, if any (at most 30 seconds). */
+  music?: StoryMusic | null;
+};
 export type StoryPerson = {
   user: { userId: string; username: string; name: string; avatarUrl: string | null };
   mine: boolean;
@@ -28,10 +36,16 @@ export const storyApi = {
   },
 
   /** Uploads the photo as picked - full quality, no resizing. */
-  async create(accessToken: string, uri: string): Promise<{ id: string; mediaUrl: string }> {
+  async create(accessToken: string, uri: string, music?: StoryMusic | null): Promise<{ id: string; mediaUrl: string }> {
     const body = new FormData();
     const file = await fetch(uri).then((response) => response.blob());
     body.append("photo", file, "story.jpg");
+    // Only which song, where and how long - no sound file.
+    if (music) {
+      body.append("musicTrackId", music.trackId);
+      body.append("musicStart", String(Math.floor(music.start)));
+      body.append("musicLength", String(music.length));
+    }
     const response = await fetch(`${API_URL}/stories`, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}` },

@@ -6,6 +6,7 @@ import { EMOJI_CSS, PILL_PAD, STORY_FONTS, TEXT_PAD, textLines } from "./fonts";
 import {
   EMOJI_SIZE,
   LINE_HEIGHT,
+  MUSIC_SIZE,
   PILL_SIZE,
   TEXT_SIZE,
   clampScale,
@@ -60,7 +61,7 @@ export function ItemBody({ item, frame }: { item: Item; frame: Frame }) {
       </Text>
     );
   }
-  const size = PILL_SIZE * frame.width;
+  const size = (item.kind === "music" ? MUSIC_SIZE : PILL_SIZE) * frame.width;
   return (
     <View
       style={{
@@ -70,7 +71,15 @@ export function ItemBody({ item, frame }: { item: Item; frame: Frame }) {
         borderRadius: size,
       }}
     >
-      <Text style={{ fontFamily: fonts.bodyBold, fontSize: size, lineHeight: size * LINE_HEIGHT, color: palette.ink }}>
+      <Text
+        style={{
+          fontFamily: fonts.bodyBold,
+          fontSize: size,
+          lineHeight: size * LINE_HEIGHT,
+          color: palette.ink,
+          ...(Platform.OS === "web" ? ({ whiteSpace: "pre" } as object) : null),
+        }}
+      >
         {item.value}
       </Text>
     </View>
