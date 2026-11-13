@@ -29,7 +29,9 @@ test("the queue lists each account's reported posts with the photo", () => {
 test("removing a post deletes it and its photo, closes its reports and tells the owner", () => {
   const fn = posts.slice(posts.indexOf("async function removePostByAdmin"), posts.indexOf("async function keepPostByAdmin"));
   assert.match(fn, /DELETE FROM posts WHERE id = \?/);
-  assert.match(fn, /removeMediaFile\(post\.media_url\)/);
+  // Every photo of the post now (a post can have several).
+  assert.match(fn, /const files = await mediaUrlsOf\(\[postId\]\)/);
+  assert.match(fn, /for \(const url of files\) await removeMediaFile\(url\)/);
   assert.match(fn, /review_status = 'actioned'/);
   assert.match(fn, /notifyUser\(post\.user_id/);
 });
@@ -40,7 +42,7 @@ test("keeping a post closes its reports as dismissed", () => {
 
 test("a member deleting their own post also deletes its photo now", () => {
   const fn = posts.slice(posts.indexOf("async function deletePost"), posts.indexOf("async function removePostByAdmin"));
-  assert.match(fn, /await removeMediaFile\(post\.media_url\)/);
+  assert.match(fn, /for \(const url of files\) await removeMediaFile\(url\)/);
 });
 
 test("only admins can remove or keep posts", () => {

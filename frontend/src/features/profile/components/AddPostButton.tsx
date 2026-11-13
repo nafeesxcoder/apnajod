@@ -35,13 +35,13 @@ export function AddPostButton({
   // The New post sheet: open with the picked photo on the web, or empty in
   // the phone app, where the photo is picked inside it at the chosen size.
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
 
   const pick = async () => {
     if (!accessToken || busy) return;
     setError(null);
     if (Platform.OS !== "web") {
-      setPhoto(null);
+      setPhotos([]);
       setSheetOpen(true);
       return;
     }
@@ -51,22 +51,29 @@ export function AddPostButton({
       return;
     }
     // No editing here: the size and the crop are chosen in the New post sheet.
+    // Up to 5 photos make one post you swipe through, like Instagram.
     const picked = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: false,
+      allowsMultipleSelection: true,
+      selectionLimit: 5,
       quality: 1,
     });
-    const asset = picked.canceled ? null : picked.assets[0];
-    if (!asset) return;
+    const assets = picked.canceled ? [] : picked.assets.slice(0, 5);
+    if (!assets.length) return;
     setBusy(true);
     try {
-      const size =
-        asset.width && asset.height
-          ? { width: asset.width, height: asset.height }
-          : await new Promise<{ width: number; height: number }>((resolve, reject) =>
-              Image.getSize(asset.uri, (width, height) => resolve({ width, height }), reject),
-            );
-      setPhoto({ uri: asset.uri, ...size });
+      const sized: PickedPhoto[] = [];
+      for (const asset of assets) {
+        const size =
+          asset.width && asset.height
+            ? { width: asset.width, height: asset.height }
+            : await new Promise<{ width: number; height: number }>((resolve, reject) =>
+                Image.getSize(asset.uri, (width, height) => resolve({ width, height }), reject),
+              );
+        sized.push({ uri: asset.uri, ...size });
+      }
+      setPhotos(sized);
       setSheetOpen(true);
     } catch {
       setError("That photo could not be opened.");
@@ -120,10 +127,10 @@ export function AddPostButton({
         <NewPostSheet
           visible={sheetOpen}
           accessToken={accessToken}
-          photo={photo}
+          photos={photos}
           onClose={() => {
             setSheetOpen(false);
-            setPhoto(null);
+            setPhotos([]);
           }}
           onPosted={onPosted}
         />

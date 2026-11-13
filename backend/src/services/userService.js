@@ -186,7 +186,7 @@ const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
  * uploads/chat is ever returned, so a strange URL cannot point anywhere else.
  */
 function uploadedFilePath(url) {
-  const match = /\/uploads\/(photos|chat)\/([A-Za-z0-9._-]+)$/.exec(
+  const match = /\/uploads\/(photos|chat|stories)\/([A-Za-z0-9._-]+)$/.exec(
     String(url || '').split(/[?#]/)[0],
   );
   if (!match || match[2].startsWith('.')) return null;
@@ -197,12 +197,19 @@ function uploadedFilePath(url) {
 const marks = (list) => list.map(() => '?').join(', ');
 
 async function mediaOf(userIds) {
-  const [photos, selfies, posts] = await Promise.all([
+  const [photos, selfies, posts, stories, postPhotos] = await Promise.all([
     query(`SELECT photo_url AS url FROM profile_photos WHERE user_id IN (${marks(userIds)})`, userIds),
     query(`SELECT selfie_uri AS url FROM profiles WHERE user_id IN (${marks(userIds)})`, userIds),
     query(`SELECT media_url AS url FROM posts WHERE user_id IN (${marks(userIds)})`, userIds),
+    // Stories still up (normally gone within 24 hours anyway).
+    query(`SELECT media_url AS url FROM stories WHERE user_id IN (${marks(userIds)})`, userIds),
+    // The extra photos of swipeable posts.
+    query(
+      `SELECT m.media_url AS url FROM post_media m JOIN posts p ON p.id = m.post_id WHERE p.user_id IN (${marks(userIds)})`,
+      userIds,
+    ),
   ]);
-  return [...photos, ...selfies, ...posts]
+  return [...photos, ...selfies, ...posts, ...stories, ...postPhotos]
     .map((row) => uploadedFilePath(row.url))
     .filter(Boolean);
 }

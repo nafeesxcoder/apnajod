@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Platform, Pressable, Text, View } from "react-native";
+import { Animated, Easing, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { postApi, type Post } from "../../api/postApi";
@@ -100,6 +100,16 @@ export function PostCard({
     }
   };
 
+  // Several photos: a swipeable strip, with the one showing tracked.
+  const photos = post.media && post.media.length > 0 ? post.media : [post.media_url];
+  const [slide, setSlide] = useState(0);
+  const [boxWidth, setBoxWidth] = useState(0);
+  const slider = useRef<ScrollView>(null);
+  const goTo = (next: number) => {
+    slider.current?.scrollTo({ x: next * boxWidth, animated: true });
+    setSlide(next);
+  };
+
   const author = post.author;
   const goProfile = () => {
     if (!author || !canOpenProfile()) return;
@@ -141,9 +151,61 @@ export function PostCard({
         </Pressable>
       </View>
 
-      {/* Photo - double-tap to like */}
-      <Pressable accessibilityRole="image" accessibilityLabel="Post photo. Double-tap to like." onPress={onPhotoPress}>
-        <PostImage uri={post.media_url} aspect={post.aspect_ratio} />
+      {/* Photo(s) - double-tap to like; swipe when there are several */}
+      <Pressable
+        accessibilityRole="image"
+        accessibilityLabel={
+          photos.length > 1
+            ? `Post photo ${slide + 1} of ${photos.length}. Swipe for more. Double-tap to like.`
+            : "Post photo. Double-tap to like."
+        }
+        onPress={onPhotoPress}
+        onLayout={(event) => setBoxWidth(event.nativeEvent.layout.width)}
+      >
+        {photos.length > 1 && boxWidth > 0 ? (
+          <ScrollView
+            ref={slider}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              const next = Math.round(event.nativeEvent.contentOffset.x / boxWidth);
+              if (next !== slide) setSlide(Math.max(0, Math.min(photos.length - 1, next)));
+            }}
+          >
+            {photos.map((uri) => (
+              <View key={uri} style={{ width: boxWidth }}>
+                <PostImage uri={uri} aspect={post.aspect_ratio} />
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <PostImage uri={post.media_url} aspect={post.aspect_ratio} />
+        )}
+        {photos.length > 1 && (
+          <>
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                backgroundColor: "rgba(20,32,46,0.7)",
+                borderRadius: 999,
+                paddingHorizontal: 9,
+                paddingVertical: 3,
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 12 }}>
+                {slide + 1}/{photos.length}
+              </Text>
+            </View>
+            {/* Arrows too, for a computer where there is no finger to swipe. */}
+            {slide > 0 && <SlideArrow side="left" onPress={() => goTo(slide - 1)} />}
+            {slide < photos.length - 1 && <SlideArrow side="right" onPress={() => goTo(slide + 1)} />}
+          </>
+        )}
         <Animated.View
           pointerEvents="none"
           style={{
@@ -164,6 +226,25 @@ export function PostCard({
 
       {/* Actions */}
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 4, paddingTop: 2 }}>
+        {photos.length > 1 && (
+          // Dots for which photo is showing, centred under it like Instagram.
+          <View
+            pointerEvents="none"
+            style={{ position: "absolute", left: 0, right: 0, top: 18, flexDirection: "row", justifyContent: "center", gap: 4 }}
+          >
+            {photos.map((uri, i) => (
+              <View
+                key={uri}
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: i === slide ? palette.crimson : palette.rule,
+                }}
+              />
+            ))}
+          </View>
+        )}
         <ActionButton
           icon={post.liked ? "heart" : "heart-outline"}
           color={post.liked ? palette.crimson : palette.ink}
@@ -246,6 +327,31 @@ export function PostCard({
         {!isOwner && <MenuRow icon="flag-outline" label="Report" danger onPress={() => setSheet("report")} />}
       </Sheet>
     </View>
+  );
+}
+
+function SlideArrow({ side, onPress }: { side: "left" | "right"; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={side === "left" ? "Previous photo" : "Next photo"}
+      onPress={onPress}
+      hitSlop={8}
+      style={{
+        position: "absolute",
+        top: "50%",
+        [side]: 8,
+        marginTop: -16,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: "rgba(255,255,255,0.85)",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Ionicons name={side === "left" ? "chevron-back" : "chevron-forward"} size={18} color={palette.ink} />
+    </Pressable>
   );
 }
 

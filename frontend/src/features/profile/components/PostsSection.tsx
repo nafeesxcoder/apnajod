@@ -123,7 +123,7 @@ export function PostsSection({
   // Read every photo's real shape while the grid shows, so the opened
   // viewer lays each post out at its final height and does not jump.
   useEffect(() => {
-    primePostSizes([...posts, ...(savedPosts ?? [])].map((post) => post.media_url));
+    primePostSizes([...posts, ...(savedPosts ?? [])].flatMap((post) => post.media ?? [post.media_url]));
   }, [posts, savedPosts]);
 
   useEffect(() => {
@@ -308,6 +308,16 @@ export function PostsSection({
                     style={{ width: "100%", aspectRatio: 1, borderRadius: 10 }}
                     resizeMode="cover"
                   />
+                  {(post.media?.length ?? 1) > 1 && (
+                    // Several photos in this post, like Instagram's grid icon.
+                    <View
+                      pointerEvents="none"
+                      accessibilityLabel={`${post.media!.length} photos`}
+                      style={{ position: "absolute", top: 6, left: 6 }}
+                    >
+                      <Ionicons name="copy" size={16} color="#FFFFFF" style={{ textShadowColor: "rgba(0,0,0,0.4)", textShadowRadius: 4 }} />
+                    </View>
+                  )}
                 </Pressable>
                 {isOwner && !showSaved && (
                   <TouchableOpacity

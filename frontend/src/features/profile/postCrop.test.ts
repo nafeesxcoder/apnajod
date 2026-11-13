@@ -72,7 +72,7 @@ describe("the New post sheet", () => {
   const sheet = readFileSync(join(__dirname, "components", "NewPostSheet.tsx"), "utf8").replace(/\r\n/g, "\n");
 
   it("sends the chosen shape with the post", () => {
-    expect(sheet).toContain("postApi.create(accessToken, url, caption.trim(), shape.aspect)");
+    expect(sheet).toContain("postApi.create(accessToken, urls[0]!, caption.trim(), shape.aspect, urls)");
   });
 
   it("uploads only when Share is pressed", () => {

@@ -37,7 +37,7 @@ export function PostsFeed({
       setState(cursor ? "more" : "loading");
       try {
         const page = await postApi.feed(accessToken, cursor);
-        primePostSizes(page.posts.map((post) => post.media_url));
+        primePostSizes(page.posts.flatMap((post) => post.media ?? [post.media_url]));
         setPosts((current) => {
           if (!cursor) return page.posts;
           const seen = new Set(current.map((post) => post.id));

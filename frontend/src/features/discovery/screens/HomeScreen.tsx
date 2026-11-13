@@ -21,6 +21,7 @@ import {
 import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import { PostsFeed } from "../../posts/PostsFeed";
+import { StoriesTray } from "../../stories/StoriesTray";
 import { ActivityModal } from "../../posts/ActivityModal";
 import { postApi } from "../../../api/postApi";
 import type { Match } from "../../../data";
@@ -390,6 +391,14 @@ export function HomeScreen({
                 )}
               </Pressable>
             </View>
+
+            {/* Stories (24 hours), like Instagram's row at the top. */}
+            <StoriesTray
+              accessToken={accessToken}
+              myPhoto={profilePhoto}
+              myInitial={initial}
+              reloadKey={feedReload}
+            />
 
             {/* Summary — unboxed */}
             <View

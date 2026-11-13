@@ -23,11 +23,20 @@ const createPost = asyncHandler(async (req, res) => {
   if (typeof mediaUrl !== "string" || !/^https?:\/\//i.test(mediaUrl)) {
     throw new ApiError(400, "Upload the photo first, then post it.");
   }
+  // More photos for a swipeable post: each one uploaded here first too.
+  const extra = Array.isArray(req.body.mediaUrls) ? req.body.mediaUrls : [];
+  if (extra.length > postService.MAX_POST_PHOTOS) {
+    throw new ApiError(400, `A post can have up to ${postService.MAX_POST_PHOTOS} photos.`);
+  }
+  if (extra.some((url) => typeof url !== "string" || !/^https?:\/\//i.test(url))) {
+    throw new ApiError(400, "Upload every photo first, then post them.");
+  }
   const post = await postService.createPost(
     req.user.id,
     mediaUrl,
     cleanCaption(req.body.caption),
     cleanAspect(req.body.aspectRatio),
+    extra,
   );
   res.json({ ok: true, post });
 });

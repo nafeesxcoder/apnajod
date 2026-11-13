@@ -15,4 +15,6 @@ server.listen(env.port, () => {
   require('./services/dailyPicksService').start();
   // Accounts deleted more than 30 days ago are removed for good.
   require('./jobs/cleanupDeletedUsers').start();
+  // Stories: deleted (row and photo) once their 24 hours are up.
+  require('./jobs/cleanupStories').start();
 });

@@ -31,7 +31,7 @@ import { shareText, timeAgo } from "./postFormat";
  * bottom slid under the toolbar and its last rows were cut off. The visual
  * viewport is the part not covered.
  */
-function useVisibleHeight(): number {
+export function useVisibleHeight(): number {
   const { height } = useWindowDimensions();
   const read = () =>
     Platform.OS === "web" && typeof window !== "undefined" && window.visualViewport

@@ -54,14 +54,17 @@ export type PickedPhoto = { uri: string; width: number; height: number };
 export function NewPostSheet({
   visible,
   accessToken,
-  photo,
+  photos,
   onClose,
   onPosted,
 }: {
   visible: boolean;
   accessToken: string;
-  /** The photo picked on the web. Null in the phone app, which picks inside the sheet. */
-  photo: PickedPhoto | null;
+  /**
+   * The photos picked on the web (up to 5 - one post you swipe through).
+   * Empty in the phone app, which picks inside the sheet.
+   */
+  photos: PickedPhoto[];
   onClose: () => void;
   onPosted?: () => void;
 }) {
@@ -71,7 +74,13 @@ export function NewPostSheet({
   const [step, setStep] = useState<"crop" | "caption">("crop");
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 });
-  const [croppedUri, setCroppedUri] = useState<string | null>(null);
+  // Which picked photo is being set in the frame, and how each one was set
+  // (moved/zoomed), so going back to a photo finds it where you left it.
+  const [index, setIndex] = useState(0);
+  const photo: PickedPhoto | null = photos[index] ?? null;
+  const placed = useRef(new Map<string, { offset: Offset; zoom: number }>());
+  const [croppedUris, setCroppedUris] = useState<string[]>([]);
+  const croppedUri = croppedUris[0] ?? null;
   const [nativePhoto, setNativePhoto] = useState<PickedPhoto | null>(null);
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
@@ -91,10 +100,32 @@ export function NewPostSheet({
     setCaption("");
     setError(null);
     setNativePhoto(null);
-    setCroppedUri(null);
+    setCroppedUris([]);
+    setIndex(0);
+    placed.current.clear();
+    lastFit.current = null;
     setBusy(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, photo?.uri]);
+  }, [visible, photos[0]?.uri]);
+
+  // A new size changes every frame: each photo is centred again.
+  useEffect(() => {
+    placed.current.clear();
+  }, [shape.id]);
+
+  /** Switch the frame to another picked photo, keeping how this one was set. */
+  const showPhoto = (next: number) => {
+    if (next === index || !photos[next]) return;
+    if (photo) placed.current.set(photo.uri, { offset, zoom });
+    const saved = placed.current.get(photos[next]!.uri);
+    lastFit.current = null;
+    setZoom(saved?.zoom ?? 1);
+    if (saved) {
+      setOffset(saved.offset);
+      lastFit.current = { frame, zoom: saved.zoom };
+    }
+    setIndex(next);
+  };
 
   // Centre the photo whenever the frame first fits it.
   const lastFit = useRef<{ frame: Size; zoom: number } | null>(null);
@@ -110,7 +141,7 @@ export function NewPostSheet({
   }, [photo?.uri, frame.width, frame.height, zoom]);
   useEffect(() => {
     lastFit.current = null;
-  }, [photo?.uri, visible]);
+  }, [visible]);
 
   // Latest values for the gesture handlers, which are made once.
   const live = useRef({ photo, frame, zoom, offset });
@@ -181,7 +212,7 @@ export function NewPostSheet({
     const asset = picked.canceled ? null : picked.assets[0];
     if (!asset) return;
     setNativePhoto({ uri: asset.uri, width: asset.width, height: asset.height });
-    setCroppedUri(asset.uri);
+    setCroppedUris([asset.uri]);
     setStep("caption");
   };
 
@@ -190,8 +221,15 @@ export function NewPostSheet({
     setBusy(true);
     setError(null);
     try {
-      const rect = cropRect(offset, photo, frame, zoom);
-      setCroppedUri(await cropImageWeb(photo.uri, rect, shape.aspect));
+      // Every photo is cut to the same size, each as it was set in the frame
+      // (or centred, if it was never opened).
+      if (photo) placed.current.set(photo.uri, { offset, zoom });
+      const cut: string[] = [];
+      for (const item of photos) {
+        const set = placed.current.get(item.uri) ?? { offset: centredOffset(item, frame, 1), zoom: 1 };
+        cut.push(await cropImageWeb(item.uri, cropRect(set.offset, item, frame, set.zoom), shape.aspect));
+      }
+      setCroppedUris(cut);
       setStep("caption");
     } catch (err: any) {
       setError(err?.message || "That photo could not be cropped.");
@@ -205,9 +243,11 @@ export function NewPostSheet({
     setBusy(true);
     setError(null);
     try {
-      // Uploaded first: the server stores a URL, never the device path.
-      const url = await uploadPhoto(croppedUri, accessToken);
-      await postApi.create(accessToken, url, caption.trim(), shape.aspect);
+      // Uploaded first: the server stores URLs, never device paths. One at a
+      // time, so a small server is not hit with five uploads at once.
+      const urls: string[] = [];
+      for (const uri of croppedUris) urls.push(await uploadPhoto(uri, accessToken));
+      await postApi.create(accessToken, urls[0]!, caption.trim(), shape.aspect, urls);
       onPosted?.();
       onClose();
     } catch (err: any) {
@@ -370,6 +410,37 @@ export function NewPostSheet({
                 </View>
               )}
 
+              {isWeb && photos.length > 1 && (
+                // The picked photos: tap one to set it in the frame. They all
+                // share the size chosen below.
+                <View style={{ gap: 6, alignItems: "center" }}>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.slate }}>
+                    Photo {index + 1} of {photos.length} · tap one to set it
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                    {photos.map((item, i) => (
+                      <Pressable
+                        key={item.uri}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: i === index }}
+                        accessibilityLabel={`Photo ${i + 1}`}
+                        onPress={() => showPhoto(i)}
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          borderWidth: 2,
+                          borderColor: i === index ? palette.crimson : "transparent",
+                        }}
+                      >
+                        <Image source={{ uri: item.uri }} style={{ width: "100%", height: "100%" }} />
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.slate }}>
                 Choose a size
               </Text>
@@ -486,6 +557,23 @@ export function NewPostSheet({
                   accessibilityLabel={`Preview, ${shape.label} ${shape.ratio}`}
                   style={{ width: "100%", aspectRatio: shape.aspect, borderRadius: 6, backgroundColor: palette.paperSand }}
                 />
+              )}
+              {croppedUris.length > 1 && (
+                <View style={{ gap: 6 }}>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.slate }}>
+                    {croppedUris.length} photos · people swipe through them in your post
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                    {croppedUris.map((uri, i) => (
+                      <Image
+                        key={uri}
+                        source={{ uri }}
+                        accessibilityLabel={`Photo ${i + 1}`}
+                        style={{ width: 56, aspectRatio: shape.aspect, borderRadius: 6, backgroundColor: palette.paperSand }}
+                      />
+                    ))}
+                  </View>
+                </View>
               )}
               <PressScale
                 accessibilityRole="button"

@@ -12,14 +12,35 @@ const { postAccess } = require("../utils/postAccess");
  * about, so they are visible to other members — a post only you can see is
  * not worth writing.
  */
-async function createPost(userId, mediaUrl, caption, aspectRatio = 1) {
+/** Most photos in one post. Instagram allows 10; the server here is small. */
+const MAX_POST_PHOTOS = 5;
+
+async function createPost(userId, mediaUrl, caption, aspectRatio = 1, mediaUrls = []) {
   const id = crypto.randomUUID();
   const aspect = cleanAspect(aspectRatio);
+  // All the photos, first one first; a single photo needs no extra rows.
+  const all = [mediaUrl, ...mediaUrls.filter((url) => url !== mediaUrl)].slice(0, MAX_POST_PHOTOS);
   await query(
     "INSERT INTO posts (id, user_id, media_url, caption, aspect_ratio) VALUES (?, ?, ?, ?, ?)",
-    [id, userId, mediaUrl, caption || "", aspect],
+    [id, userId, all[0], caption || "", aspect],
   );
-  return { id, mediaUrl, caption: caption || "", aspect_ratio: aspect };
+  if (all.length > 1) {
+    await query(
+      `INSERT INTO post_media (post_id, position, media_url) VALUES ${all.map(() => "(?, ?, ?)").join(", ")}`,
+      all.flatMap((url, position) => [id, position, url]),
+    );
+  }
+  return { id, mediaUrl: all[0], media: all, caption: caption || "", aspect_ratio: aspect };
+}
+
+/** Every photo URL of the given posts, for deleting their files. */
+async function mediaUrlsOf(postIds) {
+  if (!postIds.length) return [];
+  const [main, extra] = await Promise.all([
+    query(`SELECT media_url FROM posts WHERE id IN (${postIds.map(() => "?").join(", ")})`, postIds),
+    query(`SELECT media_url FROM post_media WHERE post_id IN (${postIds.map(() => "?").join(", ")})`, postIds),
+  ]);
+  return [...new Set([...main, ...extra].map((row) => row.media_url))];
 }
 
 const marks = (list) => list.map(() => "?").join(", ");
@@ -56,12 +77,18 @@ async function decoratePosts(viewerId, rows) {
       AND NOT EXISTS (SELECT 1 FROM blocks b
                        WHERE (b.blocker_id = ? AND b.blocked_id = x.user_id)
                           OR (b.blocker_id = x.user_id AND b.blocked_id = ?))`;
-  const [likes, comments, mine, saved] = await Promise.all([
+  const [likes, comments, mine, saved, media] = await Promise.all([
     query(`SELECT x.post_id, COUNT(*) AS n FROM post_likes x ${visibleMember} GROUP BY x.post_id`, [...ids, viewerId, viewerId]),
     query(`SELECT x.post_id, COUNT(*) AS n FROM post_comments x ${visibleMember} GROUP BY x.post_id`, [...ids, viewerId, viewerId]),
     query(`SELECT post_id FROM post_likes WHERE user_id = ? AND post_id IN (${marks(ids)})`, [viewerId, ...ids]),
     query(`SELECT post_id FROM post_saves WHERE user_id = ? AND post_id IN (${marks(ids)})`, [viewerId, ...ids]),
+    query(`SELECT post_id, media_url FROM post_media WHERE post_id IN (${marks(ids)}) ORDER BY post_id, position`, ids),
   ]);
+  const photos = new Map();
+  for (const row of media) {
+    if (!photos.has(row.post_id)) photos.set(row.post_id, []);
+    photos.get(row.post_id).push(row.media_url);
+  }
   const count = (list) => new Map(list.map((row) => [row.post_id, Number(row.n) || 0]));
   const likeCounts = count(likes);
   const commentCounts = count(comments);
@@ -70,6 +97,8 @@ async function decoratePosts(viewerId, rows) {
   return rows.map((row) => ({
     id: row.id,
     media_url: row.media_url,
+    // Every photo in order (just the one for a single-photo post).
+    media: photos.get(row.id) || [row.media_url],
     caption: row.caption || "",
     aspect_ratio: roundAspect(row.aspect_ratio),
     created_at: row.created_at,
@@ -218,6 +247,7 @@ async function removeMediaFile(mediaUrl) {
 
 async function deletePost(userId, postId) {
   const [post] = await query("SELECT media_url FROM posts WHERE id = ? AND user_id = ?", [postId, userId]);
+  const files = post ? await mediaUrlsOf([postId]) : [];
   const result = await query("DELETE FROM posts WHERE id = ? AND user_id = ?", [
     postId,
     userId,
@@ -227,8 +257,8 @@ async function deletePost(userId, postId) {
     error.status = 404;
     throw error;
   }
-  // The photo went with the post: it used to stay on disk for good.
-  if (post) await removeMediaFile(post.media_url);
+  // The photos go with the post: they used to stay on disk for good.
+  for (const url of files) await removeMediaFile(url);
   return { ok: true };
 }
 
@@ -244,8 +274,9 @@ async function removePostByAdmin(postId) {
     error.status = 404;
     throw error;
   }
+  const files = await mediaUrlsOf([postId]);
   await query("DELETE FROM posts WHERE id = ?", [postId]);
-  await removeMediaFile(post.media_url);
+  for (const url of files) await removeMediaFile(url);
   await query(
     "UPDATE reports SET review_status = 'actioned', reviewed_at = NOW(6) WHERE post_id = ? AND review_status = 'open'",
     [postId],
@@ -282,5 +313,6 @@ module.exports = {
   updatePost,
   deletePost,
   removePostByAdmin,
+  MAX_POST_PHOTOS,
   keepPostByAdmin,
 };

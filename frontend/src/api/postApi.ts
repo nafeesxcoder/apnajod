@@ -15,6 +15,8 @@ export type Post = {
   /** Width / height the post was cropped to: 1, 0.8 (4:5) or 1.91. Older posts: 1. */
   aspect_ratio?: number;
   created_at: string;
+  /** Every photo in order; one for a single-photo post. */
+  media?: string[];
   author?: PostAuthor;
   likes?: number;
   comments?: number;
@@ -71,10 +73,11 @@ export const postApi = {
    * The photo must already be uploaded; pass the URL the upload returned.
    * aspectRatio is the shape it was cropped to (1, 0.8 or 1.91).
    */
-  async create(accessToken: string, mediaUrl: string, caption: string, aspectRatio = 1) {
+  async create(accessToken: string, mediaUrl: string, caption: string, aspectRatio = 1, mediaUrls: string[] = []) {
     return authFetch("/posts", accessToken, {
       method: "POST",
-      body: JSON.stringify({ mediaUrl, caption, aspectRatio }),
+      // mediaUrls: every photo of a swipeable post (up to 5), first included.
+      body: JSON.stringify({ mediaUrl, caption, aspectRatio, mediaUrls }),
     });
   },
 
