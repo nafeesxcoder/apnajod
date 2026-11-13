@@ -22,6 +22,11 @@ router.get("/", postController.getMyPosts);
 // The Home feed and your saved posts (before /:id, which would take
 // "feed" or "saved" as an id).
 router.get("/feed", postController.getFeed);
+// Likes and comments on your posts (Activity), the count for the dot on
+// Home, and "I have looked".
+router.get("/activity", postController.getActivity);
+router.get("/activity/unread", postController.getActivityUnread);
+router.post("/activity/seen", postController.markActivitySeen);
 router.get("/saved", postController.getSaved);
 // Someone else's posts, so a post is worth writing.
 router.get("/user/:userId", postController.getUserPosts);

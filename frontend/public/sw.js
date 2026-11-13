@@ -11,9 +11,15 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(title, {
       body,
       icon: "/favicon.ico",
-      data: { conversationId: data.conversationId },
-      tag: data.conversationId ? `chat-${data.conversationId}` : undefined,
-      renotify: !!data.conversationId,
+      data: { conversationId: data.conversationId, postId: data.postId },
+      // One notification per chat, and one per post (a new like replaces
+      // the last "liked your post" instead of stacking up).
+      tag: data.conversationId
+        ? `chat-${data.conversationId}`
+        : data.postId
+          ? `post-${data.postId}`
+          : undefined,
+      renotify: !!(data.conversationId || data.postId),
     }),
   );
 });
@@ -22,9 +28,13 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const conversationId =
     event.notification.data && event.notification.data.conversationId;
+  // A like or comment on your post opens that post.
+  const postId = event.notification.data && event.notification.data.postId;
   const target = conversationId
     ? `/?chat=${encodeURIComponent(conversationId)}`
-    : "/";
+    : postId
+      ? `/?post=${encodeURIComponent(postId)}`
+      : "/";
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
@@ -34,6 +44,7 @@ self.addEventListener("notificationclick", (event) => {
           if ("focus" in client) {
             if (conversationId)
               client.postMessage({ type: "open-chat", conversationId });
+            else if (postId) client.postMessage({ type: "open-post", postId });
             return client.focus();
           }
         }

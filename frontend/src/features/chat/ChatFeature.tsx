@@ -6,6 +6,8 @@
   useRef,
   useState,
 } from "react";
+import { SharedPostBubble } from "../posts/SharedPostBubble";
+import { postIdFromText } from "../posts/profileLink";
 import {
   ActivityIndicator,
   Animated,
@@ -3809,8 +3811,12 @@ function ChatBubble({
   const isJustEmoji = isAnimatedEmojiText(message.text);
   const emojiOnly = message.type === "text" && !!stickerPayload; // Only animate custom stickers
   const textBody = quotedReply?.body ?? message.text;
-  const linkPreview =
-    message.linkPreview ?? buildPrivacySafeLinkPreview(textBody);
+  // A post shared from the app ("Send in chat"): shown as the post itself,
+  // like an Instagram DM, instead of a bare link.
+  const sharedPostId = message.type === "text" ? postIdFromText(textBody) : null;
+  const linkPreview = sharedPostId
+    ? null
+    : (message.linkPreview ?? buildPrivacySafeLinkPreview(textBody));
   const incomingSafety = !mine && textBody ? scanMessageSafety(textBody) : null;
   const isVideoDocument =
     message.type === "document" && message.document?.kind === "video";
@@ -4013,7 +4019,8 @@ function ChatBubble({
               />
             </Pressable>
           )}
-          {message.type === "text" && !gamePayload && !emojiOnly && (
+          {!!sharedPostId && <SharedPostBubble postId={sharedPostId} mine={mine} />}
+          {message.type === "text" && !gamePayload && !emojiOnly && !sharedPostId && (
             <Text
               style={[
                 styles.bubbleText,

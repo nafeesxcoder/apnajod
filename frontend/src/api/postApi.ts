@@ -34,6 +34,17 @@ export type PostComment = {
 
 export type PostCounts = { likes: number; comments: number; liked: boolean; saved: boolean };
 
+/** A like or comment on one of your posts (Activity). */
+export type ActivityItem = {
+  kind: "like" | "comment";
+  at: string;
+  body: string | null;
+  post: { id: string; mediaUrl: string };
+  actor: PostAuthor;
+  /** Arrived since you last opened Activity. */
+  isNew: boolean;
+};
+
 /** The link that opens a post in the app. */
 export const postLink = (postId: string) => `https://apnajoda.com/?post=${encodeURIComponent(postId)}`;
 
@@ -138,6 +149,22 @@ export const postApi = {
     const query = before ? `?before=${encodeURIComponent(before)}` : "";
     const data = await authFetch(`/posts/feed${query}`, accessToken);
     return { posts: (data.posts as Post[]) || [], next: (data.next as string) || null };
+  },
+
+  /** Likes and comments on your posts, newest first. */
+  async activity(accessToken: string): Promise<{ items: ActivityItem[]; unread: number }> {
+    const data = await authFetch("/posts/activity", accessToken);
+    return { items: (data.items as ActivityItem[]) || [], unread: Number(data.unread) || 0 };
+  },
+
+  /** How many likes and comments are new - the dot on Home's heart. */
+  async activityUnread(accessToken: string): Promise<number> {
+    const data = await authFetch("/posts/activity/unread", accessToken);
+    return Number(data.unread) || 0;
+  },
+
+  async markActivitySeen(accessToken: string) {
+    return authFetch("/posts/activity/seen", accessToken, { method: "POST" });
   },
 
   /** Your saved posts - only you see these. */

@@ -43,25 +43,26 @@ describe('accepting someone who liked you', () => {
 });
 
 describe('the Chats tab', () => {
+  // The list now lives in features/social/chatTargets.ts, so "Send in chat"
+  // (sharing a post) offers the same people as the Chats tab.
+  const targets = read('src/features/social/chatTargets.ts').replace(/\r\n/g, '\n');
+
   it('lists matches nobody has written to yet', () => {
     // Without this a new match is invisible: the server's conversation list
     // is built from messages, and there are none yet.
-    expect(compact(shell)).toContain('constloadChatsAndMatches=');
-    expect(compact(shell)).toContain('matchApi.getMatches(token)');
-    expect(compact(shell)).toContain('lastMessage:null');
+    expect(compact(targets)).toContain('exportasyncfunctionloadChatsAndMatches(');
+    expect(compact(targets)).toContain('matchApi.getMatches(token)');
+    expect(compact(targets)).toContain('lastMessage:null');
+    expect(shell).toContain('onLoad={() => loadChatsAndMatches(accessToken)}');
   });
 
   it('does not list the same person twice', () => {
-    expect(compact(shell)).toContain('constalreadyListed=newSet(');
+    expect(compact(targets)).toContain('constalreadyListed=newSet(');
   });
 
   it('still shows conversations if the match list fails', () => {
     // A match list that will not load must not empty the chat list.
-    const helper = shell.slice(
-      shell.indexOf('const loadChatsAndMatches'),
-      shell.indexOf('/** The badge on the chats header'),
-    );
-    expect(helper).toContain('return conversations;');
+    expect(targets).toContain('return conversations;');
   });
 });
 

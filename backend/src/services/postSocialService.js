@@ -61,8 +61,12 @@ async function counts(viewerId, postId) {
 }
 
 async function like(viewerId, postId) {
-  await requireVisible(viewerId, postId);
-  await query("INSERT IGNORE INTO post_likes (post_id, user_id) VALUES (?, ?)", [postId, viewerId]);
+  const ownerId = await requireVisible(viewerId, postId);
+  const result = await query("INSERT IGNORE INTO post_likes (post_id, user_id) VALUES (?, ?)", [postId, viewerId]);
+  // Only a new like notifies (not a repeat tap), and the push never holds up the answer.
+  if (result.affectedRows) {
+    require("./postActivityService").notifyLike(viewerId, postId, ownerId).catch(() => undefined);
+  }
   return counts(viewerId, postId);
 }
 
@@ -134,6 +138,7 @@ async function addComment(viewerId, postId, body) {
       WHERE c.id = ?`,
     [id],
   );
+  require("./postActivityService").notifyComment(viewerId, postId, ownerId, text).catch(() => undefined);
   return {
     id,
     body: text,

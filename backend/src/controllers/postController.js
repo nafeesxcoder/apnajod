@@ -91,6 +91,11 @@ const savePost = social((req) => postSocialService.save(req.user.id, req.params.
 const unsavePost = social((req) => postSocialService.unsave(req.user.id, req.params.id));
 const getSaved = social(async (req) => ({ posts: await postSocialService.saved(req.user.id) }));
 const getFeed = social((req) => postService.getFeed(req.user.id, req.query.before, req.query.limit));
+const getActivity = social((req) => require("../services/postActivityService").activity(req.user.id));
+const getActivityUnread = social(async (req) => ({
+  unread: await require("../services/postActivityService").unreadCount(req.user.id),
+}));
+const markActivitySeen = social((req) => require("../services/postActivityService").markSeen(req.user.id));
 
 module.exports = {
   createPost,
@@ -109,4 +114,7 @@ module.exports = {
   unsavePost,
   getSaved,
   getFeed,
+  getActivity,
+  getActivityUnread,
+  markActivitySeen,
 };

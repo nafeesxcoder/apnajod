@@ -12,7 +12,6 @@ import { profileApi, onProfileReward } from "../api/profileApi";
 import { uploadPhoto } from "../api/uploadPhoto";
 import {
   matchApi,
-  type MutualMatchSummary,
   type SparkWallet,
 } from "../api/matchApi";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -91,7 +90,7 @@ import {
   persistUnmatch as persistUnmatchPreview,
   subscribePersistedChatMessages as subscribePersistedChatMessagesPreview,
 } from "./adapters/previewPersistence";
-import { chatApi, type ConversationSummary } from "../api/chatApi";
+import { chatApi } from "../api/chatApi";
 import { callApi } from "../api/callApi";
 import {
   connectChatSocket,
@@ -192,7 +191,9 @@ import {
   AppNoticeSheet,
   type AppNotice,
 } from "../components/feedback/AppNoticeSheet";
-import { setProfileOpener, userIdFromToken } from "../features/posts/profileLink";
+import { setPostTools, setProfileOpener, userIdFromToken } from "../features/posts/profileLink";
+import { loadChatsAndMatches } from "../features/social/chatTargets";
+import { postApi } from "../api/postApi";
 import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModal";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
 
@@ -565,8 +566,20 @@ function MilaanApp() {
     setProfileOpener((userId) => openProfileRef.current(userId));
     return () => setProfileOpener(null);
   }, []);
-  // A post opened from a shared link (https://apnajoda.com/?post=<id>).
+  // A post opened from a shared link (https://apnajoda.com/?post=<id>), or
+  // from a post someone sent you in a chat.
   const [sharedPostId, setSharedPostId] = useState<string | null>(() => readPostParam());
+  const postTokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    setPostTools({
+      open: (postId) => setSharedPostId(postId),
+      load: (postId) =>
+        postTokenRef.current
+          ? postApi.get(postTokenRef.current, postId)
+          : Promise.reject(new Error("Not signed in.")),
+    });
+    return () => setPostTools(null);
+  }, []);
   // Private until the server says otherwise: guessing "public" for a moment
   // would show the wrong switch to someone who never chose it.
   const [isPrivateAccount, setIsPrivateAccount] = useState(true);
@@ -1328,10 +1341,12 @@ function MilaanApp() {
       return;
     const onWorkerMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { type?: string; conversationId?: string }
+        | { type?: string; conversationId?: string; postId?: string }
         | undefined;
       if (data?.type === "open-chat" && data.conversationId)
         setPendingNotificationChat(data.conversationId);
+      // A "liked / commented on your post" notification opens that post.
+      if (data?.type === "open-post" && data.postId) setSharedPostId(data.postId);
     };
     navigator.serviceWorker.addEventListener("message", onWorkerMessage);
     return () =>
@@ -3149,6 +3164,7 @@ function MilaanApp() {
     if (screen !== "person") setPersonReturn(screen);
     setScreen("person");
   };
+  postTokenRef.current = accessToken ?? null;
   // Your own name on a post opens your own profile, not a stranger's view of it.
   openProfileRef.current = (userId: string) => {
     if (userId === userIdFromToken(accessToken)) setScreen("profile");
@@ -3174,36 +3190,6 @@ function MilaanApp() {
    * messages is listed as an empty conversation; the row already reads
    * "Say hello".
    */
-  const loadChatsAndMatches = async (
-    token: string,
-  ): Promise<ConversationSummary[]> => {
-    const conversations = await chatApi.fetchConversations(token);
-    let matches: MutualMatchSummary[] = [];
-    try {
-      const result = await matchApi.getMatches(token);
-      matches = (result.matches as MutualMatchSummary[]) || [];
-    } catch {
-      // A match list that will not load must not empty the chat list.
-      return conversations;
-    }
-    const alreadyListed = new Set(conversations.map((c) => c.conversationId));
-    const waiting: ConversationSummary[] = matches
-      .filter((match) => !alreadyListed.has(match.id))
-      .map((match) => ({
-        conversationId: match.id,
-        user: {
-          userId: match.id,
-          username: match.username ?? "",
-          name: match.name,
-          avatarUrl: match.photo || null,
-          isPrivate: false,
-        },
-        lastMessage: null,
-        lastAt: new Date(match.matchedAt ?? Date.now()).getTime(),
-        unread: 0,
-      }));
-    return [...waiting, ...conversations].sort((a, b) => b.lastAt - a.lastAt);
-  };
   return (
 
     

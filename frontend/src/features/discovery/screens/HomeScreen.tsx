@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -21,6 +21,8 @@ import {
 import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import { PostsFeed } from "../../posts/PostsFeed";
+import { ActivityModal } from "../../posts/ActivityModal";
+import { postApi } from "../../../api/postApi";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal, MatchFilters } from "../../../storage";
@@ -108,6 +110,25 @@ export function HomeScreen({
   const [feedMore, setFeedMore] = useState(0);
   const [feedReload, setFeedReload] = useState(0);
   const feedAskedAt = useRef(0);
+  // Activity (likes and comments on your posts): the heart in the header,
+  // with a dot while something is new. Checked on open and every minute.
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [activityUnread, setActivityUnread] = useState(0);
+  useEffect(() => {
+    if (!accessToken) return;
+    let live = true;
+    const check = () =>
+      postApi
+        .activityUnread(accessToken)
+        .then((n) => live && setActivityUnread(n))
+        .catch(() => undefined);
+    void check();
+    const timer = setInterval(check, 60_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [accessToken, activityOpen]);
   const { isDesktop: isDesktopHome } = useLayout();
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
@@ -249,6 +270,40 @@ export function HomeScreen({
                   background="transparent"
                 />
               </View>
+
+              {!!accessToken && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    activityUnread > 0
+                      ? `Activity, ${activityUnread} new`
+                      : "Activity: likes and comments on your posts"
+                  }
+                  onPress={() => {
+                    setActivityUnread(0);
+                    setActivityOpen(true);
+                  }}
+                  hitSlop={8}
+                  style={{ marginRight: 14 }}
+                >
+                  <Ionicons name="heart-outline" size={26} color={colors.text} />
+                  {activityUnread > 0 && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        right: -1,
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: palette.crimson,
+                        borderWidth: 2,
+                        borderColor: colors.canvas,
+                      }}
+                    />
+                  )}
+                </Pressable>
+              )}
 
               <Pressable
                 onPress={() => navigate("likes")}
@@ -761,6 +816,9 @@ export function HomeScreen({
         </ScrollView>
 
         <BottomNav active="home" navigate={navigate} />
+        {!!accessToken && (
+          <ActivityModal visible={activityOpen} accessToken={accessToken} onClose={() => setActivityOpen(false)} />
+        )}
       </SafeAreaView>
     </AppCanvas>
   );

@@ -8,6 +8,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   Share,
   Text,
   TextInput,
@@ -17,11 +18,43 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { chatApi, type ConversationSummary } from "../../api/chatApi";
+import { loadChatsAndMatches } from "../social/chatTargets";
 import { postApi, postLink, type Post, type PostAuthor, type PostComment } from "../../api/postApi";
 import { safetyApi } from "../../api/safetyApi";
 import { fonts, palette, radius } from "../../theme";
 import { canOpenProfile, openProfile } from "./profileLink";
 import { shareText, timeAgo } from "./postFormat";
+
+/**
+ * The height you can actually see. On a phone browser the address bar and
+ * the bottom toolbar cover part of the page; a sheet pinned to the page's
+ * bottom slid under the toolbar and its last rows were cut off. The visual
+ * viewport is the part not covered.
+ */
+function useVisibleHeight(): number {
+  const { height } = useWindowDimensions();
+  const read = () =>
+    Platform.OS === "web" && typeof window !== "undefined" && window.visualViewport
+      ? Math.round(window.visualViewport.height)
+      : height;
+  const [visible, setVisible] = useState(read);
+  useEffect(() => {
+    setVisible(read());
+    if (Platform.OS !== "web" || typeof window === "undefined" || !window.visualViewport) return;
+    const viewport = window.visualViewport;
+    const update = () => setVisible(Math.round(viewport.height));
+    viewport.addEventListener("resize", update);
+    return () => viewport.removeEventListener("resize", update);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [height]);
+  return visible || height;
+}
+
+/** Room for the phone's home bar under a sheet. */
+const SHEET_BOTTOM =
+  Platform.OS === "web"
+    ? ({ paddingBottom: "calc(14px + env(safe-area-inset-bottom, 0px))" } as object)
+    : { paddingBottom: Platform.OS === "ios" ? 28 : 14 };
 
 /** A sheet that slides up from the bottom, Instagram-style. */
 export function Sheet({
@@ -38,12 +71,14 @@ export function Sheet({
   /** Takes most of the screen (comments) instead of fitting its content. */
   tall?: boolean;
 }) {
-  const { height } = useWindowDimensions();
+  const height = useVisibleHeight();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, justifyContent: "flex-end" }}
+        // Only as tall as what can be seen, so the sheet's bottom is never
+        // under the browser's toolbar.
+        style={{ height, justifyContent: "flex-end" }}
       >
         <Pressable
           accessibilityRole="button"
@@ -56,12 +91,12 @@ export function Sheet({
             backgroundColor: palette.paper,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
-            maxHeight: height * 0.88,
-            height: tall ? height * 0.78 : undefined,
+            maxHeight: height * 0.9,
+            height: tall ? height * 0.82 : undefined,
             width: "100%",
             maxWidth: 640,
             alignSelf: "center",
-            paddingBottom: Platform.OS === "ios" ? 24 : 8,
+            ...SHEET_BOTTOM,
           }}
         >
           <View style={{ alignItems: "center", paddingTop: 8 }}>
@@ -93,7 +128,14 @@ export function Sheet({
               <Ionicons name="close" size={22} color={palette.ink} />
             </Pressable>
           </View>
-          {children}
+          {tall ? (
+            children
+          ) : (
+            // Scrolls when it does not fit, instead of cutting off the end.
+            <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} keyboardShouldPersistTaps="handled">
+              {children}
+            </ScrollView>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -132,25 +174,40 @@ function goToProfile(userId: string, close: () => void) {
 }
 
 function PersonRow({ person, onPress, right }: { person: PostAuthor; onPress?: () => void; right?: ReactNode }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Open @${person.username}`}
-      disabled={!onPress}
-      onPress={onPress}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, minHeight: 60 }}
-    >
+  const who = (
+    <>
       <Avatar person={person} size={44} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>
-          {person.username}
+          {person.username || person.name}
         </Text>
         <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
           {person.name}
         </Text>
       </View>
+    </>
+  );
+  const row = { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, minHeight: 60 } as const;
+  // The tappable part and the button on the right (Send) are siblings. The
+  // row used to be one disabled button wrapped round the Send button, and on
+  // the web a disabled button swallows taps on everything inside it - so
+  // "Send in chat" never sent.
+  return (
+    <View style={row}>
+      {onPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open @${person.username}`}
+          onPress={onPress}
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 60 }}
+        >
+          {who}
+        </Pressable>
+      ) : (
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}>{who}</View>
+      )}
       {right}
-    </Pressable>
+    </View>
   );
 }
 
@@ -183,7 +240,7 @@ export function LikersSheet({
   }, [visible, accessToken, postId]);
 
   return (
-    <Sheet visible={visible} title="Likes" onClose={onClose}>
+    <Sheet visible={visible} title="Likes" onClose={onClose} tall>
       {people === null && !error ? (
         <ActivityIndicator style={{ marginVertical: 30 }} color={palette.crimson} />
       ) : error ? (
@@ -450,9 +507,10 @@ export function ShareSheet({
     setSent({});
     setNote("");
     setChats(null);
-    chatApi
-      .fetchConversations(accessToken)
-      .then((list) => live && setChats(list.slice(0, 30)))
+    // Your chats and new matches you have not written to yet - the same
+    // list as the Chats tab.
+    loadChatsAndMatches(accessToken)
+      .then((list) => live && setChats(list.slice(0, 40)))
       .catch(() => live && setChats([]));
     return () => {
       live = false;
@@ -470,8 +528,14 @@ export function ShareSheet({
         createdAt: Date.now(),
         status: "sent",
       } as never)
-      .catch(() => ({ saved: false }));
+      .catch((e: any) => ({ saved: false, error: e?.message }));
     setSent((s) => ({ ...s, [chat.conversationId]: result.saved ? "sent" : "error" }));
+    if (!result.saved) {
+      setNote(
+        (result as { error?: string }).error ||
+          `Could not send to ${chat.user.username || chat.user.name}. Please try again.`,
+      );
+    }
   };
 
   const copy = async () => {
@@ -521,14 +585,12 @@ export function ShareSheet({
           Your chats show here once you match with someone.
         </Text>
       ) : (
-        <FlatList
-          style={{ maxHeight: 280 }}
-          data={chats}
-          keyExtractor={(chat) => chat.conversationId}
-          renderItem={({ item }) => {
+        <View>
+          {chats.map((item) => {
             const state = sent[item.conversationId];
             return (
               <PersonRow
+                key={item.conversationId}
                 person={item.user}
                 right={
                   <Pressable
@@ -563,8 +625,8 @@ export function ShareSheet({
                 }
               />
             );
-          }}
-        />
+          })}
+        </View>
       )}
       <View
         style={{
