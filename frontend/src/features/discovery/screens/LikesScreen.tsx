@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { whiteCard } from "../../../components/brand";
+import { HeartBeat, Reveal } from "../../../components/motion";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import {
@@ -60,8 +62,7 @@ function LockedLikeCard({
     <View
       style={[
         {
-          backgroundColor: palette.paperSand,
-          borderRadius: radius.lg,
+          ...whiteCard,
           overflow: "hidden",
         },
         wide && { width: LIKE_CARD_WIDTH },
@@ -443,7 +444,7 @@ export function LikesScreen({
                 },
               ]}
             >
-              {likes.map((like) => {
+              {likes.map((like, index) => {
                 const accepted = like.status === "accepted";
                 const busy = deciding === like.userId;
                 if (like.locked) {
@@ -456,12 +457,13 @@ export function LikesScreen({
                   );
                 }
                 return (
-                  <View
+                  <Reveal
                     key={like.id}
+                    // One after another, but never a long wait for the tenth.
+                    delay={Math.min(index, 6) * 70}
                     style={[
                       {
-                        backgroundColor: palette.paperSand,
-                        borderRadius: radius.lg,
+                        ...whiteCard,
                         overflow: "hidden",
                       },
                       isWideLikes && { width: LIKE_CARD_WIDTH },
@@ -729,7 +731,7 @@ export function LikesScreen({
                               flex: 1,
                               paddingVertical: 11,
                               borderRadius: radius.pill,
-                              backgroundColor: palette.navy,
+                              backgroundColor: palette.crimson,
                               flexDirection: "row",
                               alignItems: "center",
                               justifyContent: "center",
@@ -741,11 +743,13 @@ export function LikesScreen({
                               <ActivityIndicator size="small" color="#FFFFFF" />
                             ) : (
                               <>
-                                <Ionicons
-                                  name="heart"
-                                  size={14}
-                                  color="#FFFFFF"
-                                />
+                                <HeartBeat>
+                                  <Ionicons
+                                    name="heart"
+                                    size={14}
+                                    color="#FFFFFF"
+                                  />
+                                </HeartBeat>
                                 <Text
                                   style={{
                                     fontFamily: fonts.bodySemi,
@@ -761,7 +765,7 @@ export function LikesScreen({
                         </>
                       )}
                     </View>
-                  </View>
+                  </Reveal>
                 );
               })}
 

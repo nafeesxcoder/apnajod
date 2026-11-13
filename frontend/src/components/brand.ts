@@ -23,15 +23,19 @@ export const brand = {
   pillText: palette.crimson,
 };
 
-/** A soft card shadow that works on web, iOS and Android. */
+/**
+ * A soft card shadow that works on web, iOS and Android. Close to centred
+ * (2px down), so the card's top edge still shows on a white page - a
+ * deeper drop made the top bar of an info card look like it floated above.
+ */
 export const cardShadow: ViewStyle =
   Platform.OS === "web"
-    ? ({ boxShadow: "0 6px 18px rgba(20,32,46,0.07)" } as ViewStyle)
+    ? ({ boxShadow: "0 2px 16px rgba(20,32,46,0.09)" } as ViewStyle)
     : {
         shadowColor: "#14202E",
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.09,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
         elevation: 3,
       };
 

@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { InfoCard } from "./InfoCard";
 import { intentBadges, type IntentBadgeInput } from "../domain/intentBadges";
 import { fonts, palette, radius } from "../theme";
 
@@ -54,18 +55,8 @@ export function IntentBadges({
 export function IntentSection({ input }: { input: IntentBadgeInput }) {
   if (!intentBadges(input).length) return null;
   return (
-    <View
-      style={{
-        marginTop: 20,
-        paddingTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: palette.rule,
-      }}
-    >
-      <Text style={{ fontFamily: fonts.display, fontSize: 18, color: palette.ink }}>
-        Looking for
-      </Text>
-      <IntentBadges input={input} marginTop={8} />
-    </View>
+    <InfoCard title="Looking for" style={{ marginTop: 16 }}>
+      <IntentBadges input={input} />
+    </InfoCard>
   );
 }

@@ -14,6 +14,8 @@ import type { PersonPage } from "../../../api/socialApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
+import { InfoCard } from "../../../components/InfoCard";
+import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { FamilyShareButton } from "../../../components/FamilyShareButton";
 
 const MAX_WIDTH = 720;
@@ -335,7 +337,7 @@ export function PersonScreen({
                   </Text>
                 </View>
               ) : (
-                <Pressable
+                <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={
                     likeStatus === "likes_you"
@@ -344,13 +346,13 @@ export function PersonScreen({
                   }
                   disabled={busy}
                   onPress={() => void like()}
+                  containerStyle={{ flex: 1 }}
                   style={{
-                    flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 6,
-                    backgroundColor: palette.navy,
+                    backgroundColor: palette.crimson,
                     paddingVertical: 12,
                     borderRadius: radius.pill,
                     minHeight: 44,
@@ -361,7 +363,10 @@ export function PersonScreen({
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <>
-                      <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.12} />
+                      <HeartBeat>
+                        <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      </HeartBeat>
                       <Text
                         style={{
                           color: "#FFFFFF",
@@ -373,7 +378,7 @@ export function PersonScreen({
                       </Text>
                     </>
                   )}
-                </Pressable>
+                </PressScale>
               )}
             </View>
           )}
@@ -388,38 +393,27 @@ export function PersonScreen({
           )}
 
           {!!profile.about && (
-            <View
-              style={{
-                marginTop: 24,
-                paddingTop: 20,
-                borderTopWidth: 1,
-                borderTopColor: palette.rule,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: fonts.display,
-                  fontSize: typeScale.section,
-                  color: palette.ink,
-                  marginBottom: 6,
-                }}
-              >
-                About
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: 15,
-                  color: palette.inkSoft,
-                  lineHeight: 22,
-                }}
-              >
-                {profile.about}
-              </Text>
-            </View>
+            <Reveal delay={80} style={{ marginTop: 24 }}>
+              <InfoCard title="About">
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 15,
+                    color: palette.inkSoft,
+                    lineHeight: 22,
+                  }}
+                >
+                  {profile.about}
+                </Text>
+              </InfoCard>
+            </Reveal>
           )}
 
-          {!!profile.intent && <IntentSection input={profile.intent} />}
+          {!!profile.intent && (
+            <Reveal delay={140}>
+              <IntentSection input={profile.intent} />
+            </Reveal>
+          )}
 
           {profile.hobbies.length > 0 && (
             <View

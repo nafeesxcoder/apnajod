@@ -3322,6 +3322,11 @@ function MilaanApp() {
             voiceUri={voiceIntroUri}
             onVoiceChange={setVoiceIntroUri}
             allowPreviewContinue={isPreviewAccessMode}
+            verificationStatus={verificationStatus}
+            verified={verified}
+            blueTick={blueTick}
+            // Only once they have a profile - not in the middle of first sign-up.
+            onVerify={accessToken && onboardingComplete ? () => navigateTo("verifyHub") : undefined}
             onNext={async (latest?: any) => {
               const draftToSave = latest ?? profileDraft;
               if (onboardingComplete && accessToken) {

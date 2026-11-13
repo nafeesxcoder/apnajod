@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { uploadPhotoOrKeepLocal as uploadPhotoAsset } from "../../../api/uploadPhoto";
+import { authApi } from "../../../api/authApi";
+import { TrustBadge } from "../../../components/TrustBadge";
+import { brand, whiteCard } from "../../../components/brand";
+import { PressScale } from "../../../components/motion";
 
 const BIO_MAX_LENGTH = 500;
 const MAX_WIDTH = 720;
@@ -56,6 +60,10 @@ export function ProfileSetupScreen({
   photos,
   onPhotosChange,
   onNext,
+  verificationStatus = "none",
+  verified = false,
+  blueTick = false,
+  onVerify,
 }: {
   accessToken: string;
   profile: any;
@@ -66,7 +74,26 @@ export function ProfileSetupScreen({
   onVoiceChange: (uri: string) => void;
   allowPreviewContinue: boolean;
   onNext: (latest?: any) => void;
+  /** Selfie verification state, shown as its own row in Edit profile. */
+  verificationStatus?: "none" | "pending" | "approved" | "rejected";
+  verified?: boolean;
+  blueTick?: boolean;
+  /** Opens the pose-selfie screen. */
+  onVerify?: () => void;
 }) {
+  // The @username is fixed at sign-up; Edit profile shows it, read-only.
+  const [username, setUsername] = useState("");
+  useEffect(() => {
+    if (!accessToken) return;
+    let active = true;
+    authApi
+      .me(accessToken)
+      .then((res: any) => active && setUsername(String(res?.user?.username ?? "")))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
   const [bio, setBio] = useState(profile.bio || "");
   const [showHobbyPicker, setShowHobbyPicker] = useState(false);
   const [hobbySearch, setHobbySearch] = useState("");
@@ -249,7 +276,73 @@ export function ProfileSetupScreen({
               >
                 Tap to {photos[0] ? "change" : "add"} your photo
               </Text>
+              {!!username && (
+                <View
+                  accessibilityLabel={`Your username is ${username}${verified ? ", verified" : ""}`}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 }}
+                >
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.navy }}>@{username}</Text>
+                  {verified && <TrustBadge blueTick={blueTick} size={18} />}
+                </View>
+              )}
             </View>
+
+            {/* Selfie verification: its own row, with what it is worth. */}
+            {!!onVerify && (
+              <View style={{ ...whiteCard, padding: 16, marginBottom: 24, flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <View
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    backgroundColor: verified ? "#E3F2EC" : brand.pillBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons
+                    name={verified ? "shield-checkmark" : verificationStatus === "pending" ? "time" : "shield-outline"}
+                    size={22}
+                    color={verified ? palette.emerald : palette.crimson}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
+                      Selfie verification
+                    </Text>
+                    {verified && <TrustBadge blueTick={blueTick} size={16} />}
+                  </View>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: palette.slate }}>
+                    {verified
+                      ? "Verified. People can see you are real."
+                      : verificationStatus === "pending"
+                        ? "Under review - usually 24-48 hours."
+                        : verificationStatus === "rejected"
+                          ? "Your last selfie was not approved. Try again with the pose shown."
+                          : "A quick pose selfie. Shows you are real and adds +15% to Profile strength."}
+                  </Text>
+                </View>
+                {!verified && verificationStatus !== "pending" && (
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel="Verify with a selfie"
+                    onPress={onVerify}
+                    style={{
+                      minHeight: 40,
+                      paddingHorizontal: 16,
+                      borderRadius: radius.pill,
+                      backgroundColor: palette.crimson,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>
+                      {verificationStatus === "rejected" ? "Try again" : "Verify"}
+                    </Text>
+                  </PressScale>
+                )}
+              </View>
+            )}
 
             <View style={{ gap: 16 }}>
               <View>

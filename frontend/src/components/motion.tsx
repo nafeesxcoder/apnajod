@@ -213,7 +213,16 @@ export function HeartBeat({ children, active = true }: { children: ReactNode; ac
  * glow on Like. Put it as the first child of a button with `overflow`
  * left visible; it sizes itself to the parent.
  */
-export function GlowPulse({ color, radius }: { color: string; radius: number }) {
+export function GlowPulse({
+  color,
+  radius,
+  spread = 1.45,
+}: {
+  color: string;
+  radius: number;
+  /** How far it grows. A round button takes the default; a wide pill ~1.12. */
+  spread?: number;
+}) {
   const reduced = useReducedMotion();
   const pulse = useLoop(
     (v) =>
@@ -236,7 +245,7 @@ export function GlowPulse({ color, radius }: { color: string; radius: number }) 
         borderRadius: radius,
         backgroundColor: color,
         opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
-        transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.45] }) }],
+        transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, spread] }) }],
       }}
     />
   );

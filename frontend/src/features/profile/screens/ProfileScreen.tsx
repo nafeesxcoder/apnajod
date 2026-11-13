@@ -21,6 +21,9 @@ import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
+import { InfoCard } from "../../../components/InfoCard";
+import { brand, cardShadow } from "../../../components/brand";
+import { PressScale, Reveal } from "../../../components/motion";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 
@@ -368,81 +371,65 @@ export function ProfileScreen({
                 </Text>
               )}
 
-              <View
-                style={{
-                  marginTop: 24,
-                  paddingTop: 20,
-                  borderTopWidth: 1,
-                  borderTopColor: palette.rule,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.section,
-                    color: palette.ink,
-                    marginBottom: 6,
-                  }}
-                >
-                  About
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontFamily: fonts.body,
-                    color: bio ? palette.inkSoft : palette.slate,
-                    lineHeight: 22,
-                  }}
-                >
-                  {bio || "Add a short bio so people know the real you."}
-                </Text>
-              </View>
-
-              {!!intentInput && <IntentSection input={intentInput} />}
-
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="See Premium"
-                onPress={() => navigate("premium")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  backgroundColor: palette.paperSand,
-                  borderRadius: radius.md,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  marginTop: 24,
-                }}
-              >
-                <Ionicons name="sparkles" size={18} color={palette.navy} />
-                <View style={{ flex: 1 }}>
+              <Reveal delay={60} style={{ marginTop: 24 }}>
+                <InfoCard title="About">
                   <Text
                     style={{
-                      fontFamily: fonts.display,
                       fontSize: 15,
-                      color: palette.ink,
-                    }}
-                  >
-                    Premium
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: palette.slate,
-                      marginTop: 1,
                       fontFamily: fonts.body,
+                      color: bio ? palette.inkSoft : palette.slate,
+                      lineHeight: 22,
                     }}
                   >
-                    Unlimited likes, see who liked you
+                    {bio || "Add a short bio so people know the real you."}
                   </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={palette.slate}
-                />
-              </TouchableOpacity>
+                </InfoCard>
+              </Reveal>
+
+              {!!intentInput && (
+                <Reveal delay={120}>
+                  <IntentSection input={intentInput} />
+                </Reveal>
+              )}
+
+              {/* Premium is this screen's one navy "hero" card. */}
+              <Reveal delay={180} style={{ marginTop: 16 }}>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel="See Premium"
+                  onPress={() => navigate("premium")}
+                  style={{ borderRadius: 18, overflow: "hidden", ...cardShadow }}
+                >
+                  <LinearGradient
+                    colors={brand.heroGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}
+                  >
+                    <View
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 12,
+                        backgroundColor: "rgba(255,255,255,0.14)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons name="sparkles" size={18} color={palette.marigold} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: brand.onHero }}>Premium</Text>
+                      <Text style={{ fontSize: 12, color: brand.onHeroSoft, marginTop: 1, fontFamily: fonts.body }}>
+                        Unlimited likes, see who liked you, blue tick with Pro
+                      </Text>
+                    </View>
+                    <View style={{ backgroundColor: palette.crimson, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 }}>
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: "#FFFFFF" }}>See plans</Text>
+                    </View>
+                  </LinearGradient>
+                </PressScale>
+              </Reveal>
 
               <View style={{ marginTop: 24 }}>
                 <Text

@@ -21,6 +21,8 @@ import { PostsSection } from "../../profile/components/PostsSection";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
+import { InfoCard } from "../../../components/InfoCard";
+import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -303,21 +305,21 @@ export function MatchDetailScreen({
               </View>
 
               <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
-                <TouchableOpacity
+                <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={
                     liked ? `You liked ${match.name}` : `Like ${match.name}`
                   }
                   onPress={handleLike}
                   disabled={loading || liked}
+                  containerStyle={{ flex: 1 }}
                   style={{
-                    flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: liked ? palette.paper : palette.navy,
+                    backgroundColor: liked ? palette.paper : palette.crimson,
                     borderWidth: liked ? 1.5 : 0,
-                    borderColor: palette.navy,
+                    borderColor: palette.crimson,
                     paddingVertical: 10,
                     borderRadius: radius.pill,
                     gap: 6,
@@ -325,21 +327,24 @@ export function MatchDetailScreen({
                     opacity: loading ? 0.6 : 1,
                   }}
                 >
-                  <Ionicons
-                    name={liked ? "heart" : "heart-outline"}
-                    size={16}
-                    color={liked ? palette.navy : "#FFFFFF"}
-                  />
+                  {!liked && <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.12} />}
+                  <HeartBeat active={!liked}>
+                    <Ionicons
+                      name="heart"
+                      size={16}
+                      color={liked ? palette.crimson : "#FFFFFF"}
+                    />
+                  </HeartBeat>
                   <Text
                     style={{
-                      color: liked ? palette.navy : "#FFFFFF",
+                      color: liked ? palette.crimson : "#FFFFFF",
                       fontFamily: fonts.bodySemi,
                       fontSize: 13,
                     }}
                   >
                     {liked ? "Liked" : "Like"}
                   </Text>
-                </TouchableOpacity>
+                </PressScale>
 
                 <TouchableOpacity
                   onPress={handleMessage}
@@ -374,36 +379,22 @@ export function MatchDetailScreen({
                 </TouchableOpacity>
               </View>
 
-              <View
-                style={{
-                  marginTop: 24,
-                  paddingTop: 20,
-                  borderTopWidth: 1,
-                  borderTopColor: palette.rule,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.section,
-                    color: palette.ink,
-                    marginBottom: 6,
-                  }}
-                >
-                  About me
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontFamily: fonts.body,
-                    color: bio ? palette.inkSoft : palette.slate,
-                    lineHeight: 22,
-                  }}
-                >
-                  {bio || "No bio yet."}
-                </Text>
-              </View>
+              <Reveal delay={80} style={{ marginTop: 24 }}>
+                <InfoCard title="About me">
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontFamily: fonts.body,
+                      color: bio ? palette.inkSoft : palette.slate,
+                      lineHeight: 22,
+                    }}
+                  >
+                    {bio || "No bio yet."}
+                  </Text>
+                </InfoCard>
+              </Reveal>
 
+              <Reveal delay={140}>
               <IntentSection
                 input={{
                   intent: match.intent,
@@ -413,6 +404,7 @@ export function MatchDetailScreen({
                   relocation: match.relocation,
                 }}
               />
+              </Reveal>
 
               {photos.length > 0 && (
                 <View style={{ marginTop: 24 }}>

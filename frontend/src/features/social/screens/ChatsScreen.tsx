@@ -22,7 +22,9 @@ import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../componen
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
 import type { Screen } from '../../../app/navigation/types';
 import { social } from '../../../theme/socialStyles';
-import { colors } from '../../../theme';
+import { colors, palette } from '../../../theme';
+import { brand, whiteCard } from '../../../components/brand';
+import { PressScale, Reveal, SpinRing } from '../../../components/motion';
 
 /** "now", "4m", "3h", "2d" — enough to place a message without a clock. */
 function shortAge(ms: number) {
@@ -69,28 +71,30 @@ function isYourTurn(conversation: ConversationSummary) {
   return !!message && message.mine === false;
 }
 
-function Avatar({ name, url }: { name: string; url: string | null }) {
-  const size = 52;
-  if (url) {
-    return (
-      <Image
-        accessibilityLabel={`${name} profile photo`}
-        source={{ uri: url }}
-        style={[social.avatar, { width: size, height: size, borderRadius: size / 2 }]}
-      />
-    );
-  }
+/**
+ * Photo in the navy/crimson ring. The ring turns while a reply is waiting
+ * (unread, or their turn), so the chats that need you stand out.
+ */
+function Avatar({ name, url, waiting }: { name: string; url: string | null; waiting: boolean }) {
+  const size = 54;
   return (
-    <View
-      style={[
-        social.avatarEmpty,
-        { width: size, height: size, borderRadius: size / 2 },
-      ]}
-    >
-      <Text style={[social.avatarInitial, { fontSize: size * 0.4 }]}>
-        {(name || '?').trim().charAt(0).toUpperCase()}
-      </Text>
-    </View>
+    <SpinRing size={size} spin={waiting}>
+      {url ? (
+        <Image
+          accessibilityLabel={`${name} profile photo`}
+          source={{ uri: url }}
+          style={[social.avatar, { width: '100%', height: '100%' }]}
+        />
+      ) : (
+        <View
+          style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: palette.paperSand }}
+        >
+          <Text style={[social.avatarInitial, { fontSize: size * 0.38 }]}>
+            {(name || '?').trim().charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
+    </SpinRing>
   );
 }
 
@@ -204,9 +208,10 @@ export function ChatsScreen({
                 </Pressable>
               </View>
             ) : (
-              items.map((conversation) => (
-                <Pressable
-                  key={conversation.conversationId}
+              items.map((conversation, index) => (
+                <Reveal key={conversation.conversationId} delay={Math.min(index, 8) * 50}>
+                <PressScale
+                  scaleTo={0.985}
                   accessibilityRole="button"
                   accessibilityLabel={`Chat with ${conversation.user.name}${
                     conversation.unread ? `, ${conversation.unread} unread` : ''
@@ -215,8 +220,14 @@ export function ChatsScreen({
                   // Beside an open thread, the list has to say which one
                   // is open. Without it both panes are visible and neither
                   // tells you where you are.
+                  containerStyle={{ marginBottom: 10 }}
                   style={[
                     social.row,
+                    {
+                      ...whiteCard,
+                      borderBottomWidth: 0,
+                      paddingHorizontal: 12,
+                    },
                     conversation.conversationId === activeConversationId && {
                       backgroundColor: "#EEF2F6",
                     },
@@ -226,6 +237,7 @@ export function ChatsScreen({
                     <Avatar
                       name={conversation.user.name}
                       url={conversation.user.avatarUrl}
+                      waiting={conversation.unread > 0 || isYourTurn(conversation)}
                     />
                     <View style={social.rowText}>
                       <View style={social.rowTitleLine}>
@@ -256,13 +268,13 @@ export function ChatsScreen({
                           <View
                             accessibilityLabel="Your turn to reply"
                             style={{
-                              backgroundColor: '#FDF0E1',
+                              backgroundColor: brand.pillBg,
                               borderRadius: 999,
                               paddingHorizontal: 8,
                               paddingVertical: 1,
                             }}
                           >
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#9A5B00' }}>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: brand.pillText }}>
                               Your turn
                             </Text>
                           </View>
@@ -280,7 +292,8 @@ export function ChatsScreen({
                       </View>
                     )}
                   </View>
-                </Pressable>
+                </PressScale>
+                </Reveal>
               ))
             )}
           </ScrollView>
