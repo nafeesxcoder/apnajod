@@ -11,8 +11,13 @@ const app = read("../../app/MilaanApp.tsx");
 describe("sheets on a phone", () => {
   it("fit the part of the screen you can see, above the browser toolbar", () => {
     expect(sheets).toContain("window.visualViewport");
-    expect(sheets).toContain("style={{ height, justifyContent: \"flex-end\" }}");
+    expect(sheets).toContain('style={{ height, justifyContent: centred ? "center" : "flex-end", padding: centred ? 24 : 0 }}');
     expect(sheets).toContain("env(safe-area-inset-bottom, 0px)");
+  });
+
+  it("open as a card in the middle on a laptop, not pinned to the bottom", () => {
+    expect(sheets).toContain("const centred = width >= 700;");
+    expect(sheets).toContain("maxWidth: centred ? 480 : 640,");
   });
 
   it("scroll instead of cutting off their last rows", () => {

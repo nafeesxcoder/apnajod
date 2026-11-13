@@ -56,7 +56,11 @@ const SHEET_BOTTOM =
     ? ({ paddingBottom: "calc(14px + env(safe-area-inset-bottom, 0px))" } as object)
     : { paddingBottom: Platform.OS === "ios" ? 28 : 14 };
 
-/** A sheet that slides up from the bottom, Instagram-style. */
+/**
+ * A sheet that slides up from the bottom, Instagram-style, on a phone. On a
+ * laptop or tablet (wide screen) it opens as a card in the middle instead:
+ * pinned to the bottom of a big window it looked cut off.
+ */
 export function Sheet({
   visible,
   title,
@@ -72,13 +76,15 @@ export function Sheet({
   tall?: boolean;
 }) {
   const height = useVisibleHeight();
+  const { width } = useWindowDimensions();
+  const centred = width >= 700;
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={centred ? "fade" : "slide"} onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         // Only as tall as what can be seen, so the sheet's bottom is never
         // under the browser's toolbar.
-        style={{ height, justifyContent: "flex-end" }}
+        style={{ height, justifyContent: centred ? "center" : "flex-end", padding: centred ? 24 : 0 }}
       >
         <Pressable
           accessibilityRole="button"
@@ -91,17 +97,22 @@ export function Sheet({
             backgroundColor: palette.paper,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
-            maxHeight: height * 0.9,
-            height: tall ? height * 0.82 : undefined,
+            borderBottomLeftRadius: centred ? 22 : 0,
+            borderBottomRightRadius: centred ? 22 : 0,
+            overflow: "hidden",
+            maxHeight: centred ? height - 48 : height * 0.9,
+            height: tall ? (centred ? Math.min(height - 48, 720) : height * 0.82) : undefined,
             width: "100%",
-            maxWidth: 640,
+            maxWidth: centred ? 480 : 640,
             alignSelf: "center",
-            ...SHEET_BOTTOM,
+            ...(centred ? { paddingBottom: 8 } : SHEET_BOTTOM),
           }}
         >
-          <View style={{ alignItems: "center", paddingTop: 8 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: palette.rule }} />
-          </View>
+          {!centred && (
+            <View style={{ alignItems: "center", paddingTop: 8 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: palette.rule }} />
+            </View>
+          )}
           <View
             style={{
               flexDirection: "row",
