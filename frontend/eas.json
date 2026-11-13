@@ -6,6 +6,7 @@
   "build": {
     "development": {
       "environment": "development",
+      "node": "22.14.0",
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -19,6 +20,7 @@
     },
     "toronto-pilot": {
       "environment": "preview",
+      "node": "22.14.0",
       "distribution": "internal",
       "env": {
         "APP_VARIANT": "pilot",
@@ -31,6 +33,7 @@
     },
     "production": {
       "environment": "production",
+      "node": "22.14.0",
       "distribution": "store",
       "autoIncrement": true,
       "env": {
