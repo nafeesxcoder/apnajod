@@ -49,7 +49,10 @@ describe('kundli', () => {
     const person = read('../social/screens/PersonScreen.tsx');
     expect(person).toContain('kundliApi');
     expect(person).toContain('<GunBadge gun={gun} userId={userId} name={user.name} large />');
-    expect(read('../profile/screens/ProfileScreen.tsx')).toContain('<KundliCard accessToken={accessToken} />');
+    // Optional: in Settings and Match Filters, not on the profile everyone sees.
+    expect(read('../profile/screens/ProfileScreen.tsx')).not.toContain('Kundli');
+    expect(read('../profile/screens/SettingsScreen.tsx')).toContain('label="Kundli & Gun Milan" onPress={openKundliEditor}');
+    expect(read('../discovery/screens/DiscoveryCenterScreen.tsx')).toContain('title="Gun Milan (optional)"');
     const sheet = read('KundliSheet.tsx');
     expect(sheet).toContain('See every koota with Premium');
     expect(sheet).toContain('A traditional glimpse from Rashi and Nakshatra');

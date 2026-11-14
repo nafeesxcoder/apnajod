@@ -5,9 +5,10 @@
  *
  * Premium members also pick the lowest Gun score they want to see.
  *
- * Also the card on my Profile that shows what I added and opens this.
+ * Opened from Settings ("Kundli & Gun Milan"), Match Filters, or the Gun
+ * Milan sheet - never pushed on the profile everyone sees.
  */
-import { createElement, useCallback, useEffect, useState } from "react";
+import { createElement, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -18,7 +19,7 @@ import { fonts, palette, radius } from "../../theme";
 import { PressScale } from "../../components/motion";
 import { Sheet } from "../posts/PostSheets";
 import { fromBirth, NAKSHATRAS, nakshatraName, nakshatrasIn, RASHIS, rashiName } from "./kundli";
-import { kundliSaved, onKundliEditor, onKundliSaved, openKundliEditor } from "./kundliStore";
+import { kundliSaved, onKundliEditor } from "./kundliStore";
 
 type Manglik = "yes" | "no" | "unknown" | null;
 type Mine = { rashi: number | null; nakshatra: number | null; manglik: Manglik; minGun: number | null };
@@ -292,53 +293,4 @@ export function KundliEditorHost({ accessToken, onPremium }: { accessToken: stri
   const [open, setOpen] = useState(false);
   useEffect(() => onKundliEditor(() => setOpen(true)), []);
   return <KundliEditor accessToken={accessToken} visible={open} onClose={() => setOpen(false)} onPremium={onPremium} />;
-}
-
-/** On my Profile: what I added, or a nudge to add it. */
-export function KundliCard({ accessToken }: { accessToken: string }) {
-  const [mine, setMine] = useState<Mine | null>(null);
-  const load = useCallback(() => {
-    void loadMine(accessToken)
-      .then(setMine)
-      .catch(() => undefined);
-  }, [accessToken]);
-  useEffect(() => {
-    load();
-    return onKundliSaved(load);
-  }, [load]);
-
-  const has = !!mine?.rashi;
-  return (
-    <PressScale
-      accessibilityRole="button"
-      accessibilityLabel={has ? "Edit my kundli" : "Add my Rashi and Nakshatra"}
-      onPress={openKundliEditor}
-      containerStyle={{ marginTop: 16 }}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        backgroundColor: "#FFF7E6",
-        borderWidth: 1,
-        borderColor: "#F4C77A",
-        borderRadius: 18,
-        padding: 16,
-      }}
-    >
-      <Text style={{ fontSize: 28 }}>🪐</Text>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: "#7C2D12" }}>
-          {has ? "My Kundli" : "Add your Kundli for Gun Milan"}
-        </Text>
-        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: "#92400E", marginTop: 2 }}>
-          {has
-            ? [rashiName(mine!.rashi), nakshatraName(mine!.nakshatra), mine!.manglik === "yes" ? "Manglik" : null]
-                .filter(Boolean)
-                .join(" · ")
-            : "Add your Rashi and Nakshatra to see your Gun score out of 36 with every match."}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color="#92400E" />
-    </PressScale>
-  );
 }

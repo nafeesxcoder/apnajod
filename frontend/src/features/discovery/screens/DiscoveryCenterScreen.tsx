@@ -14,6 +14,7 @@ import { fonts, palette, radius, typeScale } from "../../../theme";
 import { whiteCard } from "../../../components/brand";
 import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
 import type { MatchFilters } from "../../../storage";
+import { openKundliEditor } from "../../kundli/kundliStore";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -567,6 +568,40 @@ export function DiscoveryCenterScreen({
                   />
                 ))}
               </View>
+            </Reveal>
+
+            {/* Optional, for people who follow kundli. */}
+            <Reveal delay={360}>
+              <SectionHeader
+                title="Gun Milan (optional)"
+                subtitle="For people who follow kundli"
+              />
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel="Kundli and Gun Milan"
+                onPress={openKundliEditor}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: palette.rule,
+                  borderRadius: 16,
+                  padding: 14,
+                }}
+              >
+                <Text style={{ fontSize: 24 }}>🪐</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>
+                    Your Rashi and the Gun filter
+                  </Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 2 }}>
+                    See your Gun score out of 36 with matches who added theirs. Gun 18+ filter with Premium.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={palette.slate} />
+              </PressScale>
             </Reveal>
 
             <Reveal delay={400}>

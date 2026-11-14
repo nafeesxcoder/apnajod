@@ -17,6 +17,7 @@ import { PressScale, Reveal } from "../../../components/motion";
 import { fonts, palette, typeScale } from "../../../theme";
 import { pushApi } from "../../../api/pushApi";
 import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
+import { openKundliEditor } from "../../kundli/kundliStore";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -378,6 +379,9 @@ export function SettingsScreen({
                 label="Trust Hub & Verification"
                 onPress={() => navigate("verifyHub")}
               />
+              {/* Optional, for people who follow kundli: here and in Match
+                  Filters, never on the profile everyone sees. */}
+              <SettingsRow icon="planet-outline" label="Kundli & Gun Milan" onPress={openKundliEditor} />
               <SettingsRow
                 icon="options-outline"
                 label="Match Filters & Preferences"
