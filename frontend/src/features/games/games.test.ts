@@ -38,9 +38,9 @@ describe('Notifications (the Home bell)', () => {
 });
 
 describe('the empty deck', () => {
-  it('offers Invite friends and Find someone', () => {
-    expect(home).toContain('label="Invite friends"');
-    expect(home).toContain('label="Find someone"');
-    expect(home).toContain('navigate("find")');
+  it('has no second Invite button: the Invite card above it is the one', () => {
+    expect(home).not.toContain('label="Invite friends"');
+    expect(home).not.toContain('label="Find someone"');
+    expect(home).toContain('<InviteCard accessToken={accessToken} />');
   });
 });

@@ -38,8 +38,7 @@ import { DailyPicksRow } from "../components/DailyPicksRow";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
-import { InviteCard, shareInvite } from "../../profile/components/InviteCard";
-import { authApi } from "../../../api/authApi";
+import { InviteCard } from "../../profile/components/InviteCard";
 import type { profileStrength } from "../../../domain/profileStrength";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
@@ -125,15 +124,6 @@ export function HomeScreen({
       clearInterval(timer);
     };
   }, [accessToken, activityOpen]);
-  // The empty deck's "Invite friends": shares your invite link.
-  const [inviteNote, setInviteNote] = useState("");
-  const inviteFriends = async () => {
-    const me: any = accessToken ? await authApi.me(accessToken).catch(() => null) : null;
-    const note = await shareInvite(String(me?.user?.username ?? ""));
-    setInviteNote(note);
-    if (note) setTimeout(() => setInviteNote(""), 4000);
-  };
-
   // The bell: likes, like-backs, Sparks and Super Likes since Notifications
   // was last opened. Opening it clears the number on the server.
   const [notificationCount, setNotificationCount] = useState(0);
@@ -825,18 +815,7 @@ export function HomeScreen({
                     icon="options-outline"
                     onPress={() => navigate("discovery")}
                   />
-                ) : (
-                  // Nobody new right now: bring friends in, or go looking.
-                  <View style={{ alignSelf: "center", gap: 10, maxWidth: 360, width: "100%" }}>
-                    <Button label="Invite friends" icon="gift-outline" onPress={() => void inviteFriends()} />
-                    <Button label="Find someone" icon="search" variant="secondary" onPress={() => navigate("find")} />
-                    {!!inviteNote && (
-                      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: "center" }}>
-                        {inviteNote}
-                      </Text>
-                    )}
-                  </View>
-                )}
+                ) : null}
               </View>
             )}
           </View>
