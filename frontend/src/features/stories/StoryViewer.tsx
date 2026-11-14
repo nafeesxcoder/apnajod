@@ -14,6 +14,7 @@ import { LiveSticker } from "./LiveSticker";
 import { AnswerSheet, ResponsesSheet } from "./StoryResponses";
 import { StoryReplyBar } from "./StoryReplyBar";
 import { setStoryLiked } from "./storyStore";
+import { CLOSE_GREEN } from "./CloseFriendsSheet";
 import { FRAME_ASPECT } from "./editor/model";
 import { createClipPlayer, type ClipPlayer } from "./music/clipPlayer";
 
@@ -341,6 +342,15 @@ export function StoryViewer({
                       <Text style={{ color: "rgba(255,255,255,0.75)", fontFamily: fonts.body, fontSize: 13 }}>
                         {timeAgo(story.createdAt)}
                       </Text>
+                      {!!story.closeFriends && (
+                        <View
+                          accessibilityLabel="Close friends story"
+                          style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: CLOSE_GREEN, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 }}
+                        >
+                          <Ionicons name="star" size={10} color="#FFFFFF" />
+                          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 11 }}>Close friends</Text>
+                        </View>
+                      )}
                     </View>
                     {!!story.music && (
                       <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.9)", fontFamily: fonts.body, fontSize: 12 }}>

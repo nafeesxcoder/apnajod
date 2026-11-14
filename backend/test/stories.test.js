@@ -50,6 +50,9 @@ test("a story URL maps only to a file inside the stories folder", () => {
 });
 
 test("who sees a story follows the post rule (public, or matched; never a block)", () => {
-  assert.match(service, /OR u\.is_private = 0\s+OR EXISTS \(SELECT 1 FROM mutual_matches/);
+  // The rule lives in storyVisibility.js, shared with likes, votes and answers.
+  const visibility = fs.readFileSync(path.join(__dirname, "..", "src/services/storyVisibility.js"), "utf8");
+  assert.match(service, /AND \$\{VISIBLE_TO_VIEWER\}/);
+  assert.match(visibility, /u\.is_private = 0\s+OR EXISTS \(SELECT 1 FROM mutual_matches/);
   assert.match(service, /NOT EXISTS \(SELECT 1 FROM blocks b/);
 });

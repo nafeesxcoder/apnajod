@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { query } = require('../config/db');
+const { VISIBLE_TO_VIEWER, visibleParams } = require('./storyVisibility');
 
 /**
  * The stickers people can use on a story - a poll, a question box and
@@ -131,17 +132,12 @@ async function visibleStory(viewerId, storyId) {
        JOIN users u ON u.id = s.user_id
       WHERE s.id = ? AND s.expires_at > NOW(6)
         AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
-        AND (s.user_id = ?
-             OR u.is_private = 0
-             OR EXISTS (SELECT 1 FROM mutual_matches mm
-                         WHERE (mm.user_a_id = ? AND mm.user_b_id = u.id)
-                            OR (mm.user_a_id = u.id AND mm.user_b_id = ?))
-             OR EXISTS (SELECT 1 FROM story_mentions sm WHERE sm.story_id = s.id AND sm.user_id = ?))
+        AND ${VISIBLE_TO_VIEWER}
         AND NOT EXISTS (SELECT 1 FROM blocks b
                          WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                             OR (b.blocker_id = u.id AND b.blocked_id = ?))
       LIMIT 1`,
-    [String(storyId || ''), viewerId, viewerId, viewerId, viewerId, viewerId, viewerId],
+    [String(storyId || ''), ...visibleParams(viewerId), viewerId, viewerId],
   );
   return row || null;
 }

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { query } = require('../config/db');
+const { VISIBLE_TO_VIEWER, visibleParams } = require('./storyVisibility');
 
 /**
  * Stories, Instagram-style: a photo up for 24 hours, then deleted - the
@@ -28,7 +29,7 @@ async function removeFile(file) {
   await fs.promises.unlink(file).catch(() => undefined);
 }
 
-async function create(userId, file, publicBase, music = {}, rawStickers = null) {
+async function create(userId, file, publicBase, music = {}, rawStickers = null, rawAudience = 'all') {
   const { STORY_DIR } = require('../middleware/storyUpload');
   // A song clip, checked before anything is saved (5 to 30 seconds).
   let clip = null;
@@ -48,18 +49,30 @@ async function create(userId, file, publicBase, music = {}, rawStickers = null) 
     error.status = 429;
     throw error;
   }
+  // Close friends: only the people on your list see it. The list must have someone.
+  const audience = rawAudience === 'close' ? 'close' : 'all';
+  const closeIds = audience === 'close' ? await require('./closeFriendsService').ids(userId) : null;
+  if (closeIds && !closeIds.size) {
+    await removeFile(path.join(STORY_DIR, file.filename));
+    const error = new Error('Add people to your Close friends list first.');
+    error.status = 400;
+    throw error;
+  }
   // Poll, question and @mention stickers: checked, mentions of real members only.
+  // On a close-friends story you can only mention people on the list (others could not see it).
   const stickerService = require('./storyStickerService');
-  const stickers = await stickerService.keepRealMentions(userId, stickerService.cleanStickers(rawStickers));
+  const stickers = (await stickerService.keepRealMentions(userId, stickerService.cleanStickers(rawStickers))).filter(
+    (sticker) => !closeIds || sticker.kind !== 'mention' || closeIds.has(sticker.userId),
+  );
   const id = crypto.randomUUID();
   const mediaUrl = `${publicBase}/uploads/stories/${file.filename}`;
   await query(
-    `INSERT INTO stories (id, user_id, media_url, expires_at, music_track_id, music_start, music_length, stickers)
-     VALUES (?, ?, ?, NOW(6) + INTERVAL ${STORY_HOURS} HOUR, ?, ?, ?, ?)`,
-    [id, userId, mediaUrl, clip?.trackId ?? null, clip?.start ?? null, clip?.length ?? null, stickers.length ? JSON.stringify(stickers) : null],
+    `INSERT INTO stories (id, user_id, media_url, expires_at, music_track_id, music_start, music_length, stickers, audience)
+     VALUES (?, ?, ?, NOW(6) + INTERVAL ${STORY_HOURS} HOUR, ?, ?, ?, ?, ?)`,
+    [id, userId, mediaUrl, clip?.trackId ?? null, clip?.start ?? null, clip?.length ?? null, stickers.length ? JSON.stringify(stickers) : null, audience],
   );
   await stickerService.saveMentions(id, userId, stickers);
-  return { id, mediaUrl, music: clip, stickers };
+  return { id, mediaUrl, music: clip, stickers, closeFriends: audience === 'close' };
 }
 
 /**
@@ -70,7 +83,7 @@ async function create(userId, file, publicBase, music = {}, rawStickers = null) 
 async function tray(viewerId) {
   const rows = await query(
     `SELECT s.id, s.user_id, s.media_url, s.created_at, s.expires_at,
-            s.music_start, s.music_length, s.stickers,
+            s.music_start, s.music_length, s.stickers, s.audience,
             mt.id AS music_id, mt.title AS music_title, mt.artist AS music_artist, mt.media_url AS music_url,
             u.username,
             COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
@@ -84,18 +97,13 @@ async function tray(viewerId) {
        LEFT JOIN music_tracks mt ON mt.id = s.music_track_id
       WHERE s.expires_at > NOW(6)
         AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
-        AND (s.user_id = ?
-             OR u.is_private = 0
-             OR EXISTS (SELECT 1 FROM mutual_matches mm
-                         WHERE (mm.user_a_id = ? AND mm.user_b_id = u.id)
-                            OR (mm.user_a_id = u.id AND mm.user_b_id = ?))
-             OR EXISTS (SELECT 1 FROM story_mentions sm WHERE sm.story_id = s.id AND sm.user_id = ?))
+        AND ${VISIBLE_TO_VIEWER}
         AND NOT EXISTS (SELECT 1 FROM blocks b
                          WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                             OR (b.blocker_id = u.id AND b.blocked_id = ?))
       ORDER BY s.created_at ASC
       LIMIT 500`,
-    [viewerId, viewerId, viewerId, viewerId, viewerId, viewerId],
+    [...visibleParams(viewerId), viewerId, viewerId],
   );
   const stickerService = require('./storyStickerService');
   const people = new Map();
@@ -113,6 +121,8 @@ async function tray(viewerId) {
       createdAt: row.created_at,
       expiresAt: row.expires_at,
       stickers: stickerService.parseStickers(row.stickers),
+      // Shared to close friends only: a green ring and badge.
+      closeFriends: row.audience === 'close',
       music: row.music_id
         ? {
             trackId: row.music_id,

@@ -46,8 +46,11 @@ test("votes, answers and mentions are deleted with the story's row", () => {
 });
 
 test("someone mentioned can see that one story, even on a private account", () => {
-  assert.match(stories, /OR EXISTS \(SELECT 1 FROM story_mentions sm WHERE sm\.story_id = s\.id AND sm\.user_id = \?\)/);
-  assert.match(service, /OR EXISTS \(SELECT 1 FROM story_mentions sm WHERE sm\.story_id = s\.id AND sm\.user_id = \?\)/);
+  // One shared rule for the tray and for voting, answering and liking.
+  const visibility = fs.readFileSync(path.join(__dirname, "..", "src/services/storyVisibility.js"), "utf8");
+  assert.match(visibility, /OR EXISTS \(SELECT 1 FROM story_mentions sm WHERE sm\.story_id = s\.id AND sm\.user_id = \?\)/);
+  assert.match(stories, /AND \$\{VISIBLE_TO_VIEWER\}/);
+  assert.match(service, /AND \$\{VISIBLE_TO_VIEWER\}/);
 });
 
 test("one vote each, not on your own poll, and only the owner sees who voted", () => {

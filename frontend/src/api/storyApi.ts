@@ -14,6 +14,8 @@ export type StoryItem = {
   liked?: boolean;
   /** Your own story: how many liked it. */
   likeCount?: number;
+  /** Shared to Close friends only (green ring and badge). */
+  closeFriends?: boolean;
 };
 
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
@@ -62,8 +64,11 @@ export const storyApi = {
     uri: string,
     music?: StoryMusic | null,
     stickers: StorySticker[] = [],
+    audience: "all" | "close" = "all",
   ): Promise<{ id: string; mediaUrl: string }> {
     const body = new FormData();
+    // Close friends: only the people on your list see it.
+    if (audience === "close") body.append("audience", "close");
     const file = await fetch(uri).then((response) => response.blob());
     body.append("photo", file, "story.jpg");
     // Only which song, where and how long - no sound file.

@@ -62,6 +62,17 @@ export function statusOf(people: StoryPerson[], seen: Set<string>, userId: strin
   return person.stories.some((story) => !seen.has(story.id)) ? "new" : "seen";
 }
 
+/** They have a Close friends story you have not watched: the ring is green. */
+export function closeUnseen(people: StoryPerson[], seen: Set<string>, userId: string | null | undefined): boolean {
+  const person = userId ? people.find((p) => p.user.userId === userId) : undefined;
+  return !!person?.stories.some((story) => story.closeFriends && !seen.has(story.id));
+}
+
+export function useCloseUnseen(userId: string | null | undefined): boolean {
+  const { people, seen } = useStories();
+  return closeUnseen(people, seen, userId);
+}
+
 export function useStoryStatus(userId: string | null | undefined): StoryStatus {
   const { people, seen } = useStories();
   return statusOf(people, seen, userId);

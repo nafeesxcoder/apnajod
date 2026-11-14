@@ -4,7 +4,8 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import { brand } from "../../components/brand";
 import { palette } from "../../theme";
-import { openStoriesOf, useStoryStatus } from "./storyStore";
+import { openStoriesOf, useCloseUnseen, useStoryStatus } from "./storyStore";
+import { CLOSE_GREEN } from "./CloseFriendsSheet";
 
 /**
  * A ring round someone's photo while they have a story up (colour: one you
@@ -13,6 +14,7 @@ import { openStoriesOf, useStoryStatus } from "./storyStore";
  */
 export function StoryRing({ userId, size, children }: { userId: string | null | undefined; size: number; children: ReactNode }) {
   const status = useStoryStatus(userId);
+  const close = useCloseUnseen(userId);
   if (status === "none" || !userId) return <>{children}</>;
   const gap = Math.max(2, Math.round(size * 0.05));
   const ring = Math.max(2, Math.round(size * 0.06));
@@ -28,7 +30,10 @@ export function StoryRing({ userId, size, children }: { userId: string | null | 
       onPress={() => openStoriesOf(userId)}
       hitSlop={4}
     >
-      {status === "new" ? (
+      {status === "new" && close ? (
+        // A Close friends story you have not watched: green, like Instagram.
+        <View style={{ padding: ring, borderRadius: size, backgroundColor: CLOSE_GREEN }}>{inner}</View>
+      ) : status === "new" ? (
         <LinearGradient
           colors={[brand.barGradient[1], brand.barGradient[0]]}
           start={{ x: 0, y: 1 }}

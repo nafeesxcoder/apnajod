@@ -16,6 +16,7 @@ import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { PressScale, Reveal } from "../../../components/motion";
 import { fonts, palette, typeScale } from "../../../theme";
 import { pushApi } from "../../../api/pushApi";
+import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -169,6 +170,7 @@ export function SettingsScreen({
     "PushManager" in window &&
     typeof Notification !== "undefined";
   const [notifOn, setNotifOn] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifNote, setNotifNote] = useState("");
 
@@ -367,6 +369,10 @@ export function SettingsScreen({
                 label="Intent & Future Plans"
                 onPress={() => navigate("alignment")}
               />
+              {/* Who sees the stories you share to Close friends. */}
+              {!!accessToken && (
+                <SettingsRow icon="star-outline" label="Close Friends" onPress={() => setCloseOpen(true)} />
+              )}
               <SettingsRow
                 icon="shield-checkmark-outline"
                 label="Trust Hub & Verification"
@@ -548,6 +554,9 @@ export function SettingsScreen({
             </SettingsCard>
           </View>
         </ScrollView>
+        {!!accessToken && (
+          <CloseFriendsSheet visible={closeOpen} accessToken={accessToken} onClose={() => setCloseOpen(false)} />
+        )}
       </SafeAreaView>
     </AppCanvas>
   );

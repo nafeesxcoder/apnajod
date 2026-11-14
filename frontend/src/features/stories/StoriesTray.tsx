@@ -12,7 +12,8 @@ import { Sheet } from "../posts/PostSheets";
 import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
 import { TEXT_STORY } from "./editor/themes";
 import { WebCamera, needsWebCamera } from "./WebCamera";
-import { loadStories, openStoriesAt, useStories } from "./storyStore";
+import { closeUnseen, loadStories, openStoriesAt, useStories } from "./storyStore";
+import { CLOSE_GREEN } from "./CloseFriendsSheet";
 
 const SIZE = 64;
 
@@ -106,7 +107,7 @@ export function StoriesTray({
             accessibilityLabel={mine ? "Watch your story" : "Add to your story"}
             onPress={() => (mine ? openStoriesAt(people.indexOf(mine)) : setChoosing(true))}
           >
-            <Ring active={!!mine && unseen(mine)} grey={!!mine && !unseen(mine)}>
+            <Ring active={!!mine && unseen(mine)} grey={!!mine && !unseen(mine)} close={!!mine && closeUnseen(people, seen, mine.user.userId)}>
               {myPhoto ? (
                 <Image source={{ uri: myPhoto }} style={{ width: SIZE, height: SIZE, borderRadius: SIZE / 2, backgroundColor: palette.paperSand }} />
               ) : (
@@ -150,7 +151,7 @@ export function StoriesTray({
             onPress={() => openStoriesAt(people.indexOf(person))}
             style={{ width: SIZE + 8, alignItems: "center" }}
           >
-            <Ring active={unseen(person)} grey={!unseen(person)}>
+            <Ring active={unseen(person)} grey={!unseen(person)} close={closeUnseen(people, seen, person.user.userId)}>
               <Avatar person={person.user} size={SIZE} />
             </Ring>
             <Text numberOfLines={1} style={{ marginTop: 5, maxWidth: SIZE + 8, fontFamily: fonts.body, fontSize: 12, color: unseen(person) ? palette.ink : palette.slate }}>
@@ -201,10 +202,14 @@ export function StoriesTray({
 }
 
 /** The ring round a story: brand gradient while new, grey once watched, none with no story. */
-function Ring({ active, grey, children }: { active: boolean; grey: boolean; children: ReactNode }) {
+function Ring({ active, grey, close = false, children }: { active: boolean; grey: boolean; close?: boolean; children: ReactNode }) {
   const inner = (
     <View style={{ padding: 2, borderRadius: (SIZE + 4) / 2, backgroundColor: "#FFFFFF" }}>{children}</View>
   );
+  // A Close friends story not yet watched: green.
+  if (active && close) {
+    return <View style={{ padding: 2.5, borderRadius: (SIZE + 9) / 2, backgroundColor: CLOSE_GREEN }}>{inner}</View>;
+  }
   if (active) {
     return (
       <LinearGradient

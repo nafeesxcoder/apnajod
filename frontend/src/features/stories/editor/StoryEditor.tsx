@@ -55,6 +55,8 @@ import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
 import { TextComposer, type TextDraft } from "./TextComposer";
 import { TEXT_STORY_SCALE, TEXT_THEMES, stepTheme } from "./themes";
+import { CLOSE_GREEN, CloseFriendsSheet } from "../CloseFriendsSheet";
+import { closeFriendsApi } from "../../../api/closeFriendsApi";
 
 /** The photo picked for a story - or, with `text`, a text story on a coloured background. */
 export type PickedStoryPhoto = { uri: string; width: number; height: number; text?: boolean };
@@ -124,6 +126,10 @@ export function StoryEditor({
   // A text story: no photo, a coloured background you swipe through.
   const textStory = !!photo?.text;
   const [theme, setTheme] = useState(0);
+  // Close friends: how many are on your list (null until known), and the list sheet.
+  const [closeCount, setCloseCount] = useState<number | null>(null);
+  const [closeOpen, setCloseOpen] = useState(false);
+  const [sharingTo, setSharingTo] = useState<"all" | "close">("all");
   const [tool, setTool] = useState<Tool>("pen");
   const [penColor, setPenColor] = useState("#FFFFFF");
   const [penSize, setPenSize] = useState<keyof typeof STROKE_SIZES>("M");
@@ -144,6 +150,11 @@ export function StoryEditor({
     setEditing(null);
     setError("");
     setBusy(false);
+    setCloseCount(null);
+    void closeFriendsApi
+      .list(accessToken)
+      .then((list) => setCloseCount(list.filter((p) => p.closeFriend).length))
+      .catch(() => undefined);
     if (photo.text) {
       // Straight to typing, like Instagram's Create mode.
       themeRef.current = 0;
@@ -284,13 +295,19 @@ export function StoryEditor({
     else onClose();
   };
 
-  const share = async () => {
+  const share = async (audience: "all" | "close" = "all") => {
     if (!photo || busy) return;
+    // Nobody on the list yet: pick them first, like Instagram.
+    if (audience === "close" && closeCount === 0) {
+      setCloseOpen(true);
+      return;
+    }
     if (textStory && !state.items.length && !state.strokes.length) {
       setError("Write something first.");
       return;
     }
     setBusy(true);
+    setSharingTo(audience);
     setError("");
     let made: string | null = null;
     try {
@@ -302,7 +319,7 @@ export function StoryEditor({
         uri = made = await bakeStory({ uri: photo.uri, state, backdrop, frameRef });
         setHideLive(false);
       }
-      await storyApi.create(accessToken, uri, state.music, liveStickers(state));
+      await storyApi.create(accessToken, uri, state.music, liveStickers(state), audience);
       onShared();
       onClose();
     } catch (e: any) {
@@ -567,16 +584,36 @@ export function StoryEditor({
                   {textStory ? "Swipe for colours" : "Swipe the photo for filters"} · disappears after 24 hours
                 </Text>
               )}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Share to your story"
-                onPress={() => void share()}
-                disabled={busy}
-                style={{ minHeight: 48, paddingHorizontal: 24, borderRadius: radius.pill, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 8, opacity: busy ? 0.8 : 1 }}
-              >
-                {busy ? <ActivityIndicator color={palette.crimson} /> : <Ionicons name="add-circle" size={22} color={palette.crimson} />}
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{busy ? "Sharing..." : "Your story"}</Text>
-              </Pressable>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share to your story"
+                  onPress={() => void share("all")}
+                  disabled={busy}
+                  style={{ minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 8, opacity: busy ? 0.8 : 1 }}
+                >
+                  {busy && sharingTo === "all" ? <ActivityIndicator color={palette.crimson} /> : <Ionicons name="add-circle" size={22} color={palette.crimson} />}
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{busy && sharingTo === "all" ? "Sharing..." : "Your story"}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share to close friends"
+                  onPress={() => void share("close")}
+                  onLongPress={() => setCloseOpen(true)}
+                  disabled={busy}
+                  style={{ minHeight: 48, paddingHorizontal: 18, borderRadius: radius.pill, backgroundColor: CLOSE_GREEN, flexDirection: "row", alignItems: "center", gap: 8, opacity: busy ? 0.8 : 1 }}
+                >
+                  {busy && sharingTo === "close" ? <ActivityIndicator color="#FFFFFF" /> : <Ionicons name="star" size={18} color="#FFFFFF" />}
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>{busy && sharingTo === "close" ? "Sharing..." : "Close friends"}</Text>
+                </Pressable>
+              </View>
+              {closeCount !== null && (
+                <Pressable accessibilityRole="button" accessibilityLabel="Edit close friends list" onPress={() => setCloseOpen(true)} hitSlop={6}>
+                  <Text style={{ color: "rgba(255,255,255,0.85)", fontFamily: fonts.body, fontSize: 12, textDecorationLine: "underline" }}>
+                    {closeCount === 0 ? "Choose your close friends" : `Close friends: ${closeCount} ${closeCount === 1 ? "person" : "people"} · Edit`}
+                  </Text>
+                </Pressable>
+              )}
             </View>
           )}
 
@@ -684,6 +721,8 @@ export function StoryEditor({
           commit(sticker ? removeItem(stateRef.current, sticker.id) : { ...stateRef.current, music: null });
         }}
       />
+
+      <CloseFriendsSheet visible={closeOpen} accessToken={accessToken} onClose={() => setCloseOpen(false)} onCount={setCloseCount} />
 
       <Sheet visible={discard} title="Discard story?" onClose={() => setDiscard(false)}>
         <View style={{ paddingVertical: 6 }}>

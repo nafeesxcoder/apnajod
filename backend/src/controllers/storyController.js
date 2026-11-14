@@ -19,7 +19,7 @@ const createStory = asyncHandler(async (req, res) => {
       trackId: req.body.musicTrackId,
       start: req.body.musicStart,
       length: req.body.musicLength,
-    }, req.body.stickers);
+    }, req.body.stickers, req.body.audience);
     res.json({ ok: true, story });
   } catch (error) {
     rethrow(error);

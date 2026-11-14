@@ -17,7 +17,7 @@ describe("poll, question and @mention stickers", () => {
     expect(liveStickers(state).map((s) => s.kind)).toEqual(["poll", "mention"]);
     expect(isLive(emoji)).toBe(false);
     expect(read("editor/bake.ts")).toContain("if (isLive(item)) continue;");
-    expect(read("editor/StoryEditor.tsx")).toContain("await storyApi.create(accessToken, uri, state.music, liveStickers(state));");
+    expect(read("editor/StoryEditor.tsx")).toContain("await storyApi.create(accessToken, uri, state.music, liveStickers(state), audience);");
   });
 
   it("make the story a 9:16 photo, so they land where they were put", () => {
