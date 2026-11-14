@@ -82,6 +82,13 @@
           "icon": "./assets/notification-icon.png",
           "color": "#1F4D7A"
         }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Apnajoda uses the camera for video calls with your matches.",
+          "microphonePermission": "Apnajoda uses the microphone for voice and video calls with your matches."
+        }
       ]
     ],
     "locales": {},

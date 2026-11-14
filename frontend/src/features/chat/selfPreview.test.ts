@@ -30,7 +30,10 @@ describe('the self view on a call', () => {
   });
 
   it('still mutes the element, and does it on the element itself', () => {
-    expect(source).toContain('ref.current.muted = true');
+    // The <video> element moved to callMedia.tsx (the phone app draws an
+    // RTCView instead, which never plays local audio).
+    const media = readFileSync('src/features/chat/callMedia.tsx', 'utf8');
+    expect(media).toContain('ref.current.muted = true');
   });
 
   it('keeps echo cancellation on the microphone it does send', () => {

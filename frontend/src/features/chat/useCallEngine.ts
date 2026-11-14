@@ -1,5 +1,4 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
 
 /** Turns echo cancellation back on for any mic track that came up without it. */
 export async function ensureEchoCancellation(stream: MediaStream): Promise<void> {
@@ -14,6 +13,7 @@ export async function ensureEchoCancellation(stream: MediaStream): Promise<void>
   }
 }
 import { callApi } from "../../api/callApi";
+import { webrtcReady } from "./webrtcGlobals";
 
 export type CallPhase =
   | "connecting"
@@ -300,14 +300,16 @@ export function useCallEngine({
 
   useEffect(() => {
     if (!callId) return;
+    // The website has WebRTC built in; the phone app gets it from
+    // react-native-webrtc (see webrtcGlobals.native.ts).
     if (
-      Platform.OS !== "web" ||
+      !webrtcReady ||
       typeof navigator === "undefined" ||
       !navigator.mediaDevices ||
       typeof RTCPeerConnection === "undefined"
     ) {
       setPhase("unsupported");
-      setError("Calling is only available in a supported web browser.");
+      setError("Calling is not available on this device.");
       return;
     }
     let active = true;

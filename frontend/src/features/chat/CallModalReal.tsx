@@ -1,5 +1,5 @@
 import { startRingback } from "./ringback";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   Modal,
@@ -16,6 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { Match } from "../../data";
 import { chatStyles, callStyles } from "../../theme/appStyles";
 import { useCallEngine } from "./useCallEngine";
+import { RTCAudioSink, RTCVideoView } from "./callMedia";
+import { setCallSpeaker, startCallAudio, stopCallAudio } from "./callAudioRoute";
 import { setActiveCallMinimizer } from "./activeCallBackGuard";
 
 // How long the full-screen video controls stay visible after the last tap,
@@ -46,100 +48,6 @@ function isBluetoothDeviceLabel(label: string) {
   if (!text) return false;
   if (BLUETOOTH_LABEL.test(text)) return true;
   return IS_ANDROID && !NON_BLUETOOTH_LABEL.test(text);
-}
-
-function applySinkId(
-  element: HTMLMediaElement | null,
-  sinkId: string | undefined,
-) {
-  if (!element || !sinkId) return;
-  const withSink = element as HTMLMediaElement & {
-    setSinkId?: (id: string) => Promise<void>;
-  };
-  if (typeof withSink.setSinkId === "function") {
-    void withSink.setSinkId(sinkId).catch(() => undefined);
-  }
-}
-
-function RTCVideoView({
-  stream,
-  mirrored,
-  muted,
-  volume,
-  sinkId,
-}: {
-  stream: MediaStream | null;
-  mirrored?: boolean;
-  muted?: boolean;
-  volume?: number;
-  sinkId?: string;
-}) {
-  const ref = useRef<HTMLVideoElement | null>(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.srcObject = stream as any;
-      // Belt to the muted prop's braces. React does not reliably apply
-      // `muted` to a <video> - it is a long-standing quirk - and a self
-      // view that is not muted plays your own microphone back at you,
-      // which is heard as an echo on a call.
-      if (muted) ref.current.muted = true;
-    }
-  }, [stream, muted]);
-  useEffect(() => {
-    if (ref.current && typeof volume === "number") {
-      ref.current.volume = volume;
-    }
-  }, [volume]);
-  useEffect(() => {
-    applySinkId(ref.current, sinkId);
-  }, [sinkId]);
-  if (Platform.OS !== "web") return null;
-  return React.createElement("video", {
-    ref,
-    autoPlay: true,
-    playsInline: true,
-    muted: !!muted,
-    style: {
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      transform: mirrored ? "scaleX(-1)" : undefined,
-    },
-  });
-}
-
-// Plays the remote audio track. This is attached for EVERY audio-only call
-// (a MediaStream must be attached to a media element to actually be heard).
-// A video call's audio plays through the full-screen <video> element itself.
-function RTCAudioSink({
-  stream,
-  volume,
-  sinkId,
-}: {
-  stream: MediaStream | null;
-  volume?: number;
-  sinkId?: string;
-}) {
-  const ref = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.srcObject = stream as any;
-    }
-  }, [stream]);
-  useEffect(() => {
-    if (ref.current && typeof volume === "number") {
-      ref.current.volume = volume;
-    }
-  }, [volume]);
-  useEffect(() => {
-    applySinkId(ref.current, sinkId);
-  }, [sinkId]);
-  if (Platform.OS !== "web") return null;
-  return React.createElement("audio", {
-    ref,
-    autoPlay: true,
-    playsInline: true,
-  });
 }
 
 /** "Phone" mode: a normal talking level, loud enough to hear, quiet enough
@@ -272,6 +180,17 @@ export function CallModal({
     setSpeakerOn(mode === "video");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callId]);
+
+  // The phone app: call mode on while a call is on (earpiece for a voice
+  // call, loudspeaker for video), off when it ends. Nothing on the website.
+  useEffect(() => {
+    if (!callId || !mode) return;
+    startCallAudio(mode === "video");
+    return () => stopCallAudio();
+  }, [callId, mode]);
+  useEffect(() => {
+    if (callId) setCallSpeaker(speakerOn);
+  }, [speakerOn, callId]);
 
   // The caller hears the same ringing tone on every call until the other
   // person answers or the call ends.

@@ -3,7 +3,7 @@ const { ApiError } = require("../middleware/errorHandler");
 const callService = require("../services/callService");
 
 const getIceServers = asyncHandler(async (req, res) => {
-  const data = await callService.getIceServers();
+  const data = await callService.getIceServers(req.user.id);
   res.json({ ok: true, ...data });
 });
 

@@ -41,9 +41,12 @@ describe('frontend architecture boundaries', () => {
       const imports = [...source.matchAll(/(?:import[\s\S]*?from\s+|require\()['"]([^'"]+)['"]/g)];
       // The one place push notifications may come from: the phone-app push adapter.
       const pushAdapter = /src[\\/]app[\\/]push[\\/]nativePush\.native\.ts$/.test(path);
+      // The phone app's calls: react-native-webrtc only behind the call adapters.
+      const callAdapter = /src[\\/]features[\\/]chat[\\/](?:webrtcGlobals|callMedia)\.native\.tsx?$/.test(path);
       return imports
         .filter(([, dependency]) => banned.test(dependency ?? ''))
         .filter(([, dependency]) => !(pushAdapter && dependency === 'expo-notifications'))
+        .filter(([, dependency]) => !(callAdapter && dependency === 'react-native-webrtc'))
         .map(([, dependency]) => `${path} -> ${dependency}`);
     });
 

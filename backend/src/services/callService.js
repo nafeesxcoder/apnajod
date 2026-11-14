@@ -11,7 +11,34 @@ function parseJsonColumn(value, fallback) {
   return typeof value === "string" ? JSON.parse(value) : value;
 }
 
-async function getIceServers() {
+/**
+ * Our own TURN server (coturn, free, on the same machine). Calls relay
+ * through it when two phones cannot reach each other directly - most mobile
+ * networks. Credentials last a day and are made from a secret shared with
+ * coturn ("use-auth-secret"), so no password is ever stored or sent.
+ */
+function coturnServers(userId) {
+  const host = String(process.env.TURN_HOST || "").trim();
+  const secret = String(process.env.TURN_SECRET || "").trim();
+  if (!host || !secret) return null;
+  const port = Number(process.env.TURN_PORT) || 3478;
+  const username = `${Math.floor(Date.now() / 1000) + 24 * 60 * 60}:${userId || "member"}`;
+  const credential = crypto.createHmac("sha1", secret).update(username).digest("base64");
+  return [
+    { urls: [`stun:${host}:${port}`] },
+    {
+      urls: [`turn:${host}:${port}?transport=udp`, `turn:${host}:${port}?transport=tcp`],
+      username,
+      credential,
+    },
+  ];
+}
+
+async function getIceServers(userId) {
+  // 1. Our own coturn, when it is set up (TURN_HOST and TURN_SECRET in .env).
+  const own = coturnServers(userId);
+  if (own) return { iceServers: own };
+  // 2. Twilio, if its keys are there. 3. A public STUN server only.
   if (!env.twilio.accountSid || !env.twilio.authToken) {
     return {
       iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
@@ -189,6 +216,7 @@ async function getIncomingCalls(userId) {
 }
 
 module.exports = {
+  coturnServers,
   getIceServers,
   startCall,
   respondToCall,
