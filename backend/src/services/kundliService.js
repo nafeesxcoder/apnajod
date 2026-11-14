@@ -156,13 +156,13 @@ const KOOTAS = [
   { key: "nadi", name: "Nadi", max: 8, needs: "nakshatra", score: nadi, about: "Health of the family line" },
 ];
 
-/** "Uttam", "Bahut achha"... from the score out of 36 (or of 15 when partial). */
+/** "Excellent match · उत्तम"... from the score out of 36 (or of 15 when partial). */
 function band(total, max) {
   const share = total / max;
-  if (share >= 33 / 36) return { key: "excellent", label: "Uttam milan" };
-  if (share >= 25 / 36) return { key: "very_good", label: "Bahut achha milan" };
-  if (share >= 18 / 36) return { key: "good", label: "Theek milan" };
-  return { key: "low", label: "Kam milan" };
+  if (share >= 33 / 36) return { key: "excellent", label: "Excellent match", hindi: "उत्तम" };
+  if (share >= 25 / 36) return { key: "very_good", label: "Very good match", hindi: "बहुत अच्छा" };
+  if (share >= 18 / 36) return { key: "good", label: "Good match", hindi: "अच्छा" };
+  return { key: "low", label: "Low match", hindi: "कम" };
 }
 
 function scoreAs(boy, girl, full) {

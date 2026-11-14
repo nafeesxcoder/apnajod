@@ -916,7 +916,7 @@ function MilaanApp() {
     const wantedBio = String(draft.bio ?? "").trim();
     if (savedBio !== wantedBio) {
       throw new Error(
-        "Bio server par save nahi hua. Backend /profile update me bio/about field check karo.",
+        "Your bio could not be saved. Please try again.",
       );
     }
 
@@ -928,7 +928,7 @@ function MilaanApp() {
       wantedHobbies.every((h: string) => savedHobbies.includes(h));
     if (!hobbiesMatch) {
       throw new Error(
-        "Hobbies server par save nahi hui. Backend me hobbies column check karo.",
+        "Your hobbies could not be saved. Please try again.",
       );
     }
 

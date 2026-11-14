@@ -3,7 +3,7 @@
  * sheet it opens - the score, both people's Rashi and Nakshatra, and (for
  * Premium) the eight kootas one by one.
  *
- * The words stay gentle: a low score is "Kam milan", never "do not marry",
+ * The words stay gentle: a low score is "Low match", never "do not marry",
  * and every sheet says this is a glimpse from tradition, not a full kundli.
  */
 import { useEffect, useState } from "react";
@@ -76,7 +76,7 @@ function SideColumn({ title, side }: { title: string; side: KundliSide }) {
           {row("Nakshatra", side.nakshatra)}
           {row("Gana", side.gana)}
           {row("Nadi", side.nadi)}
-          {row("Manglik", side.manglik === true ? "Haan" : side.manglik === false ? "Nahi" : null)}
+          {row("Manglik", side.manglik === true ? "Yes" : side.manglik === false ? "No" : null)}
         </>
       ) : (
         <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Not added yet</Text>
@@ -144,10 +144,11 @@ export function KundliSheet({
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 17, color: "#FDE68A" }}>
               {band.label} {band.emoji}
             </Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: "#FDE68A", opacity: 0.85 }}>{band.hindi}</Text>
             <Text style={{ marginTop: 6, fontFamily: fonts.body, fontSize: 13, color: "#FFEFD5", textAlign: "center" }}>
               {result.full
-                ? `Aapka aur ${first} ka Gun Milan`
-                : "Sirf Rashi se (15 mein se). Dono ka Nakshatra ho to poora 36 ka milan dikhega."}
+                ? `Your Gun Milan with ${first}`
+                : "From Rashi only (out of 15). When both add a Nakshatra, you see the full match out of 36."}
             </Text>
           </LinearGradient>
         )}
@@ -155,12 +156,12 @@ export function KundliSheet({
         {data && !result && (
           <View style={{ backgroundColor: palette.paperBase, borderRadius: 16, padding: 16, gap: 10 }}>
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: palette.ink }}>
-              {!data.mine ? "Apni Rashi jodo, Gun Milan dekho" : `${first} ne abhi Rashi nahi jodi`}
+              {!data.mine ? "Add your Rashi to see your Gun Milan" : `${first} hasn't added a Rashi yet`}
             </Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
               {!data.mine
-                ? "Rashi aur Nakshatra jodte hi har profile par aapka Gun Milan dikhega."
-                : "Jab wo jodenge, yahan aapka Gun Milan dikhega."}
+                ? "Add your Rashi and Nakshatra and your Gun Milan shows on every profile."
+                : "When they do, your Gun Milan will show here."}
             </Text>
             {!data.mine && (
               <PressScale
@@ -181,14 +182,14 @@ export function KundliSheet({
 
         {data && (
           <View style={{ flexDirection: "row", gap: 10 }}>
-            <SideColumn title="Aap" side={data.mine} />
+            <SideColumn title="You" side={data.mine} />
             <SideColumn title={first} side={data.theirs} />
           </View>
         )}
 
         {data && result && (
           <View style={{ gap: 10 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>Ashtakoot, koot by koot</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>Ashtakoot: all 8 kootas</Text>
             {result.kootas ? (
               result.kootas.map((koota) => (
                 <View key={koota.key} accessibilityLabel={`${koota.name} ${koota.score} of ${koota.max}`} style={{ gap: 4 }}>
@@ -250,13 +251,13 @@ export function KundliSheet({
 
         {data?.mine?.manglik != null && data?.theirs?.manglik != null && data.mine.manglik !== data.theirs.manglik && (
           <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.inkSoft }}>
-            Ek Manglik hain aur ek nahi. Kai parivaar iske liye bhi kundli milwate hain.
+            One of you is Manglik and one isn't. Many families also look at this in a full kundli match.
           </Text>
         )}
 
         <Text style={{ fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: palette.slate }}>
-          Ye parampara ke hisaab se ek jhalak hai, Rashi aur Nakshatra se. Poori kundli ke liye janam samay se kisi
-          jaankar se milan karwayein. Rishta dil aur samajh se banta hai. 💛
+          A traditional glimpse from Rashi and Nakshatra. For a full kundli match, ask an astrologer with exact birth
+          details. A relationship is built on heart and understanding. 💛
         </Text>
       </ScrollView>
     </Sheet>

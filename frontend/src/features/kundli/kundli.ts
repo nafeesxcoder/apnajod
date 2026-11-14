@@ -127,13 +127,13 @@ export function fromBirth(day: string, time: string) {
   return { rashi, nakshatra, sidereal, nearEdge: Math.min(toNakshatraEdge, toRashiEdge) < 0.25 };
 }
 
-/** The score's words and colour, from the score out of its max. */
+/** The score's words (English, with the Hindi word) and colour, from the score out of its max. */
 export function gunBand(score: number, max: number) {
   const share = score / max;
-  if (share >= 33 / 36) return { label: "Uttam milan", color: "#B45309", emoji: "💫" };
-  if (share >= 25 / 36) return { label: "Bahut achha milan", color: "#047857", emoji: "✨" };
-  if (share >= 18 / 36) return { label: "Theek milan", color: "#1D4ED8", emoji: "🙂" };
-  return { label: "Kam milan", color: "#6B7280", emoji: "🌙" };
+  if (share >= 33 / 36) return { label: "Excellent match", hindi: "उत्तम", color: "#B45309", emoji: "💫" };
+  if (share >= 25 / 36) return { label: "Very good match", hindi: "बहुत अच्छा", color: "#047857", emoji: "✨" };
+  if (share >= 18 / 36) return { label: "Good match", hindi: "अच्छा", color: "#1D4ED8", emoji: "🙂" };
+  return { label: "Low match", hindi: "कम", color: "#6B7280", emoji: "🌙" };
 }
 
 /** "28/36" or "28.5/36". */

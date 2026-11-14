@@ -24,7 +24,7 @@ type Manglik = "yes" | "no" | "unknown" | null;
 type Mine = { rashi: number | null; nakshatra: number | null; manglik: Manglik; minGun: number | null };
 
 const GUN_FILTERS: { label: string; value: number | null }[] = [
-  { label: "Sab", value: null },
+  { label: "Any", value: null },
   { label: "18+", value: 18 },
   { label: "24+", value: 24 },
   { label: "28+", value: 28 },
@@ -126,13 +126,13 @@ export function KundliEditor({
   const find = () => {
     const result = fromBirth(day, time);
     if (!result) {
-      setFound("Janam ki tareekh aur samay dono daalo.");
+      setFound("Enter both your birth date and time.");
       return;
     }
     set({ rashi: result.rashi, nakshatra: result.nakshatra });
     setFound(
       `${rashiName(result.rashi)} · ${nakshatraName(result.nakshatra)}` +
-        (result.nearEdge ? " - chaand seema ke bahut paas tha, kisi jaankar se pakka kar lein." : ""),
+        (result.nearEdge ? " - the Moon was very close to a boundary, so please confirm with an astrologer." : ""),
     );
   };
 
@@ -161,14 +161,14 @@ export function KundliEditor({
   );
 
   return (
-    <Sheet visible={visible} title="Meri Kundli" tall onClose={onClose}>
+    <Sheet visible={visible} title="My Kundli" tall onClose={onClose}>
       {!mine ? (
         <ActivityIndicator color={palette.crimson} style={{ marginTop: 30 }} />
       ) : (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 30, gap: 10 }}>
           <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>
-            Rashi aur Nakshatra jodo to har profile par aapka Gun Milan (36 mein se) dikhega. Sab optional hai - jo nahi
-            jodte, unke liye kuch nahi badalta.
+            Add your Rashi and Nakshatra to see your Gun Milan (out of 36) on every profile. It's all optional - nothing
+            changes for people who don't add it.
           </Text>
 
           <PressScale
@@ -179,7 +179,7 @@ export function KundliEditor({
           >
             <Ionicons name={finder ? "chevron-down" : "calendar-outline"} size={16} color={palette.crimson} />
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.crimson }}>
-              Pata nahi? Janam tareekh aur samay se nikalo
+              Not sure? Find them from your birth date and time
             </Text>
           </PressScale>
           {finder && (
@@ -193,23 +193,23 @@ export function KundliEditor({
                   onPress={find}
                   style={{ backgroundColor: palette.ink, borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 10 }}
                 >
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>Nikalo</Text>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>Find</Text>
                 </PressScale>
               </View>
               {!!found && <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>{found}</Text>}
               <Text style={{ fontFamily: fonts.body, fontSize: 11, color: palette.slate }}>
-                India ka samay. Ye phone par hi nikalta hai - janam samay save nahi hota.
+                India time. Worked out on your phone - your birth time is never saved.
               </Text>
             </View>
           )}
 
-          {label("Rashi (chandra rashi)")}
+          {label("Rashi (Moon sign)")}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {RASHIS.map((r) => (
               <Chip
                 key={r.n}
                 label={`${r.symbol} ${r.name}`}
-                sub={r.hindi}
+                sub={`${r.hindi} · ${r.english}`}
                 on={mine.rashi === r.n}
                 onPress={() => set({ rashi: r.n, nakshatra: mine.nakshatra && nakshatrasIn(r.n).includes(mine.nakshatra) ? mine.nakshatra : null })}
               />
@@ -223,22 +223,22 @@ export function KundliEditor({
                 {nakshatrasIn(mine.rashi).map((n) => (
                   <Chip key={n} label={NAKSHATRAS[n - 1]!} on={mine.nakshatra === n} onPress={() => set({ nakshatra: n })} />
                 ))}
-                <Chip label="Pata nahi" on={!mine.nakshatra} onPress={() => set({ nakshatra: null })} />
+                <Chip label="Not sure" on={!mine.nakshatra} onPress={() => set({ nakshatra: null })} />
               </View>
             </>
           )}
 
           {label("Manglik")}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            <Chip label="Haan" on={mine.manglik === "yes"} onPress={() => set({ manglik: "yes" })} />
-            <Chip label="Nahi" on={mine.manglik === "no"} onPress={() => set({ manglik: "no" })} />
-            <Chip label="Pata nahi" on={mine.manglik === "unknown" || mine.manglik === null} onPress={() => set({ manglik: "unknown" })} />
+            <Chip label="Yes" on={mine.manglik === "yes"} onPress={() => set({ manglik: "yes" })} />
+            <Chip label="No" on={mine.manglik === "no"} onPress={() => set({ manglik: "no" })} />
+            <Chip label="Not sure" on={mine.manglik === "unknown" || mine.manglik === null} onPress={() => set({ manglik: "unknown" })} />
           </View>
 
           {!!mine.rashi && (
             <>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
-                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>Sirf inhe dikhao: Gun</Text>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>Only show people with Gun</Text>
                 {!premium && <Ionicons name="lock-closed" size={13} color="#B45309" />}
               </View>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -253,8 +253,8 @@ export function KundliEditor({
               </View>
               <Text style={{ fontFamily: fonts.body, fontSize: 11, color: palette.slate }}>
                 {premium
-                  ? "Jinka Gun isse kam hai wo nahi dikhenge. Jinhone Rashi nahi jodi, wo baad mein dikhenge."
-                  : "Gun filter Premium mein hai."}
+                  ? "People below this score won't show. People who haven't added a Rashi come after the rest."
+                  : "The Gun filter is part of Premium."}
               </Text>
             </>
           )}
@@ -278,7 +278,7 @@ export function KundliEditor({
               onPress={() => setMine({ rashi: null, nakshatra: null, manglik: null, minGun: null })}
               style={{ alignSelf: "center", padding: 6 }}
             >
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Hata do (Gun Milan band)</Text>
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Remove (turns Gun Milan off)</Text>
             </Pressable>
           )}
         </ScrollView>
@@ -328,14 +328,14 @@ export function KundliCard({ accessToken }: { accessToken: string }) {
       <Text style={{ fontSize: 28 }}>🪐</Text>
       <View style={{ flex: 1 }}>
         <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: "#7C2D12" }}>
-          {has ? "Meri Kundli" : "Kundli jodo, Gun Milan dekho"}
+          {has ? "My Kundli" : "Add your Kundli for Gun Milan"}
         </Text>
         <Text style={{ fontFamily: fonts.body, fontSize: 13, color: "#92400E", marginTop: 2 }}>
           {has
             ? [rashiName(mine!.rashi), nakshatraName(mine!.nakshatra), mine!.manglik === "yes" ? "Manglik" : null]
                 .filter(Boolean)
                 .join(" · ")
-            : "Rashi aur Nakshatra jodo - har match par 36 mein se Gun dikhega."}
+            : "Add your Rashi and Nakshatra to see your Gun score out of 36 with every match."}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#92400E" />

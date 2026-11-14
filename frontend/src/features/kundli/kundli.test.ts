@@ -34,11 +34,11 @@ describe('kundli', () => {
     expect(nakshatrasIn(12)).toEqual([25, 26, 27]);
   });
 
-  it('puts the score in gentle words', () => {
-    expect(gunBand(34, 36).label).toBe('Uttam milan');
-    expect(gunBand(28, 36).label).toBe('Bahut achha milan');
-    expect(gunBand(20, 36).label).toBe('Theek milan');
-    expect(gunBand(12, 36).label).toBe('Kam milan');
+  it('puts the score in gentle words: English, with the Hindi word alongside', () => {
+    expect(gunBand(34, 36)).toMatchObject({ label: 'Excellent match', hindi: 'उत्तम' });
+    expect(gunBand(28, 36)).toMatchObject({ label: 'Very good match', hindi: 'बहुत अच्छा' });
+    expect(gunBand(20, 36)).toMatchObject({ label: 'Good match', hindi: 'अच्छा' });
+    expect(gunBand(12, 36)).toMatchObject({ label: 'Low match', hindi: 'कम' });
     expect(gunText(23.5, 36)).toBe('23.5/36');
   });
 
@@ -48,9 +48,13 @@ describe('kundli', () => {
     expect(read('../profile/screens/ProfileScreen.tsx')).toContain('<KundliCard accessToken={accessToken} />');
     const sheet = read('KundliSheet.tsx');
     expect(sheet).toContain('See every koota with Premium');
-    expect(sheet).toContain('Ye parampara ke hisaab se ek jhalak hai');
+    expect(sheet).toContain('A traditional glimpse from Rashi and Nakshatra');
     const editor = read('KundliEditor.tsx');
-    expect(editor).toContain('janam samay save nahi hota');
+    expect(editor).toContain('your birth time is never saved');
+    // The app is in English: no Hinglish sentences left in the Kundli screens.
+    for (const text of [sheet, editor]) {
+      expect(text).not.toMatch(/Pata nahi|jodo|Aapka|Nikalo|milan dekho|Haan"|Nahi"/);
+    }
     const app = read('../../app/MilaanApp.tsx');
     expect(app).toContain('<KundliHost accessToken={accessToken}');
   });
