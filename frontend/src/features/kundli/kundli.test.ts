@@ -45,6 +45,10 @@ describe('kundli', () => {
   it('shows the badge on cards and profiles, the editor on my Profile, and keeps the kootas for Premium', () => {
     expect(read('../discovery/components/MatchCard.tsx')).toContain('<GunBadge gun={match.gun}');
     expect(read('../discovery/screens/MatchDetailScreen.tsx')).toContain('<GunBadge gun={match.gun}');
+    // The profile page (from search, chats and matches) asks for it too.
+    const person = read('../social/screens/PersonScreen.tsx');
+    expect(person).toContain('kundliApi');
+    expect(person).toContain('<GunBadge gun={gun} userId={userId} name={user.name} large />');
     expect(read('../profile/screens/ProfileScreen.tsx')).toContain('<KundliCard accessToken={accessToken} />');
     const sheet = read('KundliSheet.tsx');
     expect(sheet).toContain('See every koota with Premium');

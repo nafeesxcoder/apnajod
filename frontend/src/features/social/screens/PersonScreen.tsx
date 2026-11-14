@@ -20,6 +20,8 @@ import { FamilyShareButton } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { StoryRing } from "../../stories/StoryRing";
 import { useStoryStatus } from "../../stories/storyStore";
+import { GunBadge } from "../../kundli/KundliSheet";
+import { kundliApi } from "../../../api/kundliApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -46,6 +48,20 @@ export function PersonScreen({
   const storyStatus = useStoryStatus(userId);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Gun Milan with this person, when both have added a Rashi.
+  const [gun, setGun] = useState<{ score: number; max: number; full: boolean } | null>(null);
+  useEffect(() => {
+    let active = true;
+    setGun(null);
+    if (!accessToken) return;
+    kundliApi
+      .with(accessToken, userId)
+      .then((k) => active && k.result && setGun({ score: k.result.total, max: k.result.max, full: k.result.full }))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [accessToken, userId]);
 
   useEffect(() => {
     let active = true;
@@ -296,6 +312,12 @@ export function PersonScreen({
                     ? "Likes you"
                     : "Pending — waiting for them"}
               </Text>
+            </View>
+          )}
+
+          {!state.self && !!gun && (
+            <View style={{ marginTop: 10 }}>
+              <GunBadge gun={gun} userId={userId} name={user.name} large />
             </View>
           )}
 
