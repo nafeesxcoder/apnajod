@@ -265,14 +265,14 @@ export function AdminDashboardScreen({
             backgroundColor: COLORS.sidebar,
             borderRightWidth: 1,
             borderRightColor: COLORS.border,
-            paddingVertical: 32,
+            paddingVertical: 24,
             paddingHorizontal: 20,
             display: "flex",
           }}
         >
           <View
             style={{
-              marginBottom: 40,
+              marginBottom: 24,
               paddingHorizontal: 8,
               alignItems: "flex-start",
             }}
@@ -284,7 +284,12 @@ export function AdminDashboardScreen({
             />
           </View>
 
-          <View style={{ gap: 8 }}>
+          {/* The tabs scroll: on a laptop screen they no longer all fit. */}
+          <ScrollView
+            accessibilityLabel="Admin sections"
+            style={{ flex: 1, marginHorizontal: -6 }}
+            contentContainerStyle={{ gap: 6, paddingHorizontal: 6, paddingBottom: 12 }}
+          >
             {TABS.map((t) => {
               const active = t.key === tab;
               return (
@@ -296,7 +301,7 @@ export function AdminDashboardScreen({
                       flexDirection: "row",
                       alignItems: "center",
                       gap: 12,
-                      paddingVertical: 12,
+                      paddingVertical: 11,
                       paddingHorizontal: 16,
                       borderRadius: radius.md || 8,
                       backgroundColor: active
@@ -323,9 +328,9 @@ export function AdminDashboardScreen({
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
-          <View style={{ marginTop: "auto", gap: 16 }}>
+          <View style={{ marginTop: 12, gap: 16, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 }}>
             <Pressable
               onPress={onLogout}
               style={[
@@ -378,10 +383,10 @@ export function AdminDashboardScreen({
               fontFamily: fonts.bodySemi,
               fontSize: 18,
               color: COLORS.textMain,
-              textTransform: "capitalize",
             }}
           >
-            {tab}
+            {/* The same name as in the sidebar ("Offer Popup", not "promo"). */}
+            {TABS.find((t) => t.key === tab)?.label ?? tab}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
             {!narrow && (
