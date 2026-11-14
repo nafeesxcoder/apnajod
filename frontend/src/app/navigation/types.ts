@@ -39,6 +39,7 @@ export type Screen =
   | "likes"
   // Games with your matches, from the bottom bar.
   | "games"
+  | "ludo"
   // Your threads, finding people, their page.
   | "chats"
   | "find"

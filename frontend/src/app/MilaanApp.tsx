@@ -174,6 +174,8 @@ import { matchFromSocialUser } from "../domain/socialMatch";
 import { DiscoveryCenterScreen } from "../features/discovery/screens/DiscoveryCenterScreen";
 import { LikesScreen } from "../features/discovery/screens/LikesScreen";
 import { GamesScreen } from "../features/games/GamesScreen";
+import { LudoScreen } from "../features/ludo/LudoScreen";
+import { takeLudoParam } from "../features/ludo/ludoText";
 import type { GameKind } from "../api/gamesApi";
 import { HomeScreen } from "../features/discovery/screens/HomeScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
@@ -831,6 +833,9 @@ function MilaanApp() {
   const [chatLaunchTool, setChatLaunchTool] = useState<CoupleLaunchTool>(null);
   // A game picked on the Games tab, started when that chat opens.
   const [chatLaunchGame, setChatLaunchGame] = useState<GameKind | null>(null);
+  const [ludoGameId, setLudoGameId] = useState<string | null>(null);
+  // A Ludo invite that was tapped (cold start on the website: /?ludo=<id>).
+  const [pendingLudo, setPendingLudo] = useState<string | null>(() => takeLudoParam());
   const [hydrated, setHydrated] = useState(false);
   const [activeCoupleConnectionId] = useState<string | null>(null);
   const activeCoupleHubConnection =
@@ -1412,6 +1417,7 @@ function MilaanApp() {
       onOpenChat: (conversationId) => setPendingNotificationChat(conversationId),
       onOpenPost: (postId) => setSharedPostId(postId),
       onOpenStory: (userId) => setPendingStoryUser(userId),
+      onOpenLudo: (gameId) => setPendingLudo(gameId),
     });
   }, [accessToken]);
   // Play the stories a tapped notification was about, once signed in.
@@ -1421,6 +1427,14 @@ function MilaanApp() {
     setPendingStoryUser(null);
     void loadStories(accessToken).then(() => openStoriesOf(userId));
   }, [pendingStoryUser, accessToken, onboardingComplete]);
+  // Open a tapped Ludo invite once signed in.
+  useEffect(() => {
+    if (!pendingLudo || !accessToken || !onboardingComplete) return;
+    setLudoGameId(pendingLudo);
+    setPendingLudo(null);
+    navigateTo("ludo");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingLudo, accessToken, onboardingComplete]);
   // Notification taps: a cold start arrives as /?chat=<id>, an already-open
   // app gets a message from the service worker. Either way, remember which
   // chat to open instead of landing on the home screen.
@@ -1441,7 +1455,7 @@ function MilaanApp() {
       return;
     const onWorkerMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { type?: string; conversationId?: string; postId?: string; storyUserId?: string }
+        | { type?: string; conversationId?: string; postId?: string; storyUserId?: string; ludoGameId?: string }
         | undefined;
       if (data?.type === "open-chat" && data.conversationId)
         setPendingNotificationChat(data.conversationId);
@@ -1449,6 +1463,8 @@ function MilaanApp() {
       if (data?.type === "open-post" && data.postId) setSharedPostId(data.postId);
       // A story like, mention or close-friends story opens their stories.
       if (data?.type === "open-story" && data.storyUserId) setPendingStoryUser(data.storyUserId);
+      // A Ludo invite opens the game room.
+      if (data?.type === "open-ludo" && data.ludoGameId) setPendingLudo(data.ludoGameId);
     };
     navigator.serviceWorker.addEventListener("message", onWorkerMessage);
     return () =>
@@ -3948,6 +3964,20 @@ function MilaanApp() {
                 isPrivate: false,
               });
             }}
+            myId={userIdFromToken(accessToken) || undefined}
+            onOpenLudo={(id) => {
+              setLudoGameId(id);
+              navigateTo("ludo");
+            }}
+          />
+        )}
+        {screen === "ludo" && accessToken && (
+          <LudoScreen
+            accessToken={accessToken}
+            myId={userIdFromToken(accessToken) || ""}
+            gameId={ludoGameId}
+            onBack={() => navigateTo("games")}
+            onOpenGame={setLudoGameId}
           />
         )}
         {screen === "profile" && (

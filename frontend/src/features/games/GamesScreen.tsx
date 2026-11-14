@@ -19,6 +19,7 @@ import type { GameKind } from "../../api/gamesApi";
 import type { Screen } from "../../app/navigation/types";
 import { LIVE_GAMES } from "../chat/games/LiveGames";
 import { colors, fonts, palette, radius, typeScale } from "../../theme";
+import { LudoEntry } from "../ludo/LudoEntry";
 
 /**
  * The Games tab: pick a game, pick a match, and the chat opens with the
@@ -29,10 +30,15 @@ export function GamesScreen({
   navigate,
   accessToken,
   onPlay,
+  myId,
+  onOpenLudo,
 }: {
   navigate: (screen: Screen) => void;
   accessToken?: string;
   onPlay: (match: MutualMatchSummary, kind: GameKind) => void;
+  /** Ludo: who I am, and open a room (null = start a new one). */
+  myId?: string;
+  onOpenLudo?: (gameId: string | null) => void;
 }) {
   const navInset = useNavInset();
   const [game, setGame] = useState<GameKind | null>(null);
@@ -119,6 +125,10 @@ export function GamesScreen({
             <View style={{ alignItems: "center", marginTop: 60 }}>
               <ActivityIndicator size="large" color={palette.crimson} />
             </View>
+          )}
+
+          {!loading && !picked && accessToken && myId && onOpenLudo && (
+            <LudoEntry accessToken={accessToken} myId={myId} canCreate={matches.length > 0} onOpen={onOpenLudo} />
           )}
 
           {!loading && matches.length === 0 && (

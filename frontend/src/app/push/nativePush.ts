@@ -7,6 +7,8 @@ export type PushTargets = {
   onOpenPost: (postId: string) => void;
   /** A story like, mention or close-friends story: play that person's stories. */
   onOpenStory?: (userId: string) => void;
+  /** A Ludo invite: open that game room. */
+  onOpenLudo?: (gameId: string) => void;
 };
 
 export function startNativePush(_accessToken: string, _targets: PushTargets): () => void {
@@ -18,10 +20,11 @@ export async function forgetNativePush(_accessToken: string): Promise<void> {
 }
 
 /** Where a tapped notification should take you. */
-export function pushTarget(data: unknown): { chat?: string; post?: string; story?: string } {
-  const value = (data ?? {}) as { conversationId?: unknown; postId?: unknown; storyUserId?: unknown };
+export function pushTarget(data: unknown): { chat?: string; post?: string; story?: string; ludo?: string } {
+  const value = (data ?? {}) as { conversationId?: unknown; postId?: unknown; storyUserId?: unknown; ludoGameId?: unknown };
   if (value.conversationId) return { chat: String(value.conversationId) };
   if (value.postId) return { post: String(value.postId) };
   if (value.storyUserId) return { story: String(value.storyUserId) };
+  if (value.ludoGameId) return { ludo: String(value.ludoGameId) };
   return {};
 }

@@ -17,4 +17,6 @@ server.listen(env.port, () => {
   require('./jobs/cleanupDeletedUsers').start();
   // Stories: deleted (row and photo) once their 24 hours are up.
   require('./jobs/cleanupStories').start();
+  // Ludo: the 30-second turn clocks of games that were on before a restart.
+  require('./services/ludoService').resumeTimers().catch(() => undefined);
 });

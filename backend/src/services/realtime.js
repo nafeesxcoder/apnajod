@@ -19,6 +19,28 @@ function chat() {
   return require("./chatService");
 }
 
+function ludo() {
+  // Lazy require: ludoService also requires this module.
+  return require("./ludoService");
+}
+
+/**
+ * Live voice in Ludo: who has their mic on in each game (gameId -> userId
+ * -> { muted }). The audio itself goes phone to phone (WebRTC); the server
+ * only passes the set-up messages between players of the same game.
+ */
+const voiceRooms = new Map();
+
+function voiceList(gameId) {
+  const room = voiceRooms.get(gameId);
+  return room ? [...room.entries()].map(([userId, v]) => ({ userId, muted: !!v.muted })) : [];
+}
+
+async function announceVoice(gameId) {
+  const users = voiceList(gameId);
+  for (const id of await ludo().playerIds(gameId)) emitToUser(id, "ludo:voice", { gameId, users });
+}
+
 function isOnline(userId) {
   return (socketCounts.get(userId) || 0) > 0;
 }
@@ -167,9 +189,46 @@ function init(httpServer) {
       }
     });
 
+    // Ludo voice: mic on/off/mute, and the set-up messages between players.
+    socket.on("ludo:voice", async (data, ack) => {
+      try {
+        const gameId = String(data?.gameId || "");
+        if (!(await ludo().isPlayer(userId, gameId))) return ack?.({ ok: false });
+        if (data?.on === true || data?.on === false) {
+          const room = voiceRooms.get(gameId) || new Map();
+          if (data.on) room.set(userId, { muted: !!data.muted });
+          else room.delete(userId);
+          if (room.size) voiceRooms.set(gameId, room);
+          else voiceRooms.delete(gameId);
+          await announceVoice(gameId);
+        }
+        ack?.({ ok: true, users: voiceList(gameId) });
+      } catch {
+        ack?.({ ok: false });
+      }
+    });
+    socket.on("ludo:signal", async (data) => {
+      try {
+        const gameId = String(data?.gameId || "");
+        const to = String(data?.to || "");
+        if (!to || to === userId) return;
+        if (!(await ludo().isPlayer(userId, gameId)) || !(await ludo().isPlayer(to, gameId))) return;
+        emitToUser(to, "ludo:signal", { gameId, from: userId, data: data?.data ?? null });
+      } catch {
+        // A lost set-up message: the app tries again.
+      }
+    });
+
     socket.on("disconnect", () => {
       const left = (socketCounts.get(userId) || 1) - 1;
       if (left <= 0) {
+        // Gone from every device: their mic is off in any Ludo game.
+        for (const [gameId, room] of voiceRooms) {
+          if (room.delete(userId)) {
+            if (!room.size) voiceRooms.delete(gameId);
+            announceVoice(gameId).catch(() => undefined);
+          }
+        }
         socketCounts.delete(userId);
         touchLastActive(userId);
         broadcastPresence(userId, false);
