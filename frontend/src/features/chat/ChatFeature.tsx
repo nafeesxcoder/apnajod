@@ -3176,7 +3176,7 @@ export function ChatScreen({
                     </Text>
                     <Text style={chatStyles.attachmentTrayBody}>
                       {attachmentPage === "main"
-                        ? "Photos, video, files, places and date plans."
+                        ? "Photos, video, files, places and meet-up plans."
                         : "Play together, create a poll or turn on privacy tools."}
                     </Text>
                   </View>
@@ -4185,14 +4185,14 @@ function ChatBubble({
             <>
               <View style={dateStyles.messageDateHeader}>
                 <PremiumIcon
-                  name="calendar"
+                  name="cafe"
                   tone="gold"
                   size={42}
                   iconSize={19}
                 />
                 <View>
                   <Text style={dateStyles.messageEyebrow}>
-                    {message.date.packageTitle ?? "DATE IDEA"}
+                    {message.date.packageTitle ?? "MEET-UP PLAN"}
                   </Text>
                   <Text style={dateStyles.messageVenue}>
                     {message.date.venue}

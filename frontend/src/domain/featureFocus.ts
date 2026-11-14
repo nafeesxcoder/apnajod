@@ -23,8 +23,9 @@ export const chatPrimaryAttachments=[
   // Games sit on the first page: two taps from a chat. They start real
   // conversation, which documents in a dating chat rarely do.
   {id:'games',label:'Games',icon:'game-controller',color:'#235A92'},
-  // Planning a date is what the chat is for.
-  {id:'date',label:'Date',icon:'calendar',color:'#AA2A44'},
+  // Planning to meet is what the chat is for. "Meet up" with a cup, not
+  // "Date" with a calendar, which reads as picking a day.
+  {id:'date',label:'Meet up',icon:'cafe',color:'#AA2A44'},
   {id:'more',label:'More',icon:'ellipsis-horizontal',color:'#235A92'},
 ] as const;
 

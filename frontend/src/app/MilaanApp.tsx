@@ -2361,7 +2361,7 @@ function MilaanApp() {
       if (
         !confirmMemberMutation(
           proposalResult,
-          "Date plan not sent",
+          "Meet-up plan not sent",
           "Your date proposal could not be confirmed. Please try again.",
         )
       )

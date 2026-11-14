@@ -9,6 +9,7 @@ import { Avatar } from "./PostSheets";
 import { timeAgo } from "./postFormat";
 import { openPost, openProfile } from "./profileLink";
 import { openMyStories, openStoriesOf } from "../stories/storyStore";
+import { useBackToClose } from "../../app/navigation/useBackToClose";
 
 /** What happened, in words: "liked your story.", "commented: Wow". */
 export function activityText(item: ActivityItem): string {
@@ -53,6 +54,8 @@ export function ActivityModal({
 }) {
   const [items, setItems] = useState<ActivityItem[] | null>(null);
   const [error, setError] = useState("");
+  // The phone's back closes Activity and stays on Home.
+  const close = useBackToClose(visible, onClose);
 
   useEffect(() => {
     if (!visible) return;
@@ -74,12 +77,12 @@ export function ActivityModal({
   }, [visible, accessToken]);
 
   const leaveFor = (go: () => void) => {
-    onClose();
-    setTimeout(go, 80);
+    close();
+    setTimeout(go, 250);
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" onRequestClose={close}>
       <SafeAreaView style={{ flex: 1, backgroundColor: palette.paper }} edges={["top", "bottom"]}>
         <View
           style={{
@@ -95,7 +98,7 @@ export function ActivityModal({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Close activity"
-            onPress={onClose}
+            onPress={close}
             style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
           >
             <Ionicons name="arrow-back" size={24} color={palette.ink} />
@@ -114,7 +117,7 @@ export function ActivityModal({
             <Ionicons name="heart-outline" size={40} color={palette.slate} />
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: palette.ink }}>No activity yet</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, textAlign: "center", lineHeight: 19 }}>
-              Likes and comments on your posts, likes on your stories and mentions show up here.
+              When someone likes or comments on your posts, likes your story or mentions you, it shows up here. Your own likes and comments don't.
             </Text>
           </View>
         ) : (

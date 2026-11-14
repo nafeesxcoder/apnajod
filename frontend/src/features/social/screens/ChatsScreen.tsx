@@ -63,7 +63,7 @@ function previewOf(conversation: ConversationSummary) {
     case 'contact':
       return `👤 ${message.contact?.name ?? 'Contact'}`;
     case 'date':
-      return `📅 ${message.date?.venue ?? 'Date plan'}`;
+      return `☕ ${message.date?.venue ?? 'Meet-up plan'}`;
     default:
       return 'Message';
   }

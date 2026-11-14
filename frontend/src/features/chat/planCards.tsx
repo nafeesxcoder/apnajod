@@ -80,7 +80,7 @@ export function DatePlannerSheet({
   const ready = venue.trim().length > 1 && area.trim().length > 1 && when.trim().length > 1;
   const emoji = DATE_KINDS.find((k) => k.key === kind)?.emoji ?? "📅";
   return (
-    <Sheet visible={visible} title="Plan a date" tall onClose={onClose}>
+    <Sheet visible={visible} title="Plan a meet-up" tall onClose={onClose}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
         <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
           {name} sees it in your chat and can accept or decline. Meet somewhere public.
@@ -124,13 +124,13 @@ export function DatePlannerSheet({
           <Ionicons name="shield-checkmark-outline" size={22} color={palette.crimson} />
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>Safety check-in</Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>After the date, tap "I'm safe" on the card.</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>After you meet, tap "I'm safe" on the card.</Text>
           </View>
           <Ionicons name={safety ? "toggle" : "toggle-outline"} size={34} color={safety ? palette.crimson : palette.slate} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Send date plan"
+          accessibilityLabel="Send meet-up plan"
           disabled={!ready}
           onPress={() =>
             onSend({
@@ -138,13 +138,13 @@ export function DatePlannerSheet({
               area: area.trim(),
               time: when.trim(),
               category: kind,
-              packageTitle: `${emoji} ${kind.toUpperCase()} DATE`,
+              packageTitle: `${emoji} ${kind.toUpperCase()} MEET-UP`,
               safetyCheckIn: safety,
             })
           }
           style={primary(!ready)}
         >
-          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>Send date plan</Text>
+          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>Send meet-up plan</Text>
         </Pressable>
       </ScrollView>
     </Sheet>

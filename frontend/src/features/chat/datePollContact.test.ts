@@ -12,7 +12,8 @@ describe("date plan, poll and contact in the chat", () => {
   it("has a Date button that opens the planner", () => {
     expect(chatPrimaryAttachments.map((a) => a.id)).toContain("date");
     expect(chat).toContain("setDatePlannerOpen(true);");
-    expect(cards).toContain('accessibilityLabel="Send date plan"');
+    // "Meet up" with a cup: "Date" with a calendar read as picking a day.
+    expect(cards).toContain('accessibilityLabel="Send meet-up plan"');
   });
 
   it("answers, cancels and checks in from the card", () => {

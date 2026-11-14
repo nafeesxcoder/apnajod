@@ -126,7 +126,7 @@ function SafetyToolSheet({preview:_preview,tool,accessToken,hideActivity,onHideA
   const [sharePlanStatus,setSharePlanStatus]=useState('');
   const [emergencyFallback,setEmergencyFallback]=useState(false);
   const latestPlan=[...datePlans].reverse().find(message=>message.date);
-  const planText=latestPlan?.date?`Apnajoda date plan: ${latestPlan.date.venue}, ${latestPlan.date.area}, ${latestPlan.date.time}. Safety check-in: ${latestPlan.date.safetyCheckIn?'on':'off'}.`:'No date plan is saved yet. Plan a date from chat first.';
+  const planText=latestPlan?.date?`Apnajoda meet-up plan: ${latestPlan.date.venue}, ${latestPlan.date.area}, ${latestPlan.date.time}. Safety check-in: ${latestPlan.date.safetyCheckIn?'on':'off'}.`:'No meet-up plan is saved yet. Plan one with Meet up in a chat first.';
   const sharePlan=async()=>{
     setSharedPlan(true);
     setSharePlanStatus('');
