@@ -245,10 +245,57 @@ async function responses(ownerId, storyId) {
       ORDER BY a.created_at DESC LIMIT 500`,
     [storyId],
   );
+  const likes = await query(
+    `SELECT l.created_at, ${MEMBER}
+       FROM story_likes l JOIN users u ON u.id = l.user_id LEFT JOIN profiles pr ON pr.user_id = u.id
+      WHERE l.story_id = ? AND u.deleted_at IS NULL
+      ORDER BY l.created_at DESC LIMIT 1000`,
+    [storyId],
+  );
   return {
+    likes: likes.map((row) => ({ at: row.created_at, user: member(row) })),
     votes: votes.map((row) => ({ stickerId: row.sticker_id, choice: Number(row.choice), at: row.created_at, user: member(row) })),
     answers: answers.map((row) => ({ id: row.id, stickerId: row.sticker_id, body: row.body, at: row.created_at, user: member(row) })),
   };
+}
+
+/**
+ * The heart on someone's story. Anyone who can see the story can like it,
+ * never their own. The like is deleted with the story after 24 hours.
+ */
+async function like(viewerId, storyId, liked = true) {
+  const story = await visibleStory(viewerId, storyId);
+  if (!story) throw fail(404, 'That story has already gone.');
+  if (story.user_id === viewerId) throw fail(400, 'You cannot like your own story.');
+  if (liked) await query('INSERT IGNORE INTO story_likes (story_id, user_id) VALUES (?, ?)', [story.id, viewerId]);
+  else await query('DELETE FROM story_likes WHERE story_id = ? AND user_id = ?', [story.id, viewerId]);
+  return { liked: !!liked };
+}
+
+/** Adds your own like to others' stories, and the like count to your own. */
+async function withLikes(viewerId, people) {
+  const stories = people.flatMap((person) => person.stories.map((story) => ({ story, mine: person.mine })));
+  if (!stories.length) return;
+  const ids = stories.map(({ story }) => story.id);
+  const marks = ids.map(() => '?').join(', ');
+  const mine = new Set(
+    (await query(`SELECT story_id FROM story_likes WHERE user_id = ? AND story_id IN (${marks})`, [viewerId, ...ids])).map(
+      (row) => row.story_id,
+    ),
+  );
+  const ownIds = stories.filter((s) => s.mine).map(({ story }) => story.id);
+  const counts = new Map();
+  if (ownIds.length) {
+    const rows = await query(
+      `SELECT story_id, COUNT(*) AS n FROM story_likes WHERE story_id IN (${ownIds.map(() => '?').join(', ')}) GROUP BY story_id`,
+      ownIds,
+    );
+    for (const row of rows) counts.set(row.story_id, Number(row.n));
+  }
+  for (const { story, mine: own } of stories) {
+    if (own) story.likeCount = counts.get(story.id) || 0;
+    else story.liked = mine.has(story.id);
+  }
 }
 
 /** Adds poll results (counts, and your own vote) to the stories on the row. */
@@ -285,6 +332,8 @@ async function withResults(viewerId, stories) {
 }
 
 module.exports = {
+  like,
+  withLikes,
   MAX_STICKERS,
   MAX_MENTIONS,
   MAX_ANSWER,

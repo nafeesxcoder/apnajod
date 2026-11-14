@@ -70,7 +70,9 @@ test("private accounts are in the deck", () => {
 test("blocks, past decisions and dead accounts still cut", () => {
   assert.match(body, /FROM blocks WHERE blocker_id/);
   assert.match(body, /FROM blocks WHERE blocked_id/);
-  assert.match(body, /FROM match_decisions WHERE actor_id/);
+  assert.match(body, /FROM match_decisions\s+WHERE actor_id = \?/);
+  // Liked never comes back, a pass comes back after PASS_RETURN_DAYS.
+  assert.match(body, /decision = 'interested'\s+OR updated_at > NOW\(\) - INTERVAL \$\{PASS_RETURN_DAYS\} DAY/);
   assert.match(body, /u\.deleted_at IS NULL/);
   assert.match(body, /u\.deactivated_at IS NULL/);
 });

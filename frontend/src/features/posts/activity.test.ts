@@ -15,13 +15,18 @@ describe("Activity", () => {
     expect(home).toContain("const timer = setInterval(check, 60_000);");
   });
 
-  it("lists likes and comments, and clears the dot when opened", () => {
-    expect(modal).toContain('item.kind === "like" ? " liked your post." : ` commented: ${item.body}`');
+  it("lists post likes and comments, story likes, answers and mentions, and clears the count when opened", () => {
+    for (const words of [" liked your post.", " commented: ", " liked your story.", " answered your question: ", " mentioned you in their story."])
+      expect(modal).toContain(words);
+    expect(home).toContain('{activityUnread > 9 ? "9+" : activityUnread}');
     expect(modal).toContain("void postApi.markActivitySeen(accessToken)");
   });
 
-  it("opens the post from a row, and the person from their photo", () => {
-    expect(modal).toContain("leaveFor(() => openPost(item.post.id))");
+  it("opens the post or story from a row, and the person from their photo", () => {
+    expect(modal).toContain("leaveFor(() => openItem(item))");
+    expect(modal).toContain("if (item.post) openPost(item.post.id);");
+    expect(modal).toContain("openStoriesOf(item.actor.userId)");
+    expect(modal).toContain("openMyStories()");
     expect(modal).toContain("leaveFor(() => openProfile(item.actor.userId))");
   });
 });

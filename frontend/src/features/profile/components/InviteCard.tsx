@@ -14,6 +14,37 @@ export const SHARE_BASE = "https://apnajoda.com/";
 export const SHARE_TEXT =
   "Join me on Apnajoda. Meaningful connections, meaningful futures. Sign up with my link and get a free Super Like.";
 
+/** Your invite link: a signup from it credits you. */
+export const inviteLink = (username: string) =>
+  username ? `${SHARE_BASE}?invite=${encodeURIComponent(username)}` : SHARE_BASE;
+
+/**
+ * Opens the share sheet with your invite link (on a laptop, copies it).
+ * Returns a short note to show, or "" when the share sheet handled it.
+ */
+export async function shareInvite(username: string): Promise<string> {
+  const link = inviteLink(username);
+  try {
+    if (Platform.OS === "web") {
+      const nav: any = typeof navigator !== "undefined" ? navigator : null;
+      if (nav?.share) {
+        await nav.share({ title: "Apnajoda", text: SHARE_TEXT, url: link });
+        return "";
+      }
+      if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(`${SHARE_TEXT} ${link}`);
+        return "Link copied. Paste it in WhatsApp, Instagram or Facebook.";
+      }
+      return link;
+    }
+    await Share.share({ message: `${SHARE_TEXT} ${link}` });
+    return "";
+  } catch (error: any) {
+    if (error?.name === "AbortError") return "";
+    return "Could not share. Please try again.";
+  }
+}
+
 /**
  * Invite & earn, on Home (and only on Home): one tap shares the invite
  * link; the card shows how many friends joined and Boosts were earned.
@@ -46,29 +77,9 @@ export function InviteCard({ accessToken }: { accessToken?: string }) {
 
   if (!accessToken) return null;
 
-  const link = username ? `${SHARE_BASE}?invite=${encodeURIComponent(username)}` : SHARE_BASE;
-
   const share = async () => {
-    try {
-      if (Platform.OS === "web") {
-        const nav: any = typeof navigator !== "undefined" ? navigator : null;
-        if (nav?.share) {
-          await nav.share({ title: "Apnajoda", text: SHARE_TEXT, url: link });
-          return;
-        }
-        if (nav?.clipboard?.writeText) {
-          await nav.clipboard.writeText(`${SHARE_TEXT} ${link}`);
-          setNote("Link copied. Paste it in WhatsApp, Instagram or Facebook.");
-          return;
-        }
-        setNote(link);
-        return;
-      }
-      await Share.share({ message: `${SHARE_TEXT} ${link}` });
-    } catch (error: any) {
-      if (error?.name === "AbortError") return;
-      setNote("Could not share. Please try again.");
-    }
+    const message = await shareInvite(username);
+    if (message) setNote(message);
   };
 
   const totals = referralLine(referrals);

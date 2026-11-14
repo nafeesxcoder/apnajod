@@ -14,9 +14,14 @@ describe("replying to a story", () => {
     expect(bar).not.toContain("mediaUrl");
   });
 
-  it("offers six quick reactions and a heart", () => {
+  it("offers six quick reactions in chat, and the heart is a like for anyone", () => {
     expect(bar).toContain('export const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "👏", "🔥"] as const;');
-    expect(bar).toContain('onPress={() => void send("❤️", true)}');
+    expect(bar).toContain("onPress={() => void send(emoji, true)}");
+    // The heart is a story like, not a chat message, and non-matches get it too.
+    expect(bar).toContain("void storyApi.like(accessToken, storyId, next)");
+    expect(bar).not.toContain('send("❤️", true)');
+    const notMatched = bar.slice(bar.indexOf("if (!canReply) {"), bar.indexOf("const send = async"));
+    expect(notMatched).toContain("{heart}");
   });
 
   it("only matches get the box; the story waits while you type", () => {

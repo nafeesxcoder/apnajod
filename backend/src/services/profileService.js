@@ -7,6 +7,8 @@ const BIO_MAX_LENGTH = 500;
 // Apnajoda is for adults. The app checks this too, but the API is the only
 // check that cannot be skipped by calling it directly.
 const MIN_AGE = 18;
+/** A profile you passed on comes back into your introductions after this many days. */
+const PASS_RETURN_DAYS = 14;
 const MAX_AGE = 70;
 
 /**
@@ -415,7 +417,11 @@ async function findMatches(userId, limit = 20) {
        AND (p.age IS NULL OR p.age >= ${MIN_AGE})
        AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
        AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
-       AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ?)
+       -- Liked stays out. Passed comes back after ${PASS_RETURN_DAYS} days, a second chance.
+       AND u.id NOT IN (SELECT target_id FROM match_decisions
+                         WHERE actor_id = ?
+                           AND (decision = 'interested'
+                                OR updated_at > NOW() - INTERVAL ${PASS_RETURN_DAYS} DAY))
      ORDER BY
        boosted DESC,
        off_preference ASC,
@@ -514,6 +520,7 @@ module.exports = {
   getFullProfile,
   upsertProfile,
   cleanAge,
+  PASS_RETURN_DAYS,
   VERIFICATION_POSES,
   issueVerificationPose,
   submitVerification,

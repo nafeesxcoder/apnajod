@@ -1,9 +1,13 @@
 ﻿const crypto = require("crypto");
+
 const { query } = require("../config/db");
 const { ApiError } = require("../middleware/errorHandler");
 const pushService = require("./pushService");
 const billingService = require("./billingService");
 const limits = require("../config/billing");
+
+/** Notifications (the bell and its list) cover the last 30 days. */
+const NOTIFICATION_DAYS = 30;
 
 async function recordDecision(actorId, targetId, decision, options = {}) {
   // Nothing is written against an id that is not a member. Without this the
@@ -91,8 +95,6 @@ async function recordDecision(actorId, targetId, decision, options = {}) {
  * arrive as their 'interested' decision. Only the last 30 days count, and
  * blocked or deleted accounts never do.
  */
-const NOTIFICATION_DAYS = 30;
-
 async function notificationCount(userId) {
   const [row] = await query(
     `SELECT COUNT(*) AS unread
@@ -220,6 +222,8 @@ async function getIncomingLikes(userId, limit = 100) {
      WHERE d.target_id = ?
        AND d.decision = 'interested'
        AND d.actor_id <> ?
+       -- Notifications shows the last 30 days, like the bell.
+       AND d.updated_at >= NOW() - INTERVAL ${NOTIFICATION_DAYS} DAY
        AND NOT EXISTS (
          SELECT 1 FROM blocks b
           WHERE (b.blocker_id = ? AND b.blocked_id = d.actor_id)

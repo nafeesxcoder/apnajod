@@ -36,3 +36,11 @@ describe('Notifications (the Home bell)', () => {
     expect(likes).toContain('const NEW_MATCH_DAYS = 30;');
   });
 });
+
+describe('the empty deck', () => {
+  it('offers Invite friends and Find someone', () => {
+    expect(home).toContain('label="Invite friends"');
+    expect(home).toContain('label="Find someone"');
+    expect(home).toContain('navigate("find")');
+  });
+});

@@ -38,10 +38,14 @@ export type PostCounts = { likes: number; comments: number; liked: boolean; save
 
 /** A like or comment on one of your posts (Activity). */
 export type ActivityItem = {
-  kind: "like" | "comment";
+  /** On your posts: like, comment. On your stories: story_like, story_answer. Someone's story naming you: mention. */
+  kind: "like" | "comment" | "story_like" | "story_answer" | "mention";
   at: string;
   body: string | null;
-  post: { id: string; mediaUrl: string };
+  /** The post it is about, or null when it is about a story. */
+  post: { id: string; mediaUrl: string } | null;
+  /** The story it is about (gone after 24 hours), or null. */
+  story: { id: string; mediaUrl: string } | null;
   actor: PostAuthor;
   /** Arrived since you last opened Activity. */
   isNew: boolean;

@@ -38,7 +38,8 @@ import { DailyPicksRow } from "../components/DailyPicksRow";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
-import { InviteCard } from "../../profile/components/InviteCard";
+import { InviteCard, shareInvite } from "../../profile/components/InviteCard";
+import { authApi } from "../../../api/authApi";
 import type { profileStrength } from "../../../domain/profileStrength";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
@@ -124,6 +125,15 @@ export function HomeScreen({
       clearInterval(timer);
     };
   }, [accessToken, activityOpen]);
+  // The empty deck's "Invite friends": shares your invite link.
+  const [inviteNote, setInviteNote] = useState("");
+  const inviteFriends = async () => {
+    const me: any = accessToken ? await authApi.me(accessToken).catch(() => null) : null;
+    const note = await shareInvite(String(me?.user?.username ?? ""));
+    setInviteNote(note);
+    if (note) setTimeout(() => setInviteNote(""), 4000);
+  };
+
   // The bell: likes, like-backs, Sparks and Super Likes since Notifications
   // was last opened. Opening it clears the number on the server.
   const [notificationCount, setNotificationCount] = useState(0);
@@ -279,7 +289,7 @@ export function HomeScreen({
                   accessibilityLabel={
                     activityUnread > 0
                       ? `Activity, ${activityUnread} new`
-                      : "Activity: likes and comments on your posts"
+                      : "Activity: likes, comments and mentions"
                   }
                   onPress={() => {
                     setActivityUnread(0);
@@ -293,16 +303,21 @@ export function HomeScreen({
                     <View
                       style={{
                         position: "absolute",
-                        top: 0,
-                        right: -1,
-                        width: 10,
-                        height: 10,
-                        borderRadius: 5,
+                        top: -4,
+                        right: -6,
+                        minWidth: 18,
+                        height: 18,
+                        paddingHorizontal: 4,
+                        borderRadius: radius.pill,
                         backgroundColor: palette.crimson,
-                        borderWidth: 2,
-                        borderColor: colors.canvas,
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
-                    />
+                    >
+                      <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 10 }}>
+                        {activityUnread > 9 ? "9+" : activityUnread}
+                      </Text>
+                    </View>
                   )}
                 </Pressable>
               )}
@@ -810,7 +825,18 @@ export function HomeScreen({
                     icon="options-outline"
                     onPress={() => navigate("discovery")}
                   />
-                ) : null}
+                ) : (
+                  // Nobody new right now: bring friends in, or go looking.
+                  <View style={{ alignSelf: "center", gap: 10, maxWidth: 360, width: "100%" }}>
+                    <Button label="Invite friends" icon="gift-outline" onPress={() => void inviteFriends()} />
+                    <Button label="Find someone" icon="search" variant="secondary" onPress={() => navigate("find")} />
+                    {!!inviteNote && (
+                      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: "center" }}>
+                        {inviteNote}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
             )}
           </View>

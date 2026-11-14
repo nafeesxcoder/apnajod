@@ -81,36 +81,64 @@ const VISIBLE_ACTOR = `
                    WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                       OR (b.blocker_id = u.id AND b.blocked_id = ?))`;
 
-/** Likes and comments on your posts, newest first, and how many are new. */
-async function activity(userId, limit = 60) {
-  const size = Math.min(100, Math.max(1, Number(limit) || 60));
-  const rows = await query(
-    `SELECT * FROM (
-       SELECT 'like' AS kind, l.created_at AS at, NULL AS body, p.id AS post_id, p.media_url, ${ACTOR}
+/** Activity lists the last 30 days. Story activity lasts as long as the story, 24 hours. */
+const ACTIVITY_DAYS = 30;
+
+/**
+ * Everything that shows in Activity, one row per event, from newest:
+ * likes and comments on your posts, likes and answers on your stories, and
+ * stories that mention you. Story rows are deleted with the story, so they
+ * vanish after 24 hours. Takes the member's id four times per part, five parts.
+ */
+const EVENTS = `
+       SELECT 'like' AS kind, l.created_at AS at, NULL AS body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
          FROM post_likes l
          JOIN posts p ON p.id = l.post_id AND p.user_id = ?
          JOIN users u ON u.id = l.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
-        WHERE ${VISIBLE_ACTOR}
+        WHERE ${VISIBLE_ACTOR} AND l.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY
        UNION ALL
-       SELECT 'comment' AS kind, c.created_at AS at, c.body, p.id AS post_id, p.media_url, ${ACTOR}
+       SELECT 'comment' AS kind, c.created_at AS at, c.body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
          FROM post_comments c
          JOIN posts p ON p.id = c.post_id AND p.user_id = ?
          JOIN users u ON u.id = c.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
+        WHERE ${VISIBLE_ACTOR} AND c.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY
+       UNION ALL
+       SELECT 'story_like' AS kind, sl.created_at AS at, NULL AS body, NULL AS post_id, s.id AS story_id, s.media_url, ${ACTOR}
+         FROM story_likes sl
+         JOIN stories s ON s.id = sl.story_id AND s.user_id = ? AND s.expires_at > NOW(6)
+         JOIN users u ON u.id = sl.user_id
+         LEFT JOIN profiles pr ON pr.user_id = u.id
         WHERE ${VISIBLE_ACTOR}
-     ) a
-     ORDER BY a.at DESC
-     LIMIT ${size}`,
-    [userId, userId, userId, userId, userId, userId, userId, userId],
-  );
+       UNION ALL
+       SELECT 'story_answer' AS kind, sa.created_at AS at, sa.body, NULL AS post_id, s.id AS story_id, s.media_url, ${ACTOR}
+         FROM story_answers sa
+         JOIN stories s ON s.id = sa.story_id AND s.user_id = ? AND s.expires_at > NOW(6)
+         JOIN users u ON u.id = sa.user_id
+         LEFT JOIN profiles pr ON pr.user_id = u.id
+        WHERE ${VISIBLE_ACTOR}
+       UNION ALL
+       SELECT 'mention' AS kind, s.created_at AS at, NULL AS body, NULL AS post_id, s.id AS story_id, s.media_url, ${ACTOR}
+         FROM stories s
+         JOIN story_mentions sm ON sm.story_id = s.id AND sm.user_id = ?
+         JOIN users u ON u.id = s.user_id
+         LEFT JOIN profiles pr ON pr.user_id = u.id
+        WHERE ${VISIBLE_ACTOR} AND s.expires_at > NOW(6)`;
+const eventParams = (userId) => Array(5 * 4).fill(userId);
+
+/** Your activity, newest first, and how many are new. */
+async function activity(userId, limit = 60) {
+  const size = Math.min(100, Math.max(1, Number(limit) || 60));
+  const rows = await query(`SELECT * FROM (${EVENTS}) a ORDER BY a.at DESC LIMIT ${size}`, eventParams(userId));
   const [seen] = await query("SELECT activity_seen_at FROM users WHERE id = ?", [userId]);
   const seenAt = seen?.activity_seen_at ? new Date(seen.activity_seen_at).getTime() : 0;
   const items = rows.map((row) => ({
     kind: row.kind,
     at: row.at,
     body: row.body || null,
-    post: { id: row.post_id, mediaUrl: row.media_url },
+    post: row.post_id ? { id: row.post_id, mediaUrl: row.media_url } : null,
+    story: row.story_id ? { id: row.story_id, mediaUrl: row.media_url } : null,
     actor: {
       userId: row.actor_id,
       username: row.actor_username,
@@ -122,22 +150,12 @@ async function activity(userId, limit = 60) {
   return { items, unread: items.filter((item) => item.isNew).length };
 }
 
-/** How many likes and comments arrived since you last opened Activity. */
+/** How many arrived since you last opened Activity: the number on the heart. */
 async function unreadCount(userId) {
   const [row] = await query(
-    `SELECT
-       (SELECT COUNT(*) FROM post_likes l
-          JOIN posts p ON p.id = l.post_id AND p.user_id = ?
-          JOIN users u ON u.id = l.user_id
-         WHERE ${VISIBLE_ACTOR}
-           AND l.created_at > COALESCE((SELECT activity_seen_at FROM users WHERE id = ?), '1970-01-01'))
-     + (SELECT COUNT(*) FROM post_comments c
-          JOIN posts p ON p.id = c.post_id AND p.user_id = ?
-          JOIN users u ON u.id = c.user_id
-         WHERE ${VISIBLE_ACTOR}
-           AND c.created_at > COALESCE((SELECT activity_seen_at FROM users WHERE id = ?), '1970-01-01'))
-       AS n`,
-    [userId, userId, userId, userId, userId, userId, userId, userId, userId, userId],
+    `SELECT COUNT(*) AS n FROM (${EVENTS}) a
+      WHERE a.at > COALESCE((SELECT activity_seen_at FROM users WHERE id = ?), '1970-01-01')`,
+    [...eventParams(userId), userId],
   );
   return Number(row?.n || 0);
 }
@@ -147,4 +165,4 @@ async function markSeen(userId) {
   return { unread: 0 };
 }
 
-module.exports = { LIKE_PUSH_GAP_MS, notifyLike, notifyComment, activity, unreadCount, markSeen };
+module.exports = { LIKE_PUSH_GAP_MS, ACTIVITY_DAYS, notifyLike, notifyComment, activity, unreadCount, markSeen };

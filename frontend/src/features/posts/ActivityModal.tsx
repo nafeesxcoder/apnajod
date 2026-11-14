@@ -8,11 +8,39 @@ import { fonts, palette } from "../../theme";
 import { Avatar } from "./PostSheets";
 import { timeAgo } from "./postFormat";
 import { openPost, openProfile } from "./profileLink";
+import { openMyStories, openStoriesOf } from "../stories/storyStore";
+
+/** What happened, in words: "liked your story.", "commented: Wow". */
+export function activityText(item: ActivityItem): string {
+  switch (item.kind) {
+    case "like":
+      return " liked your post.";
+    case "comment":
+      return ` commented: ${item.body ?? ""}`;
+    case "story_like":
+      return " liked your story.";
+    case "story_answer":
+      return ` answered your question: ${item.body ?? ""}`;
+    case "mention":
+      return " mentioned you in their story.";
+    default:
+      return "";
+  }
+}
+
+/** Tapping a row: a post opens the post, a story plays that story. */
+function openItem(item: ActivityItem) {
+  if (item.post) openPost(item.post.id);
+  else if (item.kind === "mention") {
+    if (!openStoriesOf(item.actor.userId)) openProfile(item.actor.userId);
+  } else if (!openMyStories()) openProfile(item.actor.userId);
+}
 
 /**
- * Activity, like Instagram's heart: who liked or commented on your posts,
- * newest first, new ones marked. Opening it clears the dot on Home.
- * Tap a row to open the post; tap a photo or name to open that person.
+ * Activity, like Instagram's heart: likes and comments on your posts, likes
+ * and answers on your stories and stories that mention you, newest first,
+ * new ones marked. Opening it clears the number on Home.
+ * Tap a row to open the post or story; tap a photo or name to open that person.
  */
 export function ActivityModal({
   visible,
@@ -86,19 +114,19 @@ export function ActivityModal({
             <Ionicons name="heart-outline" size={40} color={palette.slate} />
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: palette.ink }}>No activity yet</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, textAlign: "center", lineHeight: 19 }}>
-              When someone likes or comments on your posts, you will see it here.
+              Likes and comments on your posts, likes on your stories and mentions show up here.
             </Text>
           </View>
         ) : (
           <FlatList
             data={items!}
-            keyExtractor={(item, index) => `${item.kind}-${item.post.id}-${item.actor.userId}-${index}`}
+            keyExtractor={(item, index) => `${item.kind}-${(item.post ?? item.story)?.id}-${item.actor.userId}-${index}`}
             contentContainerStyle={{ paddingVertical: 6 }}
             renderItem={({ item }) => (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${item.actor.username} ${item.kind === "like" ? "liked your post" : `commented: ${item.body}`}. Open the post`}
-                onPress={() => leaveFor(() => openPost(item.post.id))}
+                accessibilityLabel={`${item.actor.username}${activityText(item)} Open ${item.post ? "the post" : "the story"}`}
+                onPress={() => leaveFor(() => openItem(item))}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -117,11 +145,11 @@ export function ActivityModal({
                 </Pressable>
                 <Text style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: palette.ink, lineHeight: 20 }}>
                   <Text style={{ fontFamily: fonts.bodyBold }}>{item.actor.username}</Text>
-                  {item.kind === "like" ? " liked your post." : ` commented: ${item.body}`}
+                  {activityText(item)}
                   <Text style={{ color: palette.slate }}> {timeAgo(item.at)}</Text>
                 </Text>
                 <Image
-                  source={{ uri: item.post.mediaUrl }}
+                  source={{ uri: (item.post ?? item.story)?.mediaUrl }}
                   style={{ width: 46, height: 46, borderRadius: 6, backgroundColor: palette.paperSand }}
                 />
               </Pressable>

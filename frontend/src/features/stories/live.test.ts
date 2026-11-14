@@ -33,9 +33,10 @@ describe("poll, question and @mention stickers", () => {
     expect(viewer).toContain("|| !!asking || !!responsesFor || replying;");
   });
 
-  it("show the owner who voted and the answers, only on their own story", () => {
+  it("show the owner who liked, voted and answered, only on their own story", () => {
     const viewer = read("StoryViewer.tsx");
-    expect(viewer).toContain('{loaded && person?.mine && story.stickers?.some((s) => s.kind === "poll" || s.kind === "question") && (');
+    expect(viewer).toContain("{loaded && person?.mine && (");
+    expect(read("StoryResponses.tsx")).toContain("❤️ Likes · {data.likes.length}");
     expect(read("StoryResponses.tsx")).toContain("Only you can see this. It goes with your story after 24 hours.");
   });
 });

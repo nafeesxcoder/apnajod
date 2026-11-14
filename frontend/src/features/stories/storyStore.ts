@@ -75,6 +75,25 @@ export function openStoriesOf(userId: string): boolean {
   return true;
 }
 
+/** Plays your own stories (if you have any up). */
+export function openMyStories(): boolean {
+  const index = state.people.findIndex((p) => p.mine);
+  if (index < 0) return false;
+  set({ viewing: index });
+  return true;
+}
+
+/** The heart on a story, filled or not, right away. */
+export function setStoryLiked(storyId: string, liked: boolean) {
+  set({
+    people: state.people.map((person) =>
+      person.stories.some((story) => story.id === storyId)
+        ? { ...person, stories: person.stories.map((story) => (story.id === storyId ? { ...story, liked } : story)) }
+        : person,
+    ),
+  });
+}
+
 export function openStoriesAt(index: number) {
   set({ viewing: index });
 }

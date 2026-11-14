@@ -136,6 +136,16 @@ export function ResponsesSheet({
         )
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }}>
+          <View style={{ paddingTop: 12 }}>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink, paddingHorizontal: 16 }}>
+              ❤️ Likes · {data.likes.length}
+            </Text>
+            {data.likes.length === 0 ? (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, paddingHorizontal: 16, paddingVertical: 8 }}>No likes yet.</Text>
+            ) : (
+              data.likes.map((l) => row(l.user, timeAgo(l.at), undefined, `like-${l.user.userId}`))
+            )}
+          </View>
           {polls.map((poll) => {
             const votes = data.votes.filter((v) => v.stickerId === poll.id);
             return (

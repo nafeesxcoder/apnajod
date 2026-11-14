@@ -139,6 +139,8 @@ async function tray(viewerId) {
   }
   for (const person of people.values()) person.canReply = !person.mine && matched.has(person.user.userId);
 
+  // Hearts: your own like on others' stories, how many liked yours.
+  await stickerService.withLikes(viewerId, [...people.values()]);
   // Poll results: how many voted each way, and your own vote.
   await stickerService.withResults(viewerId, [...people.values()].flatMap((person) => person.stories));
   const latest = (person) => new Date(person.stories[person.stories.length - 1].createdAt).getTime();

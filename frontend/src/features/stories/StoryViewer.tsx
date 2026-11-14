@@ -13,6 +13,7 @@ import { storySeconds } from "./music/clip";
 import { LiveSticker } from "./LiveSticker";
 import { AnswerSheet, ResponsesSheet } from "./StoryResponses";
 import { StoryReplyBar } from "./StoryReplyBar";
+import { setStoryLiked } from "./storyStore";
 import { FRAME_ASPECT } from "./editor/model";
 import { createClipPlayer, type ClipPlayer } from "./music/clipPlayer";
 
@@ -261,8 +262,8 @@ export function StoryViewer({
               );
             })()}
 
-            {/* Your own story with a poll or question: see who voted and the answers. */}
-            {loaded && person?.mine && story.stickers?.some((s) => s.kind === "poll" || s.kind === "question") && (
+            {/* Your own story: who liked it, who voted and the answers. */}
+            {loaded && person?.mine && (
               <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 22, alignItems: "center" }}>
               <Pressable
                 accessibilityRole="button"
@@ -278,8 +279,10 @@ export function StoryViewer({
                   backgroundColor: "rgba(0,0,0,0.55)",
                 }}
               >
-                <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
-                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>Responses</Text>
+                <Ionicons name={story.likeCount ? "heart" : "chatbubbles-outline"} size={18} color="#FFFFFF" />
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>
+                  {story.likeCount ? `${story.likeCount} · Responses` : "Responses"}
+                </Text>
               </Pressable>
               </View>
             )}
@@ -293,6 +296,8 @@ export function StoryViewer({
                 canReply={!!person.canReply}
                 accessToken={accessToken}
                 onBusy={setReplying}
+                liked={!!story.liked}
+                onLiked={(liked) => setStoryLiked(story.id, liked)}
               />
             )}
 

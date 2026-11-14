@@ -10,6 +10,10 @@ export type StoryItem = {
   music?: StoryMusic | null;
   /** Poll, question and @mention stickers, live on top of the photo. */
   stickers?: StorySticker[];
+  /** Someone else's story: you liked it (the heart is filled). */
+  liked?: boolean;
+  /** Your own story: how many liked it. */
+  likeCount?: number;
 };
 
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
@@ -20,6 +24,7 @@ export type StorySticker =
 
 /** For the story's owner: who voted what, and the answers. */
 export type StoryResponses = {
+  likes: { at: string; user: StoryPerson["user"] }[];
   votes: { stickerId: string; choice: number; at: string; user: StoryPerson["user"] }[];
   answers: { id: string; stickerId: string; body: string; at: string; user: StoryPerson["user"] }[];
 };
@@ -95,7 +100,12 @@ export const storyApi = {
 
   async responses(accessToken: string, storyId: string): Promise<StoryResponses> {
     const data = await authFetch(`/stories/${storyId}/responses`, accessToken);
-    return { votes: data.votes || [], answers: data.answers || [] };
+    return { likes: data.likes || [], votes: data.votes || [], answers: data.answers || [] };
+  },
+
+  /** The heart on someone's story. It goes with the story after 24 hours. */
+  async like(accessToken: string, storyId: string, liked: boolean): Promise<void> {
+    await authFetch(`/stories/${storyId}/like`, accessToken, { method: "POST", body: JSON.stringify({ liked }) });
   },
 
   async remove(accessToken: string, storyId: string) {
