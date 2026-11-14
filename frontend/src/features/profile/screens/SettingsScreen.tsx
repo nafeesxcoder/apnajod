@@ -361,6 +361,12 @@ export function SettingsScreen({
                 label="Edit Profile"
                 onPress={() => navigate("profileSetup")}
               />
+              {/* Intent and the future questions: on the Profile as badges, edited here (not on Home). */}
+              <SettingsRow
+                icon="compass-outline"
+                label="Intent & Future Plans"
+                onPress={() => navigate("alignment")}
+              />
               <SettingsRow
                 icon="shield-checkmark-outline"
                 label="Trust Hub & Verification"

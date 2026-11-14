@@ -23,7 +23,6 @@ describe('Navy x Crimson look and motion', () => {
     expect(home).toContain('<GlowPulse color={palette.crimson}');
     expect(read('src/features/discovery/components/DailyQuestionCard.tsx')).toContain('colors={brand.heroGradient}');
     expect(read('src/features/discovery/components/DailyPicksRow.tsx')).toContain('<SpinRing');
-    expect(read('src/features/discovery/components/IntentPassportCard.tsx')).toContain('colors={brand.barGradient}');
   });
 
   it('text on the navy hero is readable', () => {

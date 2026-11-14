@@ -559,10 +559,13 @@ export function AlignmentScreen({
   value,
   onChange,
   onNext,
+  finishLabel = "See my introductions",
 }: {
   value: Record<string, string>;
   onChange: (value: Record<string, string>) => void;
   onNext: () => void;
+  /** The last button: "Save" when editing from Settings. */
+  finishLabel?: string;
 }) {
   const [question, setQuestion] = useState(0);
   const current = alignmentQuestions[question]!;
@@ -721,7 +724,7 @@ export function AlignmentScreen({
           <PrimaryButton
             label={
               question === alignmentQuestions.length - 1
-                ? "See my introductions"
+                ? finishLabel
                 : "Next"
             }
             onPress={advance}

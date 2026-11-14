@@ -476,6 +476,12 @@ function MilaanApp() {
     if (isAdminMode) return "adminLogin" as Screen;
     return showcasePreviewScreen ?? "splash";
   });
+  // Where saving the intent / future answers returns to: Settings when they
+  // were opened from there, Home otherwise.
+  const alignmentReturnRef = useRef<Screen>("home");
+  useEffect(() => {
+    if (screen !== "alignment") alignmentReturnRef.current = screen === "settings" ? "settings" : "home";
+  }, [screen]);
   // App-wide back-button guard: give every in-app screen its own browser
   // history entry, so the hardware/gesture back button steps back through
   // screens instead of exiting the whole app/webview. Without this, the
@@ -3398,6 +3404,7 @@ function MilaanApp() {
           <AlignmentScreen
             value={alignment}
             onChange={setAlignment}
+            finishLabel={onboardingComplete ? "Save" : undefined}
             onNext={() => {
               // Editing from Home: save to the server now, otherwise a refresh
               // reloads the old answers. During onboarding the whole profile is
@@ -3414,7 +3421,7 @@ function MilaanApp() {
                   family: alignment.family,
                   relocation: alignment.relocation,
                 })
-                .then(() => setScreen("home"))
+                .then(() => setScreen(alignmentReturnRef.current))
                 .catch(() =>
                   setAppNotice({
                     title: "Not saved",
@@ -3434,8 +3441,6 @@ function MilaanApp() {
             matchLoadState={matchLoadState}
             matchingPoolStatus={matchingPoolStatus}
             onRetryMatches={() => void refreshServerMatches()}
-            preferences={{ intent, vibes: vibeList, filters: matchFilters }}
-            alignment={alignment}
             signals={discoverySignals}
             dismissedCount={dismissedIds.length}
             firstName={profileDraft.firstName}

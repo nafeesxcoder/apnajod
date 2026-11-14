@@ -26,10 +26,9 @@ import { ActivityModal } from "../../posts/ActivityModal";
 import { postApi } from "../../../api/postApi";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
-import type { DiscoverySignal, MatchFilters } from "../../../storage";
+import type { DiscoverySignal } from "../../../storage";
 import type { Screen } from "../../../app/navigation/types";
 import { colors, palette, fonts, radius, typeScale } from "../../../theme";
-import { IntentPassportCard } from "../components/IntentPassportCard";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { TrustBadge } from "../../../components/TrustBadge";
 
@@ -62,8 +61,6 @@ export function HomeScreen({
   matchLoadState,
   matchingPoolStatus,
   onRetryMatches,
-  preferences,
-  alignment,
   firstName = "",
   profilePhoto,
   notificationCount = 0,
@@ -82,8 +79,6 @@ export function HomeScreen({
   matchLoadState: MemberMatchLoadState;
   matchingPoolStatus: MatchingPoolStatusView | null;
   onRetryMatches: () => void;
-  preferences: { intent: string; vibes: string[]; filters: MatchFilters };
-  alignment: Record<string, string>;
   signals?: DiscoverySignal[];
   dismissedCount?: number;
   profileGrowth?: ProfileGrowthInput;
@@ -137,17 +132,6 @@ export function HomeScreen({
   const name = firstName.trim();
   const initial = name ? name.charAt(0).toUpperCase() : "";
 
-  const passportInput = {
-    intent: preferences.intent,
-    alignment: preview
-      ? {
-          timeline: "Within 1–2 years",
-          children: "Open to children",
-          family: "Balanced family involvement",
-          relocation: "Open for the right person",
-        }
-      : alignment,
-  };
   const poolNeedsVerification =
     matchingPoolStatus?.status === "verification_required";
   const poolNeedsPreferences =
@@ -480,15 +464,6 @@ export function HomeScreen({
               </Reveal>
             )}
 
-            {/* Intent passport — flatten happens in IntentPassportCard.tsx */}
-            <Reveal delay={240}>
-              <IntentPassportCard
-                input={passportInput}
-                compact
-                onEdit={() => navigate("alignment")}
-              />
-            </Reveal>
-
             {!preview && (
               <Reveal delay={300}>
                 <InviteCard accessToken={accessToken} />
@@ -806,12 +781,6 @@ export function HomeScreen({
                 ) : poolNeedsPreferences ? (
                   <Button
                     label="Complete preferences"
-                    icon="options-outline"
-                    onPress={() => navigate("discovery")}
-                  />
-                ) : matchLoadState === "ready" ? (
-                  <Button
-                    label="Review preferences"
                     icon="options-outline"
                     onPress={() => navigate("discovery")}
                   />
