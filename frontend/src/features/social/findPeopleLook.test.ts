@@ -20,7 +20,7 @@ describe("Find people look (Navy x Crimson)", () => {
     // Navy/crimson and WhatsApp green buttons carry white text, never ink.
     expect(source).toMatch(/backgroundColor: palette\.crimson,\s+minHeight: 44/);
     expect(source).toMatch(/color: "#FFFFFF",[\s\S]{0,400}Check my contacts/);
-    expect(source).toMatch(/color: "#FFFFFF",[\s\S]{0,400}Invite\n/);
+    expect(source).toMatch(/color: "#FFFFFF", fontFamily: fonts\.bodySemi, fontSize: 13 \}\}>Invite</);
     expect(source).not.toContain("palette.clay");
   });
 

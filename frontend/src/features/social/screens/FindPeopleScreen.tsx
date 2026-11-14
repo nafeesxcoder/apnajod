@@ -18,6 +18,9 @@ import type { ContactsMatchResult, SocialUser } from "../../../api/socialApi";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { HeartBeat, PressScale, Reveal, SpinRing } from "../../../components/motion";
 import { fonts, palette, radius, typeScale } from "../../../theme";
+import { pickContacts } from "../../onboarding/inviteHelpers";
+import { inviteLink, shareInvite } from "../../profile/components/InviteCard";
+import { contactInviteText, matchesQuery, type BookContact, type ContactInvite } from "../contactBook";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -44,10 +47,17 @@ type FilterId = (typeof FILTERS)[number]["id"];
 export type FindPeopleProps = {
   onBack: () => void;
   onSearch: (term: string) => Promise<SocialUser[]>;
-  onMatchContacts: () => Promise<ContactsMatchResult>;
+  /** Picked contacts on Android Chrome; nothing in the phone app (it reads them all). */
+  onMatchContacts: (picked?: BookContact[]) => Promise<ContactsMatchResult>;
   onOpenPerson: (userId: string) => void;
   onFollow: (userId: string) => Promise<"accepted" | "pending">;
-  contactsSupported: boolean;
+  /**
+   * device: the phone app reads your contacts. picker: Android Chrome lets you
+   * pick them. none: this browser cannot reach contacts (share a link instead).
+   */
+  contactsMode: "device" | "picker" | "none";
+  /** Your username, for the invite link that earns you a Boost. */
+  getMyUsername?: () => Promise<string>;
   discoverUsers?: SocialUser[];
 };
 
@@ -62,19 +72,24 @@ function formatPhone(phone: string) {
   return phone;
 }
 
-function inviteOnWhatsApp(phone: string, name?: string) {
+/** Opens WhatsApp to this number with the invite written in. */
+function inviteOnWhatsApp(phone: string, message: string) {
   const cleanNumber = phone.replace(/[^0-9]/g, "");
-  const text = encodeURIComponent(
-    `Hi${name ? " " + name : ""}! I'm on Apnajoda, a thoughtful matrimony app where people are serious about finding a life partner. Join me: https://apnajoda.com`,
-  );
+  const text = encodeURIComponent(message);
   const url = `https://wa.me/${cleanNumber}?text=${text}`;
   if (Platform.OS === "web") {
     window.open(url, "_blank", "noopener,noreferrer");
     return;
   }
-  Linking.openURL(url).catch(() => {
-    Linking.openURL(`sms:${cleanNumber}?body=${text}`);
-  });
+  Linking.openURL(url).catch(() => inviteBySms(phone, message));
+}
+
+/** Opens the phone's messages to this number with the invite written in. */
+function inviteBySms(phone: string, message: string) {
+  const number = phone.replace(/[^0-9+]/g, "");
+  // iPhones want "&body", everything else "?body".
+  const join = Platform.OS === "ios" ? "&" : "?";
+  Linking.openURL(`sms:${number}${join}body=${encodeURIComponent(message)}`).catch(() => undefined);
 }
 
 export function FindPeopleScreen({
@@ -83,9 +98,28 @@ export function FindPeopleScreen({
   onMatchContacts,
   onOpenPerson,
   onFollow,
-  contactsSupported,
+  contactsMode,
+  getMyUsername,
   discoverUsers = [],
 }: FindPeopleProps) {
+  const contactsSupported = contactsMode !== "none";
+  // Search inside your contacts (they can be hundreds).
+  const [contactQuery, setContactQuery] = useState("");
+  const [shareNote, setShareNote] = useState("");
+  const usernameRef = useRef<string | null>(null);
+  const myUsername = async () => {
+    if (usernameRef.current === null) usernameRef.current = (await getMyUsername?.().catch(() => "")) ?? "";
+    return usernameRef.current;
+  };
+  const invite = async (person: ContactInvite, via: "whatsapp" | "sms") => {
+    const text = contactInviteText(person.name, inviteLink(await myUsername()));
+    if (via === "whatsapp") inviteOnWhatsApp(person.phone, text);
+    else inviteBySms(person.phone, text);
+  };
+  const shareLink = async () => {
+    const note = await shareInvite(await myUsername());
+    setShareNote(note);
+  };
   const [tab, setTab] = useState<Tab>("discover");
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<SocialUser[]>([]);
@@ -128,9 +162,19 @@ export function FindPeopleScreen({
 
   const loadContacts = async () => {
     setError("");
+    // Android Chrome: you pick the contacts to check (the browser's own list).
+    let picked: BookContact[] | undefined;
+    if (contactsMode === "picker") {
+      try {
+        picked = await pickContacts({ raw: true });
+      } catch {
+        picked = [];
+      }
+      if (!picked.length) return;
+    }
     setBusy(true);
     try {
-      setContacts(await onMatchContacts());
+      setContacts(await onMatchContacts(picked));
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Could not read your contacts.",
@@ -465,7 +509,8 @@ export function FindPeopleScreen({
                     accessibilityLabel="My contacts"
                     onPress={() => {
                       setTab("contacts");
-                      if (contacts === null && contactsSupported)
+                      // The phone app checks straight away; a browser waits for "Choose contacts".
+                      if (contacts === null && contactsMode === "device")
                         void loadContacts();
                     }}
                     containerStyle={{ flex: 1 }}
@@ -677,7 +722,7 @@ export function FindPeopleScreen({
                         accessibilityLabel="Find friends from contacts"
                         onPress={() => {
                           setTab("contacts");
-                          if (contacts === null) void loadContacts();
+                          if (contacts === null && contactsMode === "device") void loadContacts();
                         }}
                         containerStyle={{ marginTop: 16 }}
                         style={{
@@ -730,10 +775,36 @@ export function FindPeopleScreen({
                             fontSize: 14,
                             color: palette.slate,
                             textAlign: "center",
+                            lineHeight: 20,
+                            marginBottom: 16,
                           }}
                         >
-                          Reading contacts is only available in the phone app.
+                          This browser cannot read your phone's contacts. In the Apnajoda phone app you see everyone you know who is here. For now, send your invite link.
                         </Text>
+                        <PressScale
+                          accessibilityRole="button"
+                          accessibilityLabel="Share my invite link"
+                          onPress={() => void shareLink()}
+                          style={{
+                            backgroundColor: palette.crimson,
+                            minHeight: 44,
+                            paddingHorizontal: 24,
+                            borderRadius: radius.pill,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons name="share-social-outline" size={18} color="#FFFFFF" />
+                          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 14 }}>
+                            Share my invite link
+                          </Text>
+                        </PressScale>
+                        {!!shareNote && (
+                          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 10, textAlign: "center" }}>
+                            {shareNote}
+                          </Text>
+                        )}
                       </View>
                     ) : busy ? (
                       <View
@@ -788,11 +859,13 @@ export function FindPeopleScreen({
                             marginBottom: 20,
                           }}
                         >
-                          We check your contacts once. Nothing is stored.
+                          {contactsMode === "picker"
+                            ? "Pick the contacts to check. Numbers are only matched, never saved, and names stay on your phone."
+                            : "We check your contacts to find who is here. Numbers are only matched, never saved, and names stay on your phone."}
                         </Text>
                         <PressScale
                           accessibilityRole="button"
-                          accessibilityLabel="Check my contacts"
+                          accessibilityLabel={contactsMode === "picker" ? "Choose contacts" : "Check my contacts"}
                           onPress={() => void loadContacts()}
                           style={{
                             backgroundColor: palette.crimson,
@@ -812,173 +885,21 @@ export function FindPeopleScreen({
                               fontSize: 14,
                             }}
                           >
-                            Check my contacts
+                            {contactsMode === "picker" ? "Choose contacts" : "Check my contacts"}
                           </Text>
                         </PressScale>
                       </View>
                     ) : (
-                      <View style={{ gap: 20 }}>
-                        {contacts.matched.length > 0 && (
-                          <View>
-                            <Text
-                              style={{
-                                fontFamily: fonts.bodySemi,
-                                fontSize: 11,
-                                color: palette.slate,
-                                textTransform: "uppercase",
-                                letterSpacing: 1,
-                                marginBottom: 10,
-                              }}
-                            >
-                              {contacts.matched.length} on Apnajoda
-                            </Text>
-                            <View style={{ gap: 8 }}>
-                              {contacts.matched.map((user, index) => (
-                                <Reveal key={user.userId} delay={Math.min(index, 8) * 50}>
-                                  <PersonRow
-                                    user={user}
-                                    busy={!!pending[user.userId]}
-                                    onOpen={() => onOpenPerson(user.userId)}
-                                    onFollow={() => void follow(user)}
-                                  />
-                                </Reveal>
-                              ))}
-                            </View>
-                          </View>
-                        )}
-
-                        {contacts.unmatched.length > 0 && (
-                          <View>
-                            <Text
-                              style={{
-                                fontFamily: fonts.bodySemi,
-                                fontSize: 11,
-                                color: palette.slate,
-                                textTransform: "uppercase",
-                                letterSpacing: 1,
-                                marginBottom: 10,
-                              }}
-                            >
-                              Invite {contacts.unmatched.length}{" "}
-                              {contacts.unmatched.length === 1
-                                ? "friend"
-                                : "friends"}
-                            </Text>
-                            <View style={{ gap: 8 }}>
-                              {contacts.unmatched.map((phone, index) => (
-                                <Reveal
-                                  key={phone}
-                                  delay={Math.min(index, 8) * 50}
-                                  style={{
-                                    ...whiteCard,
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    gap: 10,
-                                    paddingVertical: 12,
-                                    paddingHorizontal: 12,
-                                  }}
-                                >
-                                  <View
-                                    style={{
-                                      width: 40,
-                                      height: 40,
-                                      borderRadius: 20,
-                                      backgroundColor: palette.paperSand,
-                                      justifyContent: "center",
-                                      alignItems: "center",
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="phone-portrait-outline"
-                                      size={20}
-                                      color={palette.navy}
-                                    />
-                                  </View>
-                                  <View style={{ flex: 1, minWidth: 0 }}>
-                                    <Text
-                                      style={{
-                                        fontFamily: fonts.bodyMedium,
-                                        fontSize: 14,
-                                        color: palette.ink,
-                                      }}
-                                    >
-                                      {formatPhone(phone)}
-                                    </Text>
-                                    <Text
-                                      style={{
-                                        fontFamily: fonts.body,
-                                        fontSize: 12,
-                                        color: palette.slate,
-                                        marginTop: 1,
-                                      }}
-                                    >
-                                      Not on Apnajoda yet
-                                    </Text>
-                                  </View>
-                                  <PressScale
-                                    accessibilityRole="button"
-                                    accessibilityLabel={`Invite ${formatPhone(phone)} on WhatsApp`}
-                                    onPress={() => inviteOnWhatsApp(phone)}
-                                    style={{
-                                      minHeight: 44,
-                                      paddingHorizontal: 14,
-                                      borderRadius: radius.pill,
-                                      // WhatsApp's own green - the one colour outside the palette.
-                                      backgroundColor: "#25D366",
-                                      flexDirection: "row",
-                                      alignItems: "center",
-                                      gap: 6,
-                                    }}
-                                  >
-                                    <Ionicons
-                                      name="logo-whatsapp"
-                                      size={16}
-                                      color="#FFFFFF"
-                                    />
-                                    <Text
-                                      style={{
-                                        color: "#FFFFFF",
-                                        fontFamily: fonts.bodySemi,
-                                        fontSize: 13,
-                                      }}
-                                    >
-                                      Invite
-                                    </Text>
-                                  </PressScale>
-                                </Reveal>
-                              ))}
-                            </View>
-                          </View>
-                        )}
-
-                        {contacts.matched.length === 0 &&
-                          contacts.unmatched.length === 0 && (
-                            <View
-                              style={{
-                                ...whiteCard,
-                                padding: 24,
-                                alignItems: "center",
-                              }}
-                            >
-                              <Ionicons
-                                name="people-outline"
-                                size={36}
-                                color={palette.navySoft}
-                                style={{ marginBottom: 12 }}
-                              />
-                              <Text
-                                style={{
-                                  fontFamily: fonts.body,
-                                  fontSize: 14,
-                                  color: palette.slate,
-                                  textAlign: "center",
-                                }}
-                              >
-                                No phone numbers found in your contacts.
-                              </Text>
-                            </View>
-                          )}
-                      </View>
+                      <ContactResults
+                        contacts={contacts}
+                        query={contactQuery}
+                        onQuery={setContactQuery}
+                        pending={pending}
+                        onOpen={onOpenPerson}
+                        onFollow={(user) => void follow(user)}
+                        onInvite={(person, via) => void invite(person, via)}
+                        onAgain={contactsMode === "picker" ? () => void loadContacts() : undefined}
+                      />
                     )}
                   </>
                 )}
@@ -987,6 +908,203 @@ export function FindPeopleScreen({
           </View>
         </ScrollView>
       </SafeAreaView>
+    </View>
+  );
+}
+
+/**
+ * Your contacts, checked: who is on Apnajoda, and the rest to invite by
+ * WhatsApp or SMS - with a search, since an address book can be long.
+ */
+function ContactResults({
+  contacts,
+  query,
+  onQuery,
+  pending,
+  onOpen,
+  onFollow,
+  onInvite,
+  onAgain,
+}: {
+  contacts: ContactsMatchResult;
+  query: string;
+  onQuery: (value: string) => void;
+  pending: Record<string, boolean>;
+  onOpen: (userId: string) => void;
+  onFollow: (user: SocialUser) => void;
+  onInvite: (person: ContactInvite, via: "whatsapp" | "sms") => void;
+  /** Android Chrome: pick other contacts to check. */
+  onAgain?: () => void;
+}) {
+  const invites: ContactInvite[] = contacts.invites ?? contacts.unmatched.map((phone) => ({ name: "", phone }));
+  const matched = contacts.matched.filter((u) => matchesQuery(query, u.name, u.username));
+  const toInvite = invites.filter((p) => matchesQuery(query, p.name, p.phone));
+  // A long list shows the first 200; the search finds anyone else.
+  const shown = toInvite.slice(0, 200);
+  const label = {
+    fontFamily: fonts.bodySemi,
+    fontSize: 11,
+    color: palette.slate,
+    textTransform: "uppercase" as const,
+    letterSpacing: 1,
+    marginBottom: 10,
+  };
+
+  if (!contacts.matched.length && !invites.length) {
+    return (
+      <View style={{ ...whiteCard, padding: 24, alignItems: "center" }}>
+        <Ionicons name="people-outline" size={36} color={palette.navySoft} style={{ marginBottom: 12 }} />
+        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate, textAlign: "center" }}>
+          No Indian mobile numbers found in your contacts.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ gap: 20 }}>
+      <View
+        style={{
+          ...whiteCard,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          paddingHorizontal: 14,
+          minHeight: 46,
+          borderRadius: radius.pill,
+        }}
+      >
+        <Ionicons name="search" size={18} color={palette.slate} />
+        <TextInput
+          value={query}
+          onChangeText={onQuery}
+          placeholder="Search your contacts"
+          placeholderTextColor={palette.slate}
+          accessibilityLabel="Search your contacts"
+          autoCapitalize="none"
+          style={{
+            flex: 1,
+            fontFamily: fonts.body,
+            fontSize: 15,
+            color: palette.ink,
+            ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null),
+          }}
+        />
+        {!!query && (
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => onQuery("")} hitSlop={8}>
+            <Ionicons name="close-circle" size={18} color={palette.slate} />
+          </Pressable>
+        )}
+      </View>
+
+      {!!onAgain && (
+        <Pressable accessibilityRole="button" accessibilityLabel="Choose other contacts" onPress={onAgain} style={{ alignSelf: "flex-start" }}>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy, textDecorationLine: "underline" }}>
+            Choose other contacts
+          </Text>
+        </Pressable>
+      )}
+
+      {matched.length > 0 && (
+        <View>
+          <Text style={label}>{matched.length} on Apnajoda</Text>
+          <View style={{ gap: 8 }}>
+            {matched.map((user, index) => (
+              <Reveal key={user.userId} delay={Math.min(index, 8) * 50}>
+                <PersonRow user={user} busy={!!pending[user.userId]} onOpen={() => onOpen(user.userId)} onFollow={() => onFollow(user)} />
+              </Reveal>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {toInvite.length > 0 && (
+        <View>
+          <Text style={label}>
+            Invite {toInvite.length} {toInvite.length === 1 ? "friend" : "friends"}
+          </Text>
+          <View style={{ gap: 8 }}>
+            {shown.map((person) => (
+              <View
+                key={person.phone}
+                style={{ ...whiteCard, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 12 }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: palette.paperSand,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  {person.name ? (
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: palette.navy }}>
+                      {person.name.charAt(0).toUpperCase()}
+                    </Text>
+                  ) : (
+                    <Ionicons name="phone-portrait-outline" size={20} color={palette.navy} />
+                  )}
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>
+                    {person.name || formatPhone(person.phone)}
+                  </Text>
+                  <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 1 }}>
+                    {person.name ? formatPhone(person.phone) : "Not on Apnajoda yet"}
+                  </Text>
+                </View>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`Invite ${person.name || formatPhone(person.phone)} on WhatsApp`}
+                  onPress={() => onInvite(person, "whatsapp")}
+                  style={{
+                    minHeight: 40,
+                    paddingHorizontal: 12,
+                    borderRadius: radius.pill,
+                    // WhatsApp's own green - the one colour outside the palette.
+                    backgroundColor: "#25D366",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                >
+                  <Ionicons name="logo-whatsapp" size={16} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 13 }}>Invite</Text>
+                </PressScale>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`Invite ${person.name || formatPhone(person.phone)} by SMS`}
+                  onPress={() => onInvite(person, "sms")}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: palette.rule,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={palette.navy} />
+                </PressScale>
+              </View>
+            ))}
+          </View>
+          {toInvite.length > shown.length && (
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, textAlign: "center", marginTop: 10 }}>
+              Showing 200 of {toInvite.length}. Search to find anyone else.
+            </Text>
+          )}
+        </View>
+      )}
+
+      {!!query && !matched.length && !toInvite.length && (
+        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate, textAlign: "center" }}>
+          No contact matches "{query}".
+        </Text>
+      )}
     </View>
   );
 }

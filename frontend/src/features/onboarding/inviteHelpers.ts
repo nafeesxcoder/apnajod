@@ -45,14 +45,21 @@ export function toE164(raw: string, dial = localDialCode()) {
   return /^\+[1-9]\d{7,14}$/.test(full) ? full : "";
 }
 
-export async function pickContacts(): Promise<PickedContact[]> {
+/**
+ * Opens the browser's contact picker. `raw` keeps the numbers as written,
+ * for matching on Apnajoda (Indian numbers, read the server's way) - a
+ * browser set to another region would otherwise give them its own code.
+ */
+export async function pickContacts(options: { raw?: boolean } = {}): Promise<PickedContact[]> {
   const api = contactsApi();
   if (!api) return [];
   const picked = await api.select(["name", "tel"], { multiple: true });
   const result: PickedContact[] = [];
   for (const entry of picked) {
     const phones = [
-      ...new Set((entry.tel ?? []).map((tel) => toE164(tel)).filter(Boolean)),
+      ...new Set(
+        (entry.tel ?? []).map((tel) => (options.raw ? tel.trim() : toE164(tel))).filter(Boolean),
+      ),
     ];
     if (!phones.length) continue;
     result.push({ name: entry.name?.[0]?.trim() || phones[0]!, phones });

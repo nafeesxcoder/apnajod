@@ -77,6 +77,8 @@ export type PersonPage = {
 export type ContactsMatchResult = {
   matched: SocialUser[];
   unmatched: string[];
+  /** The people not here yet, with the names from your phone (A to Z). */
+  invites?: { name: string; phone: string }[];
 };
 
 export const socialApi = {

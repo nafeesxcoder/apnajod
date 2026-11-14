@@ -167,7 +167,9 @@ import { VerificationHubScreen } from "../features/trust/screens/VerificationHub
 import { ChatsScreen } from "../features/social/screens/ChatsScreen";
 import { FindPeopleScreen } from "../features/social/screens/FindPeopleScreen";
 import { PersonScreen } from "../features/social/screens/PersonScreen";
-import { socialApi, type SocialUser } from "../api/socialApi";
+import { socialApi, type ContactsMatchResult, type SocialUser } from "../api/socialApi";
+import { contactBook, invitesFor, type BookContact } from "../features/social/contactBook";
+import { canPickContacts } from "../features/onboarding/inviteHelpers";
 import { matchFromSocialUser } from "../domain/socialMatch";
 import { DiscoveryCenterScreen } from "../features/discovery/screens/DiscoveryCenterScreen";
 import { LikesScreen } from "../features/discovery/screens/LikesScreen";
@@ -2171,42 +2173,34 @@ function MilaanApp() {
     return "pending";
   };
 
-  const onMatchContacts = async (): Promise<{
-    matched: SocialUser[];
-    unmatched: string[];
-  }> => {
-    if (Platform.OS === "web") {
-      return { matched: [], unmatched: [] };
+  /**
+   * Who in your phone's contacts is on Apnajoda, and who to invite. The phone
+   * app reads the whole address book (with permission); on Android Chrome
+   * the screen passes the contacts you picked. Names stay on the phone.
+   */
+  const onMatchContacts = async (picked?: BookContact[]): Promise<ContactsMatchResult> => {
+    let contacts: BookContact[] = picked ?? [];
+    if (!picked) {
+      if (Platform.OS === "web") return { matched: [], unmatched: [], invites: [] };
+      const Contacts = await import("expo-contacts");
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== "granted") {
+        throw new Error("Allow Contacts for Apnajoda to find people you know.");
+      }
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+      });
+      contacts = data.map((c) => ({
+        name: c.name || [c.firstName, c.lastName].filter(Boolean).join(" "),
+        phones: (c.phoneNumbers || []).map((p) => p.number || "").filter(Boolean),
+      }));
     }
-
-    const Contacts = await import("expo-contacts");
-
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== "granted") {
-      throw new Error("Contacts permission is needed to find people you know.");
+    const book = contactBook(contacts);
+    if (!book.phones.length) {
+      throw new Error("No Indian mobile numbers found in your contacts.");
     }
-
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
-    });
-
-    if (!data.length) {
-      throw new Error("No contacts found on this device.");
-    }
-
-    const phoneNumbers = data
-      .flatMap((c) =>
-        (c.phoneNumbers || [])
-          .map((p) => p.number)
-          .filter((n): n is string => !!n),
-      )
-      .filter((n, i, arr) => arr.indexOf(n) === i);
-
-    if (!phoneNumbers.length) {
-      throw new Error("No phone numbers found in your contacts.");
-    }
-
-    return await socialApi.matchContacts(accessToken, phoneNumbers);
+    const result = await socialApi.matchContacts(accessToken, book.phones);
+    return { ...result, invites: invitesFor(result.unmatched, book.names) };
   };
 
   const chooseInterested = async (match: Match) => {
@@ -3663,7 +3657,11 @@ function MilaanApp() {
 
         {screen === "find" && accessToken && (
           <FindPeopleScreen
-            contactsSupported={Platform.OS !== "web"}
+            contactsMode={Platform.OS !== "web" ? "device" : canPickContacts() ? "picker" : "none"}
+            getMyUsername={async () => {
+              const me: any = await authApi.me(accessToken).catch(() => null);
+              return String(me?.user?.username ?? "");
+            }}
             onBack={() => setScreen("home")}
             onSearch={(term) => socialApi.search(accessToken, term)}
             onMatchContacts={onMatchContacts}
