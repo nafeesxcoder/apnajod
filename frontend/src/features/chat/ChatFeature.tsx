@@ -901,6 +901,8 @@ export function ChatScreen({
   experienceMode,
   initialTool,
   onToolConsumed,
+  initialGame,
+  onGameConsumed,
   match,
   messages,
   settings,
@@ -936,6 +938,9 @@ export function ChatScreen({
   experienceMode: ExperienceMode;
   initialTool: CoupleLaunchTool;
   onToolConsumed: () => void;
+  /** Start this game as soon as the chat opens (picked on the Games tab). */
+  initialGame?: GameKind | null;
+  onGameConsumed?: () => void;
   match: Match;
   messages: ChatMessage[];
   settings: CoupleChatSettings;
@@ -1370,6 +1375,20 @@ export function ChatScreen({
     if (initialTool === "games") setGamesOpen(true);
     if (initialTool) onToolConsumed();
   }, [initialTool, onToolConsumed]);
+  // A game picked on the Games tab starts once, the moment the chat opens.
+  const startedGameRef = useRef<GameKind | null>(null);
+  useEffect(() => {
+    if (!initialGame) {
+      startedGameRef.current = null;
+      return;
+    }
+    if (startedGameRef.current === initialGame) return;
+    startedGameRef.current = initialGame;
+    onGameConsumed?.();
+    if (accessToken && !isCoupleMode) void startLiveGame(initialGame);
+    // startLiveGame is recreated every render, the game kind is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialGame]);
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
     const updateConnection = () => setConnectionOnline(navigator.onLine);

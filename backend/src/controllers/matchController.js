@@ -30,6 +30,16 @@ const getIncomingLikes = asyncHandler(async (req, res) => {
   res.json({ ok: true, likes });
 });
 
+const getNotifications = asyncHandler(async (req, res) => {
+  const unread = await matchService.notificationCount(req.user.id);
+  res.json({ ok: true, unread });
+});
+
+const markNotificationsSeen = asyncHandler(async (req, res) => {
+  await matchService.markNotificationsSeen(req.user.id);
+  res.json({ ok: true, unread: 0 });
+});
+
 const getSparkWallet = asyncHandler(async (req, res) => {
   const wallet = await sparkService.wallet(req.user.id);
   res.json({ ok: true, wallet });
@@ -53,4 +63,6 @@ module.exports = {
   sendSpark,
   getMatches,
   getIncomingLikes,
+  getNotifications,
+  markNotificationsSeen,
 };

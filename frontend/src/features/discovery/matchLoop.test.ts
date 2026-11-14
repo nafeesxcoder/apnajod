@@ -20,6 +20,7 @@ const compact = (value: string) => value.replace(/\s+/g, '').replace(/"/g, "'");
 const shell = read('src/app/MilaanApp.tsx');
 const likes = read('src/features/discovery/screens/LikesScreen.tsx');
 const nav = read('src/components/navigation/BottomNav.tsx');
+const home = read('src/features/discovery/screens/HomeScreen.tsx');
 
 describe('accepting someone who liked you', () => {
   it('gives every incoming like a way to say yes and no', () => {
@@ -66,15 +67,16 @@ describe('the Chats tab', () => {
   });
 });
 
-describe('the Likes tab', () => {
-  it('is marked with a heart', () => {
-    // The five destinations are a data array now, so that the bottom bar
-    // on a phone and the left rail on a desktop cannot drift apart. The
-    // check is the same: the Likes destination carries a heart.
+describe('the bottom bar', () => {
+  it('has Games where Likes used to be, and the bell opens likes', () => {
+    // Likes moved behind the Home bell (Notifications). The bar keeps five
+    // destinations, the second is Games.
     const entry = nav
       .split('\n')
-      .find((line) => line.includes('label: "Likes"'));
-    expect(entry, 'the Likes destination should exist').toBeTruthy();
-    expect(entry).toContain('heart');
+      .find((line) => line.includes('label: "Games"'));
+    expect(entry, 'the Games destination should exist').toBeTruthy();
+    expect(entry).toContain('game-controller');
+    expect(nav).not.toContain('label: "Likes"');
+    expect(home).toContain('navigate("likes")');
   });
 });

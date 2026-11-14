@@ -68,4 +68,15 @@ export const matchApi = {
   async getIncomingLikes(accessToken: string) {
     return authFetch("/matches/likes", accessToken);
   },
+
+  /** The number on the Home bell: likes that came in since it was last opened. */
+  async notificationCount(accessToken: string): Promise<number> {
+    const data = await authFetch("/matches/notifications", accessToken);
+    return Number(data.unread) || 0;
+  },
+
+  /** Opening Notifications clears the bell. */
+  async markNotificationsSeen(accessToken: string): Promise<void> {
+    await authFetch("/matches/notifications/seen", accessToken, { method: "POST" });
+  },
 };

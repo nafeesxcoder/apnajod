@@ -20,7 +20,7 @@ import {
 import { useLayout } from "../../../layout/useLayout";
 import type { Screen } from "../../../app/navigation/types";
 import type { Match } from "../../../data";
-import { matchApi } from "../../../api/matchApi";
+import { matchApi, type MutualMatchSummary } from "../../../api/matchApi";
 import { matchFromSocialUser } from "../../../domain/socialMatch";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
@@ -172,16 +172,124 @@ function sinceLabel(iso: string | null) {
   return days === 1 ? "yesterday" : `${days}d ago`;
 }
 
+/** Matches from the last 30 days, newest first: tap one to say hello. */
+const NEW_MATCH_DAYS = 30;
+
+function recentMatches(list: MutualMatchSummary[], now = Date.now()) {
+  const since = now - NEW_MATCH_DAYS * 24 * 60 * 60 * 1000;
+  return list.filter((m) => {
+    const at = m.matchedAt ? new Date(m.matchedAt).getTime() : 0;
+    return at >= since;
+  });
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <Text
+      style={{
+        fontFamily: fonts.bodySemi,
+        fontSize: 13,
+        color: palette.slate,
+        letterSpacing: 0.4,
+        paddingHorizontal: 20,
+        marginBottom: 10,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function NewMatchesRow({
+  matches,
+  onOpen,
+}: {
+  matches: MutualMatchSummary[];
+  onOpen: (match: MutualMatchSummary) => void;
+}) {
+  return (
+    <View style={{ marginBottom: 22 }}>
+      <SectionLabel>NEW MATCHES</SectionLabel>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}
+      >
+        {matches.map((match) => (
+          <TouchableOpacity
+            key={match.id}
+            accessibilityRole="button"
+            accessibilityLabel={`You matched with ${match.name}. Open chat`}
+            onPress={() => onOpen(match)}
+            style={{ alignItems: "center", width: 72 }}
+          >
+            <View
+              style={{
+                width: 66,
+                height: 66,
+                borderRadius: 33,
+                borderWidth: 2,
+                borderColor: palette.crimson,
+                padding: 2,
+              }}
+            >
+              {match.photo ? (
+                <Image
+                  source={{ uri: match.photo }}
+                  style={{ width: "100%", height: "100%", borderRadius: 30 }}
+                />
+              ) : (
+                <View
+                  style={{
+                    flex: 1,
+                    borderRadius: 30,
+                    backgroundColor: palette.paper,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontFamily: fonts.display, fontSize: 22, color: colors.text }}>
+                    {(match.name || "?").charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text
+              numberOfLines={1}
+              style={{
+                fontFamily: fonts.bodySemi,
+                fontSize: 12,
+                color: colors.text,
+                marginTop: 6,
+              }}
+            >
+              {match.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 export function LikesScreen({
   navigate,
   accessToken,
   openDetail,
   onMatched,
+  onOpenChat,
 }: {
   navigate: (screen: Screen) => void;
   accessToken?: string;
   openDetail: (match: Match) => void;
   onMatched: (like: {
+    userId: string;
+    username: string;
+    name: string;
+    photo: string;
+  }) => void;
+  /** Open the chat with someone already matched. */
+  onOpenChat?: (person: {
     userId: string;
     username: string;
     name: string;
@@ -194,6 +302,24 @@ export function LikesScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deciding, setDeciding] = useState<string | null>(null);
+  const [newMatches, setNewMatches] = useState<MutualMatchSummary[]>([]);
+
+  // Opening this page is reading the notifications: the bell goes back to 0.
+  // New matches load on their own so a slow list never holds up the likes.
+  useEffect(() => {
+    if (!accessToken) return;
+    let live = true;
+    void matchApi.markNotificationsSeen(accessToken).catch(() => undefined);
+    matchApi
+      .getMatches(accessToken)
+      .then((result) => {
+        if (live) setNewMatches(recentMatches((result.matches as MutualMatchSummary[]) || []));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [accessToken]);
 
   const decide = async (
     like: IncomingLike,
@@ -302,7 +428,7 @@ export function LikesScreen({
                   color: colors.text,
                 }}
               >
-                Likes
+                Notifications
               </Text>
               <Text
                 style={{
@@ -312,7 +438,7 @@ export function LikesScreen({
                   marginTop: 4,
                 }}
               >
-                People who noticed you
+                Likes, matches and Super Likes
               </Text>
             </View>
             {likes.length > 0 && (
@@ -336,6 +462,24 @@ export function LikesScreen({
               </View>
             )}
           </View>
+
+          {newMatches.length > 0 && (
+            <NewMatchesRow
+              matches={newMatches}
+              onOpen={(match) =>
+                (onOpenChat ?? onMatched)({
+                  userId: match.id,
+                  username: match.username || "",
+                  name: match.name,
+                  photo: match.photo,
+                })
+              }
+            />
+          )}
+
+          {!loading && !error && likes.length > 0 && newMatches.length > 0 && (
+            <SectionLabel>WHO LIKED YOU</SectionLabel>
+          )}
 
           {/* Loading */}
           {loading && (
@@ -786,7 +930,7 @@ export function LikesScreen({
           )}
         </ScrollView>
 
-        <BottomNav active="likes" navigate={navigate} />
+        <BottomNav active="home" navigate={navigate} />
       </SafeAreaView>
     </AppCanvas>
   );

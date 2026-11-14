@@ -171,6 +171,8 @@ import { socialApi, type SocialUser } from "../api/socialApi";
 import { matchFromSocialUser } from "../domain/socialMatch";
 import { DiscoveryCenterScreen } from "../features/discovery/screens/DiscoveryCenterScreen";
 import { LikesScreen } from "../features/discovery/screens/LikesScreen";
+import { GamesScreen } from "../features/games/GamesScreen";
+import type { GameKind } from "../api/gamesApi";
 import { HomeScreen } from "../features/discovery/screens/HomeScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { SettingsScreen } from "../features/profile/screens/SettingsScreen";
@@ -757,6 +759,8 @@ function MilaanApp() {
     outgoingRequests: [],
   });
   const [chatLaunchTool, setChatLaunchTool] = useState<CoupleLaunchTool>(null);
+  // A game picked on the Games tab, started when that chat opens.
+  const [chatLaunchGame, setChatLaunchGame] = useState<GameKind | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [activeCoupleConnectionId] = useState<string | null>(null);
   const activeCoupleHubConnection =
@@ -3676,6 +3680,8 @@ function MilaanApp() {
               experienceMode={coupleMode.experienceMode}
               initialTool={chatLaunchTool}
               onToolConsumed={() => setChatLaunchTool(null)}
+              initialGame={chatLaunchGame}
+              onGameConsumed={() => setChatLaunchGame(null)}
               match={conversationPartner}
               messages={chatMessages[conversationPartner.id] ?? []}
               settings={{
@@ -3805,6 +3811,15 @@ function MilaanApp() {
             navigate={navigateTo}
             accessToken={accessToken}
             openDetail={openDetail}
+            onOpenChat={(person) =>
+              openConversationWith({
+                userId: person.userId,
+                username: person.username,
+                name: person.name,
+                avatarUrl: person.photo || null,
+                isPrivate: false,
+              })
+            }
             onMatched={(person) => {
               // Accepting made it mutual, so the thread exists now. Open it
               // rather than leaving them to find it: this is the moment the
@@ -3821,6 +3836,22 @@ function MilaanApp() {
                 body: "You can both message each other now.",
                 icon: "heart",
                 tone: "gold",
+              });
+            }}
+          />
+        )}
+        {screen === "games" && (
+          <GamesScreen
+            navigate={navigateTo}
+            accessToken={accessToken}
+            onPlay={(match, kind) => {
+              setChatLaunchGame(kind);
+              openConversationWith({
+                userId: match.id,
+                username: match.username || "",
+                name: match.name,
+                avatarUrl: match.photo || null,
+                isPrivate: false,
               });
             }}
           />

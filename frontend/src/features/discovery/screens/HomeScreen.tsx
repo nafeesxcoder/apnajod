@@ -24,6 +24,7 @@ import { PostsFeed } from "../../posts/PostsFeed";
 import { StoriesTray } from "../../stories/StoriesTray";
 import { ActivityModal } from "../../posts/ActivityModal";
 import { postApi } from "../../../api/postApi";
+import { matchApi } from "../../../api/matchApi";
 import type { Match } from "../../../data";
 import type { ProfileGrowthInput } from "../../../domain/growth";
 import type { DiscoverySignal } from "../../../storage";
@@ -63,7 +64,6 @@ export function HomeScreen({
   onRetryMatches,
   firstName = "",
   profilePhoto,
-  notificationCount = 0,
   accessToken,
   crossedPaths,
   openDetail,
@@ -84,7 +84,6 @@ export function HomeScreen({
   profileGrowth?: ProfileGrowthInput;
   firstName?: string;
   profilePhoto?: string;
-  notificationCount?: number;
   accessToken?: string;
   roseAvailability?: RoseAvailability;
   crossedPaths: boolean;
@@ -125,6 +124,24 @@ export function HomeScreen({
       clearInterval(timer);
     };
   }, [accessToken, activityOpen]);
+  // The bell: likes, like-backs, Sparks and Super Likes since Notifications
+  // was last opened. Opening it clears the number on the server.
+  const [notificationCount, setNotificationCount] = useState(0);
+  useEffect(() => {
+    if (!accessToken) return;
+    let live = true;
+    const check = () =>
+      matchApi
+        .notificationCount(accessToken)
+        .then((n) => live && setNotificationCount(n))
+        .catch(() => undefined);
+    void check();
+    const timer = setInterval(check, 60_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [accessToken]);
   const { isDesktop: isDesktopHome } = useLayout();
   const swipeDeck = items.slice(0, 10);
   const featured = swipeDeck[0];
@@ -291,7 +308,16 @@ export function HomeScreen({
               )}
 
               <Pressable
-                onPress={() => navigate("likes")}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  notificationCount > 0
+                    ? `Notifications, ${notificationCount} new`
+                    : "Notifications"
+                }
+                onPress={() => {
+                  setNotificationCount(0);
+                  navigate("likes");
+                }}
                 hitSlop={8}
                 style={{ marginRight: 14 }}
               >

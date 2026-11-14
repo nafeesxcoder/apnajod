@@ -8,6 +8,8 @@ router.use(requireAuth);
 router.post("/decide", matchController.decide);
 router.get("/", matchController.getMatches);
 router.get("/likes", matchController.getIncomingLikes);
+router.get("/notifications", matchController.getNotifications);
+router.post("/notifications/seen", matchController.markNotificationsSeen);
 router.get("/sparks", matchController.getSparkWallet);
 router.post("/spark", matchController.sendSpark);
 

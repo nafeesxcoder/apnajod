@@ -83,6 +83,45 @@ async function recordDecision(actorId, targetId, decision, options = {}) {
   return { ok: true, mutual };
 }
 
+/**
+ * The number on the Home bell.
+ *
+ * Every like aimed at this member since they last opened Notifications -
+ * a plain like, a like-back that made a match, a Spark or a Super Like all
+ * arrive as their 'interested' decision. Only the last 30 days count, and
+ * blocked or deleted accounts never do.
+ */
+const NOTIFICATION_DAYS = 30;
+
+async function notificationCount(userId) {
+  const [row] = await query(
+    `SELECT COUNT(*) AS unread
+       FROM match_decisions d
+       JOIN users me ON me.id = d.target_id
+       JOIN users u
+         ON u.id = d.actor_id
+        AND u.deleted_at IS NULL
+        AND u.deactivated_at IS NULL
+      WHERE d.target_id = ?
+        AND d.decision = 'interested'
+        AND d.actor_id <> ?
+        AND d.updated_at >= NOW() - INTERVAL ${NOTIFICATION_DAYS} DAY
+        AND (me.notifications_seen_at IS NULL OR d.updated_at > me.notifications_seen_at)
+        AND NOT EXISTS (
+          SELECT 1 FROM blocks b
+           WHERE (b.blocker_id = ? AND b.blocked_id = d.actor_id)
+              OR (b.blocker_id = d.actor_id AND b.blocked_id = ?)
+        )`,
+    [userId, userId, userId, userId],
+  );
+  return Number(row?.unread || 0);
+}
+
+/** Opening Notifications clears the bell. */
+async function markNotificationsSeen(userId) {
+  await query("UPDATE users SET notifications_seen_at = NOW(6) WHERE id = ?", [userId]);
+}
+
 async function getMutualMatches(userId) {
   const rows = await query(
     `SELECT
@@ -286,4 +325,6 @@ module.exports = {
   recordDecision,
   getMutualMatches,
   getIncomingLikes,
+  notificationCount,
+  markNotificationsSeen,
 };

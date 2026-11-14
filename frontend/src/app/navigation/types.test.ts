@@ -5,7 +5,7 @@ const completeRouteInventory = [
   'splash','welcome','signup','login','otp','forgotPassword','newPassword','quickProfile',
   'profileSetup','vibes','intent','alignment',
   // The dating product.
-  'home','discovery','detail','mutual','icebreaker','likes',
+  'home','discovery','detail','mutual','icebreaker','likes','games',
   // The follow graph alongside it.
   'chats','find','person','chat',
   'profile','settings','safety','verifyHub',

@@ -37,6 +37,8 @@ export type Screen =
   | "mutual"
   | "icebreaker"
   | "likes"
+  // Games with your matches, from the bottom bar.
+  | "games"
   // Your threads, finding people, their page.
   | "chats"
   | "find"
@@ -96,6 +98,7 @@ export const previewScreens: readonly Screen[] = [
   "mutual",
   "icebreaker",
   "likes",
+  "games",
   "chats",
   "find",
   "person",

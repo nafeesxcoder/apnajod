@@ -35,7 +35,7 @@ export function useNavInset() {
 
 const DESTINATIONS = [
   { icon: "home-outline", activeIcon: "home", label: "Home", screen: "home" },
-  { icon: "heart-outline", activeIcon: "heart", label: "Likes", screen: "likes" },
+  { icon: "game-controller-outline", activeIcon: "game-controller", label: "Games", screen: "games" },
   { icon: "search-outline", activeIcon: "search", label: "Search", screen: "find" },
   { icon: "chatbubble-outline", activeIcon: "chatbubble", label: "Chats", screen: "chats" },
   { icon: "person-outline", activeIcon: "person", label: "Profile", screen: "profile" },
