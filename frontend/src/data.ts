@@ -13,6 +13,9 @@ export type Match = {
   reasons?: string[];
   modelVersion?: string;
   hobbies?: string[]; // <-- YEH ADD KARO
+  /** Gun Milan with the viewer, when both added their Rashi. */
+  gun?: { score: number; max: number; full: boolean } | null;
+  manglik?: boolean | null;
 };
 
 export const matches: Match[] = [

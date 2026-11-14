@@ -139,7 +139,19 @@ const discoverMatches = asyncHandler(async (req, res) => {
   const matches = await profileService.findMatches(req.user.id, limit);
   res.json({ ok: true, matches });
 });
+/** My Rashi, Nakshatra, Manglik and (Premium) the lowest Gun score to show. */
+const updateKundli = asyncHandler(async (req, res) => {
+  res.json({ ok: true, kundli: await profileService.saveKundli(req.user.id, req.body || {}) });
+});
+
+/** The Gun Milan with one person. */
+const getKundli = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await profileService.kundliWith(req.user.id, String(req.params.userId))) });
+});
+
 module.exports = {
+  updateKundli,
+  getKundli,
   exportMyData,
   getReferrals,
   getDailyPicks,

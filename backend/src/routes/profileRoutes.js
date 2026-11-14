@@ -21,6 +21,8 @@ router.post(
 router.put("/vibes", profileController.updateVibes);
 router.put("/intent", profileController.updateIntent);
 router.put("/preferences", profileController.updatePreferences);
+router.put("/kundli", profileController.updateKundli);
+router.get("/kundli/:userId", profileController.getKundli);
 router.put("/mode", profileController.updateExperienceMode);
 router.post("/complete", profileController.completeOnboarding);
 module.exports = router;

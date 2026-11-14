@@ -140,6 +140,15 @@ export function DailyPicksRow({
                 </Text>
                 {pick.verified && <TrustBadge blueTick={pick.blueTick} size={11} />}
               </View>
+              {/* Gun Milan with this pick, when both added a Rashi. */}
+              {!!pick.gun && (
+                <Text
+                  accessibilityLabel={`Gun ${pick.gun.score} of ${pick.gun.max}`}
+                  style={{ fontFamily: fonts.bodySemi, fontSize: 10, color: "#92400E", marginTop: 1 }}
+                >
+                  🪐 {pick.gun.score}/{pick.gun.max}
+                </Text>
+              )}
             </PressScale>
           );
         })}

@@ -26,6 +26,7 @@ import { brand, cardShadow } from "../../../components/brand";
 import { PressScale, Reveal } from "../../../components/motion";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
+import { KundliCard } from "../../kundli/KundliEditor";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -389,6 +390,13 @@ export function ProfileScreen({
               {!!intentInput && (
                 <Reveal delay={120}>
                   <IntentSection input={intentInput} />
+                </Reveal>
+              )}
+
+              {/* Kundli: Rashi and Nakshatra for the Gun Milan on every match. */}
+              {!!accessToken && (
+                <Reveal delay={150}>
+                  <KundliCard accessToken={accessToken} />
                 </Reveal>
               )}
 

@@ -205,6 +205,8 @@ import { loadStories, openStoriesOf, takeStoryParam } from "../features/stories/
 import { setFestival, startFestivalWatch } from "../features/festival/festivalStore";
 import { setPromo } from "../features/promo/promoStore";
 import { PromoHost } from "../features/promo/PromoHost";
+import { KundliHost } from "../features/kundli/KundliSheet";
+import { KundliEditorHost } from "../features/kundli/KundliEditor";
 import type { Promo } from "../features/promo/styles";
 import type { ActiveFestival } from "../features/festival/themes";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
@@ -4026,6 +4028,13 @@ function MilaanApp() {
         )}
         {/* Plays stories opened from anywhere: the row on Home or a ring round a photo. */}
         {!!accessToken && onboardingComplete && <StoryHost accessToken={accessToken} />}
+        {/* Gun Milan sheet (from a card's badge) and my Kundli editor. */}
+        {!!accessToken && onboardingComplete && (
+          <>
+            <KundliHost accessToken={accessToken} onPremium={() => navigateTo("premium")} />
+            <KundliEditorHost accessToken={accessToken} onPremium={() => navigateTo("premium")} />
+          </>
+        )}
         {/* The offer popup the admin has on: each time the app opens, until closed. */}
         {!!accessToken && onboardingComplete && (
           <PromoHost

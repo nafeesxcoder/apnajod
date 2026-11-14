@@ -20,6 +20,7 @@ import { matchApi } from "../../../api/matchApi";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { TrustBadge } from "../../../components/TrustBadge";
+import { GunBadge } from "../../kundli/KundliSheet";
 import { IntentSection } from "../../../components/IntentBadges";
 import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
@@ -230,6 +231,11 @@ export function MatchDetailScreen({
                 </Text>
                 {match.verified && <TrustBadge blueTick={match.blueTick} size={22} />}
               </View>
+              {!!match.gun && (
+                <View style={{ alignItems: "center", marginTop: 8 }}>
+                  <GunBadge gun={match.gun} userId={match.profileId ?? match.id} name={match.name} large />
+                </View>
+              )}
 
               <Text
                 style={{

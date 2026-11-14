@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
 const billingService = require("./billingService");
+const kundliService = require("./kundliService");
 const limits = require("../config/billing");
 const { ApiError } = require("../middleware/errorHandler");
 
@@ -382,6 +383,11 @@ async function findMatches(userId, limit = 20) {
     "SELECT * FROM matching_preferences WHERE user_id = ?",
     [userId],
   );
+  // Kundli: my Rashi/Nakshatra for the Gun badge, and a Premium "Gun 18+".
+  const [me] = await query("SELECT rashi, nakshatra, gender FROM profiles WHERE user_id = ?", [userId]);
+  const minGun = me?.rashi && myPrefs?.min_gun && (await billingService.isPremium(userId)) ? Number(myPrefs.min_gun) : 0;
+  // With a Gun filter on, look at more people so the deck still fills.
+  const pool = minGun ? Math.min(Number(limit) * 3, 150) : Number(limit);
   const minAge = myPrefs?.min_age ?? 21;
   const maxAge = myPrefs?.max_age ?? 45;
   const lookingFor = myPrefs?.looking_for || "everyone";
@@ -409,6 +415,7 @@ async function findMatches(userId, limit = 20) {
        u.id AS user_id, u.username,
        p.first_name, p.gender, p.age, p.height, p.city, p.profession,
        p.religion, p.community, p.about, p.verified, p.hobbies,
+       p.rashi, p.nakshatra, p.manglik,
        ${billingService.blueTickSql("u.id", "p.verified")} AS blue_tick,
        EXISTS (
          SELECT 1 FROM boosts b
@@ -448,9 +455,20 @@ async function findMatches(userId, limit = 20) {
        (p.first_name IS NULL OR p.first_name = '') ASC,
        p.updated_at DESC,
        u.created_at DESC
-     LIMIT ${Number(limit)}`,
+     LIMIT ${pool}`,
     [wantGender, wantGender, ...ageParams, ...fitParams, userId, userId, userId, userId],
   );
+
+  // The Gun Milan with each person (when both have a Rashi).
+  for (const candidate of candidates) {
+    candidate.gun = kundliService.gunBadge(me, candidate);
+  }
+  if (minGun) {
+    // Below the member's Gun score: out. No kundli: kept, after the rest.
+    const fits = candidates.filter((c) => c.gun && c.gun.full && c.gun.score >= minGun);
+    const unknown = candidates.filter((c) => !c.gun || !c.gun.full);
+    candidates.splice(0, candidates.length, ...[...fits, ...unknown].slice(0, Number(limit)));
+  }
 
   if (!candidates.length) return [];
 
@@ -509,6 +527,9 @@ async function findMatches(userId, limit = 20) {
       match: "Great Match",
       verified: candidate.verified === 1,
       blueTick: Number(candidate.blue_tick) === 1,
+      // Gun Milan with the viewer (only when both added their Rashi).
+      gun: candidate.gun ?? null,
+      manglik: candidate.manglik === "yes" ? true : candidate.manglik === "no" ? false : null,
       // Outside the viewer's stated preferences (shown only when the deck
       // would otherwise run dry). Daily picks leave these out.
       offPreference: Number(candidate.off_preference) === 1,
@@ -531,6 +552,62 @@ async function findMatches(userId, limit = 20) {
   });
 }
 
+/**
+ * Save my Rashi, Nakshatra and Manglik (all optional), and - for Premium -
+ * the lowest Gun score I want to see. The Nakshatra has to lie in the Rashi.
+ */
+async function saveKundli(userId, input) {
+  const toInt = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+  const rashi = toInt(input?.rashi);
+  const nakshatra = rashi ? toInt(input?.nakshatra) : null;
+  if (rashi !== null && !kundliService.validPair(rashi, nakshatra)) {
+    throw new ApiError(400, "That Nakshatra is not in that Rashi.");
+  }
+  const manglik = ["yes", "no", "unknown"].includes(input?.manglik) ? input.manglik : null;
+  await query("UPDATE profiles SET rashi = ?, nakshatra = ?, manglik = ? WHERE user_id = ?", [rashi, nakshatra, manglik, userId]);
+
+  if (input && Object.prototype.hasOwnProperty.call(input, "minGun")) {
+    const minGun = toInt(input.minGun);
+    if (minGun !== null) {
+      if (!Number.isInteger(minGun) || minGun < 1 || minGun > 36) throw new ApiError(400, "The Gun score is 1 to 36.");
+      if (!(await billingService.isPremium(userId))) throw new ApiError(402, "The Gun filter is part of Premium.");
+    }
+    await query(
+      `INSERT INTO matching_preferences (user_id, min_gun) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE min_gun = VALUES(min_gun)`,
+      [userId, minGun],
+    );
+  }
+  return { rashi, nakshatra, manglik };
+}
+
+/**
+ * The Gun Milan with someone, for the sheet. Everyone sees the score;
+ * the eight kootas one by one are for Premium.
+ */
+async function kundliWith(userId, otherId) {
+  const rows = await query("SELECT user_id, rashi, nakshatra, manglik, gender, first_name FROM profiles WHERE user_id IN (?, ?)", [userId, otherId]);
+  const me = rows.find((r) => r.user_id === userId) ?? null;
+  const them = rows.find((r) => r.user_id === otherId) ?? null;
+  const premium = await billingService.isPremium(userId);
+  const result = me && them ? kundliService.gunMilan(me, them) : null;
+  const manglik = (v) => (v === "yes" ? true : v === "no" ? false : null);
+  return {
+    premium,
+    mine: me ? { ...kundliService.describe(me), manglik: manglik(me.manglik) } : null,
+    theirs: them ? { ...kundliService.describe(them), manglik: manglik(them.manglik), name: them.first_name ?? null } : null,
+    result: result
+      ? {
+          total: result.total,
+          max: result.max,
+          full: result.full,
+          band: result.band,
+          kootas: premium ? result.kootas : null,
+        }
+      : null,
+  };
+}
+
 module.exports = {
   getFullProfile,
   upsertProfile,
@@ -548,4 +625,6 @@ module.exports = {
   setExperienceMode,
   markOnboardingComplete,
   findMatches,
+  saveKundli,
+  kundliWith,
 };

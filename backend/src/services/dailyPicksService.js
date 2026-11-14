@@ -1,6 +1,7 @@
 const { query } = require("../config/db");
 const pushService = require("./pushService");
 const profileService = require("./profileService");
+const kundliService = require("./kundliService");
 
 /**
  * Aaj ke 5 - five hand-picked profiles a day.
@@ -167,6 +168,17 @@ async function forMember(userId, now = new Date()) {
       rows = await readSet(userId, day);
     }
   }
+  // The Gun Milan is worked out now, not kept in the saved card: either
+  // side may have added or changed their Rashi since.
+  const kundli = {};
+  if (rows.length) {
+    const ids = [userId, ...rows.map((row) => row.target_id)];
+    const people = await query(
+      `SELECT user_id, rashi, nakshatra, gender FROM profiles WHERE user_id IN (${ids.map(() => "?").join(",")})`,
+      ids,
+    );
+    for (const person of people) kundli[person.user_id] = person;
+  }
   return {
     day,
     nextAt: nextPicksAt(now).toISOString(),
@@ -174,7 +186,8 @@ async function forMember(userId, now = new Date()) {
       .map((row) => {
         const card = parseCard(row.card);
         if (!card) return null;
-        return { ...card, pickStatus: row.decision || "new" };
+        const gun = kundliService.gunBadge(kundli[userId], kundli[row.target_id]);
+        return { ...card, gun, pickStatus: row.decision || "new" };
       })
       .filter(Boolean),
   };
