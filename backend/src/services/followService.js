@@ -16,7 +16,11 @@ const SELF_FOLLOW = "You cannot follow your own account.";
 
 async function getUser(userId) {
   const [row] = await query(
-    "SELECT id, username, full_name, avatar_url, is_private FROM users WHERE id = ? AND deleted_at IS NULL",
+    // The member's first profile photo (most never set users.avatar_url).
+    `SELECT u.id, u.username, u.full_name,
+            COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar_url,
+            u.is_private
+       FROM users u WHERE u.id = ? AND u.deleted_at IS NULL`,
     [userId],
   );
   return row || null;
@@ -77,7 +81,9 @@ async function searchByUsername(viewerId, term, limit = 20) {
     .toLowerCase();
   if (q.length < 2) return [];
   const rows = await query(
-    `SELECT u.id AS user_id, u.username, u.full_name, u.avatar_url, u.is_private
+    `SELECT u.id AS user_id, u.username, u.full_name,
+            COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar_url,
+            u.is_private
        FROM users u
       WHERE u.deleted_at IS NULL
         AND u.deactivated_at IS NULL
@@ -112,7 +118,9 @@ async function matchContacts(viewerId, phones, limit = 200) {
 
   const placeholders = normalized.map(() => "?").join(",");
   const rows = await query(
-    `SELECT u.id AS user_id, u.username, u.full_name, u.avatar_url, u.is_private, u.phone
+    `SELECT u.id AS user_id, u.username, u.full_name,
+            COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar_url,
+            u.is_private, u.phone
        FROM users u
       WHERE u.deleted_at IS NULL
         AND u.deactivated_at IS NULL

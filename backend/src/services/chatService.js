@@ -618,8 +618,12 @@ async function listConversations(userId, limit = 100) {
       [row.conversation_id],
     );
     const [person] = await query(
-      `SELECT id, username, full_name, avatar_url, is_private
-         FROM users WHERE id = ? AND deleted_at IS NULL`,
+      // The first profile photo, so the chat list and header show a face
+      // (most members never set users.avatar_url).
+      `SELECT u.id, u.username, u.full_name,
+              COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar_url,
+              u.is_private
+         FROM users u WHERE u.id = ? AND u.deleted_at IS NULL`,
       [otherId],
     );
     if (!person) continue;

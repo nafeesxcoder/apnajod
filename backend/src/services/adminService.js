@@ -60,10 +60,32 @@ async function getDashboardStats() {
   };
 }
 
-async function listUsers(search = "", limit = 50) {
+/** The Users tab's filters: who has what. */
+const USER_FILTERS = ["all", "verified", "bluetick", "pro", "paid", "pending"];
+
+/** An entitlement that is live right now (NULL expiry never runs out). */
+const live = (feature) => `EXISTS (SELECT 1 FROM entitlements e
+     WHERE e.user_id = u.id AND e.feature = '${feature}'
+       AND (e.expires_at IS NULL OR e.expires_at > UTC_TIMESTAMP(6)))`;
+const until = (feature) => `(SELECT IF(MAX(e.expires_at IS NULL), NULL, MAX(e.expires_at)) FROM entitlements e
+     WHERE e.user_id = u.id AND e.feature = '${feature}'
+       AND (e.expires_at IS NULL OR e.expires_at > UTC_TIMESTAMP(6)))`;
+
+/**
+ * Members for the admin, newest first, with what they have: selfie
+ * verified, blue tick, and which paid plan until when. A filter narrows
+ * the list on the server, so every Pro or verified member can be found.
+ */
+async function listUsers(search = "", limit = 200, filter = "all") {
+  const PRO = billingService.PRO;
+  const PREMIUM = billingService.PREMIUM;
   let sql = `SELECT u.id, u.username, u.full_name, u.phone, u.avatar_url, u.role, u.status, u.created_at,
-                    p.first_name, p.age, p.city, p.verified,
-                    ${billingService.blueTickSql("u.id", "p.verified")} AS blue_tick
+                    p.first_name, p.age, p.city, p.verified, p.verification_status,
+                    ${billingService.blueTickSql("u.id", "p.verified")} AS blue_tick,
+                    ${live(PRO)} AS pro,
+                    ${live(PREMIUM)} AS plus,
+                    ${until(PRO)} AS pro_until,
+                    ${until(PREMIUM)} AS plus_until
                FROM users u
                LEFT JOIN profiles p ON p.user_id = u.id
               WHERE u.deleted_at IS NULL`;
@@ -75,13 +97,28 @@ async function listUsers(search = "", limit = 50) {
     params.push(term, term, term, term);
   }
 
+  const which = USER_FILTERS.includes(filter) ? filter : "all";
+  if (which === "verified") sql += " AND COALESCE(p.verified, 0) = 1";
+  if (which === "bluetick") sql += ` AND ${billingService.blueTickSql("u.id", "p.verified")}`;
+  if (which === "pro") sql += ` AND ${live(PRO)}`;
+  if (which === "paid") sql += ` AND (${live(PRO)} OR ${live(PREMIUM)})`;
+  if (which === "pending") sql += " AND p.verification_status = 'pending'";
+
   // LIMIT can't be a placeholder with execute(); the number is internal.
-  const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
+  const safeLimit = Math.min(Math.max(Number(limit) || 200, 1), 500);
   sql += ` ORDER BY u.created_at DESC LIMIT ${safeLimit}`;
 
   // query() returns the rows array itself. "const [rows] =" kept only the
   // first user, so the Users tab and "Recently joined" came back empty.
-  return query(sql, params);
+  const rows = await query(sql, params);
+  return rows.map((row) => ({
+    ...row,
+    verified: Number(row.verified) === 1 ? 1 : 0,
+    blue_tick: Number(row.blue_tick) === 1 ? 1 : 0,
+    // Pro includes everything Plus has; show the higher plan.
+    plan: Number(row.pro) === 1 ? "Pro" : Number(row.plus) === 1 ? "Plus" : null,
+    plan_until: Number(row.pro) === 1 ? row.pro_until : Number(row.plus) === 1 ? row.plus_until : null,
+  }));
 }
 
 async function setUserRole(userId, role) {
@@ -93,6 +130,7 @@ async function setUserRole(userId, role) {
 module.exports = {
   getDashboardStats,
   listUsers,
+  USER_FILTERS,
   setUserRole,
   // Reusing existing logic from other services
   listPendingVerifications: profileService.listPendingVerifications,

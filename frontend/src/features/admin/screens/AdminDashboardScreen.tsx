@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   Image,
   Platform,
   Pressable,
@@ -45,6 +46,19 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "security", label: "Security", icon: "lock-closed-outline" }, // 👈 New
 ];
 
+/** The Users tab's filters: who has what. */
+type UserFilter = "all" | "verified" | "bluetick" | "pro" | "paid" | "pending";
+const USER_FILTERS: { key: UserFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "verified", label: "Selfie verified" },
+  { key: "bluetick", label: "Blue tick" },
+  { key: "pro", label: "Pro" },
+  { key: "paid", label: "Paid (Plus or Pro)" },
+  { key: "pending", label: "Verification pending" },
+];
+
+type AdminPlace = { tab: Tab; filter: UserFilter };
+
 const errText = (e: unknown, fallback: string) =>
   e instanceof Error ? e.message : fallback;
 
@@ -73,7 +87,58 @@ export function AdminDashboardScreen({
   onLogout: () => void;
   exitLabel?: string;
 }) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTabState] = useState<Tab>("overview");
+  const [usersFilter, setUsersFilter] = useState<UserFilter>("all");
+  const placeRef = useRef<AdminPlace>({ tab: "overview", filter: "all" });
+  // Native back: the tabs you came through.
+  const backStack = useRef<AdminPlace[]>([]);
+  const show = (place: AdminPlace) => {
+    placeRef.current = place;
+    setTabState(place.tab);
+    setUsersFilter(place.filter);
+  };
+  /**
+   * Opening a tab is a step back can undo: the browser's back (and
+   * Android's) goes to the tab before, and from Overview it stays in the
+   * admin instead of leaving it.
+   */
+  const setTab = (next: Tab, filter: UserFilter = "all") => {
+    const place = { tab: next, filter };
+    if (place.tab === placeRef.current.tab && place.filter === placeRef.current.filter) return;
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.history.pushState({ milaanScreen: "adminDashboard", adminTab: next, adminFilter: filter }, "");
+    } else backStack.current = [...backStack.current, placeRef.current].slice(-30);
+    show(place);
+  };
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      if (typeof window === "undefined") return;
+      window.history.replaceState({ milaanScreen: "adminDashboard", adminTab: "overview", adminFilter: "all" }, "");
+      const onPop = (event: PopStateEvent) => {
+        // The app's own back handling leaves the admin alone (see MilaanApp).
+        const state = event.state as { adminTab?: Tab; adminFilter?: UserFilter } | null;
+        if (state?.adminTab) {
+          show({ tab: state.adminTab, filter: state.adminFilter ?? "all" });
+          return;
+        }
+        // Past the first admin page: stay in the admin, on Overview.
+        window.history.pushState({ milaanScreen: "adminDashboard", adminTab: "overview", adminFilter: "all" }, "");
+        show({ tab: "overview", filter: "all" });
+      };
+      window.addEventListener("popstate", onPop, true);
+      return () => window.removeEventListener("popstate", onPop, true);
+    }
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      const previous = backStack.current.pop();
+      if (previous) show(previous);
+      else if (placeRef.current.tab !== "overview") show({ tab: "overview", filter: "all" });
+      // On Overview, back stays here; Logout / Exit leaves the admin.
+      return true;
+    });
+    return () => sub.remove();
+    // show only sets state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // A 260px sidebar leaves almost nothing on a phone, so narrow screens get
   // a top bar with scrollable tabs instead.
   const { width } = useWindowDimensions();
@@ -350,7 +415,9 @@ export function AdminDashboardScreen({
             <OverviewTab accessToken={accessToken} onNavigate={setTab} />
           )}
           {tab === "growth" && <GrowthTab accessToken={accessToken} />}
-          {tab === "users" && <UsersTab accessToken={accessToken} />}
+          {tab === "users" && (
+            <UsersTab accessToken={accessToken} filter={usersFilter} onFilter={(f) => setTab("users", f)} />
+          )}
           {tab === "verifications" && (
             <VerificationsTab accessToken={accessToken} />
           )}
@@ -522,7 +589,7 @@ function OverviewTab({
   onNavigate,
 }: {
   accessToken: string;
-  onNavigate: (t: Tab) => void;
+  onNavigate: (t: Tab, filter?: UserFilter) => void;
 }) {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -630,11 +697,13 @@ function OverviewTab({
           title="Verified Members"
           value={String(verifiedUsers)}
           icon="checkmark-done-circle"
+          onPress={() => onNavigate("users", "verified")}
         />
         <StatCard
           title="Blue Tick Members"
           value={String(blueTickUsers)}
           icon="ribbon"
+          onPress={() => onNavigate("users", "bluetick")}
         />
         <StatCard
           title="Open Reports"
@@ -897,7 +966,16 @@ function StatCard({
 
 /* ---------------- Users ---------------- */
 
-function UsersTab({ accessToken }: { accessToken: string }) {
+function UsersTab({
+  accessToken,
+  filter,
+  onFilter,
+}: {
+  accessToken: string;
+  /** Who to list: everyone, or only verified / blue tick / Pro / paid / pending. */
+  filter: UserFilter;
+  onFilter: (filter: UserFilter) => void;
+}) {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -909,7 +987,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
       setLoading(true);
       setError("");
       try {
-        const res: any = await adminApi.users(accessToken, q);
+        const res: any = await adminApi.users(accessToken, q, filter);
         let list = [];
         if (Array.isArray(res?.users)) list = res.users;
         else if (Array.isArray(res?.items)) list = res.items;
@@ -921,7 +999,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
         setLoading(false);
       }
     },
-    [accessToken],
+    [accessToken, filter],
   );
 
   useEffect(() => {
@@ -969,12 +1047,48 @@ function UsersTab({ accessToken }: { accessToken: string }) {
         style={inputStyle}
       />
 
+      {/* Who has what: tap a filter to list only those members. */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {USER_FILTERS.map((f) => {
+          const on = filter === f.key;
+          return (
+            <Pressable
+              key={f.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`Show ${f.label}`}
+              onPress={() => onFilter(f.key)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: on ? COLORS.primary : COLORS.border,
+                backgroundColor: on ? COLORS.primary : COLORS.card,
+                ...webHoverStyle,
+              }}
+            >
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: on ? "#FFFFFF" : COLORS.textMain }}>
+                {f.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {!loading && !error && (
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+          {users.length === 1 ? "1 member" : `${users.length} members`}
+          {users.length >= 200 ? " (newest 200 - search to find someone)" : ""}
+        </Text>
+      )}
+
       {loading ? (
         <Loading />
       ) : error ? (
         <Message tone="error" text={error} />
       ) : users.length === 0 ? (
-        <Message text="No users match that search." />
+        <Message text={filter === "all" ? "No users match that search." : "Nobody here yet."} />
       ) : (
         <View style={{ gap: 12 }}>
           {users.map((u) => {
@@ -1027,8 +1141,13 @@ function UsersTab({ accessToken }: { accessToken: string }) {
                       {name}
                     </Text>
                     {role === "admin" && <Badge text="Admin" />}
-                    {verified && <Badge text="Verified" />}
+                    {verified && <Badge text="✓ Selfie verified" />}
                     {blueTick && <Badge text="Blue tick" />}
+                    {!!u?.plan && (
+                      <Badge text={`${u.plan} · ${u.plan_until ? `till ${joinedLabel(u.plan_until)}` : "no end date"}`} />
+                    )}
+                    {u?.plan === "Pro" && !verified && <Badge text="Pro, not verified (no blue tick)" danger />}
+                    {!verified && u?.verification_status === "pending" && <Badge text="Verification pending" />}
                     {banned && <Badge text="Suspended" danger />}
                   </View>
                   {!!contact && (

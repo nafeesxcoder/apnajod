@@ -5,7 +5,7 @@ import {
   storedInvite,
 } from "../features/onboarding/inviteTracking";
 import { SharedProfilePage } from "../features/share/SharedProfilePage";
-import { Platform, View } from "react-native";
+import { BackHandler, Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi, AuthRequestError, isSessionRejected } from "../api/authApi";
 import { profileApi, onProfileReward } from "../api/profileApi";
@@ -337,6 +337,9 @@ function getPreviewState(): PreviewState | undefined {
 const showcasePreviewScreen = getPreviewScreen();
 const showcasePreviewState = getPreviewState();
 const googleCallbackData = getGoogleCallback();
+/** The sign-in pages: once signed in, the back button never goes back to them. */
+const AUTH_SCREENS = new Set<Screen>(["splash", "welcome", "signup", "login", "otp", "forgotPassword", "newPassword", "adminLogin"]);
+
 const isAdminMode = Platform.OS === "web" && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "1";
 const isPreviewAccessMode =
   Platform.OS === "web" &&
@@ -505,6 +508,10 @@ function MilaanApp() {
     {},
   );
   const screenRef = useRef(screen);
+  // Signed in and past onboarding: back must not land on the sign-in pages.
+  const signedInRef = useRef(false);
+  // The phone app's own back stack (Android's back button).
+  const nativeBackRef = useRef<Screen[]>([]);
   const isPoppingScreenRef = useRef(false);
   const hasMountedBackGuardRef = useRef(false);
   useEffect(() => {
@@ -517,6 +524,9 @@ function MilaanApp() {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
     window.history.replaceState({ milaanScreen: screenRef.current }, "");
     const handlePopState = (event: PopStateEvent) => {
+      // The admin dashboard walks back through its own tabs (and stays put
+      // on Overview); leaving it is its "Back to app" / "Logout" button.
+      if (screenRef.current === "adminDashboard") return;
       // A full-screen call (if any) gets first claim on every back press --
       // minimize it and re-seed our own entry rather than navigating away,
       // which would otherwise unmount the call along with the screen it's
@@ -529,6 +539,12 @@ function MilaanApp() {
       }
       const target = (event.state as { milaanScreen?: Screen } | null)
         ?.milaanScreen;
+      // Signed in, back never returns to the sign-in pages left behind in
+      // the browser's history: stay where you are instead.
+      if (target && signedInRef.current && AUTH_SCREENS.has(target)) {
+        window.history.pushState({ milaanScreen: screenRef.current }, "");
+        return;
+      }
       if (target && target !== screenRef.current) {
         isPoppingScreenRef.current = true;
         setScreen(target);
@@ -540,6 +556,39 @@ function MilaanApp() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+  // Android's back button: the screen before, never the sign-in pages once
+  // signed in; with nowhere left to go, Home, and from Home the phone's own
+  // back (the app goes to the background). Open sheets and modals close
+  // first on their own.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const last = nativeBackRef.current[nativeBackRef.current.length - 1];
+    if (isPoppingScreenRef.current) isPoppingScreenRef.current = false;
+    else if (last !== screen) nativeBackRef.current = [...nativeBackRef.current, screen].slice(-30);
+  }, [screen]);
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (minimizeActiveCallIfAny()) return true;
+      const stack = nativeBackRef.current;
+      while (stack.length > 1) {
+        stack.pop();
+        const previous = stack[stack.length - 1]!;
+        if (signedInRef.current && AUTH_SCREENS.has(previous)) continue;
+        isPoppingScreenRef.current = true;
+        setScreen(previous);
+        return true;
+      }
+      if (signedInRef.current && screenRef.current !== "home") {
+        nativeBackRef.current = ["home"];
+        isPoppingScreenRef.current = true;
+        setScreen("home");
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
   }, []);
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
@@ -681,6 +730,9 @@ function MilaanApp() {
   >(null);
   const [onboardingComplete, setOnboardingComplete] =
     useState(isCustomerShowcase);
+  useEffect(() => {
+    signedInRef.current = !!accessToken && onboardingComplete;
+  }, [accessToken, onboardingComplete]);
   const [profileReminderShownAt, setProfileReminderShownAt] = useState(
     initialPersistedState.profileReminderShownAt,
   );

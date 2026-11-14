@@ -92,7 +92,9 @@ export const adminApi = {
   /** Growth page: one number per India day for the last 7, 14 or 30 days. */
   growth: (token: string, days: GrowthDays): Promise<{ ok: boolean; growth: Growth }> =>
     authFetch(`/admin/growth?days=${days}`, token),
-  users: (token: string, q = "") => authFetch(`/admin/users?q=${encodeURIComponent(q)}`, token),
+  /** Members, newest first; filter: all, verified, bluetick, pro, paid or pending. */
+  users: (token: string, q = "", filter = "all") =>
+    authFetch(`/admin/users?q=${encodeURIComponent(q)}&filter=${encodeURIComponent(filter)}`, token),
   verifications: (token: string) => authFetch("/admin/verifications", token),
   approveVerification: (token: string, id: string) => authFetch(`/admin/verifications/${id}/approve`, token, { method: "POST" }),
   rejectVerification: (token: string, id: string) => authFetch(`/admin/verifications/${id}/reject`, token, { method: "POST" }),

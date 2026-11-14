@@ -16,7 +16,7 @@ const getGrowth = asyncHandler(async (req, res) => {
 });
 
 const getUsers = asyncHandler(async (req, res) => {
-  const users = await adminService.listUsers(req.query.q || "");
+  const users = await adminService.listUsers(req.query.q || "", 200, String(req.query.filter || "all"));
   res.json({ ok: true, users });
 });
 

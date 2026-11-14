@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -201,6 +201,83 @@ export function PremiumScreen({
         ? "Plus"
         : "Premium";
 
+  // The Buy button sits right under the plan or pack you tapped, not at
+  // the bottom of the page. Notes and errors from the payment go with it.
+  const buyBlock = (
+    <View>
+      {!!notice && (
+        <Text
+          accessibilityRole="alert"
+          style={{
+            color: palette.emerald,
+            fontFamily: fonts.bodySemi,
+            fontSize: 14,
+            textAlign: "center",
+            marginTop: 18,
+          }}
+        >
+          {notice}
+        </Text>
+      )}
+
+      {!!error && (
+        <Text
+          accessibilityRole="alert"
+          style={{
+            color: palette.crimson,
+            fontFamily: fonts.body,
+            fontSize: 13,
+            textAlign: "center",
+            marginTop: 18,
+          }}
+        >
+          {error}
+        </Text>
+      )}
+
+      {/* One flag closes payments (say, while Razorpay KYC is
+          pending): the button goes with it, never a Buy that fails. */}
+      {billingApi.checkoutAvailable && (
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={buying ? "Opening Razorpay" : "Buy with Razorpay"}
+          onPress={() => void handleBuy()}
+          disabled={!selectedCode || buying}
+          containerStyle={{ marginTop: 20 }}
+          style={{
+            backgroundColor: palette.crimson,
+            paddingVertical: 16,
+            borderRadius: radius.pill,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 8,
+            minHeight: 52,
+            opacity: !selectedCode || buying ? 0.5 : 1,
+          }}
+        >
+          {!!selectedCode && !buying && (
+            <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
+          )}
+          {buying ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+          )}
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontFamily: fonts.bodySemi,
+              fontSize: 16,
+            }}
+          >
+            {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
+          </Text>
+        </PressScale>
+      )}
+    </View>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -343,18 +420,20 @@ export function PremiumScreen({
                   const isCurrentPlan =
                     summary?.premium && selectedCode === plan.code;
                   return (
-                    <PlanCard
-                      key={plan.code}
-                      delay={300 + index * 60}
-                      title={plan.title}
-                      price={`${rupees(plan.amount_paise)}/month`}
-                      features={features}
-                      selected={selectedCode === plan.code}
-                      onSelect={() => setSelectedCode(plan.code)}
-                      blueTick={plan.code === "pro_monthly"}
-                      highlight={plan.code === "pro_monthly"}
-                      badge={isCurrentPlan ? "Current plan" : undefined}
-                    />
+                    <View key={plan.code}>
+                      <PlanCard
+                        delay={300 + index * 60}
+                        title={plan.title}
+                        price={`${rupees(plan.amount_paise)}/month`}
+                        features={features}
+                        selected={selectedCode === plan.code}
+                        onSelect={() => setSelectedCode(plan.code)}
+                        blueTick={plan.code === "pro_monthly"}
+                        highlight={plan.code === "pro_monthly"}
+                        badge={isCurrentPlan ? "Current plan" : undefined}
+                      />
+                      {selectedCode === plan.code && buyBlock}
+                    </View>
                   );
                 })}
 
@@ -364,7 +443,9 @@ export function PremiumScreen({
                     packs={boostPacks}
                     selectedCode={selectedCode}
                     onSelect={setSelectedCode}
-                  />
+                  >
+                    {boostPacks.some((pack) => pack.code === selectedCode) && buyBlock}
+                  </PackGroup>
                 )}
 
                 {superlikePacks.length > 0 && (
@@ -373,78 +454,9 @@ export function PremiumScreen({
                     packs={superlikePacks}
                     selectedCode={selectedCode}
                     onSelect={setSelectedCode}
-                  />
-                )}
-
-                {!!notice && (
-                  <Text
-                    accessibilityRole="alert"
-                    style={{
-                      color: palette.emerald,
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 14,
-                      textAlign: "center",
-                      marginTop: 18,
-                    }}
                   >
-                    {notice}
-                  </Text>
-                )}
-
-                {!!error && (
-                  <Text
-                    accessibilityRole="alert"
-                    style={{
-                      color: palette.crimson,
-                      fontFamily: fonts.body,
-                      fontSize: 13,
-                      textAlign: "center",
-                      marginTop: 18,
-                    }}
-                  >
-                    {error}
-                  </Text>
-                )}
-
-                {/* One flag closes payments (say, while Razorpay KYC is
-                    pending): the button goes with it, never a Buy that fails. */}
-                {billingApi.checkoutAvailable && (
-                  <PressScale
-                    accessibilityRole="button"
-                    accessibilityLabel={buying ? "Opening Razorpay" : "Buy with Razorpay"}
-                    onPress={() => void handleBuy()}
-                    disabled={!selectedCode || buying}
-                    containerStyle={{ marginTop: 20 }}
-                    style={{
-                      backgroundColor: palette.crimson,
-                      paddingVertical: 16,
-                      borderRadius: radius.pill,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexDirection: "row",
-                      gap: 8,
-                      minHeight: 52,
-                      opacity: !selectedCode || buying ? 0.5 : 1,
-                    }}
-                  >
-                    {!!selectedCode && !buying && (
-                      <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
-                    )}
-                    {buying ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
-                    )}
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        fontFamily: fonts.bodySemi,
-                        fontSize: 16,
-                      }}
-                    >
-                      {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
-                    </Text>
-                  </PressScale>
+                    {superlikePacks.some((pack) => pack.code === selectedCode) && buyBlock}
+                  </PackGroup>
                 )}
 
                 {!billingApi.checkoutAvailable && (
@@ -627,11 +639,14 @@ function PackGroup({
   packs,
   selectedCode,
   onSelect,
+  children,
 }: {
   title: string;
   packs: BillingPlan[];
   selectedCode: string | null;
   onSelect: (code: string) => void;
+  /** The Buy button, when one of these packs is picked. */
+  children?: ReactNode;
 }) {
   return (
     <View style={{ marginTop: 8, marginBottom: 12 }}>
@@ -687,6 +702,7 @@ function PackGroup({
           );
         })}
       </View>
+      {children}
     </View>
   );
 }
