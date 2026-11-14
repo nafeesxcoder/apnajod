@@ -159,7 +159,43 @@ async function setAccountStatus(userId, status) {
   return { userId, status };
 }
 
+/** The people you blocked, newest first, for the list with Unblock. */
+async function blockedList(userId) {
+  const rows = await query(
+    `SELECT u.id, u.username,
+            COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
+            COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar,
+            b.created_at
+       FROM blocks b
+       JOIN users u ON u.id = b.blocked_id
+       LEFT JOIN profiles pr ON pr.user_id = u.id
+      WHERE b.blocker_id = ? AND u.deleted_at IS NULL
+      ORDER BY b.created_at DESC
+      LIMIT 500`,
+    [userId],
+  );
+  return rows.map((r) => ({ userId: r.id, username: r.username, name: r.name || r.username, avatarUrl: r.avatar || null, blockedAt: r.created_at }));
+}
+
+/** Safety Center's numbers and switches, from the server (not this phone). */
+async function summary(userId) {
+  const [[reports], [blocked], [me]] = await Promise.all([
+    query("SELECT COUNT(*) AS n FROM reports WHERE reporter_id = ?", [userId]),
+    query("SELECT COUNT(*) AS n FROM blocks WHERE blocker_id = ?", [userId]),
+    query("SELECT hide_activity FROM users WHERE id = ?", [userId]),
+  ]);
+  return { reports: Number(reports?.n || 0), blocked: Number(blocked?.n || 0), hideActivity: Number(me?.hide_activity) === 1 };
+}
+
+async function setHideActivity(userId, hidden) {
+  await query("UPDATE users SET hide_activity = ? WHERE id = ?", [hidden ? 1 : 0, userId]);
+  return { hideActivity: !!hidden };
+}
+
 module.exports = {
+  blockedList,
+  summary,
+  setHideActivity,
   submitReport,
   blockUser,
   unblockUser,

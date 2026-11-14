@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View, Linking } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -94,14 +94,17 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
 
     const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`;
 
-    // Open Gmail web compose in a new tab (works on desktop and mobile browsers).
-    if (typeof window !== "undefined") {
+    // The website: Gmail's compose in a new tab (works on desktop and mobile browsers).
+    if (Platform.OS === "web" && typeof window !== "undefined" && typeof window.open === "function") {
       window.open(gmailUrl, "_blank", "noopener,noreferrer");
       return;
     }
 
-    // Native fallback (native builds): hand off to the system.
-    void Linking.openURL(gmailUrl).catch(() => undefined);
+    // The phone app: the phone's own email app. (React Native has a
+    // "window" but no window.open, so the web path used to crash here.)
+    void Linking.openURL(`mailto:${to}?subject=${subject}&body=${body}`).catch(() =>
+      Linking.openURL(gmailUrl).catch(() => undefined),
+    );
   };
 
   return (

@@ -159,9 +159,11 @@ test("a boosted profile is ordered above everyone else", async () => {
   assert.match(deck, /ORDER BY boosted DESC/, "a boost has to come first");
 });
 
-test("the age range is the paid part of the filters, gender is not", async () => {
+test("the age range is the paid part of the filters once PREMIUM_AGE_FILTER is on, gender never", async () => {
   // Showing a member the wrong gender entirely is a broken app, not a free
-  // tier, so gender is honoured for everyone and only the range is sold.
+  // tier, so gender is honoured for everyone and only the range is sold -
+  // and only once checkout is live (PREMIUM_AGE_FILTER=1).
+  process.env.PREMIUM_AGE_FILTER = "1";
   const run = async (premium) => {
     const sqls = [];
     const profileService = load("../src/services/profileService", {
@@ -181,6 +183,9 @@ test("the age range is the paid part of the filters, gender is not", async () =>
   assert.match(free, /p\.gender = \?/, "gender applies to everyone");
   assert.ok(!/p\.age BETWEEN/.test(free), "a free member gets no age range");
   assert.match(paid, /p\.age BETWEEN \? AND \?/, "premium gets the range");
+  // Before checkout is live, everyone's range counts.
+  delete process.env.PREMIUM_AGE_FILTER;
+  assert.match(await run(false), /p\.age BETWEEN \? AND \?/, "everyone gets the range while payments are closed");
 });
 
 test("nothing is locked while the likers gate is off", async () => {

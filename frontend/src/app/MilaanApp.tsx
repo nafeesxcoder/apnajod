@@ -3852,6 +3852,8 @@ function MilaanApp() {
             }
             onCheckIn={recordSafeCheckIn}
             onDeleteAccount={deleteAccount}
+            accessToken={accessToken || undefined}
+            onUnblocked={(userId) => setBlockedIds((ids) => ids.filter((id) => id !== userId))}
             onBack={() => setScreen("profile")}
           />
         )}

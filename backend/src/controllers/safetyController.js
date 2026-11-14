@@ -32,6 +32,10 @@ const postUnblock = wrap(async (req) => {
   return safetyService.unblockUser(req.user.id, blockedId);
 });
 
+const getBlocked = wrap(async (req) => safetyService.blockedList(req.user.id));
+const getSummary = wrap(async (req) => safetyService.summary(req.user.id));
+const putActivityStatus = wrap(async (req) => safetyService.setHideActivity(req.user.id, !!req.body?.hidden));
+
 const getBlockStatus = wrap(async (req) => {
   const { targetId } = req.query;
   if (!targetId) throw new ApiError(400, 'targetId is required');
@@ -45,4 +49,7 @@ const postUnmatch = wrap(async (req) => {
   return safetyService.unmatchUser(req.user.id, targetId);
 });
 
-module.exports = { postReport, postBlock, postUnblock, getBlockStatus, postUnmatch };
+module.exports = {
+  getBlocked,
+  getSummary,
+  putActivityStatus, postReport, postBlock, postUnblock, getBlockStatus, postUnmatch };

@@ -34,8 +34,11 @@ function touchLastActive(userId) {
   ]).catch(() => undefined);
 }
 
-function broadcastPresence(userId, online) {
+async function broadcastPresence(userId, online) {
   if (!io) return;
+  // A member who hid their activity status is never announced.
+  const [row] = await query("SELECT hide_activity FROM users WHERE id = ?", [userId]).catch(() => []);
+  if (Number(row?.hide_activity) === 1) return;
   io.to(presenceRoom(userId)).emit("presence", {
     userId,
     online,
@@ -99,7 +102,7 @@ function init(httpServer) {
           ack({
             ok: true,
             partnerId,
-            online: isOnline(partnerId) || presence.online,
+            online: presence.hidden ? false : isOnline(partnerId) || presence.online,
             lastActiveAt: presence.lastActiveAt,
             typing: presence.typing,
           });

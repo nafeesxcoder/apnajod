@@ -556,9 +556,14 @@ async function getPartnerPresence(peerId, userId) {
   const participants = await assertParticipant(peerId, userId);
   const partnerId = participants.find((id) => id !== userId);
   if (!partnerId) return { online: false, lastActiveAt: null, typing: false };
-  const [row] = await query("SELECT last_active_at FROM users WHERE id = ?", [
+  const [row] = await query("SELECT last_active_at, hide_activity FROM users WHERE id = ?", [
     partnerId,
   ]);
+  // "Hide activity status": either of you hid it, neither sees the other's.
+  const [me] = await query("SELECT hide_activity FROM users WHERE id = ?", [userId]);
+  if (Number(row?.hide_activity) === 1 || Number(me?.hide_activity) === 1) {
+    return { online: false, lastActiveAt: null, typing: isTypingFresh(conversationId, partnerId), hidden: true };
+  }
   const lastActiveAt = row?.last_active_at
     ? new Date(row.last_active_at).toISOString()
     : null;

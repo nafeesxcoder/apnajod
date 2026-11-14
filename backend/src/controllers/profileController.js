@@ -120,6 +120,14 @@ const getDailyPicks = asyncHandler(async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
+/** "Download my data": your account as one JSON file. */
+const exportMyData = asyncHandler(async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const data = await require("../services/dataExportService").exportFor(req.user.id);
+  res.set("Content-Disposition", 'attachment; filename="apnajoda-my-data.json"');
+  res.json(data);
+});
+
 const getReferrals = asyncHandler(async (req, res) => {
   res.set("Cache-Control", "no-store");
   res.json({ ok: true, ...(await referralService.summaryFor(req.user.id)) });
@@ -132,6 +140,7 @@ const discoverMatches = asyncHandler(async (req, res) => {
   res.json({ ok: true, matches });
 });
 module.exports = {
+  exportMyData,
   getReferrals,
   getDailyPicks,
   getMyProfile,

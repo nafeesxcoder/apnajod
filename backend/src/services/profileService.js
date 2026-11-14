@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
 const billingService = require("./billingService");
+const limits = require("../config/billing");
 const { ApiError } = require("../middleware/errorHandler");
 
 const BIO_MAX_LENGTH = 500;
@@ -387,11 +388,21 @@ async function findMatches(userId, limit = 20) {
   const wantGender =
     lookingFor === "women" ? "woman" : lookingFor === "men" ? "man" : null;
 
-  const premium = await billingService.isPremium(userId);
+  // Everyone's age range counts until it is made a Premium feature.
+  const premium = !limits.premiumAgeFilter() || (await billingService.isPremium(userId));
   const ageClause = premium
     ? "AND (p.age IS NULL OR p.age BETWEEN ? AND ?)"
     : "";
   const ageParams = premium ? [minAge, maxAge] : [];
+
+  // Cities and "what are you looking for" from Match Filters: people who
+  // fit them come first. Not a hard filter - with few members a strict one
+  // would leave the deck empty.
+  const cities = safeParseJson(myPrefs?.cities, []).map((c) => String(c).trim().toLowerCase()).filter(Boolean).slice(0, 10);
+  const intents = safeParseJson(myPrefs?.intents, []).map((c) => String(c).trim().toLowerCase()).filter(Boolean).slice(0, 6);
+  const cityClause = cities.length ? cities.map(() => "LOWER(p.city) LIKE ?").join(" OR ") : "0";
+  const intentClause = intents.length ? intents.map(() => "LOWER(pi.intent) LIKE ?").join(" OR ") : "0";
+  const fitParams = [...cities.map((c) => `${c}%`), ...intents.map((i) => `%${i}%`)];
 
   const candidates = await query(
     `SELECT
@@ -407,9 +418,12 @@ async function findMatches(userId, limit = 20) {
          WHEN (? IS NULL OR p.gender = ?)
           ${ageClause}
          THEN 0 ELSE 1
-       END AS off_preference
+       END AS off_preference,
+       (CASE WHEN ${cityClause} THEN 1 ELSE 0 END)
+         + (CASE WHEN ${intentClause} THEN 1 ELSE 0 END) AS fits_filters
      FROM users u
      LEFT JOIN profiles p ON p.user_id = u.id
+     LEFT JOIN profile_intent pi ON pi.user_id = u.id
      WHERE u.id != ?
        AND u.deleted_at IS NULL
        AND u.deactivated_at IS NULL
@@ -425,6 +439,7 @@ async function findMatches(userId, limit = 20) {
      ORDER BY
        boosted DESC,
        off_preference ASC,
+       fits_filters DESC,
        -- Blue tick members come first among the people who fit. They pay
        -- for Pro, and they are selfie-verified, so this also puts
        -- real people at the top. They never jump above someone who fits
@@ -434,7 +449,7 @@ async function findMatches(userId, limit = 20) {
        p.updated_at DESC,
        u.created_at DESC
      LIMIT ${Number(limit)}`,
-    [wantGender, wantGender, ...ageParams, userId, userId, userId, userId],
+    [wantGender, wantGender, ...ageParams, ...fitParams, userId, userId, userId, userId],
   );
 
   if (!candidates.length) return [];

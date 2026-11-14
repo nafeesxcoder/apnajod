@@ -24,6 +24,13 @@ module.exports = {
    */
   freeDailyLikes: () => number("FREE_DAILY_LIKES", 0),
 
+  /**
+   * The age range as a Premium-only filter. Off (everyone's age range
+   * counts) while there is no way to pay - a filter people set and that
+   * does nothing reads as broken. Set PREMIUM_AGE_FILTER=1 when checkout is live.
+   */
+  premiumAgeFilter: () => number("PREMIUM_AGE_FILTER", 0) === 1,
+
   /** How long one boost puts a member at the top of other decks. */
   boostMinutes: () => number("BOOST_MINUTES", 30),
 
