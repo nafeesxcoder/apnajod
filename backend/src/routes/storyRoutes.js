@@ -33,6 +33,7 @@ router.post('/', uploadLimiter, storyUpload.single('photo'), storyController.cre
 router.delete('/:id', storyController.deleteStory);
 router.post('/:id/vote', storyController.voteStory);
 router.post('/:id/like', storyController.likeStory);
+router.post('/:id/view', storyController.viewStory);
 router.post('/:id/answer', answerLimiter, storyController.answerStory);
 router.get('/:id/responses', storyController.storyResponses);
 

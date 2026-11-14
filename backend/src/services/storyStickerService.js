@@ -117,7 +117,8 @@ async function saveMentions(storyId, posterId, stickers) {
     await query('INSERT IGNORE INTO story_mentions (story_id, user_id) VALUES (?, ?)', [storyId, id]);
   }
   const who = await usernameOf(posterId);
-  for (const id of ids) push(id, { title: 'Apnajoda', body: `${who} mentioned you in their story` });
+  // Tapping it opens their stories.
+  for (const id of ids) push(id, { title: 'Apnajoda', body: `${who} mentioned you in their story`, storyUserId: posterId });
 }
 
 /**
@@ -248,12 +249,24 @@ async function responses(ownerId, storyId) {
       ORDER BY l.created_at DESC LIMIT 1000`,
     [storyId],
   );
+  // Seen by: newest first, with whether they liked it.
+  const views = await query(
+    `SELECT v.created_at, EXISTS (SELECT 1 FROM story_likes l WHERE l.story_id = v.story_id AND l.user_id = v.user_id) AS liked, ${MEMBER}
+       FROM story_views v JOIN users u ON u.id = v.user_id LEFT JOIN profiles pr ON pr.user_id = u.id
+      WHERE v.story_id = ? AND u.deleted_at IS NULL
+      ORDER BY v.created_at DESC LIMIT 1000`,
+    [storyId],
+  );
   return {
+    views: views.map((row) => ({ at: row.created_at, liked: !!Number(row.liked), user: member(row) })),
     likes: likes.map((row) => ({ at: row.created_at, user: member(row) })),
     votes: votes.map((row) => ({ stickerId: row.sticker_id, choice: Number(row.choice), at: row.created_at, user: member(row) })),
     answers: answers.map((row) => ({ id: row.id, stickerId: row.sticker_id, body: row.body, at: row.created_at, user: member(row) })),
   };
 }
+
+/** Story likes already pushed to the owner (kept in memory; stories last a day). */
+const likePushed = new Set();
 
 /**
  * The heart on someone's story. Anyone who can see the story can like it,
@@ -263,9 +276,30 @@ async function like(viewerId, storyId, liked = true) {
   const story = await visibleStory(viewerId, storyId);
   if (!story) throw fail(404, 'That story has already gone.');
   if (story.user_id === viewerId) throw fail(400, 'You cannot like your own story.');
-  if (liked) await query('INSERT IGNORE INTO story_likes (story_id, user_id) VALUES (?, ?)', [story.id, viewerId]);
-  else await query('DELETE FROM story_likes WHERE story_id = ? AND user_id = ?', [story.id, viewerId]);
+  if (liked) {
+    const added = await query('INSERT IGNORE INTO story_likes (story_id, user_id) VALUES (?, ?)', [story.id, viewerId]);
+    // "@rahul liked your story" - once per person per story, so liking,
+    // unliking and liking again does not send it twice.
+    const key = `${story.id}:${viewerId}`;
+    if (added.affectedRows && !likePushed.has(key)) {
+      if (likePushed.size > 20000) likePushed.clear();
+      likePushed.add(key);
+      push(story.user_id, { title: 'Apnajoda', body: `${await usernameOf(viewerId)} liked your story`, storyUserId: story.user_id });
+    }
+  } else await query('DELETE FROM story_likes WHERE story_id = ? AND user_id = ?', [story.id, viewerId]);
   return { liked: !!liked };
+}
+
+/**
+ * You watched someone's story: you go on its "Seen by" list, which only the
+ * owner sees. Deleted with the story after 24 hours.
+ */
+async function view(viewerId, storyId) {
+  const story = await visibleStory(viewerId, storyId);
+  if (!story) throw fail(404, 'That story has already gone.');
+  if (story.user_id === viewerId) return { seen: false };
+  await query('INSERT IGNORE INTO story_views (story_id, user_id) VALUES (?, ?)', [story.id, viewerId]);
+  return { seen: true };
 }
 
 /** Adds your own like to others' stories, and the like count to your own. */
@@ -288,9 +322,20 @@ async function withLikes(viewerId, people) {
     );
     for (const row of rows) counts.set(row.story_id, Number(row.n));
   }
+  // And how many have seen each of your own.
+  const views = new Map();
+  if (ownIds.length) {
+    const rows = await query(
+      `SELECT story_id, COUNT(*) AS n FROM story_views WHERE story_id IN (${ownIds.map(() => '?').join(', ')}) GROUP BY story_id`,
+      ownIds,
+    );
+    for (const row of rows) views.set(row.story_id, Number(row.n));
+  }
   for (const { story, mine: own } of stories) {
-    if (own) story.likeCount = counts.get(story.id) || 0;
-    else story.liked = mine.has(story.id);
+    if (own) {
+      story.likeCount = counts.get(story.id) || 0;
+      story.viewCount = views.get(story.id) || 0;
+    } else story.liked = mine.has(story.id);
   }
 }
 
@@ -329,6 +374,7 @@ async function withResults(viewerId, stories) {
 
 module.exports = {
   like,
+  view,
   withLikes,
   MAX_STICKERS,
   MAX_MENTIONS,

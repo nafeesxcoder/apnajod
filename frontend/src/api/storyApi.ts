@@ -16,6 +16,8 @@ export type StoryItem = {
   likeCount?: number;
   /** Shared to Close friends only (green ring and badge). */
   closeFriends?: boolean;
+  /** Your own story: how many have seen it. */
+  viewCount?: number;
 };
 
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
@@ -26,6 +28,7 @@ export type StorySticker =
 
 /** For the story's owner: who voted what, and the answers. */
 export type StoryResponses = {
+  views: { at: string; liked: boolean; user: StoryPerson["user"] }[];
   likes: { at: string; user: StoryPerson["user"] }[];
   votes: { stickerId: string; choice: number; at: string; user: StoryPerson["user"] }[];
   answers: { id: string; stickerId: string; body: string; at: string; user: StoryPerson["user"] }[];
@@ -50,7 +53,8 @@ async function authFetch(path: string, accessToken: string, options: RequestInit
 
 /**
  * Stories: a photo for 24 hours. The server deletes the photo and its row
- * when the time is up; nothing about who saw it is sent there.
+ * when the time is up, with everything on it - likes, votes, answers and
+ * who saw it (only the owner sees that list).
  */
 export const storyApi = {
   async tray(accessToken: string): Promise<StoryPerson[]> {
@@ -105,7 +109,12 @@ export const storyApi = {
 
   async responses(accessToken: string, storyId: string): Promise<StoryResponses> {
     const data = await authFetch(`/stories/${storyId}/responses`, accessToken);
-    return { likes: data.likes || [], votes: data.votes || [], answers: data.answers || [] };
+    return { views: data.views || [], likes: data.likes || [], votes: data.votes || [], answers: data.answers || [] };
+  },
+
+  /** You watched someone's story: you go on its "Seen by" list. */
+  async view(accessToken: string, storyId: string): Promise<void> {
+    await authFetch(`/stories/${storyId}/view`, accessToken, { method: "POST" });
   },
 
   /** The heart on someone's story. It goes with the story after 24 hours. */

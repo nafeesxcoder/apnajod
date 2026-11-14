@@ -14,11 +14,15 @@ import { LiveSticker } from "./LiveSticker";
 import { AnswerSheet, ResponsesSheet } from "./StoryResponses";
 import { StoryReplyBar } from "./StoryReplyBar";
 import { setStoryLiked } from "./storyStore";
+import { storyActivityLabel } from "./storyLabels";
 import { CLOSE_GREEN } from "./CloseFriendsSheet";
 import { FRAME_ASPECT } from "./editor/model";
 import { createClipPlayer, type ClipPlayer } from "./music/clipPlayer";
 
 export { STORY_SECONDS } from "./music/clip";
+
+/** Stories you have been counted as seeing this session (sent once each). */
+const viewSent = new Set<string>();
 
 /**
  * Stories full screen, Instagram's way: bars along the top fill as each
@@ -115,6 +119,11 @@ export function StoryViewer({
     if (!story) return;
     markSeen(story.id, story.expiresAt);
     onSeen(story.id);
+    // Someone else's story: you go on its "Seen by" list (once per story).
+    if (person && !person.mine && !viewSent.has(story.id)) {
+      viewSent.add(story.id);
+      void storyApi.view(accessToken, story.id).catch(() => viewSent.delete(story.id));
+    }
     const after = stories[s + 1]?.mediaUrl ?? people[p + 1]?.stories[0]?.mediaUrl;
     if (after) Image.prefetch(after).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,9 +289,9 @@ export function StoryViewer({
                   backgroundColor: "rgba(0,0,0,0.55)",
                 }}
               >
-                <Ionicons name={story.likeCount ? "heart" : "chatbubbles-outline"} size={18} color="#FFFFFF" />
+                <Ionicons name="eye-outline" size={18} color="#FFFFFF" />
                 <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>
-                  {story.likeCount ? `${story.likeCount} · Responses` : "Responses"}
+                  {storyActivityLabel(story.viewCount ?? 0, story.likeCount ?? 0)}
                 </Text>
               </Pressable>
               </View>

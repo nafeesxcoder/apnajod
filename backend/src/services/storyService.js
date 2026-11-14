@@ -72,7 +72,38 @@ async function create(userId, file, publicBase, music = {}, rawStickers = null, 
     [id, userId, mediaUrl, clip?.trackId ?? null, clip?.start ?? null, clip?.length ?? null, stickers.length ? JSON.stringify(stickers) : null, audience],
   );
   await stickerService.saveMentions(id, userId, stickers);
+  if (closeIds) await notifyCloseFriends(userId);
   return { id, mediaUrl, music: clip, stickers, closeFriends: audience === 'close' };
+}
+
+/**
+ * "@rahul shared a story with close friends" to everyone on the list - only
+ * for the first close-friends story in an hour, so several in a row send one.
+ */
+async function notifyCloseFriends(userId) {
+  const [{ n } = { n: 0 }] = await query(
+    `SELECT COUNT(*) AS n FROM stories
+      WHERE user_id = ? AND audience = 'close' AND created_at > NOW(6) - INTERVAL 1 HOUR`,
+    [userId],
+  );
+  if (Number(n) > 1) return;
+  const [row] = await query('SELECT username FROM users WHERE id = ? LIMIT 1', [userId]);
+  const who = row?.username ? `@${row.username}` : 'Someone';
+  // Only active members, and never across a block.
+  const friends = await query(
+    `SELECT u.id FROM close_friends cf JOIN users u ON u.id = cf.friend_id
+      WHERE cf.owner_id = ? AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
+        AND NOT EXISTS (SELECT 1 FROM blocks b
+                         WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
+                            OR (b.blocker_id = u.id AND b.blocked_id = ?))`,
+    [userId, userId, userId],
+  );
+  const pushService = require('./pushService');
+  for (const { id: friendId } of friends) {
+    pushService
+      .notifyUser(friendId, { title: 'Apnajoda', body: `${who} shared a story with close friends`, storyUserId: userId })
+      .catch(() => undefined);
+  }
 }
 
 /**

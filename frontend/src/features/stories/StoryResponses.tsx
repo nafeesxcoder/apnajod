@@ -127,7 +127,7 @@ export function ResponsesSheet({
   );
 
   return (
-    <Sheet visible={!!storyId} title="Responses" tall onClose={onClose}>
+    <Sheet visible={!!storyId} title="Story activity" tall onClose={onClose}>
       {!data ? (
         error ? (
           <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.crimson, textAlign: "center", padding: 24 }}>{error}</Text>
@@ -137,6 +137,16 @@ export function ResponsesSheet({
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }}>
           <View style={{ paddingTop: 12 }}>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink, paddingHorizontal: 16 }}>
+              👁 Seen by · {data.views.length}
+            </Text>
+            {data.views.length === 0 ? (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, paddingHorizontal: 16, paddingVertical: 8 }}>Nobody has seen it yet.</Text>
+            ) : (
+              data.views.map((v) => row(v.user, `${v.liked ? "❤️ " : ""}${timeAgo(v.at)}`, undefined, `view-${v.user.userId}`))
+            )}
+          </View>
+          <View style={{ paddingTop: 16 }}>
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink, paddingHorizontal: 16 }}>
               ❤️ Likes · {data.likes.length}
             </Text>

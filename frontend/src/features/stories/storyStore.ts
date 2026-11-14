@@ -125,3 +125,21 @@ export function dropStory(storyId: string) {
       .filter((person) => person.stories.length > 0),
   });
 }
+
+/**
+ * A tapped story notification on the website opens the app at
+ * /?story=<userId>: read that once and take it off the address.
+ */
+export function takeStoryParam(): string | null {
+  if (typeof window === "undefined" || !window.location?.search) return null;
+  try {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("story");
+    if (!id) return null;
+    url.searchParams.delete("story");
+    window.history.replaceState(window.history.state, "", url.toString());
+    return /^[0-9a-f-]{36}$/i.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}

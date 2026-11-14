@@ -64,6 +64,14 @@ const likeStory = asyncHandler(async (req, res) => {
   }
 });
 
+const viewStory = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await stickerService.view(req.user.id, req.params.id)) });
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
 const storyResponses = asyncHandler(async (req, res) => {
   try {
     res.json({ ok: true, ...(await stickerService.responses(req.user.id, req.params.id)) });
@@ -72,4 +80,4 @@ const storyResponses = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { createStory, getTray, deleteStory, voteStory, answerStory, likeStory, storyResponses };
+module.exports = { createStory, getTray, deleteStory, voteStory, answerStory, likeStory, viewStory, storyResponses };

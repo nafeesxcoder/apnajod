@@ -199,6 +199,7 @@ import { loadChatsAndMatches } from "../features/social/chatTargets";
 import { postApi } from "../api/postApi";
 import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModal";
 import { StoryHost } from "../features/stories/StoryHost";
+import { loadStories, openStoriesOf, takeStoryParam } from "../features/stories/storyStore";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
 
 /* =========================================================
@@ -579,6 +580,9 @@ function MilaanApp() {
   // A post opened from a shared link (https://apnajoda.com/?post=<id>), or
   // from a post someone sent you in a chat.
   const [sharedPostId, setSharedPostId] = useState<string | null>(() => readPostParam());
+  // A story notification that was tapped: play that person's stories once signed in.
+  // A cold start on the website arrives as /?story=<userId>.
+  const [pendingStoryUser, setPendingStoryUser] = useState<string | null>(() => takeStoryParam());
   const postTokenRef = useRef<string | null>(null);
   useEffect(() => {
     setPostTools({
@@ -1341,8 +1345,16 @@ function MilaanApp() {
     return startNativePush(accessToken, {
       onOpenChat: (conversationId) => setPendingNotificationChat(conversationId),
       onOpenPost: (postId) => setSharedPostId(postId),
+      onOpenStory: (userId) => setPendingStoryUser(userId),
     });
   }, [accessToken]);
+  // Play the stories a tapped notification was about, once signed in.
+  useEffect(() => {
+    if (!pendingStoryUser || !accessToken || !onboardingComplete) return;
+    const userId = pendingStoryUser;
+    setPendingStoryUser(null);
+    void loadStories(accessToken).then(() => openStoriesOf(userId));
+  }, [pendingStoryUser, accessToken, onboardingComplete]);
   // Notification taps: a cold start arrives as /?chat=<id>, an already-open
   // app gets a message from the service worker. Either way, remember which
   // chat to open instead of landing on the home screen.
@@ -1363,12 +1375,14 @@ function MilaanApp() {
       return;
     const onWorkerMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { type?: string; conversationId?: string; postId?: string }
+        | { type?: string; conversationId?: string; postId?: string; storyUserId?: string }
         | undefined;
       if (data?.type === "open-chat" && data.conversationId)
         setPendingNotificationChat(data.conversationId);
       // A "liked / commented on your post" notification opens that post.
       if (data?.type === "open-post" && data.postId) setSharedPostId(data.postId);
+      // A story like, mention or close-friends story opens their stories.
+      if (data?.type === "open-story" && data.storyUserId) setPendingStoryUser(data.storyUserId);
     };
     navigator.serviceWorker.addEventListener("message", onWorkerMessage);
     return () =>

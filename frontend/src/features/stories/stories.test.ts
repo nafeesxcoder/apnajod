@@ -32,9 +32,28 @@ describe("stories", () => {
     expect(api).toContain("`${API_URL}/stories`");
   });
 
-  it("keeps who-watched-what on the phone only", () => {
+  it("keeps the rings' watched marks on the phone, and tells the owner who saw it", () => {
+    // Grey rings come from this phone's own list.
     expect(seen).toContain("AsyncStorage.setItem(KEY");
-    expect(api).not.toMatch(/seen|view/i);
+    // "Seen by": one view per story, sent once, only for someone else's story.
+    expect(api).toContain("/stories/${storyId}/view");
+    expect(viewer).toContain("if (person && !person.mine && !viewSent.has(story.id)) {");
+    expect(read("StoryResponses.tsx")).toContain("👁 Seen by · {data.views.length}");
+  });
+
+  it("labels your own story with who saw and liked it", async () => {
+    const { storyActivityLabel } = await import("./storyLabels");
+    expect(storyActivityLabel(0, 0)).toBe("Responses");
+    expect(storyActivityLabel(12, 0)).toBe("Seen by 12");
+    expect(storyActivityLabel(12, 3)).toBe("Seen by 12 · ❤ 3");
+  });
+
+  it("opens the person's stories from a story notification", () => {
+    const app = readFileSync(join(__dirname, "..", "..", "app", "MilaanApp.tsx"), "utf8");
+    expect(app).toContain("onOpenStory: (userId) => setPendingStoryUser(userId),");
+    expect(app).toContain("void loadStories(accessToken).then(() => openStoriesOf(userId));");
+    const worker = readFileSync(join(__dirname, "..", "..", "..", "public", "sw.js"), "utf8");
+    expect(worker).toContain('client.postMessage({ type: "open-story", storyUserId })');
   });
 
   it("plays each photo for 5 seconds with tap and hold controls", () => {

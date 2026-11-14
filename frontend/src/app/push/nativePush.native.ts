@@ -30,6 +30,7 @@ export function startNativePush(accessToken: string, targets: PushTargets): () =
     const target = pushTarget(data);
     if (target.chat) targets.onOpenChat(target.chat);
     else if (target.post) targets.onOpenPost(target.post);
+    else if (target.story) targets.onOpenStory?.(target.story);
   };
 
   void (async () => {

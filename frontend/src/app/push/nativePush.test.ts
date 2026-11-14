@@ -40,3 +40,9 @@ describe("chat", () => {
     expect(read("../../features/chat/ChatFeature.tsx")).toContain('mine && !emojiOnly && !isJustEmoji ? "rgba(255,255,255,.82)" : colors.muted');
   });
 });
+
+describe("story notifications", () => {
+  it("open the stories of the person they are about", () => {
+    expect(pushTarget({ storyUserId: "u9" })).toEqual({ story: "u9" });
+  });
+});
