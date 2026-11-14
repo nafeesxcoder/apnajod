@@ -46,4 +46,12 @@ const deleteMusic = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { searchMusic, listMusic, addMusic, deleteMusic };
+const setMusicDuration = asyncHandler(async (req, res) => {
+  try {
+    res.json(await musicService.setDuration(req.params.id, req.body.durationSec));
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+module.exports = { searchMusic, listMusic, addMusic, deleteMusic, setMusicDuration };

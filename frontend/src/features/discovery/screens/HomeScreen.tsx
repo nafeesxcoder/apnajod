@@ -266,6 +266,7 @@ export function HomeScreen({
                   accessToken={accessToken}
                   // A new post shows at the top of the feed straight away.
                   onPosted={() => setFeedReload((n) => n + 1)}
+                  withStory
                   size={34}
                   iconSize={22}
                   color={colors.text}

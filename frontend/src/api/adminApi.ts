@@ -104,6 +104,9 @@ export const adminApi = {
   // Story music library.
   musicList: (token: string) => authFetch("/admin/music", token),
   musicDelete: (token: string, id: string) => authFetch(`/admin/music/${id}`, token, { method: "DELETE" }),
+  /** Saves a song's length when the upload could not read it. */
+  musicDuration: (token: string, id: string, durationSec: number) =>
+    authFetch(`/admin/music/${id}/duration`, token, { method: "POST", body: JSON.stringify({ durationSec }) }),
   musicAdd: async (token: string, file: Blob, fileName: string, title: string, artist: string, durationSec: number) => {
     const body = new FormData();
     body.append("title", title);

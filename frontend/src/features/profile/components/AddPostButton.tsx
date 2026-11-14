@@ -4,6 +4,9 @@ import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
 import { NewPostSheet, type PickedPhoto } from "./NewPostSheet";
+import { Sheet } from "../../posts/PostSheets";
+import { openStoryChooser } from "../../stories/storyStore";
+import { fonts, palette } from "../../../theme";
 
 const DANGER = "#B3261E";
 
@@ -21,6 +24,7 @@ export function AddPostButton({
   iconSize = 24,
   color = "#151719",
   background = "rgba(255,255,255,0.9)",
+  withStory = false,
 }: {
   accessToken?: string;
   /** Called once the post exists, so a list on the same screen can reload. */
@@ -29,7 +33,10 @@ export function AddPostButton({
   iconSize?: number;
   color?: string;
   background?: string;
+  /** On Home: the + asks Story or Post first, like Instagram. */
+  withStory?: boolean;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The New post sheet: open with the picked photo on the web, or empty in
@@ -86,8 +93,8 @@ export function AddPostButton({
     <View>
       <TouchableOpacity
         accessibilityRole="button"
-        accessibilityLabel="Add a post"
-        onPress={pick}
+        accessibilityLabel={withStory ? "Create a story or post" : "Add a post"}
+        onPress={withStory ? () => setMenuOpen(true) : pick}
         disabled={busy}
         hitSlop={8}
         style={{
@@ -121,6 +128,49 @@ export function AddPostButton({
         >
           {error}
         </Text>
+      )}
+
+      {withStory && (
+        <Sheet visible={menuOpen} title="Create" onClose={() => setMenuOpen(false)}>
+          <View style={{ paddingVertical: 6 }}>
+            {(
+              [
+                ["story", "add-circle-outline", "Story", "A photo or text for 24 hours"],
+                ["post", "grid-outline", "Post", "Photos on your profile and in the feed"],
+              ] as const
+            ).map(([kind, icon, label, hint]) => (
+              <TouchableOpacity
+                key={kind}
+                accessibilityRole="button"
+                accessibilityLabel={`Create a ${label.toLowerCase()}`}
+                onPress={() => {
+                  setMenuOpen(false);
+                  if (kind === "story") setTimeout(openStoryChooser, 250);
+                  else void pick();
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 18, minHeight: 62 }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: palette.crimsonTint,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name={icon} size={22} color={palette.crimson} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{label}</Text>
+                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 1 }}>{hint}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={palette.slate} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Sheet>
       )}
 
       {!!accessToken && (

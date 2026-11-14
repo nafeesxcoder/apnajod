@@ -5,12 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { clock, musicApi, type MusicTrack, type StoryMusic } from "../../../api/musicApi";
 import { fonts, palette, radius } from "../../../theme";
 import { Sheet } from "../../posts/PostSheets";
-import { clampStart, clipLengths } from "./clip";
-import { createClipPlayer, type ClipPlayer } from "./clipPlayer";
+import { clampStart, clipLengths, nudgeStart } from "./clip";
+import { audioDuration, createClipPlayer, type ClipPlayer } from "./clipPlayer";
 
 /**
  * Music for a story: search the library, tap a song (it plays), drag the
- * window to the part you want, 15 or 30 seconds, then "Use this song".
+ * window to the part you want (or nudge it 5 seconds at a time), pick 5 to
+ * 30 seconds, then "Use this song".
  */
 export function MusicSheet({
   visible,
@@ -37,6 +38,8 @@ export function MusicSheet({
   const [playing, setPlaying] = useState(false);
   const [barWidth, setBarWidth] = useState(1);
   const player = useRef<ClipPlayer | null>(null);
+  // Lengths read from the song itself, for songs the library saved without one.
+  const [measured, setMeasured] = useState<Record<string, number>>({});
 
   const stopPreview = () => {
     player.current?.stop();
@@ -82,11 +85,35 @@ export function MusicSheet({
   }, [visible]);
 
   // The library knows the song's length; fill it in for a song chosen earlier.
-  const duration = chosen ? chosen.durationSec || tracks.find((t) => t.id === chosen.id)?.durationSec || 0 : 0;
+  const duration = chosen
+    ? chosen.durationSec || tracks.find((t) => t.id === chosen.id)?.durationSec || measured[chosen.id] || 0
+    : 0;
+
+  // No length on record: read it from the song, so any part of it can be chosen.
+  useEffect(() => {
+    if (!chosen || duration || measured[chosen.id] !== undefined) return;
+    let live = true;
+    setMeasured((m) => ({ ...m, [chosen.id]: 0 }));
+    void audioDuration(chosen.url).then((seconds) => {
+      if (live && seconds) setMeasured((m) => ({ ...m, [chosen.id]: Math.floor(seconds) }));
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chosen?.id, duration]);
+
+  const nudge = (by: number) => {
+    if (!chosen) return;
+    const from = nudgeStart(start, by, length, duration);
+    setStart(from);
+    preview(chosen, from, length);
+  };
 
   const choose = (track: MusicTrack) => {
-    const lengths = clipLengths(track.durationSec);
-    const seconds = lengths[0]!;
+    const lengths = clipLengths(track.durationSec || measured[track.id] || 0);
+    // 15 seconds to begin with, like Instagram (or the longest the song allows).
+    const seconds = lengths.includes(15) ? 15 : lengths[lengths.length - 1]!;
     setChosen(track);
     setLength(seconds);
     setStart(0);
@@ -203,29 +230,32 @@ export function MusicSheet({
                   Plays {clock(start)} – {clock(start + length)}
                 </Text>
               </View>
-              <View style={{ flexDirection: "row", gap: 6 }}>
-                {clipLengths(duration).map((seconds) => (
-                  <Pressable
-                    key={seconds}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${seconds} seconds`}
-                    accessibilityState={{ selected: length === seconds }}
-                    onPress={() => {
-                      const from = clampStart(start, seconds, duration);
-                      setLength(seconds);
-                      setStart(from);
-                      preview(chosen, from, seconds);
-                    }}
-                    style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: "center", backgroundColor: length === seconds ? palette.crimson : palette.paperSand }}
-                  >
-                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: length === seconds ? "#FFFFFF" : palette.ink }}>{seconds}s</Text>
-                  </Pressable>
-                ))}
-              </View>
+            </View>
+
+            {/* How long: 5 to 30 seconds. */}
+            <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
+              {clipLengths(duration).map((seconds) => (
+                <Pressable
+                  key={seconds}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${seconds} seconds`}
+                  accessibilityState={{ selected: length === seconds }}
+                  onPress={() => {
+                    const from = clampStart(start, seconds, duration);
+                    setLength(seconds);
+                    setStart(from);
+                    preview(chosen, from, seconds);
+                  }}
+                  style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: "center", backgroundColor: length === seconds ? palette.crimson : palette.paperSand }}
+                >
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: length === seconds ? "#FFFFFF" : palette.ink }}>{seconds}s</Text>
+                </Pressable>
+              ))}
             </View>
 
             {/* The song as a bar; drag the highlighted part to choose what plays. */}
             {duration > length && (
+              <View style={{ gap: 6 }}>
               <View
                 onLayout={(e) => setBarWidth(Math.max(1, e.nativeEvent.layout.width))}
                 style={{ height: 40, borderRadius: 8, backgroundColor: palette.paperSand, justifyContent: "center" }}
@@ -251,6 +281,26 @@ export function MusicSheet({
                     ...(Platform.OS === "web" ? ({ cursor: "grab", touchAction: "none" } as object) : null),
                   }}
                 />
+              </View>
+              {/* The song's start and end, and 5 seconds back or forward. */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>0:00</Text>
+                <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", gap: 10 }}>
+                  {([-5, 5] as const).map((by) => (
+                    <Pressable
+                      key={by}
+                      accessibilityRole="button"
+                      accessibilityLabel={by < 0 ? "5 seconds earlier" : "5 seconds later"}
+                      onPress={() => nudge(by)}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: palette.paperSand }}
+                    >
+                      <Ionicons name={by < 0 ? "play-back" : "play-forward"} size={14} color={palette.ink} />
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>{by < 0 ? "−5s" : "+5s"}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{clock(duration)}</Text>
+              </View>
               </View>
             )}
 

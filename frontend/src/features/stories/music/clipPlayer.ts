@@ -80,8 +80,23 @@ export function audioDuration(uri: string): Promise<number> {
     if (typeof window === "undefined" || typeof window.Audio === "undefined") return resolve(0);
     const audio = new window.Audio();
     audio.preload = "metadata";
-    audio.onloadedmetadata = () => resolve(Number.isFinite(audio.duration) ? audio.duration : 0);
-    audio.onerror = () => resolve(0);
+    let done = false;
+    const finish = (value: number) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(Number.isFinite(value) && value > 0 ? value : 0);
+    };
+    // Some MP3s report Infinity until the end is reached: jump there to learn it.
+    audio.onloadedmetadata = () => {
+      if (Number.isFinite(audio.duration)) finish(audio.duration);
+      else audio.currentTime = 1e7;
+    };
+    audio.ondurationchange = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) finish(audio.duration);
+    };
+    audio.onerror = () => finish(0);
+    const timer = setTimeout(() => finish(0), 15000);
     audio.src = uri;
   });
 }

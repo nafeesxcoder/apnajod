@@ -91,7 +91,13 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
     setError("");
     try {
       const blob: Blob = picked.file ?? (await fetch(picked.uri).then((r) => r.blob()));
-      await adminApi.musicAdd(accessToken, blob, picked.name, title.trim(), artist.trim(), picked.duration);
+      const added: any = await adminApi.musicAdd(accessToken, blob, picked.name, title.trim(), artist.trim(), picked.duration);
+      // The file could not tell its length before upload: read it from the saved song.
+      const track = added?.track;
+      if (track?.id && !picked.duration && track.url) {
+        const seconds = Math.round(await audioDuration(track.url));
+        if (seconds) await adminApi.musicDuration(accessToken, track.id, seconds).catch(() => undefined);
+      }
       setPicked(null);
       setTitle("");
       setArtist("");
@@ -100,6 +106,23 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
       setError(e?.message || "Could not add the song");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // A song saved without its length (stories could only use its start):
+  // read the length here and save it.
+  const fixLength = async (track: MusicTrack) => {
+    setBusyId(track.id);
+    setError("");
+    try {
+      const seconds = Math.round(await audioDuration(track.url));
+      if (!seconds) throw new Error("This browser could not read the song's length.");
+      await adminApi.musicDuration(accessToken, track.id, seconds);
+      setTracks((list) => list.map((t) => (t.id === track.id ? { ...t, durationSec: seconds } : t)));
+    } catch (e: any) {
+      setError(e?.message || "Could not fix the length");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -159,7 +182,7 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
       <View style={[card, { gap: 12 }]}>
         <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: C.text }}>Add a song</Text>
         <Text style={{ fontFamily: fonts.body, fontSize: 13, color: C.muted, lineHeight: 19 }}>
-          Songs here show up under Music when members make a story; a story plays 15 or 30 seconds of one. Only add music you
+          Songs here show up under Music when members make a story; a story plays any 5 to 30 seconds of one, the part the member picks. Only add music you
           are allowed to use, such as royalty-free tracks from the YouTube Audio Library or Pixabay Music. MP3, M4A or AAC, up
           to 10 MB.
         </Text>
@@ -201,9 +224,10 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: C.text }}>{track.title}</Text>
                 <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: C.muted }}>
-                  {[track.artist, track.durationSec ? clock(track.durationSec) : ""].filter(Boolean).join(" · ") || " "}
+                  {[track.artist, track.durationSec ? clock(track.durationSec) : "length unknown"].filter(Boolean).join(" · ")}
                 </Text>
               </View>
+              {!track.durationSec && button("Fix length", () => void fixLength(track), "plain", busyId === track.id)}
               {button(confirmId === track.id ? "Confirm remove" : "Remove", () => void remove(track), confirmId === track.id ? "danger" : "plain", busyId === track.id)}
             </View>
           ))}

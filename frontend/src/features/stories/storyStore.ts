@@ -26,6 +26,18 @@ export const storyStore = {
   },
 };
 
+/** "Add to your story" asked for from elsewhere (the + on Home): the stories row opens its chooser. */
+const chooserListeners = new Set<() => void>();
+export function openStoryChooser() {
+  chooserListeners.forEach((listener) => listener());
+}
+export function onStoryChooser(listener: () => void): () => void {
+  chooserListeners.add(listener);
+  return () => {
+    chooserListeners.delete(listener);
+  };
+}
+
 export function useStories(): State {
   return useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
 }

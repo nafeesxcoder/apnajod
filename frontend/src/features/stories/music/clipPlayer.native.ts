@@ -49,6 +49,29 @@ export function createClipPlayer(url: string, start: number, length: number, loo
   };
 }
 
-export function audioDuration(_uri: string): Promise<number> {
-  return Promise.resolve(0);
+/** A song's length in seconds, read by loading it (0 if it cannot be read). */
+export function audioDuration(uri: string): Promise<number> {
+  return new Promise((resolve) => {
+    let player: ReturnType<typeof createAudioPlayer> | null = null;
+    try {
+      player = createAudioPlayer({ uri });
+    } catch {
+      resolve(0);
+      return;
+    }
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      const seconds = Number(player?.duration) || 0;
+      if (seconds > 0 || tries > 60) {
+        clearInterval(timer);
+        try {
+          player?.remove();
+        } catch {
+          // Already gone.
+        }
+        resolve(seconds > 0 ? seconds : 0);
+      }
+    }, 250);
+  });
 }

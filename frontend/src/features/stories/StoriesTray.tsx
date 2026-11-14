@@ -12,7 +12,7 @@ import { Sheet } from "../posts/PostSheets";
 import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
 import { TEXT_STORY } from "./editor/themes";
 import { WebCamera, needsWebCamera } from "./WebCamera";
-import { closeUnseen, loadStories, openStoriesAt, useStories } from "./storyStore";
+import { closeUnseen, loadStories, onStoryChooser, openStoriesAt, useStories } from "./storyStore";
 import { CLOSE_GREEN } from "./CloseFriendsSheet";
 
 const SIZE = 64;
@@ -48,6 +48,9 @@ export function StoriesTray({
   useEffect(() => {
     void load();
   }, [load, reloadKey]);
+
+  // The + on Home → Story opens the same chooser as "Your story".
+  useEffect(() => onStoryChooser(() => setChoosing(true)), []);
 
   if (!accessToken) return null;
 

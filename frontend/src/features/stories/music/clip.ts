@@ -1,10 +1,16 @@
 import { MAX_CLIP, MIN_CLIP } from "../../../api/musicApi";
 
-/** The lengths you can pick: 15 and 30 seconds, or the whole song if it is shorter. */
+/** The lengths you can pick: 5 to 30 seconds, as long as the song allows. */
+export const CLIP_LENGTHS = [5, 10, 15, 20, MAX_CLIP] as const;
 export function clipLengths(durationSec: number): number[] {
-  if (durationSec > 0 && durationSec < 15) return [Math.max(MIN_CLIP, Math.floor(durationSec))];
-  if (durationSec > 0 && durationSec < MAX_CLIP) return [15];
-  return [15, MAX_CLIP];
+  if (durationSec > 0 && durationSec < MIN_CLIP) return [Math.max(1, Math.floor(durationSec))];
+  if (!durationSec) return [...CLIP_LENGTHS];
+  return CLIP_LENGTHS.filter((seconds) => seconds <= durationSec);
+}
+
+/** Moves the clip by some seconds (the -5s / +5s buttons), kept inside the song. */
+export function nudgeStart(start: number, by: number, length: number, durationSec: number): number {
+  return clampStart(start + by, length, durationSec);
 }
 
 /** Keeps the clip inside the song. */

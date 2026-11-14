@@ -41,6 +41,7 @@ router.post("/questions/:id/active", adminController.setQuestionActive);
 router.get("/music", musicController.listMusic);
 router.post("/music", musicUpload.single("audio"), musicController.addMusic);
 router.delete("/music/:id", musicController.deleteMusic);
+router.post("/music/:id/duration", musicController.setMusicDuration);
 
 router.get("/appeals", adminController.getAppeals);
 router.post("/appeals/:id/resolve", adminController.resolveAppeal);

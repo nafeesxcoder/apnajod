@@ -83,6 +83,18 @@ async function remove(id) {
 }
 
 /**
+ * The song's length, measured by the admin's browser when the upload could
+ * not read it (it was saved as 0, so stories could only use the start).
+ */
+async function setDuration(id, durationSec) {
+  const seconds = Math.round(Number(durationSec) || 0);
+  if (seconds < 1 || seconds > 65535) throw fail(400, 'That length is not right.');
+  const result = await query('UPDATE music_tracks SET duration_sec = ? WHERE id = ?', [seconds, String(id || '')]);
+  if (!result.affectedRows) throw fail(404, 'That song is not in the library.');
+  return { ok: true, durationSec: seconds };
+}
+
+/**
  * The clip a new story asks for, checked: a song in the library, a start
  * inside it, and 5 to 30 seconds long. null when the story has no music.
  */
@@ -100,4 +112,4 @@ async function clipFor(trackId, start, length) {
   return { trackId: row.id, start: from, length: seconds };
 }
 
-module.exports = { MIN_CLIP, MAX_CLIP, search, list, add, remove, clipFor, musicFilePath };
+module.exports = { MIN_CLIP, MAX_CLIP, search, list, add, remove, setDuration, clipFor, musicFilePath };
