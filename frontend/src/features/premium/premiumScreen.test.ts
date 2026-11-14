@@ -39,16 +39,18 @@ describe('the Premium screen', () => {
     expect(screen).not.toMatch(/₹\s?[1-9]/);
   });
 
-  it('shows the Buy button only while checkout is open', () => {
-    // The Buy button is a PressScale now (it sinks when pressed, like every
-    // button in the redesign); it is still the only thing behind the flag.
+  it('shows the Razorpay button only while checkout is open and the account is live', () => {
+    // The flag still closes Razorpay; the server also has to say its keys
+    // are live ones, so test keys never reach members.
+    expect(screen).toContain('const razorpayOpen = billingApi.checkoutAvailable && !!payOptions?.razorpay;');
     expect(screen).toMatch(
-      /\{billingApi\.checkoutAvailable && \(\s*<PressScale[\s\S]{0,200}?onPress=\{\(\) => void handleBuy\(\)\}/,
+      /\{razorpayOpen && \(\s*<PressScale[\s\S]{0,200}?onPress=\{\(\) => void handleBuy\(\)\}/,
     );
   });
 
   it('says plainly that everything is free while payments are closed', () => {
-    expect(screen).toContain('!billingApi.checkoutAvailable');
+    // Closed means no UPI and no Razorpay.
+    expect(screen).toContain('!upiOpen && !razorpayOpen');
     expect(screen).toMatch(/free for\s*\n?\s*everyone/);
   });
 

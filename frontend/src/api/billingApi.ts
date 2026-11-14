@@ -53,6 +53,25 @@ export type RazorpayOrder = {
   planTitle: string;
 };
 
+/** A UPI payment the member sent, waiting for (or past) an admin's check. */
+export type UpiPayment = {
+  id: string;
+  planCode: string;
+  planTitle: string;
+  amountPaise: number;
+  utr: string;
+  status: "pending" | "approved" | "rejected";
+  note: string | null;
+  createdAt: string;
+};
+
+export type PayOptions = {
+  upi: { enabled: boolean; upiId: string; payeeName: string; approvalHours: number };
+  /** Razorpay only once its account is live - never test keys. */
+  razorpay: boolean;
+  payments: UpiPayment[];
+};
+
 export function rupees(paise: number) {
   const whole = Math.round(paise) / 100;
   return `₹${whole % 1 === 0 ? whole.toFixed(0) : whole.toFixed(2)}`;
@@ -91,6 +110,19 @@ export const billingApi = {
       planCode: data.planCode,
       planTitle: data.planTitle,
     };
+  },
+
+  async payOptions(accessToken: string): Promise<PayOptions> {
+    const data = await authFetch("/billing/pay-options", accessToken);
+    return { upi: data.upi, razorpay: !!data.razorpay, payments: data.payments ?? [] };
+  },
+
+  async submitUpi(accessToken: string, planCode: string, utr: string): Promise<UpiPayment> {
+    const data = await authFetch("/billing/upi", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ planCode, utr }),
+    });
+    return data.payment;
   },
 
   checkoutAvailable: true,

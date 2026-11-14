@@ -119,6 +119,30 @@ const resolveAppeal = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+// UPI payments waiting to be checked against the bank app.
+const getPayments = asyncHandler(async (req, res) => {
+  const upiService = require("../services/upiService");
+  res.json({ ok: true, ...(await upiService.listForAdmin()) });
+});
+
+const approvePayment = asyncHandler(async (req, res) => {
+  const upiService = require("../services/upiService");
+  try {
+    res.json({ ok: true, ...(await upiService.approve(req.params.id)) });
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+});
+
+const rejectPayment = asyncHandler(async (req, res) => {
+  const upiService = require("../services/upiService");
+  try {
+    res.json({ ok: true, ...(await upiService.reject(req.params.id, req.body?.reason)) });
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+});
+
 const updateAdminPassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) throw new ApiError(400, "Current and new password are required");
@@ -162,5 +186,5 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

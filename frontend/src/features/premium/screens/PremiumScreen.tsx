@@ -11,9 +11,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   type BillingPlan,
   type BillingSummary,
+  type PayOptions,
   billingApi,
   rupees,
 } from "../../../api/billingApi";
+import { UpiPay, UpiPayments } from "../UpiPay";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
 import { LinearGradient } from "expo-linear-gradient";
@@ -89,6 +91,14 @@ export function PremiumScreen({
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
   const [notice, setNotice] = useState("");
+  // How a member can pay: our UPI (checked by hand) and Razorpay once live.
+  const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
+  const loadPayOptions = () => {
+    billingApi
+      .payOptions(accessToken)
+      .then(setPayOptions)
+      .catch(() => setPayOptions(null));
+  };
 
   const reload = () => {
     Promise.all([billingApi.plans(), billingApi.me(accessToken)])
@@ -109,6 +119,11 @@ export function PremiumScreen({
         setLoading(false);
       });
   };
+
+  useEffect(() => {
+    loadPayOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   useEffect(() => {
     let live = true;
@@ -194,6 +209,10 @@ export function PremiumScreen({
     (plan) => plan.kind === "consumable" && plan.grants === "superlike",
   );
 
+  const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? null;
+  const upiOpen = !!payOptions?.upi.enabled;
+  const razorpayOpen = billingApi.checkoutAvailable && !!payOptions?.razorpay;
+
   const currentPlanName =
     selectedCode === "pro_monthly"
       ? "Pro"
@@ -235,9 +254,29 @@ export function PremiumScreen({
         </Text>
       )}
 
-      {/* One flag closes payments (say, while Razorpay KYC is
-          pending): the button goes with it, never a Buy that fails. */}
-      {billingApi.checkoutAvailable && (
+      {/* UPI to our own ID, approved by hand, while Razorpay KYC is
+          pending. */}
+      {upiOpen && selectedPlan && payOptions && (
+        <UpiPay
+          key={selectedPlan.code}
+          plan={selectedPlan}
+          upi={payOptions.upi}
+          accessToken={accessToken}
+          onSent={(payment) => {
+            setPayOptions((prev) =>
+              prev ? { ...prev, payments: [payment, ...prev.payments] } : prev,
+            );
+            setError("");
+            setNotice(
+              `Sent! We will check your payment and turn on ${payment.planTitle} within ${payOptions.upi.approvalHours} hours.`,
+            );
+          }}
+        />
+      )}
+
+      {/* Razorpay only once its account is live: never a Buy that fails,
+          and never test keys in front of members. */}
+      {razorpayOpen && (
         <PressScale
           accessibilityRole="button"
           accessibilityLabel={buying ? "Opening Razorpay" : "Buy with Razorpay"}
@@ -339,6 +378,13 @@ export function PremiumScreen({
               </Text>
             ) : (
               <>
+                {payOptions && (
+                  <UpiPayments
+                    payments={payOptions.payments}
+                    approvalHours={payOptions.upi.approvalHours}
+                  />
+                )}
+
                 {summary?.premium && (
                   <Reveal
                     style={{
@@ -459,7 +505,7 @@ export function PremiumScreen({
                   </PackGroup>
                 )}
 
-                {!billingApi.checkoutAvailable && (
+                {!upiOpen && !razorpayOpen && (
                   <Text
                     style={{
                       color: palette.slate,

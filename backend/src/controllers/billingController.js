@@ -2,6 +2,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const billingService = require("../services/billingService");
 const razorpayService = require("../services/razorpayService");
+const upiService = require("../services/upiService");
 const { query } = require("../config/db");
 const { ApiError } = require("../middleware/errorHandler");
 
@@ -126,4 +127,30 @@ const webhook = asyncHandler(async (req, res) => {
   res.json({ ok: true, ignored: eventType });
 });
 
-module.exports = { plans, me, boost, createOrder, webhook };
+/**
+ * How a member can pay right now: our UPI ID (checked by hand) and, once
+ * the Razorpay account is live, Razorpay. Test keys never reach members.
+ */
+const payOptions = asyncHandler(async (req, res) => {
+  const keyId = String(process.env.RAZORPAY_KEY_ID || "");
+  res.json({
+    ok: true,
+    upi: upiService.config(),
+    razorpay: razorpayService.isConfigured() && keyId.startsWith("rzp_live_"),
+    payments: await upiService.mine(req.user.id),
+  });
+});
+
+const submitUpi = asyncHandler(async (req, res) => {
+  const { planCode, utr } = req.body || {};
+  if (!planCode) throw new ApiError(400, "planCode is required");
+  try {
+    const payment = await upiService.submit(req.user.id, planCode, utr);
+    res.json({ ok: true, payment });
+  } catch (error) {
+    if (error.status) throw new ApiError(error.status, error.message);
+    throw error;
+  }
+});
+
+module.exports = { plans, me, boost, createOrder, webhook, payOptions, submitUpi };

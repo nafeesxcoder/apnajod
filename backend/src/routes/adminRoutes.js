@@ -46,4 +46,9 @@ router.post("/music/:id/duration", musicController.setMusicDuration);
 router.get("/appeals", adminController.getAppeals);
 router.post("/appeals/:id/resolve", adminController.resolveAppeal);
 
+// UPI payments checked by hand.
+router.get("/payments", adminController.getPayments);
+router.post("/payments/:id/approve", adminController.approvePayment);
+router.post("/payments/:id/reject", adminController.rejectPayment);
+
 module.exports = router;

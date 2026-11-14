@@ -120,6 +120,12 @@ export const adminApi = {
   },
   createDailyQuestion: (token: string, question: string, options: string[]) => authFetch("/admin/questions", token, { method: "POST", body: JSON.stringify({ question, options }) }),
   setDailyQuestionActive: (token: string, id: number, active: boolean) => authFetch(`/admin/questions/${id}/active`, token, { method: "POST", body: JSON.stringify({ active }) }),
+  // UPI payments waiting to be checked against the bank app.
+  payments: (token: string) => authFetch("/admin/payments", token),
+  approvePayment: (token: string, id: string) =>
+    authFetch(`/admin/payments/${id}/approve`, token, { method: "POST" }),
+  rejectPayment: (token: string, id: string, reason: string) =>
+    authFetch(`/admin/payments/${id}/reject`, token, { method: "POST", body: JSON.stringify({ reason }) }),
   resolveAppeal: (token: string, id: string, action: "restore" | "reject") => authFetch(`/admin/appeals/${id}/resolve`, token, { method: "POST", body: JSON.stringify({ action }) }),
   // A reported post: remove it (its owner is told why), or keep it.
   removePost: (token: string, postId: string) => authFetch(`/admin/posts/${postId}/remove`, token, { method: "POST" }),
