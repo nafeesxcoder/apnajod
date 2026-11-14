@@ -15,7 +15,7 @@ import {
   billingApi,
   rupees,
 } from "../../../api/billingApi";
-import { UpiPay, UpiPayments } from "../UpiPay";
+import { UpiPayments, UpiPaySheet } from "../UpiPay";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
 import { LinearGradient } from "expo-linear-gradient";
@@ -93,6 +93,7 @@ export function PremiumScreen({
   const [notice, setNotice] = useState("");
   // How a member can pay: our UPI (checked by hand) and Razorpay once live.
   const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
+  const [upiSheetOpen, setUpiSheetOpen] = useState(false);
   const loadPayOptions = () => {
     billingApi
       .payOptions(accessToken)
@@ -255,23 +256,53 @@ export function PremiumScreen({
       )}
 
       {/* UPI to our own ID, approved by hand, while Razorpay KYC is
-          pending. */}
+          pending. One Pay button under the plan; the QR, the UPI ID and
+          the UTR box open from it. */}
       {upiOpen && selectedPlan && payOptions && (
-        <UpiPay
-          key={selectedPlan.code}
-          plan={selectedPlan}
-          upi={payOptions.upi}
-          accessToken={accessToken}
-          onSent={(payment) => {
-            setPayOptions((prev) =>
-              prev ? { ...prev, payments: [payment, ...prev.payments] } : prev,
-            );
-            setError("");
-            setNotice(
-              `Sent! We will check your payment and turn on ${payment.planTitle} within ${payOptions.upi.approvalHours} hours.`,
-            );
-          }}
-        />
+        <>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={`Pay ${rupees(selectedPlan.amount_paise)}`}
+            onPress={() => {
+              setNotice("");
+              setUpiSheetOpen(true);
+            }}
+            containerStyle={{ marginTop: 20, marginBottom: 16 }}
+            style={{
+              backgroundColor: palette.crimson,
+              paddingVertical: 16,
+              borderRadius: radius.pill,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              minHeight: 52,
+            }}
+          >
+            <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
+            <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 16 }}>
+              Pay {rupees(selectedPlan.amount_paise)}
+            </Text>
+          </PressScale>
+          <UpiPaySheet
+            visible={upiSheetOpen}
+            onClose={() => setUpiSheetOpen(false)}
+            plan={selectedPlan}
+            upi={payOptions.upi}
+            accessToken={accessToken}
+            onSent={(payment) => {
+              setUpiSheetOpen(false);
+              setPayOptions((prev) =>
+                prev ? { ...prev, payments: [payment, ...prev.payments] } : prev,
+              );
+              setError("");
+              setNotice(
+                `Sent! We will check your payment and turn on ${payment.planTitle} within ${payOptions.upi.approvalHours} hours.`,
+              );
+            }}
+          />
+        </>
       )}
 
       {/* Razorpay only once its account is live: never a Buy that fails,

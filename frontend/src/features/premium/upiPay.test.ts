@@ -24,7 +24,10 @@ describe('UPI payments', () => {
 
   it('shows the QR and sends the UTR for approval on the Premium screen', () => {
     const screen = readFileSync(join(__dirname, 'screens/PremiumScreen.tsx'), 'utf8');
-    expect(screen).toContain('<UpiPay');
+    // One Pay button under the plan; the QR opens from it, not inline.
+    expect(screen).toContain('<UpiPaySheet');
+    expect(screen).toContain('setUpiSheetOpen(true)');
+    expect(screen).not.toContain('<UpiPay\n');
     expect(screen).toContain('<UpiPayments');
     // Razorpay test keys never reach members.
     expect(screen).toContain('!!payOptions?.razorpay');

@@ -7,7 +7,19 @@
  * anything by itself.
  */
 import { useState } from "react";
-import { ActivityIndicator, Image, Linking, Platform, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
@@ -114,27 +126,7 @@ export function UpiPay({
   };
 
   return (
-    <View
-      accessibilityLabel={`Pay ${amount} by UPI`}
-      style={{
-        marginTop: 18,
-        backgroundColor: palette.paper,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: "#EADDD2",
-        padding: 18,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Ionicons name="qr-code-outline" size={20} color={palette.crimson} />
-        <Text style={{ fontFamily: fonts.display, fontSize: 18, color: palette.ink }}>
-          Pay {amount} by UPI
-        </Text>
-      </View>
-      <Text style={{ marginTop: 4, color: palette.slate, fontFamily: fonts.body, fontSize: 13 }}>
-        {plan.title} · Google Pay, PhonePe, Paytm or any UPI app
-      </Text>
-
+    <View accessibilityLabel={`Pay ${amount} by UPI`}>
       <Step n={1} text={`Pay exactly ${amount} to this UPI`} />
       <View style={{ alignItems: "center", marginTop: 12 }}>
         <Image
@@ -273,6 +265,97 @@ export function UpiPay({
         usually much sooner, and you get a notification.
       </Text>
     </View>
+  );
+}
+
+/**
+ * The UPI payment opens from the plan's Pay button, in its own window -
+ * the plan list stays a list of plans.
+ */
+export function UpiPaySheet({
+  visible,
+  onClose,
+  plan,
+  upi,
+  accessToken,
+  onSent,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  plan: BillingPlan;
+  upi: PayOptions["upi"];
+  accessToken: string;
+  onSent: (payment: UpiPayment) => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 16 }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={onClose}
+          style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(15, 23, 42, 0.55)" }}
+        />
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 440,
+            maxHeight: "100%",
+            backgroundColor: palette.paper,
+            borderRadius: 22,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              paddingHorizontal: 18,
+              paddingTop: 16,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: "#EFE6DE",
+            }}
+          >
+            <Ionicons name="qr-code-outline" size={20} color={palette.crimson} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 18, color: palette.ink }}>
+                Pay {rupees(plan.amount_paise)} by UPI
+              </Text>
+              <Text style={{ marginTop: 2, color: palette.slate, fontFamily: fonts.body, fontSize: 12 }}>
+                {plan.title} · Google Pay, PhonePe, Paytm or any UPI app
+              </Text>
+            </View>
+            <PressScale
+              accessibilityRole="button"
+              accessibilityLabel="Close UPI payment"
+              hitSlop={10}
+              onPress={onClose}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: palette.paperBase,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="close" size={20} color={palette.ink} />
+            </PressScale>
+          </View>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 20 }}
+          >
+            <UpiPay key={plan.code} plan={plan} upi={upi} accessToken={accessToken} onSent={onSent} />
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
