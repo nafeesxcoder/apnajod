@@ -16,6 +16,8 @@ import {
   rupees,
 } from "../../../api/billingApi";
 import { UpiPayments, UpiPaySheet } from "../UpiPay";
+import { CouponBox } from "../CouponBox";
+import type { AppliedCoupon } from "../couponStore";
 import { useFestival } from "../../festival/festivalStore";
 
 /** "till 17 Nov" in India time, or "" with no end. */
@@ -103,6 +105,8 @@ export function PremiumScreen({
   // How a member can pay: our UPI (checked by hand) and Razorpay once live.
   const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
   const [upiSheetOpen, setUpiSheetOpen] = useState(false);
+  // A coupon on the selected plan (the server worked out its price).
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const loadPayOptions = () => {
     billingApi
       .payOptions(accessToken)
@@ -171,7 +175,7 @@ export function PremiumScreen({
         throw new Error("Could not load Razorpay. Check your connection.");
       }
 
-      const order = await billingApi.createOrder(accessToken, selectedCode);
+      const order = await billingApi.createOrder(accessToken, selectedCode, coupon?.code);
 
       const rzp = new (window as any).Razorpay({
         key: order.keyId,
@@ -222,6 +226,9 @@ export function PremiumScreen({
   const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? null;
   const festival = useFestival();
   const offerPlan = plans.find((plan) => !!plan.offer_percent) ?? null;
+  // What the member pays now: the coupon's price when one is on.
+  const payPaise = selectedPlan ? (coupon?.amountPaise ?? selectedPlan.amount_paise) : 0;
+  const payPlan = selectedPlan ? { ...selectedPlan, amount_paise: payPaise } : null;
   const upiOpen = !!payOptions?.upi.enabled;
   const razorpayOpen = billingApi.checkoutAvailable && !!payOptions?.razorpay;
 
@@ -269,11 +276,21 @@ export function PremiumScreen({
       {/* UPI to our own ID, approved by hand, while Razorpay KYC is
           pending. One Pay button under the plan; the QR, the UPI ID and
           the UTR box open from it. */}
-      {upiOpen && selectedPlan && payOptions && (
+      {selectedPlan && payOptions && (upiOpen || razorpayOpen) && (
+        <CouponBox
+          plan={selectedPlan}
+          accessToken={accessToken}
+          shown={payOptions.coupon}
+          applied={coupon}
+          onApplied={setCoupon}
+        />
+      )}
+
+      {upiOpen && selectedPlan && payPlan && payOptions && (
         <>
           <PressScale
             accessibilityRole="button"
-            accessibilityLabel={`Pay ${rupees(selectedPlan.amount_paise)}`}
+            accessibilityLabel={`Pay ${rupees(payPaise)}`}
             onPress={() => {
               setNotice("");
               setUpiSheetOpen(true);
@@ -293,17 +310,24 @@ export function PremiumScreen({
             <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
             <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
             <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 16 }}>
-              Pay {rupees(selectedPlan.amount_paise)}
+              Pay {rupees(payPaise)}
             </Text>
+            {payPaise < selectedPlan.amount_paise && (
+              <Text style={{ color: "rgba(255,255,255,0.7)", fontFamily: fonts.body, fontSize: 14, textDecorationLine: "line-through" }}>
+                {rupees(selectedPlan.amount_paise)}
+              </Text>
+            )}
           </PressScale>
           <UpiPaySheet
             visible={upiSheetOpen}
             onClose={() => setUpiSheetOpen(false)}
-            plan={selectedPlan}
+            plan={payPlan}
+            couponCode={coupon?.code ?? null}
             upi={payOptions.upi}
             accessToken={accessToken}
             onSent={(payment) => {
               setUpiSheetOpen(false);
+              setCoupon(null);
               setPayOptions((prev) =>
                 prev ? { ...prev, payments: [payment, ...prev.payments] } : prev,
               );

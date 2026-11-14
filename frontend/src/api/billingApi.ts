@@ -74,6 +74,8 @@ export type PayOptions = {
   /** Razorpay only once its account is live - never test keys. */
   razorpay: boolean;
   payments: UpiPayment[];
+  /** The coupon the admin shows at payment, if this member can still use it. */
+  coupon: { code: string; percent: number; validUntil: string | null } | null;
 };
 
 export function rupees(paise: number) {
@@ -101,10 +103,11 @@ export const billingApi = {
   async createOrder(
     accessToken: string,
     planCode: string,
+    couponCode?: string | null,
   ): Promise<RazorpayOrder> {
     const data = await authFetch("/billing/order", accessToken, {
       method: "POST",
-      body: JSON.stringify({ planCode }),
+      body: JSON.stringify({ planCode, couponCode: couponCode || undefined }),
     });
     return {
       orderId: data.orderId,
@@ -118,15 +121,33 @@ export const billingApi = {
 
   async payOptions(accessToken: string): Promise<PayOptions> {
     const data = await authFetch("/billing/pay-options", accessToken);
-    return { upi: data.upi, razorpay: !!data.razorpay, payments: data.payments ?? [] };
+    return { upi: data.upi, razorpay: !!data.razorpay, payments: data.payments ?? [], coupon: data.coupon ?? null };
   },
 
-  async submitUpi(accessToken: string, planCode: string, utr: string): Promise<UpiPayment> {
+  async submitUpi(accessToken: string, planCode: string, utr: string, couponCode?: string | null): Promise<UpiPayment> {
     const data = await authFetch("/billing/upi", accessToken, {
       method: "POST",
-      body: JSON.stringify({ planCode, utr }),
+      body: JSON.stringify({ planCode, utr, couponCode: couponCode || undefined }),
     });
     return data.payment;
+  },
+
+  /** What a plan costs with a coupon (the server decides), or why it cannot be used. */
+  async checkCoupon(
+    accessToken: string,
+    planCode: string,
+    code: string,
+  ): Promise<{ amountPaise: number; originalPaise: number; couponCode: string | null; percent: number | null }> {
+    const data = await authFetch("/billing/coupon", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ planCode, code }),
+    });
+    return {
+      amountPaise: Number(data.amountPaise),
+      originalPaise: Number(data.originalPaise),
+      couponCode: data.couponCode ?? null,
+      percent: data.percent ?? null,
+    };
   },
 
   checkoutAvailable: true,

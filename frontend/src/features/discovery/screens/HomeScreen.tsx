@@ -26,6 +26,7 @@ import { ActivityModal } from "../../posts/ActivityModal";
 import { useFestival } from "../../festival/festivalStore";
 import { FestivalBanner } from "../../festival/FestivalBanner";
 import { FestivalParticles } from "../../festival/FestivalParticles";
+import { FestivalEmoji } from "../../festival/FestivalScene";
 import { openStoryChooser } from "../../stories/storyStore";
 import { postApi } from "../../../api/postApi";
 import { matchApi } from "../../../api/matchApi";
@@ -232,15 +233,24 @@ export function HomeScreen({
               }}
             >
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text
-                  style={{
-                    fontFamily: festival ? fonts.bodySemi : fonts.body,
-                    fontSize: typeScale.label,
-                    color: festival ? festival.accent : colors.muted,
-                  }}
-                >
-                  {festival ? `${festival.emoji} ${festival.greeting}` : greetingForNow()}
-                </Text>
+                {festival ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <FestivalEmoji theme={festival} />
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: typeScale.label, color: festival.accent }}>
+                      {festival.greeting}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: fonts.body,
+                      fontSize: typeScale.label,
+                      color: colors.muted,
+                    }}
+                  >
+                    {greetingForNow()}
+                  </Text>
+                )}
                 <Text
                   numberOfLines={1}
                   style={{

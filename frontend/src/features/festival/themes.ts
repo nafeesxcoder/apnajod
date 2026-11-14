@@ -24,6 +24,12 @@ export type FestivalTheme = {
   particles: { emoji?: string[]; dots?: string[] };
   /** Extra backgrounds for text stories while the theme is on. */
   textStories: TextTheme[];
+  /** What moves in the Home banner. */
+  scene: "diyas" | "lanterns" | "colours" | "snow" | "fireworks" | "hearts" | "garland";
+  /** The big show the first time the app opens that day. */
+  show: "fall" | "rise" | "fireworks";
+  /** Colours for fireworks, puffs and lights. */
+  sparks: string[];
 };
 
 export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
@@ -42,6 +48,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "diya-gold", name: "Diya Gold", colors: ["#B45309", "#FCD34D"] },
       { id: "rangoli", name: "Rangoli", colors: ["#BE185D", "#F59E0B"] },
     ],
+    scene: "diyas",
+    show: "fireworks",
+    sparks: ["#FFD166", "#FF9F1C", "#FF5E5B", "#FFFFFF"],
   },
   eid_ul_fitr: {
     key: "eid_ul_fitr",
@@ -58,6 +67,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "crescent-gold", name: "Crescent Gold", colors: ["#065F46", "#D4A017"] },
       { id: "moonlight", name: "Moonlight", colors: ["#1E293B", "#475569"] },
     ],
+    scene: "lanterns",
+    show: "fall",
+    sparks: ["#FDE68A", "#FFFFFF", "#A7F3D0"],
   },
   eid_ul_adha: {
     key: "eid_ul_adha",
@@ -73,6 +85,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "adha-green", name: "Eid Green", colors: ["#14532D", "#166534"] },
       { id: "adha-gold", name: "Eid Gold", colors: ["#713F12", "#CA8A04"] },
     ],
+    scene: "lanterns",
+    show: "fall",
+    sparks: ["#FDE68A", "#FFFFFF", "#BBF7D0"],
   },
   holi: {
     key: "holi",
@@ -89,6 +104,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "holi-sun", name: "Holi Sun", colors: ["#F59E0B", "#EF4444"] },
       { id: "holi-green", name: "Holi Green", colors: ["#22C55E", "#3B82F6"] },
     ],
+    scene: "colours",
+    show: "fall",
+    sparks: ["#EC4899", "#F59E0B", "#22C55E", "#3B82F6", "#A855F7", "#EF4444"],
   },
   christmas: {
     key: "christmas",
@@ -104,6 +122,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "xmas-red", name: "Christmas Red", colors: ["#7F1D1D", "#DC2626"] },
       { id: "xmas-pine", name: "Pine", colors: ["#052E16", "#15803D"] },
     ],
+    scene: "snow",
+    show: "fall",
+    sparks: ["#EF4444", "#22C55E", "#FACC15", "#60A5FA"],
   },
   new_year: {
     key: "new_year",
@@ -119,6 +140,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "midnight", name: "Midnight", colors: ["#020617", "#312E81"] },
       { id: "golden-hour", name: "Golden Hour", colors: ["#1E1B4B", "#B45309"] },
     ],
+    scene: "fireworks",
+    show: "fireworks",
+    sparks: ["#FDE68A", "#F472B6", "#60A5FA", "#A78BFA", "#FFFFFF"],
   },
   valentines: {
     key: "valentines",
@@ -135,6 +159,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "blush", name: "Blush", colors: ["#F43F5E", "#FDA4AF"] },
       { id: "rose-night", name: "Rose Night", colors: ["#1F0A1A", "#9F1239"] },
     ],
+    scene: "hearts",
+    show: "rise",
+    sparks: ["#FDA4AF", "#FFFFFF", "#FB7185"],
   },
   raksha_bandhan: {
     key: "raksha_bandhan",
@@ -150,6 +177,9 @@ export const FESTIVAL_THEMES: Record<string, FestivalTheme> = {
       { id: "rakhi-saffron", name: "Saffron", colors: ["#C2410C", "#FBBF24"] },
       { id: "rakhi-marigold", name: "Marigold", colors: ["#B45309", "#FDE047"] },
     ],
+    scene: "garland",
+    show: "fall",
+    sparks: ["#FBBF24", "#F97316", "#FDE68A"],
   },
 };
 

@@ -17,6 +17,8 @@ import { adminApi } from "../../../api/adminApi";
 import { LinearGradient } from "expo-linear-gradient";
 import { FESTIVAL_THEMES, type ActiveFestival, type FestivalTheme } from "../../festival/themes";
 import { setFestival } from "../../festival/festivalStore";
+import { PromoCard } from "../../promo/PromoPopup";
+import { PROMO_STYLES, type Promo } from "../../promo/styles";
 import { GrowthTab } from "./GrowthTab";
 import { MusicTab } from "./MusicTab";
 import { fonts, radius } from "../../../theme";
@@ -31,6 +33,8 @@ type Tab =
   | "appeals"
   | "payments"
   | "festivals"
+  | "coupons"
+  | "promo"
   | "questions"
   | "music"
   | "security";
@@ -48,6 +52,8 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
   { key: "payments", label: "UPI Payments", icon: "cash-outline" },
   { key: "festivals", label: "Festival Themes", icon: "sparkles-outline" },
+  { key: "coupons", label: "Coupons", icon: "pricetags-outline" },
+  { key: "promo", label: "Offer Popup", icon: "megaphone-outline" },
   { key: "questions", label: "Daily Questions", icon: "help-circle-outline" },
   { key: "music", label: "Music", icon: "musical-notes-outline" },
   { key: "security", label: "Security", icon: "lock-closed-outline" }, // 👈 New
@@ -432,6 +438,8 @@ export function AdminDashboardScreen({
           {tab === "appeals" && <AppealsTab accessToken={accessToken} />}
           {tab === "payments" && <PaymentsTab accessToken={accessToken} />}
           {tab === "festivals" && <FestivalsTab accessToken={accessToken} />}
+          {tab === "coupons" && <CouponsTab accessToken={accessToken} />}
+          {tab === "promo" && <PromoTab accessToken={accessToken} />}
           {tab === "questions" && <QuestionsTab accessToken={accessToken} />}
           {tab === "music" && <MusicTab accessToken={accessToken} />}
           {tab === "security" && <SecurityTab accessToken={accessToken} />}
@@ -2067,6 +2075,7 @@ function PaymentsTab({ accessToken }: { accessToken: string }) {
           {!isPending && (
             <Badge text={p?.status === "approved" ? "Approved" : "Rejected"} danger={p?.status !== "approved"} />
           )}
+          {!!p?.couponCode && <Badge text={`🎟️ ${p.couponCode}`} />}
         </View>
         <Text style={{ fontFamily: fonts.body, fontSize: 14, color: COLORS.textMain }}>
           {displayName({ first_name: p?.firstName, username: p?.username })}
@@ -2136,6 +2145,403 @@ function PaymentsTab({ accessToken }: { accessToken: string }) {
         </Text>
       )}
       {reviewed.map((p) => row(p, false))}
+    </View>
+  );
+}
+
+/* ---------------- Coupons ---------------- */
+
+const COUPON_PERCENTS = [10, 20, 30, 50];
+
+function Toggle({ label, on, onPress, busy }: { label: string; on: boolean; onPress: () => void; busy?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: on, busy: !!busy }}
+      onPress={onPress}
+      disabled={busy}
+      style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 24,
+          borderRadius: 12,
+          padding: 3,
+          backgroundColor: on ? COLORS.success : COLORS.border,
+          alignItems: on ? "flex-end" : "flex-start",
+        }}
+      >
+        <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#FFFFFF" }} />
+      </View>
+      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMain }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function CouponsTab({ accessToken }: { accessToken: string }) {
+  const [coupons, setCoupons] = useState<any[] | null>(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [code, setCode] = useState("");
+  const [percent, setPercent] = useState("50");
+  const [untilDay, setUntilDay] = useState("");
+  const [maxUses, setMaxUses] = useState("");
+  const [show, setShow] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const res: any = await adminApi.coupons(accessToken);
+      setCoupons(Array.isArray(res?.coupons) ? res.coupons : []);
+    } catch (e) {
+      setError(errText(e, "Could not load coupons"));
+      setCoupons([]);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const run = async (work: () => Promise<unknown>, done: string) => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await work();
+      setNotice(done);
+      await load();
+    } catch (e) {
+      setError(errText(e, "That did not work"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const create = () => {
+    const cleanCode = code.trim().toUpperCase();
+    // Valid until the end of that day, India time.
+    const validUntil = /^\d{4}-\d{2}-\d{2}$/.test(untilDay)
+      ? new Date(istMidnight(untilDay).getTime() + 86400000 - 1000).toISOString()
+      : null;
+    void run(
+      async () => {
+        await adminApi.createCoupon(accessToken, {
+          code: cleanCode,
+          percent: Number(percent),
+          validUntil,
+          maxUses: maxUses.trim() ? Number(maxUses) : null,
+          showAtCheckout: show,
+        });
+        setCode("");
+        setMaxUses("");
+      },
+      `${cleanCode} is ready${show ? " and shows at payment" : ""}.`,
+    );
+  };
+
+  if (!coupons) return <Loading />;
+
+  return (
+    <View style={{ gap: 18 }}>
+      <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: COLORS.textMuted }}>
+        Write your own code. Each member can use a coupon once, on Plus or Pro. A coupon set to show at payment
+        is already applied for everyone who pays; the others only work for people who type the code.
+      </Text>
+      {!!error && <Message tone="error" text={error} />}
+      {!!notice && <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.success }}>{notice}</Text>}
+
+      <Card style={{ padding: 18, gap: 14 }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>New coupon</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+          <View style={{ gap: 6, minWidth: 220, flex: 1 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Code</Text>
+            <TextInput
+              accessibilityLabel="Coupon code"
+              value={code}
+              onChangeText={(text) => setCode(text.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))}
+              placeholder="DIWALI50"
+              autoCapitalize="characters"
+              style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 16, letterSpacing: 1.5, color: COLORS.textMain }}
+            />
+          </View>
+          <View style={{ gap: 6, minWidth: 220, flex: 1 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>% off</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              {COUPON_PERCENTS.map((value) => (
+                <SmallButton
+                  key={value}
+                  label={`${value}%`}
+                  tone={percent === String(value) ? "navy" : "plain"}
+                  onPress={() => setPercent(String(value))}
+                />
+              ))}
+              <TextInput
+                accessibilityLabel="Custom percent"
+                value={percent}
+                onChangeText={(text) => setPercent(text.replace(/\D/g, "").slice(0, 2))}
+                keyboardType="number-pad"
+                style={{ width: 64, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 8, fontSize: 15, textAlign: "center", color: COLORS.textMain }}
+              />
+            </View>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, alignItems: "flex-end" }}>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Valid till (empty: no end)</Text>
+            <DateField value={untilDay} onChange={setUntilDay} />
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>How many members (empty: no limit)</Text>
+            <TextInput
+              accessibilityLabel="How many members can use it"
+              value={maxUses}
+              onChangeText={(text) => setMaxUses(text.replace(/\D/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              placeholder="100"
+              style={{ width: 140, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 15, color: COLORS.textMain }}
+            />
+          </View>
+          <Toggle label="Show at payment for everyone" on={show} onPress={() => setShow((v) => !v)} />
+        </View>
+        <View style={{ flexDirection: "row" }}>
+          <SmallButton label="Create coupon" busy={busy} onPress={create} />
+        </View>
+      </Card>
+
+      {coupons.length === 0 ? (
+        <Message text="No coupons yet." />
+      ) : (
+        coupons.map((c) => (
+          <Card key={c.id} style={{ padding: 16, gap: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+              <Text selectable style={{ fontFamily: fonts.bodySemi, fontSize: 18, letterSpacing: 1.5, color: COLORS.textMain }}>
+                🎟️ {c.code}
+              </Text>
+              <Badge text={`${c.percent}% off`} />
+              {!c.active && <Badge text="Off" danger />}
+              {c.validUntil && new Date(c.validUntil).getTime() <= Date.now() && <Badge text="Ended" danger />}
+            </View>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+              Used {c.uses}
+              {c.maxUses ? ` of ${c.maxUses}` : ""} times
+              {c.waiting ? ` · ${c.waiting} payment${c.waiting === 1 ? "" : "s"} waiting` : ""}
+              {c.validUntil ? ` · till ${istTime(c.validUntil)}` : " · no end date"}
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
+              <Toggle
+                label="On"
+                on={!!c.active}
+                busy={busy}
+                onPress={() =>
+                  void run(() => adminApi.updateCoupon(accessToken, c.id, { active: !c.active }), `${c.code} turned ${c.active ? "off" : "on"}.`)
+                }
+              />
+              <Toggle
+                label="Show at payment"
+                on={!!c.showAtCheckout}
+                busy={busy}
+                onPress={() =>
+                  void run(
+                    () => adminApi.updateCoupon(accessToken, c.id, { showAtCheckout: !c.showAtCheckout }),
+                    c.showAtCheckout ? `${c.code} no longer shows at payment.` : `${c.code} now shows at payment.`,
+                  )
+                }
+              />
+            </View>
+          </Card>
+        ))
+      )}
+    </View>
+  );
+}
+
+/* ---------------- Offer popup ---------------- */
+
+function PromoTab({ accessToken }: { accessToken: string }) {
+  const [active, setActive] = useState<Promo | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [headline, setHeadline] = useState("50% OFF");
+  const [title, setTitle] = useState("Premium at half price");
+  const [message, setMessage] = useState("See who likes you, unlimited likes and the blue tick.");
+  const [buttonLabel, setButtonLabel] = useState("Get Premium");
+  const [couponCode, setCouponCode] = useState<string | null>(null);
+  const [style, setStyle] = useState("classic");
+  const [endDay, setEndDay] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const [promoRes, couponRes]: any[] = await Promise.all([adminApi.promo(accessToken), adminApi.coupons(accessToken)]);
+      setActive(promoRes?.active ?? null);
+      setCoupons((couponRes?.coupons ?? []).filter((c: any) => c.active));
+    } catch (e) {
+      setError(errText(e, "Could not load the offer popup"));
+    } finally {
+      setLoaded(true);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const run = async (work: () => Promise<unknown>, done: string) => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await work();
+      setNotice(done);
+      await load();
+    } catch (e) {
+      setError(errText(e, "That did not work"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const endsAt = /^\d{4}-\d{2}-\d{2}$/.test(endDay)
+    ? new Date(istMidnight(endDay).getTime() + 86400000 - 1000).toISOString()
+    : null;
+  const preview: Promo = {
+    id: "preview",
+    headline: headline.trim() || "50% OFF",
+    title: title.trim() || null,
+    message: message.trim() || null,
+    buttonLabel: buttonLabel.trim() || null,
+    couponCode,
+    style,
+    endsAt,
+  };
+
+  if (!loaded) return <Loading />;
+
+  const field = (label: string, value: string, set: (v: string) => void, max: number, placeholder: string) => (
+    <View style={{ gap: 6 }}>
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>{label}</Text>
+      <TextInput
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={set}
+        maxLength={max}
+        placeholder={placeholder}
+        style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 15, color: COLORS.textMain }}
+      />
+    </View>
+  );
+
+  return (
+    <View style={{ gap: 18 }}>
+      <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: COLORS.textMuted }}>
+        The popup shows each time someone opens the app, until they close it. "Get Premium" opens Premium
+        with the coupon already applied.
+      </Text>
+      {!!error && <Message tone="error" text={error} />}
+      {!!notice && <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.success }}>{notice}</Text>}
+
+      <Card style={{ padding: 18, gap: 10 }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>On now</Text>
+        {active ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: COLORS.textMain }}>
+              {active.headline}
+              {active.title ? ` · ${active.title}` : ""}
+              {active.couponCode ? ` · ${active.couponCode}` : ""}
+              {active.endsAt ? ` · ends ${istTime(active.endsAt)}` : ""}
+            </Text>
+            <SmallButton
+              label="Turn off"
+              tone="danger"
+              busy={busy}
+              onPress={() => void run(() => adminApi.stopPromo(accessToken), "Offer popup turned off.")}
+            />
+          </View>
+        ) : (
+          <Text style={{ fontFamily: fonts.body, fontSize: 14, color: COLORS.textMuted }}>No popup on.</Text>
+        )}
+      </Card>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 18, alignItems: "flex-start" }}>
+        <Card style={{ padding: 18, gap: 12, flex: 1, minWidth: 320 }}>
+          {field("Big headline", headline, setHeadline, 40, "50% OFF")}
+          {field("Title", title, setTitle, 80, "Premium at half price")}
+          {field("Message", message, setMessage, 200, "What they get")}
+          {field("Button", buttonLabel, setButtonLabel, 40, "Get Premium")}
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Coupon on the popup</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <SmallButton label="None" tone={couponCode === null ? "navy" : "plain"} onPress={() => setCouponCode(null)} />
+              {coupons.map((c) => (
+                <SmallButton
+                  key={c.id}
+                  label={`${c.code} (${c.percent}%)`}
+                  tone={couponCode === c.code ? "navy" : "plain"}
+                  onPress={() => {
+                    setCouponCode(c.code);
+                    setHeadline(`${c.percent}% OFF`);
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Look</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {Object.values(PROMO_STYLES).map((item) => (
+                <Pressable
+                  key={item.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Look ${item.name}`}
+                  accessibilityState={{ selected: style === item.key }}
+                  onPress={() => setStyle(item.key)}
+                  style={{ borderRadius: 12, borderWidth: 2, borderColor: style === item.key ? COLORS.primary : "transparent", padding: 2 }}
+                >
+                  <LinearGradient colors={item.colors} style={{ width: 92, height: 40, borderRadius: 9, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 11, color: item.ink }}>{item.name}</Text>
+                  </LinearGradient>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>
+              Ends (the popup counts down to it; empty: no end)
+            </Text>
+            <DateField value={endDay} onChange={setEndDay} />
+          </View>
+          <View style={{ flexDirection: "row", marginTop: 4 }}>
+            <SmallButton
+              label={active ? "Publish (replaces the one on now)" : "Publish popup"}
+              busy={busy}
+              onPress={() =>
+                void run(
+                  () =>
+                    adminApi.publishPromo(accessToken, {
+                      headline: preview.headline,
+                      title: preview.title ?? undefined,
+                      message: preview.message ?? undefined,
+                      buttonLabel: preview.buttonLabel ?? undefined,
+                      couponCode,
+                      style,
+                      endsAt,
+                    }),
+                  "The popup is on. Everyone sees it the next time they open the app.",
+                )
+              }
+            />
+          </View>
+        </Card>
+        <View style={{ width: 360, maxWidth: "100%", gap: 8 }}>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Preview</Text>
+          <PromoCard promo={preview} onCta={() => undefined} onClose={() => undefined} />
+        </View>
+      </View>
     </View>
   );
 }

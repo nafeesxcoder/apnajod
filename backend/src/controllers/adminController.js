@@ -159,6 +159,45 @@ const cancelFestival = asyncHandler(async (req, res) => {
   }
 });
 
+// Coupons and the offer popup.
+const serviceError = (error) => new ApiError(error.status || 500, error.message);
+
+const getCoupons = asyncHandler(async (req, res) => {
+  res.json({ ok: true, coupons: await require("../services/couponService").list() });
+});
+
+const createCoupon = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await require("../services/couponService").create(req.user.id, req.body || {})) });
+  } catch (error) {
+    throw serviceError(error);
+  }
+});
+
+const updateCoupon = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await require("../services/couponService").update(req.params.id, req.body || {})) });
+  } catch (error) {
+    throw serviceError(error);
+  }
+});
+
+const getPromo = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await require("../services/promoService").listForAdmin()) });
+});
+
+const publishPromo = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await require("../services/promoService").publish(req.body || {})) });
+  } catch (error) {
+    throw serviceError(error);
+  }
+});
+
+const stopPromo = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await require("../services/promoService").stop()) });
+});
+
 // UPI payments waiting to be checked against the bank app.
 const getPayments = asyncHandler(async (req, res) => {
   const upiService = require("../services/upiService");
@@ -226,5 +265,6 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival,
+  getCoupons, createCoupon, updateCoupon, getPromo, publishPromo, stopPromo, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

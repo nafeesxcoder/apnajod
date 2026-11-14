@@ -13,6 +13,7 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
 const billingService = require("./billingService");
+const couponService = require("./couponService");
 const pushService = require("./pushService");
 
 /** How long we tell members it can take. */
@@ -54,6 +55,7 @@ function rowToPayment(row) {
     utr: row.provider_ref,
     status: row.status === "paid" ? "approved" : row.status,
     note: row.status === "rejected" ? row.notes || null : null,
+    couponCode: row.coupon_code ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -88,7 +90,7 @@ async function mine(userId) {
   return rows.map(rowToPayment);
 }
 
-async function submit(userId, planCode, rawUtr) {
+async function submit(userId, planCode, rawUtr, couponCode) {
   if (!config().enabled) throw fail(503, "UPI payments are closed right now.");
   const utr = normalizeUtr(rawUtr);
   if (!utr) {
@@ -109,15 +111,16 @@ async function submit(userId, planCode, rawUtr) {
     throw fail(429, "You already have payments waiting to be checked. We will get to them soon.");
   }
 
-  // The festival offer, if one is on, comes off the amount to pay.
-  const amountPaise = await billingService.chargeFor(plan);
+  // The festival offer or the coupon, whichever is cheaper, comes off.
+  const price = await couponService.priceFor(plan, userId, couponCode);
+  const amountPaise = price.amountPaise;
   const id = crypto.randomUUID();
   try {
     await query(
       `INSERT INTO payments
-         (id, user_id, plan_code, provider, provider_ref, status, amount_paise, created_at)
-       VALUES (?, ?, ?, 'upi', ?, 'pending', ?, NOW(6))`,
-      [id, userId, plan.code, utr, amountPaise],
+         (id, user_id, plan_code, provider, provider_ref, status, amount_paise, coupon_code, created_at)
+       VALUES (?, ?, ?, 'upi', ?, 'pending', ?, ?, NOW(6))`,
+      [id, userId, plan.code, utr, amountPaise, price.couponCode],
     );
   } catch (error) {
     if (isDuplicate(error)) throw fail(409, "This UTR has already been sent.");
@@ -131,7 +134,7 @@ async function submit(userId, planCode, rawUtr) {
     pushService
       .notifyUser(adminId, {
         title: `₹${rupees} UPI payment to check`,
-        body: `${name} · ${plan.title} · UTR ${utr}`,
+        body: `${name} · ${plan.title}${price.couponCode ? ` · ${price.couponCode}` : ""} · UTR ${utr}`,
         data: { type: "upi_payment" },
       })
       .catch(() => undefined);
@@ -195,6 +198,7 @@ async function approve(paymentId) {
   );
   if ((result?.affectedRows ?? 0) === 0) return { alreadyApproved: true };
   await billingService.grantPlan(row.user_id, plan, "upi");
+  await couponService.redeem(row);
 
   pushService
     .notifyUser(row.user_id, {

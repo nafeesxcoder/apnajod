@@ -3,6 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const billingService = require("../services/billingService");
 const razorpayService = require("../services/razorpayService");
 const upiService = require("../services/upiService");
+const couponService = require("../services/couponService");
 const { query } = require("../config/db");
 const { ApiError } = require("../middleware/errorHandler");
 
@@ -23,8 +24,27 @@ const boost = asyncHandler(async (req, res) => {
   });
 });
 
+/** Turn a coupon service error into the API's error. */
+function couponError(error) {
+  return error && error.status ? new ApiError(error.status, error.message) : error;
+}
+
+/** "Have a coupon?": what the plan costs with it, or why not. */
+const checkCoupon = asyncHandler(async (req, res) => {
+  const { planCode, code } = req.body || {};
+  if (!planCode) throw new ApiError(400, "planCode is required");
+  const plan = await billingService.getPlan(planCode);
+  if (!plan) throw new ApiError(400, "Unknown plan");
+  try {
+    const price = await couponService.priceFor(plan, req.user.id, code);
+    res.json({ ok: true, ...price });
+  } catch (error) {
+    throw couponError(error);
+  }
+});
+
 const createOrder = asyncHandler(async (req, res) => {
-  const { planCode } = req.body || {};
+  const { planCode, couponCode } = req.body || {};
   if (!planCode) throw new ApiError(400, "planCode is required");
 
   if (!razorpayService.isConfigured()) {
@@ -37,8 +57,14 @@ const createOrder = asyncHandler(async (req, res) => {
   );
   if (!plan) throw new ApiError(400, "Unknown plan");
 
-  // The festival offer, if one is on, comes off here too.
-  const amountPaise = await billingService.chargeFor(plan);
+  // The festival offer or the coupon, whichever is cheaper, comes off here too.
+  let price;
+  try {
+    price = await couponService.priceFor(plan, req.user.id, couponCode);
+  } catch (error) {
+    throw couponError(error);
+  }
+  const amountPaise = price.amountPaise;
   const order = await razorpayService.createOrder({
     amountPaise,
     receipt: `aj_${Date.now()}_${req.user.id.slice(0, 8)}`,
@@ -48,9 +74,9 @@ const createOrder = asyncHandler(async (req, res) => {
   const paymentId = crypto.randomUUID();
   await query(
     `INSERT INTO payments
-       (id, user_id, plan_code, provider, provider_ref, status, amount_paise, created_at)
-     VALUES (?, ?, ?, 'razorpay', ?, 'created', ?, NOW())`,
-    [paymentId, req.user.id, plan.code, order.id, amountPaise],
+       (id, user_id, plan_code, provider, provider_ref, status, amount_paise, coupon_code, created_at)
+     VALUES (?, ?, ?, 'razorpay', ?, 'created', ?, ?, NOW())`,
+    [paymentId, req.user.id, plan.code, order.id, amountPaise, price.couponCode],
   );
 
   res.json({
@@ -113,6 +139,7 @@ const webhook = asyncHandler(async (req, res) => {
     }
 
     await billingService.grantPlan(paymentRow.user_id, plan, "razorpay");
+    await couponService.redeem(paymentRow);
     return res.json({ ok: true, granted: true });
   }
 
@@ -140,14 +167,16 @@ const payOptions = asyncHandler(async (req, res) => {
     upi: upiService.config(),
     razorpay: razorpayService.isConfigured() && keyId.startsWith("rzp_live_"),
     payments: await upiService.mine(req.user.id),
+    // A coupon the admin shows at payment, if this member can still use it.
+    coupon: await couponService.checkoutCoupon(req.user.id),
   });
 });
 
 const submitUpi = asyncHandler(async (req, res) => {
-  const { planCode, utr } = req.body || {};
+  const { planCode, utr, couponCode } = req.body || {};
   if (!planCode) throw new ApiError(400, "planCode is required");
   try {
-    const payment = await upiService.submit(req.user.id, planCode, utr);
+    const payment = await upiService.submit(req.user.id, planCode, utr, couponCode);
     res.json({ ok: true, payment });
   } catch (error) {
     if (error.status) throw new ApiError(error.status, error.message);
@@ -155,4 +184,4 @@ const submitUpi = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { plans, me, boost, createOrder, webhook, payOptions, submitUpi };
+module.exports = { plans, me, boost, createOrder, webhook, payOptions, submitUpi, checkCoupon };

@@ -15,6 +15,10 @@ function load({ onQuery, grants, pushes }) {
       grantPlan: async (userId, plan, source) => grants.push({ userId, code: plan.code, source }),
       chargeFor: async (plan) => Number(plan.amount_paise),
     };
+    if (id === "./couponService") return {
+      priceFor: async (plan) => ({ amountPaise: Number(plan.amount_paise), couponCode: null }),
+      redeem: async () => undefined,
+    };
     if (id === "./pushService") return { notifyUser: async (userId, payload) => pushes.push({ userId, payload }) };
     return original.apply(this, arguments);
   };

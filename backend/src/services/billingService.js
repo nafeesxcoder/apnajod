@@ -54,11 +54,11 @@ function sqlTime(date) {
   return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
-/** A price with a percent off, in whole rupees (never below ₹1). */
+/** A price with a percent off, in whole rupees, rounded down (never below ₹1). */
 function offerPrice(amountPaise, percent) {
   const amount = Number(amountPaise);
   if (!percent) return amount;
-  return Math.max(100, Math.round((amount * (100 - percent)) / 10000) * 100);
+  return Math.max(100, Math.floor((amount * (100 - percent)) / 10000) * 100);
 }
 
 /** The festival offer on now ({ percent, themeKey, endsAt }), or null. */

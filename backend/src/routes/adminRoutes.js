@@ -53,6 +53,14 @@ router.post("/festivals/stop", adminController.stopFestival);
 router.post("/festivals/push", adminController.pushFestival);
 router.post("/festivals/:id/cancel", adminController.cancelFestival);
 
+// Coupons and the offer popup.
+router.get("/coupons", adminController.getCoupons);
+router.post("/coupons", adminController.createCoupon);
+router.post("/coupons/:id", adminController.updateCoupon);
+router.get("/promo", adminController.getPromo);
+router.post("/promo", adminController.publishPromo);
+router.post("/promo/off", adminController.stopPromo);
+
 // UPI payments checked by hand.
 router.get("/payments", adminController.getPayments);
 router.post("/payments/:id/approve", adminController.approvePayment);

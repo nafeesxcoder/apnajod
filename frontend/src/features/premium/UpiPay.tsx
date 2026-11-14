@@ -111,8 +111,11 @@ export function UpiPay({
   upi,
   accessToken,
   onSent,
+  couponCode,
 }: {
   plan: BillingPlan;
+  /** The coupon that priced this payment; the server checks it again. */
+  couponCode?: string | null;
   upi: PayOptions["upi"];
   accessToken: string;
   onSent: (payment: UpiPayment) => void;
@@ -155,7 +158,7 @@ export function UpiPay({
     setSending(true);
     setError("");
     try {
-      const payment = await billingApi.submitUpi(accessToken, plan.code, utr);
+      const payment = await billingApi.submitUpi(accessToken, plan.code, utr, couponCode);
       setUtr("");
       onSent(payment);
     } catch (e) {
@@ -350,7 +353,9 @@ export function UpiPaySheet({
   upi,
   accessToken,
   onSent,
+  couponCode,
 }: {
+  couponCode?: string | null;
   visible: boolean;
   onClose: () => void;
   plan: BillingPlan;
@@ -422,7 +427,7 @@ export function UpiPaySheet({
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 20 }}
           >
-            <UpiPay key={plan.code} plan={plan} upi={upi} accessToken={accessToken} onSent={onSent} />
+            <UpiPay key={plan.code} plan={plan} upi={upi} accessToken={accessToken} onSent={onSent} couponCode={couponCode} />
           </ScrollView>
         </View>
       </KeyboardAvoidingView>

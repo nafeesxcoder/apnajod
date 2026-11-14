@@ -203,6 +203,9 @@ import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModa
 import { StoryHost } from "../features/stories/StoryHost";
 import { loadStories, openStoriesOf, takeStoryParam } from "../features/stories/storyStore";
 import { setFestival, startFestivalWatch } from "../features/festival/festivalStore";
+import { setPromo } from "../features/promo/promoStore";
+import { PromoHost } from "../features/promo/PromoHost";
+import type { Promo } from "../features/promo/styles";
 import type { ActiveFestival } from "../features/festival/themes";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
 
@@ -1698,8 +1701,12 @@ function MilaanApp() {
     // The admin put a festival theme on (or off): show it at once.
     const onTheme = (data: { theme?: ActiveFestival | null }) => setFestival(data?.theme ?? null);
     socket.on("app:theme", onTheme);
+    // The admin published (or turned off) the offer popup.
+    const onPromo = (data: { promo?: Promo | null }) => setPromo(data?.promo ?? null);
+    socket.on("app:promo", onPromo);
     return () => {
       socket.off("app:theme", onTheme);
+      socket.off("app:promo", onPromo);
       socket.off("message:status", onStatusCache);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
@@ -4019,6 +4026,13 @@ function MilaanApp() {
         )}
         {/* Plays stories opened from anywhere: the row on Home or a ring round a photo. */}
         {!!accessToken && onboardingComplete && <StoryHost accessToken={accessToken} />}
+        {/* The offer popup the admin has on: each time the app opens, until closed. */}
+        {!!accessToken && onboardingComplete && (
+          <PromoHost
+            hidden={screen === "adminDashboard" || screen === "premium"}
+            onOpenPremium={() => navigateTo("premium")}
+          />
+        )}
         {!!sharedPostId && accessToken && onboardingComplete && (
           <SharedPostModal
             postId={sharedPostId}

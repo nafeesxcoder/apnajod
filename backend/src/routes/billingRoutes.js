@@ -14,5 +14,6 @@ router.post("/boost", billingController.boost);
 router.post("/order", billingController.createOrder);
 router.get("/pay-options", billingController.payOptions);
 router.post("/upi", billingController.submitUpi);
+router.post("/coupon", billingController.checkCoupon);
 
 module.exports = router;

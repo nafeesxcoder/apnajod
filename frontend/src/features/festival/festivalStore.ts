@@ -10,6 +10,7 @@ import { AppState } from "react-native";
 
 import { API_URL } from "../../api/config";
 import { type ActiveFestival, festivalFor } from "./themes";
+import { setPromo } from "../promo/promoStore";
 
 let current: ActiveFestival | null = null;
 const listeners = new Set<() => void>();
@@ -37,6 +38,8 @@ export async function refreshFestival() {
     if (!res.ok) return;
     const data = await res.json();
     setFestival(data?.theme ?? null);
+    // The offer popup rides along with the theme.
+    setPromo(data?.promo ?? null);
   } catch {
     // Offline: keep what we had.
   }

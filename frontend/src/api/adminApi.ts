@@ -120,6 +120,29 @@ export const adminApi = {
   },
   createDailyQuestion: (token: string, question: string, options: string[]) => authFetch("/admin/questions", token, { method: "POST", body: JSON.stringify({ question, options }) }),
   setDailyQuestionActive: (token: string, id: number, active: boolean) => authFetch(`/admin/questions/${id}/active`, token, { method: "POST", body: JSON.stringify({ active }) }),
+  // Coupons the admin writes, and the offer popup.
+  coupons: (token: string) => authFetch("/admin/coupons", token),
+  createCoupon: (
+    token: string,
+    body: { code: string; percent: number; validUntil?: string | null; maxUses?: number | null; showAtCheckout?: boolean },
+  ) => authFetch("/admin/coupons", token, { method: "POST", body: JSON.stringify(body) }),
+  updateCoupon: (token: string, id: string, body: { active?: boolean; showAtCheckout?: boolean }) =>
+    authFetch(`/admin/coupons/${id}`, token, { method: "POST", body: JSON.stringify(body) }),
+  promo: (token: string) => authFetch("/admin/promo", token),
+  publishPromo: (
+    token: string,
+    body: {
+      headline: string;
+      title?: string;
+      message?: string;
+      buttonLabel?: string;
+      couponCode?: string | null;
+      style: string;
+      endsAt?: string | null;
+    },
+  ) => authFetch("/admin/promo", token, { method: "POST", body: JSON.stringify(body) }),
+  stopPromo: (token: string) => authFetch("/admin/promo/off", token, { method: "POST" }),
+
   // Festival themes on the whole app.
   festivals: (token: string) => authFetch("/admin/festivals", token),
   scheduleFestival: (
