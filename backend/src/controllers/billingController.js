@@ -37,8 +37,10 @@ const createOrder = asyncHandler(async (req, res) => {
   );
   if (!plan) throw new ApiError(400, "Unknown plan");
 
+  // The festival offer, if one is on, comes off here too.
+  const amountPaise = await billingService.chargeFor(plan);
   const order = await razorpayService.createOrder({
-    amountPaise: plan.amount_paise,
+    amountPaise,
     receipt: `aj_${Date.now()}_${req.user.id.slice(0, 8)}`,
     notes: { userId: req.user.id, planCode: plan.code },
   });
@@ -48,7 +50,7 @@ const createOrder = asyncHandler(async (req, res) => {
     `INSERT INTO payments
        (id, user_id, plan_code, provider, provider_ref, status, amount_paise, created_at)
      VALUES (?, ?, ?, 'razorpay', ?, 'created', ?, NOW())`,
-    [paymentId, req.user.id, plan.code, order.id, plan.amount_paise],
+    [paymentId, req.user.id, plan.code, order.id, amountPaise],
   );
 
   res.json({

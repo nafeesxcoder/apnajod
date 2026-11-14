@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts, palette } from "../../../theme";
 import { Sheet } from "../../posts/PostSheets";
 import { dateSticker, timeSticker } from "./model";
+import { festivalEmojis, type FestivalTheme } from "../../festival/themes";
 
 export const EMOJIS = [
   "❤️", "😍", "🥰", "😘", "😂", "🤣", "😊", "😎", "🥳", "🤩",
@@ -18,10 +19,13 @@ export function StickerSheet({
   onClose,
   onPick,
   onLive,
+  festival,
 }: {
   visible: boolean;
   onClose: () => void;
-  onPick: (kind: "emoji" | "time" | "date", value: string) => void;
+  onPick: (kind: "emoji" | "time" | "date" | "greeting", value: string) => void;
+  /** A festival theme on now puts its stickers first. */
+  festival?: FestivalTheme | null;
   /** Poll, question box or @mention - each opens its own editor. */
   onLive: (kind: "poll" | "question" | "mention") => void;
 }) {
@@ -49,6 +53,37 @@ export function StickerSheet({
   return (
     <Sheet visible={visible} title="Stickers" onClose={onClose}>
       <View style={{ padding: 14, gap: 14 }}>
+        {festival && (
+          <View
+            accessibilityLabel={`${festival.name} stickers`}
+            style={{ backgroundColor: palette.crimsonTint, borderRadius: 16, padding: 12, gap: 10 }}
+          >
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.crimson }}>{festival.name}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${festival.greeting} sticker`}
+              onPress={() => onPick("greeting", `${festival.emoji} ${festival.greeting}`)}
+              style={{ alignSelf: "flex-start", paddingHorizontal: 18, height: 42, borderRadius: 21, backgroundColor: "#FFFFFF", justifyContent: "center" }}
+            >
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: palette.ink }}>
+                {festival.emoji} {festival.greeting}
+              </Text>
+            </Pressable>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {festivalEmojis(festival).map((emoji) => (
+                <Pressable
+                  key={emoji}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Emoji ${emoji}`}
+                  onPress={() => onPick("emoji", emoji)}
+                  style={{ width: 42, height: 42, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={{ fontSize: 28 }}>{emoji}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
         <View style={{ flexDirection: "row", gap: 10 }}>
           {live("poll", "stats-chart", "Poll")}
           {live("question", "help-circle", "Question")}

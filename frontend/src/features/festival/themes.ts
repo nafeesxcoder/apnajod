@@ -160,6 +160,10 @@ export type ActiveFestival = {
   greeting: string | null;
   startsAt: string | null;
   endsAt: string | null;
+  /** Percent off every Premium plan while it is on. */
+  offerPercent?: number | null;
+  /** When the greeting push went out (once per festival). */
+  pushedAt?: string | null;
 };
 
 /** The theme to show for what the server sent, or null (unknown key: nothing). */
@@ -182,4 +186,20 @@ export function greetingLine(greeting: string, name: string) {
 export function particlesKey(themeKey: string, now = new Date()) {
   const day = now.toISOString().slice(0, 10);
   return `apnajoda.festival.${themeKey}.${day}`;
+}
+
+/** A festival's own emoji for story stickers: its decoration and what falls, each once. */
+export function festivalEmojis(theme: FestivalTheme) {
+  const fromOrnament = theme.ornament.split(/\s+/).filter(Boolean);
+  return Array.from(new Set([theme.emoji, ...fromOrnament, ...(theme.particles.emoji ?? [])]));
+}
+
+export type FestivalWishPayload = { themeKey: string; greeting: string };
+
+/** Already wished this festival in this chat? Then the chip steps aside. */
+export function alreadyWished(
+  messages: { mine?: boolean; type?: string; festival?: FestivalWishPayload | null }[],
+  themeKey: string,
+) {
+  return messages.some((message) => message.mine && message.type === "festival" && message.festival?.themeKey === themeKey);
 }

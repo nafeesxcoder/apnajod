@@ -466,7 +466,9 @@ async function notifyRecipient(conversationId, senderId, recipientId, message) {
   const senderName = profile?.first_name || "Someone";
   const text = message.text ? String(message.text) : "";
   const preview = !text
-    ? "Sent you a message"
+    ? message.type === "festival" && message.festival?.greeting
+      ? `Sent you a wish: ${String(message.festival.greeting).slice(0, 100)}`
+      : "Sent you a message"
     : message.storyReply
       ? (message.storyReply.reaction ? `Reacted ${text} to your story` : `Replied to your story: ${text}`).slice(0, 120)
       : text.slice(0, 120);

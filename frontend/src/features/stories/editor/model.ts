@@ -9,7 +9,8 @@ export type TextBg = "none" | "solid" | "soft";
 
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
 export type TextItem = Placed & { kind: "text"; text: string; font: FontKey; color: string; bg: TextBg };
-export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "music"; value: string };
+/** "greeting" is a festival sticker ("🪔 Happy Diwali"), drawn like the date pill. */
+export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "music" | "greeting"; value: string };
 /**
  * Stickers people can use on the story - a poll, a question box, an
  * @mention. They are not drawn into the photo: they are sent alongside it

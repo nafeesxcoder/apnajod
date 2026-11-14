@@ -29,11 +29,13 @@ export type ChatMessage = {
   id: string;
   senderId?: string;
   mine?: boolean;
-  type: 'text' | 'image' | 'gif' | 'rose' | 'date' | 'snap' | 'sticker' | 'voice' | 'location' | 'document' | 'game' | 'poll' | 'contact';
+  type: 'text' | 'image' | 'gif' | 'rose' | 'date' | 'snap' | 'sticker' | 'voice' | 'location' | 'document' | 'game' | 'poll' | 'contact' | 'festival';
   /** A poll: the question, 2-4 options, the counts and your own vote (from the server). */
   poll?: { question: string; options: string[]; counts?: number[]; myVote?: number | null };
   /** A contact card: a name and a number to call or message. */
   contact?: { name: string; phone: string };
+  /** A festival wish card ("Happy Diwali"), sent while a festival theme is on. */
+  festival?: { themeKey: string; greeting: string };
   /** A chat game card - the start of a game, or its result. */
   game?: { id: string; kind: string; title: string; emoji: string; result: string | null };
   text?: string;

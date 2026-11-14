@@ -50,6 +50,7 @@ router.post("/appeals/:id/resolve", adminController.resolveAppeal);
 router.get("/festivals", adminController.getFestivals);
 router.post("/festivals", adminController.scheduleFestival);
 router.post("/festivals/stop", adminController.stopFestival);
+router.post("/festivals/push", adminController.pushFestival);
 router.post("/festivals/:id/cancel", adminController.cancelFestival);
 
 // UPI payments checked by hand.

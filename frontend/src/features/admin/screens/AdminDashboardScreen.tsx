@@ -2142,6 +2142,8 @@ function PaymentsTab({ accessToken }: { accessToken: string }) {
 
 /* ---------------- Festival themes ---------------- */
 
+const FESTIVAL_OFFERS: (number | null)[] = [null, 10, 20, 30];
+
 const FESTIVAL_DAYS: { label: string; days: number | null }[] = [
   { label: "1 day", days: 1 },
   { label: "3 days", days: 3 },
@@ -2229,6 +2231,9 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
   const [greeting, setGreeting] = useState("");
   const [days, setDays] = useState<number | null>(3);
   const [startDay, setStartDay] = useState("");
+  const [offer, setOffer] = useState<number | null>(null);
+  const [pushText, setPushText] = useState("");
+  const [confirmPush, setConfirmPush] = useState(false);
 
   const load = useCallback(async () => {
     setError("");
@@ -2266,7 +2271,7 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
     if (!theme) return;
     const endsAt = days ? new Date(Date.now() + days * 86400000).toISOString() : null;
     void run(
-      () => adminApi.scheduleFestival(accessToken, { themeKey: theme.key, greeting, endsAt }),
+      () => adminApi.scheduleFestival(accessToken, { themeKey: theme.key, greeting, endsAt, offerPercent: offer }),
       `${theme.name} is on across the app now.`,
     );
   };
@@ -2280,7 +2285,14 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
     const start = istMidnight(startDay);
     const endsAt = days ? new Date(start.getTime() + days * 86400000).toISOString() : null;
     void run(
-      () => adminApi.scheduleFestival(accessToken, { themeKey: theme.key, greeting, startsAt: start.toISOString(), endsAt }),
+      () =>
+        adminApi.scheduleFestival(accessToken, {
+          themeKey: theme.key,
+          greeting,
+          startsAt: start.toISOString(),
+          endsAt,
+          offerPercent: offer,
+        }),
       `${theme.name} will start on ${istTime(start.toISOString())}.`,
     );
   };
@@ -2308,7 +2320,51 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
             <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
               {activeTheme.name} · since {istTime(active.startsAt)} ·{" "}
               {active.endsAt ? `ends ${istTime(active.endsAt)}` : "on until you turn it off"}
+              {active.offerPercent ? ` · ${active.offerPercent}% off Premium` : ""}
             </Text>
+            <View style={{ gap: 8, backgroundColor: COLORS.bg, borderRadius: 12, padding: 12 }}>
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.textMain }}>
+                Greeting notification to everyone
+              </Text>
+              {active.pushedAt ? (
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.success }}>
+                  Sent {istTime(active.pushedAt)}. It goes once per festival.
+                </Text>
+              ) : (
+                <>
+                  <TextInput
+                    accessibilityLabel="Notification message"
+                    value={pushText}
+                    onChangeText={setPushText}
+                    maxLength={160}
+                    placeholder={`Wish your matches today - send a ${activeTheme.name} story or a wish in chat 💌`}
+                    style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 14, color: COLORS.textMain, backgroundColor: "#FFFFFF" }}
+                  />
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                    <SmallButton
+                      label={confirmPush ? "Yes, send to everyone" : "Send greeting to everyone"}
+                      tone={confirmPush ? "danger" : "navy"}
+                      busy={busy}
+                      onPress={() => {
+                        if (!confirmPush) {
+                          setConfirmPush(true);
+                          return;
+                        }
+                        setConfirmPush(false);
+                        void run(async () => {
+                          const res: any = await adminApi.pushFestival(accessToken, pushText);
+                          setPushText("");
+                          return res;
+                        }, "Greeting is going out to everyone.");
+                      }}
+                    />
+                    {confirmPush && (
+                      <SmallButton label="Not now" tone="plain" onPress={() => setConfirmPush(false)} />
+                    )}
+                  </View>
+                </>
+              )}
+            </View>
             <View style={{ flexDirection: "row" }}>
               <SmallButton
                 label="Turn off"
@@ -2382,6 +2438,21 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
               ))}
             </View>
           </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>
+              Premium offer while it is on
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {FESTIVAL_OFFERS.map((percent) => (
+                <SmallButton
+                  key={String(percent)}
+                  label={percent ? `${percent}% off` : "No offer"}
+                  tone={offer === percent ? "navy" : "plain"}
+                  onPress={() => setOffer(percent)}
+                />
+              ))}
+            </View>
+          </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
             <SmallButton label={`Apply ${theme.name} now`} busy={busy} onPress={applyNow} />
           </View>
@@ -2406,6 +2477,7 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
                 <Text style={{ flex: 1, minWidth: 200, fontFamily: fonts.body, fontSize: 14, color: COLORS.textMain }}>
                   {upcomingTheme?.emoji} {upcomingTheme?.name ?? item.themeKey} · {istTime(item.startsAt)}
                   {item.endsAt ? ` to ${istTime(item.endsAt)}` : " until turned off"}
+                  {item.offerPercent ? ` · ${item.offerPercent}% off` : ""}
                 </Text>
                 <SmallButton
                   label="Cancel"

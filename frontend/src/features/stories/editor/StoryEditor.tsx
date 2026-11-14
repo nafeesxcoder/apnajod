@@ -666,6 +666,7 @@ export function StoryEditor({
 
       <StickerSheet
         visible={stickers}
+        festival={stickers ? currentFestival() : null}
         onClose={() => setStickers(false)}
         onLive={(kind) => {
           setStickers(false);

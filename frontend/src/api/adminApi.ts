@@ -124,9 +124,17 @@ export const adminApi = {
   festivals: (token: string) => authFetch("/admin/festivals", token),
   scheduleFestival: (
     token: string,
-    body: { themeKey: string; greeting?: string; startsAt?: string | null; endsAt?: string | null },
+    body: {
+      themeKey: string;
+      greeting?: string;
+      startsAt?: string | null;
+      endsAt?: string | null;
+      offerPercent?: number | null;
+    },
   ) => authFetch("/admin/festivals", token, { method: "POST", body: JSON.stringify(body) }),
   stopFestival: (token: string) => authFetch("/admin/festivals/stop", token, { method: "POST" }),
+  pushFestival: (token: string, message: string) =>
+    authFetch("/admin/festivals/push", token, { method: "POST", body: JSON.stringify({ message }) }),
   cancelFestival: (token: string, id: string) =>
     authFetch(`/admin/festivals/${id}/cancel`, token, { method: "POST" }),
   // UPI payments waiting to be checked against the bank app.

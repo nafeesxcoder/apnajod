@@ -27,6 +27,10 @@ export type BillingPlan = {
   quantity: number;
   amount_paise: number;
   currency: string;
+  /** During a festival offer: the old price, the percent off and its end. */
+  original_paise?: number;
+  offer_percent?: number;
+  offer_ends_at?: string | null;
 };
 
 export type BillingSummary = {

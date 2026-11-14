@@ -16,6 +16,15 @@ import {
   rupees,
 } from "../../../api/billingApi";
 import { UpiPayments, UpiPaySheet } from "../UpiPay";
+import { useFestival } from "../../festival/festivalStore";
+
+/** "till 17 Nov" in India time, or "" with no end. */
+function offerEnds(value: string | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `till ${date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" })}`;
+}
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
 import { LinearGradient } from "expo-linear-gradient";
@@ -211,6 +220,8 @@ export function PremiumScreen({
   );
 
   const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? null;
+  const festival = useFestival();
+  const offerPlan = plans.find((plan) => !!plan.offer_percent) ?? null;
   const upiOpen = !!payOptions?.upi.enabled;
   const razorpayOpen = billingApi.checkoutAvailable && !!payOptions?.razorpay;
 
@@ -409,6 +420,30 @@ export function PremiumScreen({
               </Text>
             ) : (
               <>
+                {/* A festival offer, while the admin has one on. */}
+                {!!offerPlan?.offer_percent && (
+                  <View
+                    accessibilityLabel="Festival offer"
+                    style={{
+                      backgroundColor: festival ? festival.colors[0] : palette.crimson,
+                      borderRadius: 16,
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: festival?.ink ?? "#FFFFFF" }}>
+                      {festival ? `${festival.emoji} ${festival.name} offer` : "Festival offer"}: {offerPlan.offer_percent}% off
+                      every plan
+                    </Text>
+                    {!!offerEnds(offerPlan.offer_ends_at) && (
+                      <Text style={{ marginTop: 2, fontFamily: fonts.body, fontSize: 12, color: festival?.ink ?? "#FFFFFF", opacity: 0.85 }}>
+                        {offerEnds(offerPlan.offer_ends_at)}
+                      </Text>
+                    )}
+                  </View>
+                )}
+
                 {payOptions && (
                   <UpiPayments
                     payments={payOptions.payments}
@@ -502,6 +537,7 @@ export function PremiumScreen({
                         delay={300 + index * 60}
                         title={plan.title}
                         price={`${rupees(plan.amount_paise)}/month`}
+                        wasPrice={plan.original_paise && plan.original_paise > plan.amount_paise ? rupees(plan.original_paise) : undefined}
                         features={features}
                         selected={selectedCode === plan.code}
                         onSelect={() => setSelectedCode(plan.code)}
@@ -563,6 +599,7 @@ export function PremiumScreen({
 function PlanCard({
   title,
   price,
+  wasPrice,
   features,
   selected,
   disabled,
@@ -575,6 +612,8 @@ function PlanCard({
   delay?: number;
   title: string;
   price: string;
+  /** The price before a festival offer, struck through. */
+  wasPrice?: string;
   features: readonly PlanFeature[];
   selected: boolean;
   disabled?: boolean;
@@ -669,16 +708,30 @@ function PlanCard({
         </Text>
         {blueTick && <TrustBadge blueTick size={18} />}
       </View>
-      <Text
-        style={{
-          fontFamily: fonts.display,
-          fontSize: 24,
-          color: palette.crimson,
-          marginTop: 2,
-        }}
-      >
-        {price}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, marginTop: 2 }}>
+        <Text
+          style={{
+            fontFamily: fonts.display,
+            fontSize: 24,
+            color: palette.crimson,
+          }}
+        >
+          {price}
+        </Text>
+        {!!wasPrice && (
+          <Text
+            accessibilityLabel={`was ${wasPrice}`}
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 15,
+              color: palette.slate,
+              textDecorationLine: "line-through",
+            }}
+          >
+            {wasPrice}
+          </Text>
+        )}
+      </View>
       <View style={{ marginTop: 10, gap: 4 }}>
         {features.map((f) => (
           <View
@@ -775,6 +828,18 @@ function PackGroup({
               >
                 {rupees(plan.amount_paise)}
               </Text>
+              {!!plan.original_paise && plan.original_paise > plan.amount_paise && (
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    color: palette.slate,
+                    textDecorationLine: "line-through",
+                  }}
+                >
+                  {rupees(plan.original_paise)}
+                </Text>
+              )}
             </PressScale>
           );
         })}

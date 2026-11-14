@@ -54,14 +54,47 @@ function sqlTime(date) {
   return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
+/** A price with a percent off, in whole rupees (never below ₹1). */
+function offerPrice(amountPaise, percent) {
+  const amount = Number(amountPaise);
+  if (!percent) return amount;
+  return Math.max(100, Math.round((amount * (100 - percent)) / 10000) * 100);
+}
+
+/** The festival offer on now ({ percent, themeKey, endsAt }), or null. */
+async function currentOffer() {
+  try {
+    // Lazy: the festival service pulls in the socket layer.
+    return await require("./festivalService").offer();
+  } catch {
+    return null;
+  }
+}
+
+/** What a plan costs right now: the festival offer comes off. */
+async function chargeFor(plan) {
+  const offer = await currentOffer();
+  return offerPrice(plan.amount_paise, offer?.percent ?? 0);
+}
+
 async function listPlans() {
-  return query(
+  const plans = await query(
     `SELECT code, title, blurb, kind, grants, quantity, amount_paise,
             currency, play_product_id
        FROM billing_plans
       WHERE active = 1
       ORDER BY sort_order ASC, amount_paise ASC`,
   );
+  const offer = await currentOffer();
+  if (!offer) return plans;
+  // During a festival offer every plan shows its old price struck through.
+  return plans.map((plan) => ({
+    ...plan,
+    original_paise: Number(plan.amount_paise),
+    amount_paise: offerPrice(plan.amount_paise, offer.percent),
+    offer_percent: offer.percent,
+    offer_ends_at: offer.endsAt,
+  }));
 }
 
 async function getPlan(code) {
@@ -368,6 +401,8 @@ async function summaryFor(userId) {
 }
 
 module.exports = {
+  offerPrice,
+  chargeFor,
   indianDay,
   PREMIUM,
   PRO,

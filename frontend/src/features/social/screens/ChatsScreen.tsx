@@ -60,6 +60,8 @@ function previewOf(conversation: ConversationSummary) {
       return 'Location';
     case 'poll':
       return `📊 ${message.poll?.question ?? 'Poll'}`;
+    case 'festival':
+      return `✨ ${message.festival?.greeting ?? 'Festival wish'}`;
     case 'contact':
       return `👤 ${message.contact?.name ?? 'Contact'}`;
     case 'date':

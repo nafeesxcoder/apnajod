@@ -141,6 +141,15 @@ const stopFestival = asyncHandler(async (req, res) => {
   res.json({ ok: true, ...(await festivalService.stop()) });
 });
 
+const pushFestival = asyncHandler(async (req, res) => {
+  const festivalService = require("../services/festivalService");
+  try {
+    res.json({ ok: true, ...(await festivalService.sendGreetingPush(req.body?.message)) });
+  } catch (error) {
+    throw festivalError(error);
+  }
+});
+
 const cancelFestival = asyncHandler(async (req, res) => {
   const festivalService = require("../services/festivalService");
   try {
@@ -217,5 +226,5 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

@@ -58,6 +58,8 @@ import {
   pickOneContact,
   type DateAction,
 } from "./planCards";
+import { useFestival } from "../festival/festivalStore";
+import { alreadyWished, FestivalWishCard, FestivalWishChip } from "../festival/FestivalWish";
 import {
   chatApi,
   fetchIcebreakers,
@@ -1467,6 +1469,7 @@ export function ChatScreen({
               message.document?.name ||
               (message.poll ? `Poll: ${message.poll.question}` : "") ||
               (message.contact ? `Contact: ${message.contact.name}` : "") ||
+              (message.festival ? `✨ ${message.festival.greeting}` : "") ||
               (message.type === "voice"
                 ? "Voice message"
                 : message.type === "location"
@@ -1630,6 +1633,14 @@ export function ChatScreen({
       setText((current) => current || value);
       setReplyTarget((current) => current ?? previousReplyTarget);
     }
+  };
+  // A festival theme on now: one tap sends a festive wish card.
+  const festival = useFestival();
+  const sendFestivalWish = () => {
+    if (!festival) return;
+    void dispatchMessage(
+      createMessage({ type: "festival", festival: { themeKey: festival.key, greeting: festival.greeting } }),
+    );
   };
   const sendContact = (contact: { name: string; phone: string }) => {
     setContactOpen(false);
@@ -3235,6 +3246,9 @@ export function ChatScreen({
                 </Pressable>
               </View>
             )}
+            {festival && !recordingUiActive && !alreadyWished(messages, festival.key) && (
+              <FestivalWishChip theme={festival} onSend={sendFestivalWish} />
+            )}
             {recordingUiActive ? (
               <VoiceRecordingComposer
                 durationMs={recordingDurationMs}
@@ -3862,6 +3876,8 @@ function ChatBubble({
       borderWidth: 1,
       borderColor: palette.rule,
     },
+    // A festival wish is its own card: no bubble around it.
+    message.type === "festival" && { backgroundColor: "transparent", padding: 0, borderWidth: 0 },
     // A photo bubble needs a real width. Without one it sizes to its
     // content, the frame's `width: 100%` has nothing to resolve against,
     // and the photo collapses to a thumbnail a few pixels across.
@@ -4252,6 +4268,7 @@ function ChatBubble({
           )}
           {message.type === "poll" && message.poll && <PollCard message={message} onVote={onPollVote} />}
           {message.type === "contact" && message.contact && <ContactCard message={message} />}
+          {message.type === "festival" && message.festival && <FestivalWishCard wish={message.festival} mine={mine} />}
           {message.type === "voice" && message.uri && (
             <View>
               <VoiceNote
@@ -4305,9 +4322,12 @@ function ChatBubble({
             <Text
               style={[styles.time, { fontSize: 11 },
                 {
-                  // A big emoji has no bubble behind it, so its time is grey, not white.
+                  // A big emoji or a festival card has no bubble behind it,
+                  // so its time is grey, not white.
                   color:
-                    mine && !emojiOnly && !isJustEmoji ? "rgba(255,255,255,.82)" : colors.muted,
+                    mine && !emojiOnly && !isJustEmoji && message.type !== "festival"
+                      ? "rgba(255,255,255,.82)"
+                      : colors.muted,
                 },
               ]}
             >
@@ -4437,6 +4457,7 @@ function messageSummaryForAccessibility(message: ChatMessage) {
     message.text?.slice(0, 50) ||
     message.date?.venue ||
     message.document?.name ||
+    (message.festival ? `Festival wish: ${message.festival.greeting}` : "") ||
     message.type
   );
 }

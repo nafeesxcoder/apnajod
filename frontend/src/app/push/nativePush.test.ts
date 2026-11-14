@@ -37,7 +37,8 @@ describe("notifications in the phone app", () => {
 
 describe("chat", () => {
   it("shows the time under a big emoji in grey (it has no bubble)", () => {
-    expect(read("../../features/chat/ChatFeature.tsx")).toContain('mine && !emojiOnly && !isJustEmoji ? "rgba(255,255,255,.82)" : colors.muted');
+    // A festival wish card has no bubble either.
+    expect(read("../../features/chat/ChatFeature.tsx")).toContain('mine && !emojiOnly && !isJustEmoji && message.type !== "festival"');
   });
 });
 

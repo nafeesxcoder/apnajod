@@ -163,7 +163,8 @@ function previewFor(payload) {
     case 'voice': return '🎤 Voice message';
     case 'location': return '📍 Location';
     case 'document': return '📄 Document';
-    case 'date': return '📅 Date plan';
+    case 'date': return '☕ Meet-up plan';
+    case 'festival': return `✨ ${clip((p.festival && p.festival.greeting) || 'Festival wish')}`;
     case 'snap': return '📸 Snap';
     default: return clip(p.text || 'Message');
   }

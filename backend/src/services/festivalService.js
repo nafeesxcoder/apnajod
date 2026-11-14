@@ -26,6 +26,20 @@ const THEME_KEYS = [
 ];
 
 const MAX_DAYS = 60;
+/** The most a festival offer can take off. */
+const MAX_OFFER = 50;
+
+/** For the greeting push: the app has the full themes, this is enough. */
+const PUSH_WORDS = {
+  diwali: { emoji: "🪔", greeting: "Happy Diwali", name: "Diwali" },
+  eid_ul_fitr: { emoji: "🌙", greeting: "Eid Mubarak", name: "Eid" },
+  eid_ul_adha: { emoji: "🌙", greeting: "Eid al-Adha Mubarak", name: "Eid" },
+  holi: { emoji: "🎨", greeting: "Happy Holi", name: "Holi" },
+  christmas: { emoji: "🎄", greeting: "Merry Christmas", name: "Christmas" },
+  new_year: { emoji: "🎆", greeting: "Happy New Year", name: "New Year" },
+  valentines: { emoji: "💖", greeting: "Happy Valentine's Day", name: "Valentine's Day" },
+  raksha_bandhan: { emoji: "🧡", greeting: "Happy Raksha Bandhan", name: "Raksha Bandhan" },
+};
 
 function fail(status, message) {
   const err = new Error(message);
@@ -58,6 +72,15 @@ function cleanGreeting(value) {
   return text || null;
 }
 
+function cleanOffer(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const percent = Math.round(Number(value));
+  if (!Number.isFinite(percent) || percent < 0 || percent > MAX_OFFER) {
+    throw fail(400, `An offer can be 0 to ${MAX_OFFER}% off`);
+  }
+  return percent || null;
+}
+
 function rowToSchedule(row) {
   return {
     id: row.id,
@@ -65,6 +88,8 @@ function rowToSchedule(row) {
     greeting: row.greeting ?? null,
     startsAt: isoUtc(row.starts_at),
     endsAt: isoUtc(row.ends_at),
+    offerPercent: row.offer_percent ? Number(row.offer_percent) : null,
+    pushedAt: isoUtc(row.pushed_at),
   };
 }
 
@@ -100,8 +125,9 @@ async function announce() {
  * Put a theme on. With no startsAt it starts now; with no endsAt it stays
  * on until turned off. Starting now ends whatever was on before.
  */
-async function schedule(adminId, { themeKey, greeting, startsAt, endsAt }) {
+async function schedule(adminId, { themeKey, greeting, startsAt, endsAt, offerPercent }) {
   if (!THEME_KEYS.includes(themeKey)) throw fail(400, "Unknown festival theme");
+  const offer = cleanOffer(offerPercent);
   const now = new Date();
   const start = parseTime(startsAt, "Start") ?? now;
   const end = parseTime(endsAt, "End");
@@ -120,9 +146,9 @@ async function schedule(adminId, { themeKey, greeting, startsAt, endsAt }) {
   }
   const id = crypto.randomUUID();
   await query(
-    `INSERT INTO festival_schedule (id, theme_key, greeting, starts_at, ends_at, created_by)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, themeKey, cleanGreeting(greeting), sqlUtc(startsNow ? now : start), end ? sqlUtc(end) : null, adminId ?? null],
+    `INSERT INTO festival_schedule (id, theme_key, greeting, starts_at, ends_at, created_by, offer_percent)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, themeKey, cleanGreeting(greeting), sqlUtc(startsNow ? now : start), end ? sqlUtc(end) : null, adminId ?? null, offer],
   );
   if (startsNow) await announce();
   return { id, startsNow };
@@ -150,4 +176,70 @@ async function cancel(id) {
   return { cancelled: true };
 }
 
-module.exports = { THEME_KEYS, MAX_DAYS, active, listForAdmin, schedule, stop, cancel, isoUtc, sqlUtc };
+/** The Premium offer on now, if the festival on now has one. */
+async function offer() {
+  const theme = await active();
+  if (!theme?.offerPercent) return null;
+  return { percent: theme.offerPercent, themeKey: theme.themeKey, endsAt: theme.endsAt };
+}
+
+/** Everyone who can get a push: an app token or a browser subscription. */
+async function pushAudience() {
+  const rows = await query(
+    `SELECT DISTINCT t.user_id AS id FROM (
+        SELECT user_id FROM device_push_tokens
+        UNION SELECT user_id FROM push_subscriptions
+      ) t
+      JOIN users u ON u.id = t.user_id
+     WHERE u.deleted_at IS NULL`,
+  );
+  return rows.map((row) => row.id);
+}
+
+/**
+ * "Eid Mubarak! 🌙" to every member, once per festival. Sent in the
+ * background a few at a time; the admin gets the number straight away.
+ */
+async function sendGreetingPush(message) {
+  const theme = await active();
+  if (!theme) throw fail(409, "Put a festival theme on first.");
+  const claimed = await query(
+    "UPDATE festival_schedule SET pushed_at = UTC_TIMESTAMP() WHERE id = ? AND pushed_at IS NULL",
+    [theme.id],
+  );
+  if ((claimed?.affectedRows ?? 0) === 0) throw fail(409, "The greeting for this festival has already been sent.");
+
+  const words = PUSH_WORDS[theme.themeKey] ?? { emoji: "✨", greeting: "Happy holidays", name: "festival" };
+  const title = `${theme.greeting || words.greeting} ${words.emoji}`;
+  const body =
+    String(message ?? "").replace(/\s+/g, " ").trim().slice(0, 160) ||
+    `Wish your matches today - send a ${words.name} story or a wish in chat 💌`;
+  const users = await pushAudience();
+
+  const pushService = require("./pushService");
+  void (async () => {
+    for (let i = 0; i < users.length; i += 20) {
+      await Promise.all(
+        users.slice(i, i + 20).map((userId) =>
+          pushService.notifyUser(userId, { title, body, data: { type: "festival" } }).catch(() => undefined),
+        ),
+      );
+    }
+  })();
+  return { sending: users.length };
+}
+
+module.exports = {
+  THEME_KEYS,
+  MAX_DAYS,
+  MAX_OFFER,
+  active,
+  listForAdmin,
+  schedule,
+  stop,
+  cancel,
+  offer,
+  sendGreetingPush,
+  isoUtc,
+  sqlUtc,
+};

@@ -85,3 +85,43 @@ test("the theme keys match the app's themes", () => {
   const service = load(async () => [], []);
   for (const key of service.THEME_KEYS) assert.ok(app.includes(`  ${key}: {`), key);
 });
+
+test("a festival offer takes its percent off, in whole rupees", () => {
+  const billing = require("../src/services/billingService.js");
+  assert.strictEqual(billing.offerPrice(9900, 20), 7900);
+  assert.strictEqual(billing.offerPrice(19900, 30), 13900);
+  assert.strictEqual(billing.offerPrice(9900, 0), 9900);
+  assert.strictEqual(billing.offerPrice(100, 50), 100, "never below one rupee");
+});
+
+test("offers are 0 to 50 percent", async () => {
+  const service = load(async () => ({ affectedRows: 1 }), []);
+  await assert.rejects(service.schedule("a", { themeKey: "diwali", offerPercent: 80 }), (e) => e.status === 400);
+  const sqls = [];
+  const ok = load(async (sql, params) => {
+    sqls.push({ sql, params });
+    return sql.startsWith("SELECT") ? [] : { affectedRows: 1 };
+  }, []);
+  await ok.schedule("a", { themeKey: "diwali", offerPercent: 20 });
+  const insert = sqls.find((q) => q.sql.startsWith("INSERT INTO festival_schedule"));
+  assert.strictEqual(insert.params[6], 20);
+});
+
+test("the greeting push goes once per festival", async () => {
+  let claimed = false;
+  const service = load(async (sql) => {
+    if (sql.startsWith("SELECT * FROM festival_schedule WHERE cancelled_at IS NULL AND starts_at <= UTC_TIMESTAMP()")) {
+      return [{ id: "f1", theme_key: "eid_ul_fitr", greeting: null, starts_at: "2027-03-10 00:00:00", ends_at: null }];
+    }
+    if (sql.startsWith("UPDATE festival_schedule SET pushed_at")) {
+      if (claimed) return { affectedRows: 0 };
+      claimed = true;
+      return { affectedRows: 1 };
+    }
+    if (sql.includes("FROM device_push_tokens")) return [];
+    return [];
+  }, []);
+  const first = await service.sendGreetingPush("");
+  assert.strictEqual(first.sending, 0);
+  await assert.rejects(service.sendGreetingPush(""), (e) => e.status === 409);
+});

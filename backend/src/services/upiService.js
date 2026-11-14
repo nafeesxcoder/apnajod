@@ -109,13 +109,15 @@ async function submit(userId, planCode, rawUtr) {
     throw fail(429, "You already have payments waiting to be checked. We will get to them soon.");
   }
 
+  // The festival offer, if one is on, comes off the amount to pay.
+  const amountPaise = await billingService.chargeFor(plan);
   const id = crypto.randomUUID();
   try {
     await query(
       `INSERT INTO payments
          (id, user_id, plan_code, provider, provider_ref, status, amount_paise, created_at)
        VALUES (?, ?, ?, 'upi', ?, 'pending', ?, NOW(6))`,
-      [id, userId, plan.code, utr, plan.amount_paise],
+      [id, userId, plan.code, utr, amountPaise],
     );
   } catch (error) {
     if (isDuplicate(error)) throw fail(409, "This UTR has already been sent.");
@@ -124,7 +126,7 @@ async function submit(userId, planCode, rawUtr) {
 
   // Tell every admin, so a payment does not sit unseen.
   const name = await memberName(userId);
-  const rupees = Math.round(Number(plan.amount_paise) / 100);
+  const rupees = Math.round(amountPaise / 100);
   for (const adminId of await adminIds()) {
     pushService
       .notifyUser(adminId, {

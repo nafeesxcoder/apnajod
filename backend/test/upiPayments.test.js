@@ -11,7 +11,10 @@ function load({ onQuery, grants, pushes }) {
   const original = Module.prototype.require;
   Module.prototype.require = function patched(id) {
     if (id === "../config/db") return { query: async (sql, params) => onQuery(sql.replace(/\s+/g, " ").trim(), params) };
-    if (id === "./billingService") return { grantPlan: async (userId, plan, source) => grants.push({ userId, code: plan.code, source }) };
+    if (id === "./billingService") return {
+      grantPlan: async (userId, plan, source) => grants.push({ userId, code: plan.code, source }),
+      chargeFor: async (plan) => Number(plan.amount_paise),
+    };
     if (id === "./pushService") return { notifyUser: async (userId, payload) => pushes.push({ userId, payload }) };
     return original.apply(this, arguments);
   };
