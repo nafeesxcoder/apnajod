@@ -51,8 +51,9 @@ function roundRect(context: CanvasRenderingContext2D, x: number, y: number, w: n
  * then the text and stickers. Returns a blob: URL for the upload.
  */
 export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<string> {
-  const image = await loadImage(uri);
-  const out = outputSize(image.naturalWidth, image.naturalHeight);
+  // A text story has no photo: just the background and what is on it.
+  const image = uri ? await loadImage(uri) : null;
+  const out = image ? outputSize(image.naturalWidth, image.naturalHeight) : { width: 1080, height: 1920 };
   const canvas = document.createElement("canvas");
   canvas.width = out.width;
   canvas.height = out.height;
@@ -74,20 +75,22 @@ export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<st
   context.fillStyle = gradient;
   context.fillRect(0, 0, W, H);
 
-  const rect = photoRect(image.naturalWidth, image.naturalHeight);
-  const px = { x: rect.x * W, y: rect.y * H, w: rect.width * W, h: rect.height * H };
-  const steps = filterById(state.filter).steps;
-  context.imageSmoothingQuality = "high";
-  const canFilter = typeof (context as { filter?: unknown }).filter === "string";
-  if (canFilter) context.filter = cssFilter(steps);
-  context.drawImage(image, px.x, px.y, px.w, px.h);
-  if (canFilter) context.filter = "none";
-  else if (steps.length) {
-    const x = Math.round(px.x);
-    const y = Math.round(px.y);
-    const pixels = context.getImageData(x, y, Math.round(px.w), Math.round(px.h));
-    filterPixels(pixels.data, steps);
-    context.putImageData(pixels, x, y);
+  if (image) {
+    const rect = photoRect(image.naturalWidth, image.naturalHeight);
+    const px = { x: rect.x * W, y: rect.y * H, w: rect.width * W, h: rect.height * H };
+    const steps = filterById(state.filter).steps;
+    context.imageSmoothingQuality = "high";
+    const canFilter = typeof (context as { filter?: unknown }).filter === "string";
+    if (canFilter) context.filter = cssFilter(steps);
+    context.drawImage(image, px.x, px.y, px.w, px.h);
+    if (canFilter) context.filter = "none";
+    else if (steps.length) {
+      const x = Math.round(px.x);
+      const y = Math.round(px.y);
+      const pixels = context.getImageData(x, y, Math.round(px.w), Math.round(px.h));
+      filterPixels(pixels.data, steps);
+      context.putImageData(pixels, x, y);
+    }
   }
 
   // The drawing.

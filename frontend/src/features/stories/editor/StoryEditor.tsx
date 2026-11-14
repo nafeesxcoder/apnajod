@@ -54,8 +54,10 @@ import { LiveComposer, type PollDraft, type QuestionDraft } from "./LiveComposer
 import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
 import { TextComposer, type TextDraft } from "./TextComposer";
+import { TEXT_STORY_SCALE, TEXT_THEMES, stepTheme } from "./themes";
 
-export type PickedStoryPhoto = { uri: string; width: number; height: number };
+/** The photo picked for a story - or, with `text`, a text story on a coloured background. */
+export type PickedStoryPhoto = { uri: string; width: number; height: number; text?: boolean };
 
 type Mode = "idle" | "text" | "draw" | "filters" | "live";
 type Tool = "pen" | "marker" | "eraser";
@@ -119,6 +121,9 @@ export function StoryEditor({
   const [error, setError] = useState("");
   const [drag, setDrag] = useState<Pose | null>(null);
   const [backdrop, setBackdrop] = useState<[string, string]>(["#1B1B1F", "#0B0B0D"]);
+  // A text story: no photo, a coloured background you swipe through.
+  const textStory = !!photo?.text;
+  const [theme, setTheme] = useState(0);
   const [tool, setTool] = useState<Tool>("pen");
   const [penColor, setPenColor] = useState("#FFFFFF");
   const [penSize, setPenSize] = useState<keyof typeof STROKE_SIZES>("M");
@@ -139,8 +144,23 @@ export function StoryEditor({
     setEditing(null);
     setError("");
     setBusy(false);
-    void backdropFor(photo.uri).then(setBackdrop);
+    if (photo.text) {
+      // Straight to typing, like Instagram's Create mode.
+      themeRef.current = 0;
+      setTheme(0);
+      setBackdrop(TEXT_THEMES[0]!.colors);
+      setMode("text");
+    } else void backdropFor(photo.uri).then(setBackdrop);
   }, [photo]);
+
+  const themeRef = useRef(0);
+  const changeTheme = (direction: 1 | -1) => {
+    const next = stepTheme(themeRef.current, direction);
+    themeRef.current = next;
+    setTheme(next);
+    setBackdrop(TEXT_THEMES[next]!.colors);
+    showToast(TEXT_THEMES[next]!.name);
+  };
 
   // The story's song plays (on repeat) while you edit, like Instagram.
   const song = state.music;
@@ -176,6 +196,8 @@ export function StoryEditor({
     showToast(filterById(id).name);
   };
   const stepFilter = (direction: 1 | -1) => {
+    // On a text story the swipe changes the background instead.
+    if (textStory) return changeTheme(direction);
     const index = FILTERS.findIndex((f) => f.id === stateRef.current.filter);
     const next = FILTERS[(index + direction + FILTERS.length) % FILTERS.length]!;
     setFilter(next.id);
@@ -236,7 +258,19 @@ export function StoryEditor({
     if (editing) {
       commit(value ? updateItem(stateRef.current, editing, { ...draft, text: value }) : removeItem(stateRef.current, editing));
     } else if (value) {
-      commit(addItem(stateRef.current, { id: newId(), kind: "text", ...draft, text: value, x: 0.5, y: 0.42, scale: 1, rotation: 0 }));
+      // On a text story the words are the story: bigger, in the middle.
+      commit(
+        addItem(stateRef.current, {
+          id: newId(),
+          kind: "text",
+          ...draft,
+          text: value,
+          x: 0.5,
+          y: textStory ? 0.45 : 0.42,
+          scale: textStory ? TEXT_STORY_SCALE : 1,
+          rotation: 0,
+        }),
+      );
     }
     setEditing(null);
     setMode("idle");
@@ -252,13 +286,17 @@ export function StoryEditor({
 
   const share = async () => {
     if (!photo || busy) return;
+    if (textStory && !state.items.length && !state.strokes.length) {
+      setError("Write something first.");
+      return;
+    }
     setBusy(true);
     setError("");
     let made: string | null = null;
     try {
       // Nothing changed: the photo goes up exactly as picked.
       let uri = photo.uri;
-      if (isEdited(state)) {
+      if (textStory || isEdited(state)) {
         setHideLive(true);
         await new Promise((resolve) => setTimeout(resolve, 80));
         uri = made = await bakeStory({ uri: photo.uri, state, backdrop, frameRef });
@@ -307,7 +345,21 @@ export function StoryEditor({
           <View ref={frameRef} collapsable={false} style={{ width: fw, height: fh, overflow: "hidden", backgroundColor: backdrop[1] }}>
             <View {...(mode === "idle" || mode === "filters" ? swipe.panHandlers : {})} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
               <LinearGradient colors={backdrop} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
-              {!!photo && (
+              {/* A text story with nothing on it yet: tap anywhere to type. */}
+              {textStory && mode === "idle" && !state.items.length && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Tap to type"
+                  onPress={() => {
+                    setEditing(null);
+                    setMode("text");
+                  }}
+                  style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={{ fontFamily: fonts.display, fontSize: 30, color: "rgba(255,255,255,0.85)" }}>Tap to type</Text>
+                </Pressable>
+              )}
+              {!!photo && !textStory && (
                 <View
                   style={{
                     position: "absolute",
@@ -404,7 +456,15 @@ export function StoryEditor({
               <View style={{ flex: 1 }} />
               <View style={{ flexDirection: "row", gap: 8 }}>
                 {historyCount > 0 && iconButton("Undo", undo, <Ionicons name="arrow-undo" size={21} color="#FFFFFF" />)}
-                {iconButton("Filters", () => setMode("filters"), <Ionicons name="color-filter-outline" size={22} color="#FFFFFF" />)}
+                {textStory
+                  ? iconButton(
+                      "Change background",
+                      () => changeTheme(1),
+                      <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#FFFFFF", overflow: "hidden" }}>
+                        <LinearGradient colors={TEXT_THEMES[stepTheme(theme, 1)]!.colors} style={{ flex: 1 }} />
+                      </View>,
+                    )
+                  : iconButton("Filters", () => setMode("filters"), <Ionicons name="color-filter-outline" size={22} color="#FFFFFF" />)}
                 {iconButton("Draw", () => setMode("draw"), <MaterialCommunityIcons name="draw" size={22} color="#FFFFFF" />)}
                 {iconButton("Music", () => setMusicOpen(true), <Ionicons name="musical-notes" size={21} color="#FFFFFF" />)}
                 {iconButton("Stickers", () => setStickers(true), <Ionicons name="happy-outline" size={23} color="#FFFFFF" />)}
@@ -469,7 +529,7 @@ export function StoryEditor({
           )}
 
           {/* Filters: a strip of the photo in each one. */}
-          {mode === "filters" && !!photo && (
+          {mode === "filters" && !!photo && !textStory && (
             <View style={{ position: "absolute", left: 0, right: 0, bottom: below + 10 }}>
               <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 12, marginBottom: 6 }}>
                 <Pressable accessibilityRole="button" accessibilityLabel="Done with filters" onPress={() => setMode("idle")} style={{ paddingHorizontal: 10, height: 40, justifyContent: "center" }}>
@@ -504,7 +564,7 @@ export function StoryEditor({
               )}
               {state.items.length === 0 && state.strokes.length === 0 && (
                 <Text style={{ color: "rgba(255,255,255,0.85)", fontFamily: fonts.body, fontSize: 12, textShadowColor: "rgba(0,0,0,0.6)", textShadowRadius: 4 }}>
-                  Swipe the photo for filters · disappears after 24 hours
+                  {textStory ? "Swipe for colours" : "Swipe the photo for filters"} · disappears after 24 hours
                 </Text>
               )}
               <Pressable
@@ -554,7 +614,8 @@ export function StoryEditor({
           {mode === "text" && (
             <TextComposer
               initial={editingItem ? { text: editingItem.text, font: editingItem.font, color: editingItem.color, bg: editingItem.bg } : null}
-              size={TEXT_SIZE * fw}
+              size={TEXT_SIZE * fw * (textStory ? Math.min(1.6, editingItem?.scale ?? TEXT_STORY_SCALE) : 1)}
+              dim={!textStory}
               onDone={textDone}
             />
           )}

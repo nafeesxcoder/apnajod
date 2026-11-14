@@ -94,9 +94,24 @@ describe("story editor", () => {
 
   it("uploads an untouched photo as picked and only bakes an edited one", () => {
     const editor = read("StoryEditor.tsx");
-    expect(editor).toContain("let uri = photo.uri;\n      if (isEdited(state)) {");
+    // A text story has no photo, so it is always made on the phone.
+    expect(editor).toContain("let uri = photo.uri;\n      if (textStory || isEdited(state)) {");
     expect(editor).toContain("uri = made = await bakeStory(");
     expect(read("bake.native.ts")).toContain("captureRef(");
     expect(read("bake.ts")).toContain('canvas.toBlob(resolve, "image/jpeg", 0.92)');
+  });
+
+  it("makes a text story: words on a coloured background, no photo", () => {
+    const editor = read("StoryEditor.tsx");
+    const tray = read("../StoriesTray.tsx");
+    const themes = read("themes.ts");
+    expect(tray).toContain('["text", "text", "Create with text"]');
+    expect(tray).toContain("setPicked({ ...TEXT_STORY });");
+    expect(themes).toContain('export const TEXT_STORY = { uri: "", width: 1080, height: 1920, text: true } as const;');
+    expect(editor).toContain("if (textStory) return changeTheme(direction);");
+    expect(editor).toContain('accessibilityLabel="Tap to type"');
+    expect(editor).toContain('setError("Write something first.");');
+    // Baked without a photo: just the background and the words.
+    expect(read("bake.ts")).toContain("const image = uri ? await loadImage(uri) : null;");
   });
 });

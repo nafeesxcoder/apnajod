@@ -10,6 +10,7 @@ import { fonts, palette } from "../../theme";
 import { Avatar } from "../posts/PostSheets";
 import { Sheet } from "../posts/PostSheets";
 import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
+import { TEXT_STORY } from "./editor/themes";
 import { WebCamera, needsWebCamera } from "./WebCamera";
 import { loadStories, openStoriesAt, useStories } from "./storyStore";
 
@@ -54,9 +55,14 @@ export function StoriesTray({
   const unseen = (person: StoryPerson) => person.stories.some((story) => !seen.has(story.id));
 
   /** Camera or gallery; the photo opens in the story editor at full quality. */
-  const pick = async (from: "camera" | "gallery") => {
+  const pick = async (from: "camera" | "gallery" | "text") => {
     setChoosing(false);
     setError("");
+    // Words on a coloured background, no photo.
+    if (from === "text") {
+      setPicked({ ...TEXT_STORY });
+      return;
+    }
     // A laptop's browser cannot take a photo itself: open the webcam here.
     if (from === "camera" && needsWebCamera()) {
       setWebcam(true);
@@ -174,6 +180,7 @@ export function StoriesTray({
             [
               ["camera", "camera-outline", "Take a photo"],
               ["gallery", "images-outline", "Choose from gallery"],
+              ["text", "text", "Create with text"],
             ] as const
           ).map(([from, icon, label]) => (
             <Pressable
