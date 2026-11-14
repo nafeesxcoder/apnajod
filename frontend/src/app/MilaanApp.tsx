@@ -202,6 +202,8 @@ import { postApi } from "../api/postApi";
 import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModal";
 import { StoryHost } from "../features/stories/StoryHost";
 import { loadStories, openStoriesOf, takeStoryParam } from "../features/stories/storyStore";
+import { setFestival, startFestivalWatch } from "../features/festival/festivalStore";
+import type { ActiveFestival } from "../features/festival/themes";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
 
 /* =========================================================
@@ -486,6 +488,11 @@ function MilaanApp() {
   });
   // Where saving the intent / future answers returns to: Settings when they
   // were opened from there, Home otherwise.
+  // The festival theme the admin has on (Diwali, Eid...): ask now, every
+  // few minutes and when the app comes back; the socket also tells us.
+  useEffect(() => {
+    startFestivalWatch();
+  }, []);
   const alignmentReturnRef = useRef<Screen>("home");
   useEffect(() => {
     if (screen !== "alignment") alignmentReturnRef.current = screen === "settings" ? "settings" : "home";
@@ -1688,7 +1695,11 @@ function MilaanApp() {
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", onDisconnect);
     socket.on("message:status", onStatusCache);
+    // The admin put a festival theme on (or off): show it at once.
+    const onTheme = (data: { theme?: ActiveFestival | null }) => setFestival(data?.theme ?? null);
+    socket.on("app:theme", onTheme);
     return () => {
+      socket.off("app:theme", onTheme);
       socket.off("message:status", onStatusCache);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);

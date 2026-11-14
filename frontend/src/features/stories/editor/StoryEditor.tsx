@@ -54,7 +54,8 @@ import { LiveComposer, type PollDraft, type QuestionDraft } from "./LiveComposer
 import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
 import { TextComposer, type TextDraft } from "./TextComposer";
-import { TEXT_STORY_SCALE, TEXT_THEMES, stepTheme } from "./themes";
+import { TEXT_STORY_SCALE, stepTheme, textThemesWith } from "./themes";
+import { currentFestival } from "../../festival/festivalStore";
 import { CLOSE_GREEN, CloseFriendsSheet } from "../CloseFriendsSheet";
 import { closeFriendsApi } from "../../../api/closeFriendsApi";
 
@@ -159,18 +160,22 @@ export function StoryEditor({
       // Straight to typing, like Instagram's Create mode.
       themeRef.current = 0;
       setTheme(0);
-      setBackdrop(TEXT_THEMES[0]!.colors);
+      // A festival on now puts its backgrounds first.
+      textThemesRef.current = textThemesWith(currentFestival());
+      setBackdrop(textThemesRef.current[0]!.colors);
       setMode("text");
     } else void backdropFor(photo.uri).then(setBackdrop);
   }, [photo]);
 
   const themeRef = useRef(0);
+  const textThemesRef = useRef(textThemesWith(null));
   const changeTheme = (direction: 1 | -1) => {
-    const next = stepTheme(themeRef.current, direction);
+    const list = textThemesRef.current;
+    const next = stepTheme(themeRef.current, direction, list.length);
     themeRef.current = next;
     setTheme(next);
-    setBackdrop(TEXT_THEMES[next]!.colors);
-    showToast(TEXT_THEMES[next]!.name);
+    setBackdrop(list[next]!.colors);
+    showToast(list[next]!.name);
   };
 
   // The story's song plays (on repeat) while you edit, like Instagram.
@@ -478,7 +483,7 @@ export function StoryEditor({
                       "Change background",
                       () => changeTheme(1),
                       <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#FFFFFF", overflow: "hidden" }}>
-                        <LinearGradient colors={TEXT_THEMES[stepTheme(theme, 1)]!.colors} style={{ flex: 1 }} />
+                        <LinearGradient colors={textThemesRef.current[stepTheme(theme, 1, textThemesRef.current.length)]!.colors} style={{ flex: 1 }} />
                       </View>,
                     )
                   : iconButton("Filters", () => setMode("filters"), <Ionicons name="color-filter-outline" size={22} color="#FFFFFF" />)}

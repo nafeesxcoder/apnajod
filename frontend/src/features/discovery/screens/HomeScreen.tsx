@@ -23,6 +23,10 @@ import { AddPostButton } from "../../profile/components/AddPostButton";
 import { PostsFeed } from "../../posts/PostsFeed";
 import { StoriesTray } from "../../stories/StoriesTray";
 import { ActivityModal } from "../../posts/ActivityModal";
+import { useFestival } from "../../festival/festivalStore";
+import { FestivalBanner } from "../../festival/FestivalBanner";
+import { FestivalParticles } from "../../festival/FestivalParticles";
+import { openStoryChooser } from "../../stories/storyStore";
 import { postApi } from "../../../api/postApi";
 import { matchApi } from "../../../api/matchApi";
 import type { Match } from "../../../data";
@@ -147,6 +151,8 @@ export function HomeScreen({
   const featured = swipeDeck[0];
   const others = swipeDeck.slice(1);
   const name = firstName.trim();
+  // A festival theme the admin has put on (Diwali, Eid...), or null.
+  const festival = useFestival();
   const initial = name ? name.charAt(0).toUpperCase() : "";
 
   const poolNeedsVerification =
@@ -228,12 +234,12 @@ export function HomeScreen({
               <View style={{ flex: 1, paddingRight: 12 }}>
                 <Text
                   style={{
-                    fontFamily: fonts.body,
+                    fontFamily: festival ? fonts.bodySemi : fonts.body,
                     fontSize: typeScale.label,
-                    color: colors.muted,
+                    color: festival ? festival.accent : colors.muted,
                   }}
                 >
-                  {greetingForNow()}
+                  {festival ? `${festival.emoji} ${festival.greeting}` : greetingForNow()}
                 </Text>
                 <Text
                   numberOfLines={1}
@@ -407,6 +413,15 @@ export function HomeScreen({
                 )}
               </Pressable>
             </View>
+
+            {/* The festival the admin has on: greeting and a festive story. */}
+            {festival && (
+              <FestivalBanner
+                theme={festival}
+                name={name}
+                onStory={accessToken ? openStoryChooser : undefined}
+              />
+            )}
 
             {/* Stories (24 hours), like Instagram's row at the top. */}
             <StoriesTray
@@ -829,6 +844,7 @@ export function HomeScreen({
         {!!accessToken && (
           <ActivityModal visible={activityOpen} accessToken={accessToken} onClose={() => setActivityOpen(false)} />
         )}
+        {festival && <FestivalParticles theme={festival} />}
       </SafeAreaView>
     </AppCanvas>
   );

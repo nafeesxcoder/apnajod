@@ -46,6 +46,12 @@ router.post("/music/:id/duration", musicController.setMusicDuration);
 router.get("/appeals", adminController.getAppeals);
 router.post("/appeals/:id/resolve", adminController.resolveAppeal);
 
+// Festival themes on the whole app.
+router.get("/festivals", adminController.getFestivals);
+router.post("/festivals", adminController.scheduleFestival);
+router.post("/festivals/stop", adminController.stopFestival);
+router.post("/festivals/:id/cancel", adminController.cancelFestival);
+
 // UPI payments checked by hand.
 router.get("/payments", adminController.getPayments);
 router.post("/payments/:id/approve", adminController.approvePayment);

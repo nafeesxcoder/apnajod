@@ -28,6 +28,12 @@ function emitToUser(userId, event, payload) {
   io.to(userRoom(userId)).emit(event, payload);
 }
 
+/** Every connected member at once (a festival theme going on or off). */
+function emitToAll(event, payload) {
+  if (!io) return;
+  io.emit(event, payload);
+}
+
 function touchLastActive(userId) {
   return query("UPDATE users SET last_active_at = NOW(6) WHERE id = ?", [
     userId,
@@ -176,4 +182,4 @@ function init(httpServer) {
   return io;
 }
 
-module.exports = { init, emitToUser, isOnline };
+module.exports = { init, emitToUser, emitToAll, isOnline };

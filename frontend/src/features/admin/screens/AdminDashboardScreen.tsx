@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
@@ -14,6 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { adminApi } from "../../../api/adminApi";
+import { LinearGradient } from "expo-linear-gradient";
+import { FESTIVAL_THEMES, type ActiveFestival, type FestivalTheme } from "../../festival/themes";
+import { setFestival } from "../../festival/festivalStore";
 import { GrowthTab } from "./GrowthTab";
 import { MusicTab } from "./MusicTab";
 import { fonts, radius } from "../../../theme";
@@ -27,6 +30,7 @@ type Tab =
   | "reports"
   | "appeals"
   | "payments"
+  | "festivals"
   | "questions"
   | "music"
   | "security";
@@ -43,6 +47,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "reports", label: "Reports", icon: "flag-outline" },
   { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
   { key: "payments", label: "UPI Payments", icon: "cash-outline" },
+  { key: "festivals", label: "Festival Themes", icon: "sparkles-outline" },
   { key: "questions", label: "Daily Questions", icon: "help-circle-outline" },
   { key: "music", label: "Music", icon: "musical-notes-outline" },
   { key: "security", label: "Security", icon: "lock-closed-outline" }, // 👈 New
@@ -426,6 +431,7 @@ export function AdminDashboardScreen({
           {tab === "reports" && <ReportsTab accessToken={accessToken} />}
           {tab === "appeals" && <AppealsTab accessToken={accessToken} />}
           {tab === "payments" && <PaymentsTab accessToken={accessToken} />}
+          {tab === "festivals" && <FestivalsTab accessToken={accessToken} />}
           {tab === "questions" && <QuestionsTab accessToken={accessToken} />}
           {tab === "music" && <MusicTab accessToken={accessToken} />}
           {tab === "security" && <SecurityTab accessToken={accessToken} />}
@@ -2130,6 +2136,288 @@ function PaymentsTab({ accessToken }: { accessToken: string }) {
         </Text>
       )}
       {reviewed.map((p) => row(p, false))}
+    </View>
+  );
+}
+
+/* ---------------- Festival themes ---------------- */
+
+const FESTIVAL_DAYS: { label: string; days: number | null }[] = [
+  { label: "1 day", days: 1 },
+  { label: "3 days", days: 3 },
+  { label: "7 days", days: 7 },
+  { label: "Until I turn it off", days: null },
+];
+
+/** "14 Nov, 5:30 pm" in India time. */
+function istTime(value: string | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** Midnight India time on a YYYY-MM-DD day. */
+function istMidnight(day: string) {
+  return new Date(`${day}T00:00:00+05:30`);
+}
+
+function FestivalPreview({ theme, greeting, small }: { theme: FestivalTheme; greeting?: string | null; small?: boolean }) {
+  return (
+    <LinearGradient
+      colors={theme.colors}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ borderRadius: 14, paddingVertical: small ? 12 : 16, paddingHorizontal: 12, alignItems: "center" }}
+    >
+      <Text style={{ fontSize: small ? 14 : 18, letterSpacing: 2 }} numberOfLines={1}>
+        {theme.ornament}
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={{ marginTop: 6, textAlign: "center", fontFamily: fonts.display, fontSize: small ? 15 : 20, color: theme.ink }}
+      >
+        {greeting?.trim() || theme.greeting}
+      </Text>
+    </LinearGradient>
+  );
+}
+
+function DateField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  if (Platform.OS === "web") {
+    // The browser's own date picker.
+    return createElement("input", {
+      type: "date",
+      value,
+      min: new Date().toISOString().slice(0, 10),
+      onChange: (event: { target: { value: string } }) => onChange(event.target.value),
+      "aria-label": "Start date",
+      style: {
+        padding: 10,
+        borderRadius: 10,
+        border: `1px solid ${COLORS.border}`,
+        fontSize: 15,
+        fontFamily: "inherit",
+        background: "#FFFFFF",
+        color: COLORS.textMain,
+      },
+    });
+  }
+  return (
+    <TextInput
+      accessibilityLabel="Start date"
+      value={value}
+      onChangeText={onChange}
+      placeholder="YYYY-MM-DD"
+      style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 15 }}
+    />
+  );
+}
+
+function FestivalsTab({ accessToken }: { accessToken: string }) {
+  const [data, setData] = useState<{ active: ActiveFestival | null; upcoming: ActiveFestival[] } | null>(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState("");
+  const [days, setDays] = useState<number | null>(3);
+  const [startDay, setStartDay] = useState("");
+
+  const load = useCallback(async () => {
+    setError("");
+    try {
+      const res: any = await adminApi.festivals(accessToken);
+      setData({ active: res?.active ?? null, upcoming: Array.isArray(res?.upcoming) ? res.upcoming : [] });
+      setFestival(res?.active ?? null);
+    } catch (e) {
+      setError(errText(e, "Could not load festival themes"));
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const run = async (work: () => Promise<unknown>, done: string) => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await work();
+      setNotice(done);
+      await load();
+    } catch (e) {
+      setError(errText(e, "That did not work"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const theme = picked ? FESTIVAL_THEMES[picked] : null;
+
+  const applyNow = () => {
+    if (!theme) return;
+    const endsAt = days ? new Date(Date.now() + days * 86400000).toISOString() : null;
+    void run(
+      () => adminApi.scheduleFestival(accessToken, { themeKey: theme.key, greeting, endsAt }),
+      `${theme.name} is on across the app now.`,
+    );
+  };
+
+  const scheduleIt = () => {
+    if (!theme) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDay)) {
+      setError("Pick the day it should start.");
+      return;
+    }
+    const start = istMidnight(startDay);
+    const endsAt = days ? new Date(start.getTime() + days * 86400000).toISOString() : null;
+    void run(
+      () => adminApi.scheduleFestival(accessToken, { themeKey: theme.key, greeting, startsAt: start.toISOString(), endsAt }),
+      `${theme.name} will start on ${istTime(start.toISOString())}.`,
+    );
+  };
+
+  if (!data && !error) return <Loading />;
+  const active = data?.active ?? null;
+  const activeTheme = active ? FESTIVAL_THEMES[active.themeKey] : null;
+
+  return (
+    <View style={{ gap: 18 }}>
+      <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: COLORS.textMuted }}>
+        Pick a festival and apply it: Home gets the greeting and decoration, text stories get festive
+        backgrounds, and everyone online sees it straight away.
+      </Text>
+      {!!error && <Message tone="error" text={error} />}
+      {!!notice && (
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.success }}>{notice}</Text>
+      )}
+
+      <Card style={{ padding: 18, gap: 12 }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>On now</Text>
+        {active && activeTheme ? (
+          <>
+            <FestivalPreview theme={activeTheme} greeting={active.greeting} />
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+              {activeTheme.name} · since {istTime(active.startsAt)} ·{" "}
+              {active.endsAt ? `ends ${istTime(active.endsAt)}` : "on until you turn it off"}
+            </Text>
+            <View style={{ flexDirection: "row" }}>
+              <SmallButton
+                label="Turn off"
+                tone="danger"
+                busy={busy}
+                onPress={() => void run(() => adminApi.stopFestival(accessToken), "Festival theme turned off.")}
+              />
+            </View>
+          </>
+        ) : (
+          <Text style={{ fontFamily: fonts.body, fontSize: 14, color: COLORS.textMuted }}>
+            No festival theme. The app looks as usual.
+          </Text>
+        )}
+      </Card>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+        {Object.values(FESTIVAL_THEMES).map((item) => (
+          <Pressable
+            key={item.key}
+            accessibilityRole="button"
+            accessibilityLabel={`Choose ${item.name}`}
+            accessibilityState={{ selected: picked === item.key }}
+            onPress={() => {
+              setPicked(item.key);
+              setGreeting("");
+              setNotice("");
+            }}
+            style={{
+              width: 200,
+              borderRadius: 18,
+              padding: 6,
+              borderWidth: 2,
+              borderColor: picked === item.key ? COLORS.primary : "transparent",
+              backgroundColor: COLORS.card,
+            }}
+          >
+            <FestivalPreview theme={item} small />
+            <Text style={{ marginTop: 6, textAlign: "center", fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMain }}>
+              {item.name}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {theme && (
+        <Card style={{ padding: 18, gap: 14 }}>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>{theme.name}</Text>
+          <FestivalPreview theme={theme} greeting={greeting} />
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Greeting (optional)</Text>
+            <TextInput
+              accessibilityLabel="Greeting"
+              value={greeting}
+              onChangeText={setGreeting}
+              maxLength={120}
+              placeholder={theme.greeting}
+              style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 15, color: COLORS.textMain }}
+            />
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>How long</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {FESTIVAL_DAYS.map((choice) => (
+                <SmallButton
+                  key={choice.label}
+                  label={choice.label}
+                  tone={days === choice.days ? "navy" : "plain"}
+                  onPress={() => setDays(choice.days)}
+                />
+              ))}
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <SmallButton label={`Apply ${theme.name} now`} busy={busy} onPress={applyNow} />
+          </View>
+          <View style={{ height: 1, backgroundColor: COLORS.border }} />
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>
+            Or schedule it (starts at midnight, India time)
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <DateField value={startDay} onChange={setStartDay} />
+            <SmallButton label="Schedule" tone="plain" busy={busy} onPress={scheduleIt} />
+          </View>
+        </Card>
+      )}
+
+      {!!data?.upcoming.length && (
+        <Card style={{ padding: 18, gap: 10 }}>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>Coming up</Text>
+          {data.upcoming.map((item) => {
+            const upcomingTheme = FESTIVAL_THEMES[item.themeKey];
+            return (
+              <View key={item.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <Text style={{ flex: 1, minWidth: 200, fontFamily: fonts.body, fontSize: 14, color: COLORS.textMain }}>
+                  {upcomingTheme?.emoji} {upcomingTheme?.name ?? item.themeKey} · {istTime(item.startsAt)}
+                  {item.endsAt ? ` to ${istTime(item.endsAt)}` : " until turned off"}
+                </Text>
+                <SmallButton
+                  label="Cancel"
+                  tone="plain"
+                  busy={busy}
+                  onPress={() => void run(() => adminApi.cancelFestival(accessToken, item.id), "Schedule cancelled.")}
+                />
+              </View>
+            );
+          })}
+        </Card>
+      )}
     </View>
   );
 }

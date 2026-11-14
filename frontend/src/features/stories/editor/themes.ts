@@ -17,9 +17,17 @@ export const TEXT_THEMES: TextTheme[] = [
   { id: "black", name: "Black", colors: ["#111111", "#111111"] },
 ];
 
+/**
+ * The backgrounds to offer now: while a festival theme is on, its own
+ * backgrounds come first (Diwali Night, Eid Night...), then the usual ones.
+ */
+export function textThemesWith(festival: { textStories: TextTheme[] } | null): TextTheme[] {
+  return festival ? [...festival.textStories, ...TEXT_THEMES] : TEXT_THEMES;
+}
+
 /** The next (or previous) background, going round. */
-export function stepTheme(index: number, direction: 1 | -1): number {
-  return (index + direction + TEXT_THEMES.length) % TEXT_THEMES.length;
+export function stepTheme(index: number, direction: 1 | -1, count: number = TEXT_THEMES.length): number {
+  return (index + direction + count) % count;
 }
 
 /** A text story is a 1080 x 1920 picture made on the phone; there is no photo. */

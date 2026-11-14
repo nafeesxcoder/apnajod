@@ -120,6 +120,15 @@ export const adminApi = {
   },
   createDailyQuestion: (token: string, question: string, options: string[]) => authFetch("/admin/questions", token, { method: "POST", body: JSON.stringify({ question, options }) }),
   setDailyQuestionActive: (token: string, id: number, active: boolean) => authFetch(`/admin/questions/${id}/active`, token, { method: "POST", body: JSON.stringify({ active }) }),
+  // Festival themes on the whole app.
+  festivals: (token: string) => authFetch("/admin/festivals", token),
+  scheduleFestival: (
+    token: string,
+    body: { themeKey: string; greeting?: string; startsAt?: string | null; endsAt?: string | null },
+  ) => authFetch("/admin/festivals", token, { method: "POST", body: JSON.stringify(body) }),
+  stopFestival: (token: string) => authFetch("/admin/festivals/stop", token, { method: "POST" }),
+  cancelFestival: (token: string, id: string) =>
+    authFetch(`/admin/festivals/${id}/cancel`, token, { method: "POST" }),
   // UPI payments waiting to be checked against the bank app.
   payments: (token: string) => authFetch("/admin/payments", token),
   approvePayment: (token: string, id: string) =>

@@ -119,6 +119,37 @@ const resolveAppeal = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+// Festival themes on the whole app.
+const festivalError = (error) => new ApiError(error.status || 500, error.message);
+
+const getFestivals = asyncHandler(async (req, res) => {
+  const festivalService = require("../services/festivalService");
+  res.json({ ok: true, ...(await festivalService.listForAdmin()) });
+});
+
+const scheduleFestival = asyncHandler(async (req, res) => {
+  const festivalService = require("../services/festivalService");
+  try {
+    res.json({ ok: true, ...(await festivalService.schedule(req.user.id, req.body || {})) });
+  } catch (error) {
+    throw festivalError(error);
+  }
+});
+
+const stopFestival = asyncHandler(async (req, res) => {
+  const festivalService = require("../services/festivalService");
+  res.json({ ok: true, ...(await festivalService.stop()) });
+});
+
+const cancelFestival = asyncHandler(async (req, res) => {
+  const festivalService = require("../services/festivalService");
+  try {
+    res.json({ ok: true, ...(await festivalService.cancel(req.params.id)) });
+  } catch (error) {
+    throw festivalError(error);
+  }
+});
+
 // UPI payments waiting to be checked against the bank app.
 const getPayments = asyncHandler(async (req, res) => {
   const upiService = require("../services/upiService");
@@ -186,5 +217,5 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, updateAdminPassword, forgotAdminPassword, resetAdminPassword
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };
