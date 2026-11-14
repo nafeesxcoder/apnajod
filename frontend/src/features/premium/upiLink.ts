@@ -3,7 +3,11 @@
  * Pure helpers, so they can be tested without React Native.
  */
 
-/** Opens any UPI app with our ID, the amount and a note filled in. */
+/**
+ * Opens any UPI app with our ID, the amount and a note filled in.
+ * Not used while we pay to a personal UPI ID: UPI apps decline these links
+ * for personal IDs. Kept for when a merchant UPI ID is in place.
+ */
 export function upiLink({
   upiId,
   payeeName,

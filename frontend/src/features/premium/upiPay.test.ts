@@ -34,6 +34,13 @@ describe('UPI payments', () => {
     const pay = readFileSync(join(__dirname, 'UpiPay.tsx'), 'utf8');
     expect(pay).toContain('assets/upi-qr.jpg');
     expect(pay).toContain('billingApi.submitUpi');
+    // UPI apps decline a pay link to a personal UPI ID, so: QR (with a
+    // download) or the UPI ID to copy - no "Open UPI app".
+    expect(pay).not.toContain('Open UPI app');
+    expect(pay).toContain('accessibilityLabel="Download QR"');
+    expect(pay).toContain('accessibilityLabel="Copy UPI ID"');
+    expect(pay).toContain('title="Scan the QR"');
+    expect(pay).toContain('title="Pay to the UPI ID"');
   });
 
   it('gives the admin a UPI Payments tab to approve or reject', () => {

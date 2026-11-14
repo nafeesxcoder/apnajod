@@ -1,17 +1,21 @@
 /**
  * Pay by UPI while the payment gateway waits on KYC.
  *
- * The member pays our UPI ID from any app (scan the QR, or tap to open the
- * UPI app on a phone), then sends the 12 digit UTR. An admin checks the
- * bank app and approves it; the plan turns on then. Nothing here grants
- * anything by itself.
+ * The member pays our UPI ID from any app - scanning the QR (from another
+ * phone, or saved and picked from the gallery in the UPI app) or by typing
+ * the UPI ID - then sends the 12 digit UTR. An admin checks the bank app
+ * and approves it; the plan turns on then. Nothing here grants anything by
+ * itself.
+ *
+ * No "open UPI app" link: UPI apps decline a link with the amount filled in
+ * when it pays a personal UPI ID ("declined for security reasons"). It
+ * comes back once we have a merchant UPI ID.
  */
 import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -31,17 +35,53 @@ import {
 } from "../../api/billingApi";
 import { fonts, palette, radius } from "../../theme";
 import { PressScale } from "../../components/motion";
-import { cleanUtr, UPI_STATUS_LABEL, upiLink, utrValid } from "./upiLink";
+import { cleanUtr, UPI_STATUS_LABEL, utrValid } from "./upiLink";
 
 const QR = require("../../../assets/upi-qr.jpg");
 const QR_WIDTH = 220;
 const QR_RATIO = 770 / 640;
 
-/** A phone, where a upi:// link opens the payment apps. */
-function onPhone() {
-  if (Platform.OS !== "web") return true;
-  return typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const canDownload = Platform.OS === "web" && typeof document !== "undefined";
+
+/** Saves the QR as a photo, to pick from the gallery in the UPI app. */
+async function downloadQr() {
+  const src = typeof QR === "string" ? QR : (QR?.uri ?? QR?.default ?? "");
+  if (!src) return false;
+  const blob = await (await fetch(src)).blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "apnajoda-upi-qr.jpg";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
 }
+
+/** One of the two ways to pay: a heading and a line on how. */
+function Way({ icon, title, hint }: { icon: "qr-code-outline" | "at"; title: string; hint: string }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+      <Ionicons name={icon} size={18} color={palette.crimson} style={{ marginTop: 1 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{title}</Text>
+        <Text style={{ marginTop: 2, fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: palette.slate }}>
+          {hint}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const wayBox = {
+  marginTop: 12,
+  backgroundColor: "#FFFFFF",
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: "#EADDD2",
+  padding: 14,
+} as const;
 
 function Step({ n, text }: { n: number; text: string }) {
   return (
@@ -81,18 +121,18 @@ export function UpiPay({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const amount = rupees(plan.amount_paise);
 
-  const openApp = () => {
-    const link = upiLink({
-      upiId: upi.upiId,
-      payeeName: upi.payeeName,
-      amountPaise: plan.amount_paise,
-      note: `Apnajoda ${plan.title}`,
-    });
-    Linking.openURL(link).catch(() =>
-      setError("No UPI app opened. Scan the QR or pay to the UPI ID instead."),
-    );
+  const saveQr = async () => {
+    try {
+      if (await downloadQr()) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      }
+    } catch {
+      setError("Could not save the QR. Take a screenshot instead.");
+    }
   };
 
   const copyId = async () => {
@@ -127,54 +167,29 @@ export function UpiPay({
 
   return (
     <View accessibilityLabel={`Pay ${amount} by UPI`}>
-      <Step n={1} text={`Pay exactly ${amount} to this UPI`} />
-      <View style={{ alignItems: "center", marginTop: 12 }}>
-        <Image
-          accessibilityLabel="UPI QR code"
-          source={QR}
-          style={{ width: QR_WIDTH, height: QR_WIDTH * QR_RATIO, borderRadius: 12 }}
-          resizeMode="contain"
+      <Step n={1} text={`Pay exactly ${amount}, either way`} />
+
+      {/* Way 1: the QR - from another phone, or saved and picked from the gallery. */}
+      <View style={wayBox}>
+        <Way
+          icon="qr-code-outline"
+          title="Scan the QR"
+          hint="Scan it from another phone. On this phone: save it, then in your UPI app tap Scan and pick it from the gallery."
         />
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            marginTop: 12,
-            backgroundColor: palette.paperBase,
-            borderRadius: radius.pill,
-            paddingLeft: 14,
-            paddingRight: 6,
-            paddingVertical: 6,
-          }}
-        >
-          <Text selectable style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>
-            {upi.upiId}
-          </Text>
-          {Platform.OS === "web" && (
-            <PressScale
-              accessibilityRole="button"
-              accessibilityLabel="Copy UPI ID"
-              onPress={() => void copyId()}
-              style={{
-                backgroundColor: palette.paper,
-                borderRadius: radius.pill,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-              }}
-            >
-              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.crimson }}>
-                {copied ? "Copied" : "Copy"}
-              </Text>
-            </PressScale>
-          )}
+        <View style={{ alignItems: "center", marginTop: 12 }}>
+          <Image
+            accessibilityLabel="UPI QR code"
+            source={QR}
+            style={{ width: QR_WIDTH, height: QR_WIDTH * QR_RATIO, borderRadius: 12 }}
+            resizeMode="contain"
+          />
         </View>
-        {onPhone() && (
+        {canDownload ? (
           <PressScale
             accessibilityRole="button"
-            accessibilityLabel="Open UPI app"
-            onPress={openApp}
-            containerStyle={{ marginTop: 12, alignSelf: "stretch" }}
+            accessibilityLabel="Download QR"
+            onPress={() => void saveQr()}
+            containerStyle={{ marginTop: 12 }}
             style={{
               flexDirection: "row",
               gap: 8,
@@ -183,12 +198,68 @@ export function UpiPay({
               borderWidth: 1.5,
               borderColor: palette.crimson,
               borderRadius: radius.pill,
+              paddingVertical: 11,
+            }}
+          >
+            <Ionicons name={saved ? "checkmark" : "download-outline"} size={17} color={palette.crimson} />
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.crimson }}>
+              {saved ? "QR saved" : "Download QR"}
+            </Text>
+          </PressScale>
+        ) : (
+          <Text style={{ marginTop: 10, textAlign: "center", fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+            Take a screenshot to save it.
+          </Text>
+        )}
+      </View>
+
+      <Text style={{ marginTop: 10, textAlign: "center", fontFamily: fonts.bodySemi, fontSize: 12, color: palette.slate }}>
+        OR
+      </Text>
+
+      {/* Way 2: type the UPI ID into the UPI app. */}
+      <View style={wayBox}>
+        <Way
+          icon="at"
+          title="Pay to the UPI ID"
+          hint={`Open your UPI app, choose Pay to UPI ID (To Mobile / UPI ID), paste this ID and enter ${amount}.`}
+        />
+        <Text
+          selectable
+          style={{
+            marginTop: 12,
+            textAlign: "center",
+            fontFamily: fonts.bodySemi,
+            fontSize: 18,
+            letterSpacing: 0.3,
+            color: palette.ink,
+            backgroundColor: palette.paperBase,
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 10,
+          }}
+        >
+          {upi.upiId}
+        </Text>
+        {Platform.OS === "web" && (
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel="Copy UPI ID"
+            onPress={() => void copyId()}
+            containerStyle={{ marginTop: 10 }}
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: copied ? palette.emerald : palette.ink,
+              borderRadius: radius.pill,
               paddingVertical: 12,
             }}
           >
-            <Ionicons name="open-outline" size={17} color={palette.crimson} />
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.crimson }}>
-              Open UPI app
+            <Ionicons name={copied ? "checkmark" : "copy-outline"} size={17} color="#FFFFFF" />
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: "#FFFFFF" }}>
+              {copied ? "UPI ID copied" : "Copy UPI ID"}
             </Text>
           </PressScale>
         )}
