@@ -2818,14 +2818,22 @@ function MilaanApp() {
       return;
     setDiscoverySignals([]);
   };
-  const recordSafeCheckIn = (id: string) => {
-    if (memberDataRuntime.source === "preview") {
+  // "I'm safe" for a date plan, from Safety Center (the date card has the same button).
+  const recordSafeCheckIn = async (id: string) => {
+    if (memberDataRuntime.source === "preview" || !accessToken) {
+      setSafeCheckIns((current) => [...new Set([...current, id])]);
+      return;
+    }
+    const message = Object.values(chatMessages).flat().find((m) => m.id === id);
+    const proposalId = message?.date?.proposalId;
+    const result = proposalId ? await chatApi.dateCheckIn(accessToken, proposalId).catch(() => null) : null;
+    if (result?.saved) {
       setSafeCheckIns((current) => [...new Set([...current, id])]);
       return;
     }
     setAppNotice({
       title: "Check-in not recorded",
-      body: "Secure date check-ins are unavailable until the live safety endpoint is connected. No check-in was created.",
+      body: result?.error || "You can check in once the date is accepted.",
       icon: "shield-outline",
       tone: "ruby",
     });

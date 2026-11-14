@@ -49,6 +49,16 @@ import { callSession, useCallSession } from "./callSession";
 import { callApi } from "../../api/callApi";
 import { screenshotDetection, watchScreenshots } from "./screenshotWatch";
 import {
+  ContactCard,
+  ContactShareSheet,
+  DateActions,
+  DatePlannerSheet,
+  PollCard,
+  PollComposerSheet,
+  pickOneContact,
+  type DateAction,
+} from "./planCards";
+import {
   chatApi,
   fetchIcebreakers,
   fetchStreak,
@@ -1033,6 +1043,10 @@ export function ChatScreen({
   const [gifOpen, setGifOpen] = useState(previewState === "chat-gif");
   const [gamesOpen, setGamesOpen] = useState(previewState === "chat-games");
   const [snapOpen, setSnapOpen] = useState(previewState === "chat-snap");
+  // Plan a date, make a poll, share a contact (from the attachments).
+  const [datePlannerOpen, setDatePlannerOpen] = useState(false);
+  const [pollOpen, setPollOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [faceEmojiOpen, setFaceEmojiOpen] = useState(
     previewState === "chat-face-emoji",
   );
@@ -1451,6 +1465,8 @@ export function ChatScreen({
             : message.text?.trim() ||
               message.date?.venue ||
               message.document?.name ||
+              (message.poll ? `Poll: ${message.poll.question}` : "") ||
+              (message.contact ? `Contact: ${message.contact.name}` : "") ||
               (message.type === "voice"
                 ? "Voice message"
                 : message.type === "location"
@@ -1615,10 +1631,26 @@ export function ChatScreen({
       setReplyTarget((current) => current ?? previousReplyTarget);
     }
   };
-  const sendQuickShare = (textValue: string) => {
-    void dispatchMessage(createMessage({ type: "text", text: textValue }));
-    setShowAttachments(false);
-    setAttachmentPage("main");
+  const sendContact = (contact: { name: string; phone: string }) => {
+    setContactOpen(false);
+    void dispatchMessage(createMessage({ type: "contact", contact }));
+  };
+  // A date card's buttons: accept / decline / cancel, and "I'm safe" after it.
+  // Both people see the change straight away (the server sends the new card).
+  const dateAction = async (message: ChatMessage, action: DateAction) => {
+    const proposalId = message.date?.proposalId;
+    if (!accessToken || !proposalId) return;
+    setChatError("");
+    const result =
+      action === "safe"
+        ? await chatApi.dateCheckIn(accessToken, proposalId).catch(() => null)
+        : await chatApi.setDatePlanStatus(accessToken, proposalId, action).catch(() => null);
+    if (!result?.saved) setChatError(result?.error || "That did not go through. Please try again.");
+  };
+  const votePoll = async (message: ChatMessage, choice: number) => {
+    if (!accessToken) return;
+    const result = await chatApi.votePoll(accessToken, conversationIdFor(match), message.id, choice).catch(() => null);
+    if (!result?.saved) setChatError(result?.error || "Your vote did not go through. Please try again.");
   };
   const startVoiceNote = async () => {
     setChatError("");
@@ -2069,16 +2101,25 @@ export function ChatScreen({
       setAttachmentPage("more");
       return;
     }
+    if (id === "date") {
+      setShowAttachments(false);
+      setDatePlannerOpen(true);
+      return;
+    }
     if (id === "contact") {
-      sendQuickShare(
-        `👤 Trusted contact card\n${match.name} · Apnajoda verified match`,
-      );
+      // The phone's own contact picker; type it in where there is none.
+      setShowAttachments(false);
+      setAttachmentPage("main");
+      void pickOneContact().then((picked) => {
+        if (picked === "none") setContactOpen(true);
+        else if (picked) sendContact(picked);
+      });
       return;
     }
     if (id === "poll") {
-      sendQuickShare(
-        "📊 Which date feels best?\n☕ Café   🍽️ Dinner   🎨 Activity",
-      );
+      setShowAttachments(false);
+      setAttachmentPage("main");
+      setPollOpen(true);
       return;
     }
     if (id === "gif") {
@@ -2102,20 +2143,11 @@ export function ChatScreen({
       onRose();
       return;
     }
-    if (id === "disappearing") {
-      onSettingsChange({
-        ...settings,
-        retentionMode: settings.retentionMode === "keep" ? "24_hours" : "keep",
-      });
-      setShowAttachments(false);
-      return;
-    }
     if (id === "back") setAttachmentPage("main");
   };
   const activeTheme =
     coupleThemes.find((theme) => theme.name === settings.theme) ??
     coupleThemes[0]!;
-  const disappearingMessages = settings.retentionMode !== "keep";
   const retentionShort =
     settings.retentionMode === "after_seen"
       ? "After seen"
@@ -2837,6 +2869,8 @@ export function ChatScreen({
                   onOpenLiveGame={
                     accessToken && !isCoupleMode ? (id) => setPlayGameId(id) : undefined
                   }
+                  onDateAction={accessToken ? (action) => void dateAction(message, action) : undefined}
+                  onPollVote={accessToken ? (choice) => void votePoll(message, choice) : undefined}
                   onPress={() => selectMessage(message)}
                   onSwipeReply={() => setReplyTarget(message)}
                   onSwipeEdit={
@@ -3159,13 +3193,7 @@ export function ChatScreen({
                     <Attachment
                       key={item.id}
                       icon={item.icon as keyof typeof Ionicons.glyphMap}
-                      label={
-                        item.id === "disappearing"
-                          ? disappearingMessages
-                            ? `${retentionShort} On`
-                            : "Timer Off"
-                          : item.label
-                      }
+                      label={item.label}
                       color={item.color}
                       onPress={() => openAttachment(item.id)}
                     />
@@ -3495,6 +3523,24 @@ export function ChatScreen({
             }}
             onUnpin={(messageId) => void togglePin(messageId)}
           />
+          <DatePlannerSheet
+            visible={datePlannerOpen}
+            name={match.name}
+            onClose={() => setDatePlannerOpen(false)}
+            onSend={(date) => {
+              setDatePlannerOpen(false);
+              void dispatchMessage(createMessage({ type: "date", date }));
+            }}
+          />
+          <PollComposerSheet
+            visible={pollOpen}
+            onClose={() => setPollOpen(false)}
+            onSend={(poll) => {
+              setPollOpen(false);
+              void dispatchMessage(createMessage({ type: "poll", poll }));
+            }}
+          />
+          <ContactShareSheet visible={contactOpen} onClose={() => setContactOpen(false)} onSend={sendContact} />
           <GifPicker
             visible={gifOpen}
             onClose={() => setGifOpen(false)}
@@ -3647,6 +3693,8 @@ function ChatBubble({
   onReplyJump,
   onGameReply,
   onOpenLiveGame,
+  onDateAction,
+  onPollVote,
   onPress,
   onOpenImage,
   onOpenVideo,
@@ -3667,6 +3715,10 @@ function ChatBubble({
   onGameReply?: (answer: string) => void;
   /** Open a play-together game from its card. */
   onOpenLiveGame?: (gameId: string) => void;
+  /** A date card's buttons. */
+  onDateAction?: (action: DateAction) => void;
+  /** A poll's options. */
+  onPollVote?: (choice: number) => void;
   onPress?: () => void;
   onOpenImage?: (uri: string) => void;
   onOpenVideo?: (uri: string) => void;
@@ -3804,6 +3856,12 @@ function ChatBubble({
     message.type === "location" && chatStyles.locationBubble,
     message.type === "document" && chatStyles.documentBubble,
     message.type === "document" && !mine && chatStyles.documentBubbleTheirs,
+    // Polls and contact cards sit on white, so their buttons read in any theme.
+    (message.type === "poll" || message.type === "contact") && {
+      backgroundColor: palette.paper,
+      borderWidth: 1,
+      borderColor: palette.rule,
+    },
     // A photo bubble needs a real width. Without one it sizes to its
     // content, the frame's `width: 100%` has nothing to resolve against,
     // and the photo collapses to a thumbnail a few pixels across.
@@ -4189,8 +4247,11 @@ function ChatBubble({
               <Text style={dateStyles.waitingText}>
                 {datePlanStatusLabel(message.date.planStatus ?? "proposed")}
               </Text>
+              <DateActions message={message} onAction={onDateAction} />
             </>
           )}
+          {message.type === "poll" && message.poll && <PollCard message={message} onVote={onPollVote} />}
+          {message.type === "contact" && message.contact && <ContactCard message={message} />}
           {message.type === "voice" && message.uri && (
             <View>
               <VoiceNote
@@ -5113,11 +5174,12 @@ function DatePlanStatusMini({
   safetyCheckIn: boolean;
   status?: DatePlanStatus;
 }) {
+  // Suggested, accepted, the date itself, then "I'm safe" (or done).
   const steps = [
     ["sent", "Suggested"],
-    ["pending", "Accept"],
-    ["reserve", "Reserve"],
-    [safetyCheckIn ? "safe" : "meet", safetyCheckIn ? "Check-in" : "Meet"],
+    ["pending", "Accepted"],
+    ["meet", "Meet"],
+    [safetyCheckIn ? "safe" : "done", safetyCheckIn ? "Safe" : "Done"],
   ] as const;
   const completedSteps =
     status === "completed" ? 4 : status === "accepted" ? 2 : 1;

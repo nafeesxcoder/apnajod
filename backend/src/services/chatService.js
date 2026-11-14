@@ -63,6 +63,27 @@ function parseJsonColumn(value, fallback) {
   return typeof value === "string" ? JSON.parse(value) : value;
 }
 
+/**
+ * What a message looks like to one person: a date card's "I'm safe" for
+ * them, a poll's counts and their own vote. The raw lists of who did what
+ * never leave the server.
+ */
+function viewerExtras(payload, viewerId) {
+  const out = {};
+  if (payload.date) {
+    const safeBy = Array.isArray(payload.date.safeBy) ? payload.date.safeBy : [];
+    const { safeBy: _hidden, ...date } = payload.date;
+    out.date = { ...date, safeByMe: safeBy.includes(viewerId), safeCount: safeBy.length };
+  }
+  if (payload.poll && Array.isArray(payload.poll.options)) {
+    const votes = payload.poll.votes && typeof payload.poll.votes === "object" ? payload.poll.votes : {};
+    const counts = payload.poll.options.map((_, i) => Object.values(votes).filter((v) => Number(v) === i).length);
+    const mine = Object.prototype.hasOwnProperty.call(votes, viewerId) ? Number(votes[viewerId]) : null;
+    out.poll = { question: payload.poll.question, options: payload.poll.options, counts, myVote: mine };
+  }
+  return out;
+}
+
 function rowToMessage(row, viewerId) {
   const payload = parseJsonColumn(row.payload, {});
   const starredBy = parseJsonColumn(row.starred_by, []);
@@ -70,6 +91,7 @@ function rowToMessage(row, viewerId) {
   const reactionsMap = parseJsonColumn(row.reactions, {});
   return {
     ...payload,
+    ...viewerExtras(payload, viewerId),
     id: row.id,
     senderId: row.sender_id,
     mine: row.sender_id === viewerId,
@@ -492,11 +514,118 @@ async function updateDatePlanStatus(userId, proposalId, status) {
   }
   // rows[0].conversation_id is "dm:<idA>:<idB>", not a peer id — resolve it.
   await assertParticipantByConversationId(rows[0].conversation_id, userId);
+  const proposal = rows[0];
+  const mine = proposal.proposer_id === userId;
+  // The other person accepts or declines; whoever proposed it can cancel.
+  if ((status === "accepted" || status === "declined") && mine) {
+    const err = new Error("Only the person you invited can answer this plan.");
+    err.status = 403;
+    throw err;
+  }
+  if (status === "cancelled" && !mine) {
+    const err = new Error("Only the person who proposed it can cancel this plan.");
+    err.status = 403;
+    throw err;
+  }
+  if (!["proposed", "countered"].includes(proposal.status) && status !== "cancelled") {
+    const err = new Error("This plan has already been answered.");
+    err.status = 409;
+    throw err;
+  }
   await query("UPDATE date_proposals SET status = ? WHERE id = ?", [
     status,
     proposalId,
   ]);
+  await syncDateCard(proposal.conversation_id, proposalId, userId, (date) => ({ ...date, planStatus: status }));
   return { id: proposalId, status };
+}
+
+/** Changes the date card in the chat to match the plan, and shows it to both. */
+async function syncDateCard(conversationId, proposalId, actingUserId, change) {
+  const rows = await query(
+    `SELECT * FROM chat_messages WHERE conversation_id = ? AND message_type = 'date' AND payload LIKE ?`,
+    [conversationId, `%${proposalId}%`],
+  );
+  for (const row of rows) {
+    const payload = parseJsonColumn(row.payload, {});
+    if (!payload.date || payload.date.proposalId !== proposalId) continue;
+    payload.date = change(payload.date);
+    await query("UPDATE chat_messages SET payload = ?, updated_at_ms = ? WHERE id = ? AND conversation_id = ?", [
+      JSON.stringify(payload),
+      Date.now(),
+      row.id,
+      conversationId,
+    ]);
+    const [, a, b] = String(conversationId).split(":");
+    const peerId = a === actingUserId ? b : a;
+    await emitMessageUpdate(peerId, { ...row, payload: JSON.stringify(payload) }, actingUserId);
+  }
+}
+
+/**
+ * "I'm safe" after an accepted date: marks the plan done and counts as a
+ * safe check-in for you in Safety Center.
+ */
+async function dateCheckIn(userId, proposalId) {
+  const [proposal] = await query("SELECT * FROM date_proposals WHERE id = ?", [String(proposalId || "")]);
+  if (!proposal) {
+    const err = new Error("Date proposal not found");
+    err.status = 404;
+    throw err;
+  }
+  await assertParticipantByConversationId(proposal.conversation_id, userId);
+  if (!["accepted", "completed"].includes(proposal.status)) {
+    const err = new Error("You can check in once the date is accepted.");
+    err.status = 409;
+    throw err;
+  }
+  await query("UPDATE date_proposals SET status = 'completed' WHERE id = ?", [proposal.id]);
+  await syncDateCard(proposal.conversation_id, proposal.id, userId, (date) => {
+    const safeBy = Array.isArray(date.safeBy) ? date.safeBy : [];
+    return { ...date, planStatus: "completed", safeBy: safeBy.includes(userId) ? safeBy : [...safeBy, userId] };
+  });
+  return { id: proposal.id, status: "completed", safe: true };
+}
+
+/** Your safe check-ins, for the number in Safety Center. */
+async function safeCheckInCount(userId) {
+  const [row] = await query(
+    `SELECT COUNT(*) AS n FROM chat_messages
+      WHERE message_type = 'date' AND payload LIKE '%safeBy%'
+        AND JSON_CONTAINS(JSON_EXTRACT(payload, '$.date.safeBy'), JSON_QUOTE(?))`,
+    [userId],
+  );
+  return Number(row?.n || 0);
+}
+
+/** A vote on a poll in the chat: one each, can be changed, results for both. */
+async function votePoll(peerId, userId, messageId, choice) {
+  const conversationId = storageKey(userId, peerId);
+  await assertParticipant(peerId, userId);
+  const [row] = await query("SELECT * FROM chat_messages WHERE id = ? AND conversation_id = ?", [String(messageId), conversationId]);
+  if (!row) {
+    const err = new Error("That poll is no longer here.");
+    err.status = 404;
+    throw err;
+  }
+  const payload = parseJsonColumn(row.payload, {});
+  const options = payload.poll && Array.isArray(payload.poll.options) ? payload.poll.options : null;
+  const index = Number(choice);
+  if (!options || !Number.isInteger(index) || index < 0 || index >= options.length) {
+    const err = new Error("Choose one of the poll's options.");
+    err.status = 400;
+    throw err;
+  }
+  payload.poll.votes = { ...(payload.poll.votes || {}), [userId]: index };
+  await query("UPDATE chat_messages SET payload = ?, updated_at_ms = ? WHERE id = ? AND conversation_id = ?", [
+    JSON.stringify(payload),
+    Date.now(),
+    row.id,
+    conversationId,
+  ]);
+  const updated = { ...row, payload: JSON.stringify(payload) };
+  await emitMessageUpdate(peerId, updated, userId);
+  return rowToMessage(updated, userId);
 }
 
 async function shareLiveLocation(peerId, userId, location, clientActionId) {
@@ -722,6 +851,9 @@ module.exports = {
   screenshotNotice,
   assertParticipant,
   assertParticipantByConversationId,
+  dateCheckIn,
+  safeCheckInCount,
+  votePoll,
   listMessages,
   sendMessage,
   createDateProposal,

@@ -29,7 +29,11 @@ export type ChatMessage = {
   id: string;
   senderId?: string;
   mine?: boolean;
-  type: 'text' | 'image' | 'gif' | 'rose' | 'date' | 'snap' | 'sticker' | 'voice' | 'location' | 'document' | 'game';
+  type: 'text' | 'image' | 'gif' | 'rose' | 'date' | 'snap' | 'sticker' | 'voice' | 'location' | 'document' | 'game' | 'poll' | 'contact';
+  /** A poll: the question, 2-4 options, the counts and your own vote (from the server). */
+  poll?: { question: string; options: string[]; counts?: number[]; myVote?: number | null };
+  /** A contact card: a name and a number to call or message. */
+  contact?: { name: string; phone: string };
   /** A chat game card - the start of a game, or its result. */
   game?: { id: string; kind: string; title: string; emoji: string; result: string | null };
   text?: string;
@@ -41,7 +45,7 @@ export type ChatMessage = {
   voice?: { uri: string; durationMs: number; transcript?: string; transcriptStatus?: 'available' | 'processing' | 'unavailable' };
   document?: { name: string; size?: number; mimeType?: string; kind: 'document' | 'video' };
   location?: { latitude: number; longitude: number; label: string; live: boolean; expiresAt?: number; accuracy?: number };
-  date?: { venue: string; category: string; area: string; time: string; safetyCheckIn: boolean; packageTitle?: string; packageTier?: string; proposalId?: string; planStatus?: DatePlanStatus };
+  date?: { venue: string; category: string; area: string; time: string; safetyCheckIn: boolean; packageTitle?: string; packageTier?: string; proposalId?: string; planStatus?: DatePlanStatus; /** You tapped "I'm safe" after it. */ safeByMe?: boolean; safeCount?: number };
   editedAt?: number;
   deletedAt?: number;
   deletedForEveryone?: boolean;

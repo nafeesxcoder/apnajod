@@ -120,6 +120,19 @@ export const chatApi = {
     }) as Promise<PersistenceResult<{ id: string; status: string }>>;
   },
 
+  /** "I'm safe" after an accepted date. */
+  async dateCheckIn(accessToken: string, proposalId: string): Promise<PersistenceResult> {
+    return authFetch(`/chat/date-proposal/checkin`, accessToken, { method: "POST", body: JSON.stringify({ proposalId }) });
+  },
+
+  /** A vote on a poll in the chat (can be changed). */
+  async votePoll(accessToken: string, conversationId: string, messageId: string, choice: number): Promise<PersistenceResult> {
+    return authFetch(`/chat/${conversationId}/messages/${encodeURIComponent(messageId)}/vote`, accessToken, {
+      method: "POST",
+      body: JSON.stringify({ choice }),
+    });
+  },
+
   async shareLiveLocation(
     accessToken: string,
     conversationId: string,

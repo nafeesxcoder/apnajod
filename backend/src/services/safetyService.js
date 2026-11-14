@@ -179,12 +179,18 @@ async function blockedList(userId) {
 
 /** Safety Center's numbers and switches, from the server (not this phone). */
 async function summary(userId) {
-  const [[reports], [blocked], [me]] = await Promise.all([
+  const [[reports], [blocked], [me], safeCheckIns] = await Promise.all([
     query("SELECT COUNT(*) AS n FROM reports WHERE reporter_id = ?", [userId]),
     query("SELECT COUNT(*) AS n FROM blocks WHERE blocker_id = ?", [userId]),
     query("SELECT hide_activity FROM users WHERE id = ?", [userId]),
+    require("./chatService").safeCheckInCount(userId).catch(() => 0),
   ]);
-  return { reports: Number(reports?.n || 0), blocked: Number(blocked?.n || 0), hideActivity: Number(me?.hide_activity) === 1 };
+  return {
+    reports: Number(reports?.n || 0),
+    blocked: Number(blocked?.n || 0),
+    hideActivity: Number(me?.hide_activity) === 1,
+    safeCheckIns,
+  };
 }
 
 async function setHideActivity(userId, hidden) {

@@ -58,6 +58,12 @@ function previewOf(conversation: ConversationSummary) {
       return 'Document';
     case 'location':
       return 'Location';
+    case 'poll':
+      return `📊 ${message.poll?.question ?? 'Poll'}`;
+    case 'contact':
+      return `👤 ${message.contact?.name ?? 'Contact'}`;
+    case 'date':
+      return `📅 ${message.date?.venue ?? 'Date plan'}`;
     default:
       return 'Message';
   }

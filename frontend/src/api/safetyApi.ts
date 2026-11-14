@@ -67,9 +67,9 @@ export const safetyApi = {
   },
 
   /** Safety Center's numbers and the activity-status switch, from the server. */
-  async summary(accessToken: string): Promise<{ reports: number; blocked: number; hideActivity: boolean } | null> {
+  async summary(accessToken: string): Promise<{ reports: number; blocked: number; hideActivity: boolean; safeCheckIns?: number } | null> {
     const result = await authFetch("/safety/summary", accessToken);
-    return result.saved ? (result.data as { reports: number; blocked: number; hideActivity: boolean }) : null;
+    return result.saved ? (result.data as { reports: number; blocked: number; hideActivity: boolean; safeCheckIns?: number }) : null;
   },
 
   /** Hide activity status: nobody sees when you are online or last active (and you do not see theirs). */

@@ -58,10 +58,16 @@ const postDateProposal = wrap(async (req) => {
 
 const putDatePlanStatus = wrap(async (req) => {
   const { proposalId, status } = req.body;
-  if (!['proposed', 'accepted', 'declined', 'cancelled'].includes(status))
+  if (!['accepted', 'declined', 'cancelled'].includes(status))
     throw new ApiError(400, 'Invalid status');
   return chatService.updateDatePlanStatus(req.user.id, proposalId, status);
 });
+
+const postDateCheckIn = wrap(async (req) => chatService.dateCheckIn(req.user.id, req.body?.proposalId));
+
+const postPollVote = wrap(async (req) =>
+  chatService.votePoll(req.params.conversationId, req.user.id, req.params.messageId, req.body?.choice),
+);
 
 const postLocation = wrap(async (req) => {
   const { location, clientActionId } = req.body;
@@ -163,6 +169,8 @@ module.exports = {
   postMessage,
   postDateProposal,
   putDatePlanStatus,
+  postDateCheckIn,
+  postPollVote,
   postLocation,
   getPresence,
   getStreak,

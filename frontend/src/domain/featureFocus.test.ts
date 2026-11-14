@@ -14,10 +14,9 @@ describe('feature focus',()=>{
 
   it('keeps the first attachment page focused on five high-frequency actions',()=>{
     const snapshot=buildFeatureFocusSnapshot();
-    // 'date_market' is gone with date planning; it sent people to a screen
-    // the launch build does not have.
-    // Games moved up from page two; documents moved down.
-    expect(chatPrimaryAttachments.map(item=>item.id)).toEqual(['camera','gallery','games','location','more']);
+    // Date planning is back as a plan made in the chat itself (no separate
+    // screen); location moved to page two. Games moved up; documents down.
+    expect(chatPrimaryAttachments.map(item=>item.id)).toEqual(['camera','gallery','games','date','more']);
     expect(snapshot.primaryAttachmentCount).toBe(featureSurfaceBudgets.chat_attachment_primary);
     expect(snapshot.primaryAttachmentOverflow).toBe(0);
     expect(snapshot.duplicatePrimaryAttachmentIds).toHaveLength(0);
