@@ -196,6 +196,7 @@ import { setPostTools, setProfileOpener, userIdFromToken } from "../features/pos
 import { loadChatsAndMatches } from "../features/social/chatTargets";
 import { postApi } from "../api/postApi";
 import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModal";
+import { StoryHost } from "../features/stories/StoryHost";
 // expo-contacts is native-only; loaded lazily inside onMatchContacts
 
 /* =========================================================
@@ -3895,6 +3896,8 @@ function MilaanApp() {
         {screen === "support" && (
           <SupportScreen onBack={() => setScreen("settings")} />
         )}
+        {/* Plays stories opened from anywhere: the row on Home or a ring round a photo. */}
+        {!!accessToken && onboardingComplete && <StoryHost accessToken={accessToken} />}
         {!!sharedPostId && accessToken && onboardingComplete && (
           <SharedPostModal
             postId={sharedPostId}

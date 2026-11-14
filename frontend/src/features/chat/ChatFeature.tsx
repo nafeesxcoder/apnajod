@@ -8,6 +8,8 @@
 } from "react";
 import { SharedPostBubble } from "../posts/SharedPostBubble";
 import { StoryReplyLabel } from "../stories/StoryReplyBar";
+import { StoryRing } from "../stories/StoryRing";
+import { useStoryStatus } from "../stories/storyStore";
 import { postIdFromText } from "../posts/profileLink";
 import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, PanResponder, Platform, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Pressable } from "../../components/Pressable";
@@ -977,6 +979,8 @@ export function ChatScreen({
   livePartnerTyping?: boolean;
   onTypingChange?: (typing: boolean) => void;
 }) {
+  // A story ring round their photo replaces its plain border.
+  const partnerStory = useStoryStatus(match.id);
   const { width: chatWidth, height: chatHeight } = useWindowDimensions();
   const { isDesktop: isDesktopChat } = useLayout();
   const keyboardInset = useKeyboardInset();
@@ -2429,6 +2433,7 @@ export function ChatScreen({
               disabled={!onOpenPartnerProfile}
               onPress={onOpenPartnerProfile}
             >
+              <StoryRing userId={match.id} size={42}>
               {match.photo ? (
                 <Image
                   accessible
@@ -2438,7 +2443,7 @@ export function ChatScreen({
                     width: 42,
                     height: 42,
                     borderRadius: 21,
-                    borderWidth: 2,
+                    borderWidth: partnerStory === "none" ? 2 : 0,
                     borderColor: palette.crimson,
                   }}
                 />
@@ -2460,6 +2465,7 @@ export function ChatScreen({
                   </Text>
                 </View>
               )}
+              </StoryRing>
             </Pressable>
 
             <Pressable

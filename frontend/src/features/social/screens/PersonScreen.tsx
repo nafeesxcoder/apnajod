@@ -18,6 +18,8 @@ import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { FamilyShareButton } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../../profile/components/PostsSection";
+import { StoryRing } from "../../stories/StoryRing";
+import { useStoryStatus } from "../../stories/storyStore";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -41,6 +43,7 @@ export function PersonScreen({
   onBlock?: (userId: string) => void;
 }) {
   const [page, setPage] = useState<PersonPage | null>(null);
+  const storyStatus = useStoryStatus(userId);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -124,6 +127,8 @@ export function PersonScreen({
   const { user, profile, state } = page;
   const likeStatus = page.like.status;
   const cover = profile.photos[0] || user.avatarUrl || "";
+  // With a story ring round the photo, its own crimson border would be a second ring.
+  const photoBorder = storyStatus === "none" ? 3 : 0;
   const extraPhotos = profile.photos.slice(1);
   const postCount = page.posts?.count ?? 0;
   const postsLocked = !!page.posts?.locked;
@@ -153,6 +158,8 @@ export function PersonScreen({
           }}
         >
           <View style={{ alignItems: "center", marginTop: 4 }}>
+            {/* A story up: the ring replaces the plain border, and tapping plays it. */}
+            <StoryRing userId={userId} size={132}>
             {cover ? (
               <Image
                 source={{ uri: cover }}
@@ -160,7 +167,7 @@ export function PersonScreen({
                   width: 132,
                   height: 132,
                   borderRadius: 66,
-                  borderWidth: 3,
+                  borderWidth: photoBorder,
                   borderColor: palette.crimson,
                   backgroundColor: palette.paperSand,
                 }}
@@ -173,7 +180,7 @@ export function PersonScreen({
                   width: 132,
                   height: 132,
                   borderRadius: 66,
-                  borderWidth: 3,
+                  borderWidth: photoBorder,
                   borderColor: palette.crimson,
                   backgroundColor: palette.paperSand,
                   justifyContent: "center",
@@ -191,6 +198,7 @@ export function PersonScreen({
                 </Text>
               </View>
             )}
+            </StoryRing>
           </View>
 
           <View

@@ -4,15 +4,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
-import { storyApi, type StoryPerson } from "../../api/storyApi";
+import type { StoryPerson } from "../../api/storyApi";
 import { brand } from "../../components/brand";
 import { fonts, palette } from "../../theme";
 import { Avatar } from "../posts/PostSheets";
 import { Sheet } from "../posts/PostSheets";
 import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
 import { WebCamera, needsWebCamera } from "./WebCamera";
-import { StoryViewer } from "./StoryViewer";
-import { liveStories, loadSeen } from "./storySeen";
+import { loadStories, openStoriesAt, useStories } from "./storyStore";
 
 const SIZE = 64;
 
@@ -33,27 +32,15 @@ export function StoriesTray({
   /** Bump to fetch again (pull to refresh). */
   reloadKey?: number;
 }) {
-  const [people, setPeople] = useState<StoryPerson[]>([]);
-  const [seen, setSeen] = useState<Set<string>>(new Set());
-  const [viewing, setViewing] = useState<number | null>(null);
+  // Who has a story up comes from the shared store (the rings on photos use it too).
+  const { people, seen } = useStories();
   const [picked, setPicked] = useState<PickedStoryPhoto | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [webcam, setWebcam] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const [tray, seenNow] = await Promise.all([storyApi.tray(accessToken), loadSeen()]);
-      setSeen(seenNow);
-      setPeople(
-        tray
-          .map((person) => ({ ...person, stories: liveStories(person.stories) }))
-          .filter((person) => person.stories.length > 0),
-      );
-    } catch {
-      // The tray just stays as it was; posts below still load.
-    }
+    if (accessToken) await loadStories(accessToken);
   }, [accessToken]);
 
   useEffect(() => {
@@ -111,7 +98,7 @@ export function StoriesTray({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={mine ? "Watch your story" : "Add to your story"}
-            onPress={() => (mine ? setViewing(people.indexOf(mine)) : setChoosing(true))}
+            onPress={() => (mine ? openStoriesAt(people.indexOf(mine)) : setChoosing(true))}
           >
             <Ring active={!!mine && unseen(mine)} grey={!!mine && !unseen(mine)}>
               {myPhoto ? (
@@ -154,7 +141,7 @@ export function StoriesTray({
             key={person.user.userId}
             accessibilityRole="button"
             accessibilityLabel={`${person.user.username}'s story${unseen(person) ? ", new" : ""}`}
-            onPress={() => setViewing(people.indexOf(person))}
+            onPress={() => openStoriesAt(people.indexOf(person))}
             style={{ width: SIZE + 8, alignItems: "center" }}
           >
             <Ring active={unseen(person)} grey={!unseen(person)}>
@@ -168,21 +155,6 @@ export function StoriesTray({
       </ScrollView>
       {!!error && <Text style={{ color: palette.crimson, fontFamily: fonts.body, fontSize: 12, marginTop: 4 }}>{error}</Text>}
 
-      <StoryViewer
-        people={people}
-        start={viewing}
-        seen={seen}
-        accessToken={accessToken}
-        onClose={() => setViewing(null)}
-        onSeen={(id) => setSeen((current) => (current.has(id) ? current : new Set(current).add(id)))}
-        onDeleted={(id) =>
-          setPeople((current) =>
-            current
-              .map((person) => ({ ...person, stories: person.stories.filter((story) => story.id !== id) }))
-              .filter((person) => person.stories.length > 0),
-          )
-        }
-      />
       <WebCamera
         visible={webcam}
         onClose={() => setWebcam(false)}

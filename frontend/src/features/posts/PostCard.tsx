@@ -6,6 +6,7 @@ import { postApi, type Post } from "../../api/postApi";
 import { useReducedMotion } from "../../components/motion";
 import { fonts, palette } from "../../theme";
 import { PostImage } from "../profile/components/PostImage";
+import { StoryRing } from "../stories/StoryRing";
 import { Avatar, CommentsSheet, LikersSheet, ReportSheet, ShareSheet, Sheet } from "./PostSheets";
 import { countLabel, timeAgo } from "./postFormat";
 import { canOpenProfile, openProfile } from "./profileLink";
@@ -132,7 +133,9 @@ export function PostCard({
             onPress={goProfile}
             style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minHeight: 44 }}
           >
-            <Avatar person={author} size={34} />
+            <StoryRing userId={author.userId} size={34}>
+              <Avatar person={author} size={34} />
+            </StoryRing>
             <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 14, color: palette.ink }}>
               {author.username}
             </Text>
