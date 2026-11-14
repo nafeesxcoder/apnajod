@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ConversationSummary } from '../../../api/chatApi';
+import { archivedCount, listOrder } from "../chatListOrder";
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
 import type { Screen } from '../../../app/navigation/types';
@@ -117,6 +118,8 @@ export function ChatsScreen({
   const [items, setItems] = useState<ConversationSummary[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  // Archived chats sit in their own folder at the top of the list.
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -208,7 +211,28 @@ export function ChatsScreen({
                 </Pressable>
               </View>
             ) : (
-              items.map((conversation, index) => (
+              <>
+              {/* Archived: tap to open the folder (or go back to your chats). */}
+              {(showArchived || archivedCount(items) > 0) && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={showArchived ? "Back to chats" : `Archived chats, ${archivedCount(items)}`}
+                  onPress={() => setShowArchived((v) => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10 }}
+                >
+                  <Ionicons name={showArchived ? 'arrow-back' : 'archive-outline'} size={20} color={colors.text} />
+                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.text }}>
+                    {showArchived ? 'Archived chats' : 'Archived'}
+                  </Text>
+                  {!showArchived && (
+                    <Text style={{ fontSize: 13, color: colors.muted }}>{archivedCount(items)}</Text>
+                  )}
+                </Pressable>
+              )}
+              {showArchived && archivedCount(items) === 0 && (
+                <Text style={[social.emptyText, { textAlign: 'center', marginTop: 12 }]}>No archived chats.</Text>
+              )}
+              {listOrder(items, showArchived).map((conversation, index) => (
                 <Reveal key={conversation.conversationId} delay={Math.min(index, 8) * 50}>
                 <PressScale
                   scaleTo={0.985}
@@ -258,6 +282,12 @@ export function ChatsScreen({
                               {conversation.streak.atRisk ? ' ⏳' : ''}
                             </Text>
                           )}
+                          {!!conversation.muted && (
+                            <Ionicons accessibilityLabel="Muted" name="notifications-off-outline" size={13} color={colors.muted} />
+                          )}
+                          {!!conversation.pinned && !showArchived && (
+                            <Ionicons accessibilityLabel="Pinned" name="pin" size={13} color={colors.muted} />
+                          )}
                           <Text style={social.rowTime}>
                             {shortAge(conversation.lastAt)}
                           </Text>
@@ -294,7 +324,8 @@ export function ChatsScreen({
                   </View>
                 </PressScale>
                 </Reveal>
-              ))
+              ))}
+              </>
             )}
           </ScrollView>
         )}

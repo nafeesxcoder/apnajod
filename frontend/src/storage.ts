@@ -88,6 +88,8 @@ export type CoupleChatSettings = {
   screenshotAlerts: boolean;
   conversationPinned: boolean;
   conversationArchived: boolean;
+  /** When it was archived: a message after this brings it back to the list. */
+  archivedAt?: number;
   notificationMode: 'all' | 'mentions' | 'muted';
   notificationSound: 'Apnajoda Chime' | 'Soft Rose' | 'Classic' | 'Silent';
   mutedUntil?: number;

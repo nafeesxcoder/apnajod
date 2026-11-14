@@ -426,10 +426,16 @@ async function notifyRecipient(conversationId, senderId, recipientId, message) {
     "SELECT settings FROM chat_conversation_settings WHERE conversation_id = ? AND user_id = ?",
     [conversationId, recipientId],
   );
+  let silent = false;
   if (settingsRows.length) {
     const settings = parseJsonColumn(settingsRows[0].settings, {});
-    if (settings.notificationMode === "muted") return;
-    if (settings.mutedUntil && Number(settings.mutedUntil) > Date.now()) return;
+    // Muted: forever, or until the time chosen (1 hour, 8 hours, a week).
+    // Once that time has passed, notifications come back on their own.
+    if (settings.notificationMode === "muted") {
+      const until = Number(settings.mutedUntil) || 0;
+      if (!until || until > Date.now()) return;
+    } else if (settings.mutedUntil && Number(settings.mutedUntil) > Date.now()) return;
+    silent = settings.notificationSound === "Silent";
   }
   const [profile] = await query(
     "SELECT first_name FROM profiles WHERE user_id = ?",
@@ -446,6 +452,7 @@ async function notifyRecipient(conversationId, senderId, recipientId, message) {
     title: senderName,
     body: preview,
     conversationId: addressFor([senderId, recipientId], recipientId),
+    ...(silent ? { silent: true } : {}),
   });
 }
 
@@ -585,6 +592,55 @@ async function saveSettings(peerId, userId, settings) {
   return { ok: true };
 }
 
+/** Screenshot notices already sent: one per chat every 30 seconds. */
+const screenshotSent = new Map();
+
+/**
+ * You took a screenshot of this chat (the phone app can tell). The other
+ * person sees "📸 Took a screenshot of this chat" from you - unless they
+ * turned Screenshot alerts off in their settings for this chat.
+ */
+async function screenshotNotice(peerId, userId) {
+  const conversationId = storageKey(userId, peerId);
+  await assertParticipant(peerId, userId);
+  const last = screenshotSent.get(`${conversationId}:${userId}`) || 0;
+  if (Date.now() - last < 30 * 1000) return { sent: false, reason: "recent" };
+  const [row] = await query(
+    "SELECT settings FROM chat_conversation_settings WHERE conversation_id = ? AND user_id = ?",
+    [conversationId, peerId],
+  );
+  const theirs = row ? parseJsonColumn(row.settings, {}) : {};
+  if (theirs.screenshotAlerts === false) return { sent: false, reason: "off" };
+  if (screenshotSent.size > 20000) screenshotSent.clear();
+  screenshotSent.set(`${conversationId}:${userId}`, Date.now());
+  await sendMessage(peerId, userId, {
+    id: crypto.randomUUID(),
+    type: "text",
+    text: "📸 Took a screenshot of this chat",
+    screenshotNotice: true,
+    createdAt: Date.now(),
+  });
+  return { sent: true };
+}
+
+/**
+ * How a chat sits in your list: pinned to the top, archived (until a new
+ * message arrives after you archived it), muted.
+ */
+function listFlags(settings, lastAt) {
+  const s = settings || {};
+  const archivedAt = Number(s.archivedAt) || 0;
+  const muted =
+    s.notificationMode === "muted"
+      ? !Number(s.mutedUntil) || Number(s.mutedUntil) > Date.now()
+      : false;
+  return {
+    pinned: !!s.conversationPinned,
+    archived: !!s.conversationArchived && (!archivedAt || lastAt <= archivedAt),
+    muted,
+  };
+}
+
 async function listConversations(userId, limit = 100) {
   const rows = await query(
     `SELECT m.conversation_id,
@@ -604,6 +660,13 @@ async function listConversations(userId, limit = 100) {
   // 🔥 for every chat in one go. Lazy-required: streakService needs the
   // db module only, but keeping it out of the top keeps load order simple.
   const streaks = await require("./streakService").forMember(userId);
+
+  // Your own settings for each chat: pinned, archived, muted.
+  const settingRows = await query(
+    "SELECT conversation_id, settings FROM chat_conversation_settings WHERE user_id = ?",
+    [userId],
+  );
+  const settingsFor = new Map(settingRows.map((s) => [s.conversation_id, parseJsonColumn(s.settings, {})]));
 
   const out = [];
   for (const row of rows) {
@@ -641,6 +704,7 @@ async function listConversations(userId, limit = 100) {
       lastAt: Number(row.last_at) || 0,
       unread: Number(row.unread) || 0,
       streak: streaks.get(row.conversation_id) ?? { count: 0, atRisk: false, show: false },
+      ...listFlags(settingsFor.get(row.conversation_id), Number(row.last_at) || 0),
     });
   }
   return out;
@@ -649,6 +713,8 @@ async function listConversations(userId, limit = 100) {
 module.exports = {
   storageKey,
   listConversations,
+  listFlags,
+  screenshotNotice,
   assertParticipant,
   assertParticipantByConversationId,
   listMessages,

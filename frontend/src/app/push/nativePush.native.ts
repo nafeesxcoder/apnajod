@@ -43,6 +43,14 @@ export function startNativePush(accessToken: string, targets: PushTargets): () =
           lightColor: "#B81C3C",
           sound: "default",
         });
+        // A chat set to Silent: shows like any other, without a sound.
+        await Notifications.setNotificationChannelAsync("quiet", {
+          name: "Quiet chats",
+          importance: Notifications.AndroidImportance.DEFAULT,
+          sound: null,
+          vibrationPattern: [0],
+          enableVibrate: false,
+        });
       }
       let { status } = await Notifications.getPermissionsAsync();
       if (status !== "granted") status = (await Notifications.requestPermissionsAsync()).status;

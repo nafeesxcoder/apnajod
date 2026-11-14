@@ -99,6 +99,10 @@ const postTyping = wrap(async (req) => {
   return chatService.setTyping(req.params.conversationId, req.user.id, !!req.body?.typing);
 });
 
+const postScreenshot = wrap(async (req) => {
+  return chatService.screenshotNotice(req.params.conversationId, req.user.id);
+});
+
 const getSettingsHandler = wrap(async (req) => {
   return chatService.getSettings(req.params.conversationId, req.user.id);
 });
@@ -163,6 +167,7 @@ module.exports = {
   getPresence,
   getStreak,
   postTyping,
+  postScreenshot,
   putEditMessage,
   deleteMessageHandler,
   putMessageState,

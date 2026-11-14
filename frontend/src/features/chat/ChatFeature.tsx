@@ -47,6 +47,7 @@ import {
 } from "../../api/gifApi";
 import { callSession, useCallSession } from "./callSession";
 import { callApi } from "../../api/callApi";
+import { screenshotDetection, watchScreenshots } from "./screenshotWatch";
 import {
   chatApi,
   fetchIcebreakers,
@@ -60,7 +61,6 @@ import type {
   CoupleChatSettings,
   DatePlanStatus,
 } from "../../storage";
-import { defaultCoupleChatSettings } from "../../storage";
 import { colors, fonts, palette, radius } from "../../theme";
 import { receiptColor, receiptIcon, receiptLabel } from "./receipt";
 import { APP_MAX_WIDTH, CHAT_LIST_WIDTH, RAIL_WIDTH } from "../../layout/breakpoints";
@@ -711,87 +711,21 @@ const coupleGames: CoupleGame[] = [
     ],
   },
 ];
+/**
+ * Chat themes: your own bubbles, the send button and the chat's background
+ * take the theme's colour. Every colour is dark enough for white text.
+ */
 const coupleThemes = [
-  {
-    name: "Ruby Velvet",
-    accent: "#1F5286",
-    soft: "rgba(31,82,134,.12)",
-    panel: "#0F1011",
-    bg: "#0D0E0F",
-    border: "#15395E",
-  },
-  {
-    name: "Champagne Night",
-    accent: "#AA2A44",
-    soft: "rgba(170,42,68,.13)",
-    panel: "#450E19",
-    bg: "#121315",
-    border: "#681929",
-  },
-  {
-    name: "Royal Plum",
-    accent: "#7F848B",
-    soft: "rgba(127,132,139,.13)",
-    panel: "#0F1113",
-    bg: "#0D0E0F",
-    border: "#17406A",
-  },
-  {
-    name: "Moonlit Noir",
-    accent: "#D8DBDE",
-    soft: "rgba(216,219,222,.12)",
-    panel: "#0F1011",
-    bg: "#0E0F10",
-    border: "#123354",
-  },
-  {
-    name: "Rose Gold",
-    accent: "#BCCBD9",
-    soft: "rgba(188,203,217,.13)",
-    panel: "#0F1113",
-    bg: "#0D0E0F",
-    border: "#153B61",
-  },
-  {
-    name: "Emerald Promise",
-    accent: "#468B74",
-    soft: "rgba(70,139,116,.12)",
-    panel: "#101214",
-    bg: "#0F1011",
-    border: "#173A2E",
-  },
-  {
-    name: "Desert Chai",
-    accent: "#BB2F4B",
-    soft: "rgba(187,47,75,.13)",
-    panel: "#450F1A",
-    bg: "#121416",
-    border: "#681929",
-  },
-  {
-    name: "Bollywood Glow",
-    accent: "#578BBF",
-    soft: "rgba(87,139,191,.13)",
-    panel: "#0F1011",
-    bg: "#0D0E0F",
-    border: "#163D65",
-  },
-  {
-    name: "Ocean Drive",
-    accent: "#5E8FC0",
-    soft: "rgba(94,143,192,.12)",
-    panel: "#0F1011",
-    bg: "#0E0F10",
-    border: "#14395E",
-  },
-  {
-    name: "Ivory Calm",
-    accent: "#E0E2E5",
-    soft: "rgba(224,226,229,.10)",
-    panel: "#470F1A",
-    bg: "#121416",
-    border: "#761D2F",
-  },
+  { name: "Ruby Velvet", accent: "#1F4D7A", soft: "rgba(31,77,122,0.12)", wash: "rgba(31,77,122,0.05)", panel: "#0F1011", border: "rgba(31,77,122,0.35)" },
+  { name: "Champagne Night", accent: "#A3293C", soft: "rgba(163,41,60,0.12)", wash: "rgba(163,41,60,0.05)", panel: "#0F1011", border: "rgba(163,41,60,0.35)" },
+  { name: "Royal Plum", accent: "#6B3FA0", soft: "rgba(107,63,160,0.12)", wash: "rgba(107,63,160,0.05)", panel: "#0F1011", border: "rgba(107,63,160,0.35)" },
+  { name: "Moonlit Noir", accent: "#23262B", soft: "rgba(35,38,43,0.12)", wash: "rgba(35,38,43,0.05)", panel: "#0F1011", border: "rgba(35,38,43,0.35)" },
+  { name: "Rose Gold", accent: "#B0606D", soft: "rgba(176,96,109,0.12)", wash: "rgba(176,96,109,0.05)", panel: "#0F1011", border: "rgba(176,96,109,0.35)" },
+  { name: "Emerald Promise", accent: "#2E7D5B", soft: "rgba(46,125,91,0.12)", wash: "rgba(46,125,91,0.05)", panel: "#0F1011", border: "rgba(46,125,91,0.35)" },
+  { name: "Desert Chai", accent: "#9A5230", soft: "rgba(154,82,48,0.12)", wash: "rgba(154,82,48,0.05)", panel: "#0F1011", border: "rgba(154,82,48,0.35)" },
+  { name: "Bollywood Glow", accent: "#D9480F", soft: "rgba(217,72,15,0.12)", wash: "rgba(217,72,15,0.05)", panel: "#0F1011", border: "rgba(217,72,15,0.35)" },
+  { name: "Ocean Drive", accent: "#1C6FB8", soft: "rgba(28,111,184,0.12)", wash: "rgba(28,111,184,0.05)", panel: "#0F1011", border: "rgba(28,111,184,0.35)" },
+  { name: "Ivory Calm", accent: "#5C6670", soft: "rgba(92,102,112,0.12)", wash: "rgba(92,102,112,0.05)", panel: "#0F1011", border: "rgba(92,102,112,0.35)" },
 ];
 
 // Cancel handlers for media that is still uploading, keyed by the local
@@ -906,7 +840,8 @@ export function ChatScreen({
   match,
   messages,
   settings,
-  conversationSettings,
+  // The old in-chat inbox used these; pinned and archived chats now live in the Chats list.
+  conversationSettings: _conversationSettings,
   initialDraft,
   onDraftConsumed,
   onSettingsChange,
@@ -917,7 +852,7 @@ export function ChatScreen({
   onDelete,
   onMessageState,
   onForward,
-  onOpenConversation,
+  onOpenConversation: _onOpenConversation,
   onReport,
   onBlock,
   isBlocked,
@@ -1155,7 +1090,6 @@ export function ChatScreen({
   const [editTarget, setEditTarget] = useState<ChatMessage | null>(null);
   const [forwardMessages, setForwardMessages] = useState<ChatMessage[]>([]);
   const [pinnedOpen, setPinnedOpen] = useState(false);
-  const [inboxOpen, setInboxOpen] = useState(false);
   const [messageActionNotice, setMessageActionNotice] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [partnerOnline, setPartnerOnline] = useState(false);
@@ -1375,6 +1309,18 @@ export function ChatScreen({
     if (initialTool === "games") setGamesOpen(true);
     if (initialTool) onToolConsumed();
   }, [initialTool, onToolConsumed]);
+  // Screenshot alerts (phone app): a screenshot taken while this chat is open
+  // tells the other person, unless they turned the alerts off.
+  useEffect(() => {
+    if (!accessToken || isChatPreview || !match.id) return;
+    const conversationId = conversationIdFor(match);
+    return watchScreenshots(() => {
+      void chatApi.screenshot(accessToken, conversationId).catch(() => undefined);
+    });
+    // The person you are chatting with is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, isChatPreview, match.id]);
+
   // A game picked on the Games tab starts once, the moment the chat opens.
   const startedGameRef = useRef<GameKind | null>(null);
   useEffect(() => {
@@ -2849,6 +2795,8 @@ export function ChatScreen({
               followingBottomUntil.current = Date.now() + 800;
               messagesRef.current?.scrollToEnd({ animated: true });
             }}
+            // A light wash of the chat theme's colour behind the messages.
+            style={{ backgroundColor: activeTheme.wash }}
             contentContainerStyle={[
               styles.messages,
               chatPremiumStyles.messages,
@@ -3381,7 +3329,8 @@ export function ChatScreen({
                     width: 44,
                     height: 44,
                     borderRadius: 22,
-                    backgroundColor: palette.navy,
+                    // The chat theme's colour, like your own bubbles.
+                    backgroundColor: activeTheme.accent,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -3546,16 +3495,6 @@ export function ChatScreen({
             }}
             onUnpin={(messageId) => void togglePin(messageId)}
           />
-          <ConversationInboxSheet
-            visible={inboxOpen}
-            current={match}
-            settings={conversationSettings}
-            onClose={() => setInboxOpen(false)}
-            onOpen={(target) => {
-              setInboxOpen(false);
-              onOpenConversation(target);
-            }}
-          />
           <GifPicker
             visible={gifOpen}
             onClose={() => setGifOpen(false)}
@@ -3630,10 +3569,6 @@ export function ChatScreen({
             retentionLabel={retentionShort}
             screenshotAlerts={settings.screenshotAlerts}
             onClose={() => setOptionsOpen(false)}
-            onInbox={() => {
-              setOptionsOpen(false);
-              setInboxOpen(true);
-            }}
             onSearch={() => {
               setOptionsOpen(false);
               setSearchOpen(true);
@@ -3703,7 +3638,7 @@ const MEDIA_BUBBLE_WIDTH = 260;
 function ChatBubble({
   message,
   status,
-  accent: _accent,
+  accent,
   reaction,
   starred,
   pinned,
@@ -3853,7 +3788,7 @@ function ChatBubble({
       alignSelf: mine ? ("flex-end" as const) : ("flex-start" as const),
     },
     mine
-      ? { backgroundColor: palette.navy, borderBottomRightRadius: 4 }
+      ? { backgroundColor: accent || palette.navy, borderBottomRightRadius: 4 }
       : {
           backgroundColor: palette.paper,
           borderWidth: 1,
@@ -5602,7 +5537,6 @@ function ChatOptionsSheet({
   retentionLabel,
   screenshotAlerts,
   onClose,
-  onInbox,
   onSearch,
   onSettings,
   onSafety,
@@ -5612,7 +5546,6 @@ function ChatOptionsSheet({
   retentionLabel: string;
   screenshotAlerts: boolean;
   onClose: () => void;
-  onInbox: () => void;
   onSearch: () => void;
   onSettings: () => void;
   onSafety: () => void;
@@ -5644,16 +5577,18 @@ function ChatOptionsSheet({
       icon: "color-palette-outline" as const,
       onPress: onSettings,
     },
-    {
-      label: "Conversation inbox",
-      icon: "file-tray-full-outline" as const,
-      onPress: onInbox,
-    },
-    {
-      label: `Screenshot alerts · ${screenshotAlerts ? "On" : "Off"}`,
-      icon: "scan-outline" as const,
-      onPress: onSettings,
-    },
+    // "Conversation inbox" is gone: it listed sample profiles, not your
+    // chats. Pinned and archived chats now live in the Chats list itself.
+    // Only the phone app can tell when a screenshot is taken.
+    ...(screenshotDetection
+      ? [
+          {
+            label: `Screenshot alerts · ${screenshotAlerts ? "On" : "Off"}`,
+            icon: "scan-outline" as const,
+            onPress: onSettings,
+          },
+        ]
+      : []),
     {
       label: "Report or block",
       icon: "shield-checkmark-outline" as const,
@@ -7567,205 +7502,6 @@ function PinnedMessagesSheet({
   );
 }
 
-function ConversationInboxSheet({
-  visible,
-  current,
-  settings,
-  onClose,
-  onOpen,
-}: {
-  visible: boolean;
-  current: Match;
-  settings: Record<string, CoupleChatSettings>;
-  onClose: () => void;
-  onOpen: (target: Match) => void;
-}) {
-  const [tab, setTab] = useState<"active" | "pinned" | "archived">("active");
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    if (visible) {
-      setTab("active");
-      setQuery("");
-    }
-  }, [visible]);
-  const all = [current, ...matches.filter((item) => item.id !== current.id)];
-  const normalized = query.trim().toLowerCase();
-  const filtered = all
-    .filter((person) => {
-      const preference = {
-        ...defaultCoupleChatSettings,
-        ...settings[person.id],
-      };
-      const belongs =
-        tab === "archived"
-          ? preference.conversationArchived
-          : tab === "pinned"
-            ? preference.conversationPinned && !preference.conversationArchived
-            : !preference.conversationArchived;
-      return (
-        belongs &&
-        (!normalized ||
-          `${preference.nickname} ${person.name} ${person.city} ${person.profession}`
-            .toLowerCase()
-            .includes(normalized))
-      );
-    })
-    .sort(
-      (a, b) =>
-        Number(!!settings[b.id]?.conversationPinned) -
-        Number(!!settings[a.id]?.conversationPinned),
-    );
-  const counts = {
-    active: all.filter((person) => !settings[person.id]?.conversationArchived)
-      .length,
-    pinned: all.filter(
-      (person) =>
-        settings[person.id]?.conversationPinned &&
-        !settings[person.id]?.conversationArchived,
-    ).length,
-    archived: all.filter((person) => settings[person.id]?.conversationArchived)
-      .length,
-  };
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <Pressable style={chatStyles.modalBackdrop} onPress={onClose} />
-      <SafeAreaView style={[chatStyles.sheet, { maxHeight: "90%" }]}>
-        <SheetHeader
-          title="Conversation inbox"
-          subtitle="Pinned chats stay first; archived chats remain private and searchable"
-          onClose={onClose}
-        />
-        <View accessibilityRole="tablist" style={chatStyles.inboxTabs}>
-          {(["active", "pinned", "archived"] as const).map((item) => (
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: tab === item }}
-              key={item}
-              onPress={() => setTab(item)}
-              style={[
-                chatStyles.inboxTab,
-                tab === item && chatStyles.inboxTabOn,
-              ]}
-            >
-              <Text
-                style={[
-                  chatStyles.inboxTabText,
-                  tab === item && chatStyles.inboxTabTextOn,
-                ]}
-              >
-                {item[0]?.toUpperCase()}
-                {item.slice(1)} · {counts[item]}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={chatStyles.gifSearchWrap}>
-          <Ionicons name="search-outline" size={17} color="#1F5286" />
-          <TextInput
-            accessibilityLabel={`Search ${tab} conversations`}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={`Search ${tab}`}
-            placeholderTextColor="#585C61"
-            style={chatStyles.gifSearchInput}
-          />
-        </View>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={chatStyles.forwardList}
-        >
-          {filtered.map((person) => {
-            const preference = {
-              ...defaultCoupleChatSettings,
-              ...settings[person.id],
-            };
-            return (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Open conversation with ${preference.nickname || person.name}`}
-                key={person.id}
-                onPress={() => onOpen(person)}
-                style={[
-                  chatStyles.forwardPerson,
-                  person.id === current.id && chatStyles.currentConversation,
-                ]}
-              >
-                {person.photo ? (
-                  <Image
-                    source={{ uri: person.photo }}
-                    style={chatStyles.forwardAvatar}
-                  />
-                ) : (
-                  <View
-                    style={[chatStyles.forwardAvatar, chatStyles.initialAvatar]}
-                  >
-                    <Text style={chatStyles.initialAvatarText}>
-                      {person.name[0]}
-                    </Text>
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <View style={shared.row}>
-                    <Text numberOfLines={1} style={chatStyles.forwardName}>
-                      {preference.nickname || person.name}
-                    </Text>
-                    {preference.conversationPinned && (
-                      <Ionicons name="pin" size={12} color="#791E30" />
-                    )}
-                    {preference.notificationMode === "muted" && (
-                      <Ionicons
-                        name="notifications-off"
-                        size={12}
-                        color="#225991"
-                      />
-                    )}
-                  </View>
-                  <Text style={chatStyles.forwardMeta}>
-                    {person.city} ·{" "}
-                    {person.id === current.id
-                      ? "Open now"
-                      : "Verified conversation"}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={17} color="#4A82BA" />
-              </Pressable>
-            );
-          })}
-          {!filtered.length && (
-            <View style={chatStyles.inboxEmpty}>
-              <MiniPremiumIcon
-                name={
-                  tab === "archived"
-                    ? "archive-outline"
-                    : "chatbubble-ellipses-outline"
-                }
-                tone="rose"
-                size={40}
-                iconSize={18}
-              />
-              <Text style={chatStyles.inboxEmptyTitle}>
-                No {tab} conversations
-              </Text>
-              <Text style={chatStyles.inboxEmptyBody}>
-                {query
-                  ? "Try another name or city."
-                  : tab === "archived"
-                    ? "Archived conversations will appear here without losing messages."
-                    : "Use Chat settings to pin or organize a conversation."}
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
 function GameSheet({
   visible,
   onClose,
@@ -8132,7 +7868,12 @@ function CoupleSettingsSheet({
     key: "conversationPinned" | "conversationArchived",
   ) => {
     const next = !settings[key];
-    onChange({ ...settings, [key]: next });
+    onChange({
+      ...settings,
+      [key]: next,
+      // Archived now: a new message after this moment brings it back.
+      ...(key === "conversationArchived" ? { archivedAt: next ? Date.now() : undefined } : {}),
+    });
     setStatus(
       key === "conversationPinned"
         ? next
@@ -8236,10 +7977,11 @@ function CoupleSettingsSheet({
                 value={nickname}
                 onChangeText={setNickname}
                 placeholder={`Nickname for ${match.name}`}
+                accessibilityLabel={`Nickname for ${match.name}`}
                 placeholderTextColor="#1F5286"
                 style={coupleStyles.nicknameInput}
               />
-              <Pressable onPress={saveNickname} style={coupleStyles.saveButton}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Save nickname" onPress={saveNickname} style={coupleStyles.saveButton}>
                 <Text style={coupleStyles.saveText}>Save</Text>
               </Pressable>
             </View>
@@ -8379,49 +8121,37 @@ function CoupleSettingsSheet({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 7 }}
             >
+              {/* A phone cannot give each chat its own ringtone: the
+                  notification either makes the phone's sound or comes in quietly. */}
               {(
-                ["Apnajoda Chime", "Soft Rose", "Classic", "Silent"] as const
-              ).map((sound) => (
-                <Pressable
-                  accessibilityRole="radio"
-                  accessibilityState={{
-                    checked: settings.notificationSound === sound,
-                  }}
-                  key={sound}
-                  onPress={() => {
-                    onChange({ ...settings, notificationSound: sound });
-                    setStatus(`${sound} selected for this chat.`);
-                  }}
-                  style={[
-                    chatStyles.soundChoice,
-                    settings.notificationSound === sound &&
-                      chatStyles.soundChoiceOn,
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      sound === "Silent"
-                        ? "volume-mute-outline"
-                        : "musical-note-outline"
-                    }
-                    size={14}
-                    color={
-                      settings.notificationSound === sound
-                        ? "#FFFFFF"
-                        : "#1B4A79"
-                    }
-                  />
-                  <Text
-                    style={[
-                      chatStyles.soundChoiceText,
-                      settings.notificationSound === sound &&
-                        chatStyles.soundChoiceTextOn,
-                    ]}
+                [
+                  ["on", "Sound on", "volume-high-outline"],
+                  ["off", "Silent", "volume-mute-outline"],
+                ] as const
+              ).map(([key, label, icon]) => {
+                const silent = settings.notificationSound === "Silent";
+                const on = key === "off" ? silent : !silent;
+                return (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: on }}
+                    accessibilityLabel={`Notification sound: ${label}`}
+                    key={key}
+                    onPress={() => {
+                      onChange({ ...settings, notificationSound: key === "off" ? "Silent" : "Apnajoda Chime" });
+                      setStatus(
+                        key === "off"
+                          ? "Notifications from this chat come in without a sound."
+                          : "Notifications from this chat use your phone's sound.",
+                      );
+                    }}
+                    style={[chatStyles.soundChoice, on && chatStyles.soundChoiceOn]}
                   >
-                    {sound}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Ionicons name={icon} size={14} color={on ? "#FFFFFF" : "#1B4A79"} />
+                    <Text style={[chatStyles.soundChoiceText, on && chatStyles.soundChoiceTextOn]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
           <View style={coupleStyles.section}>
@@ -8498,6 +8228,8 @@ function CoupleSettingsSheet({
               </View>
             </Pressable>
           </View>
+          {/* Only the phone app can tell when a screenshot is taken. */}
+          {screenshotDetection && (
           <View style={coupleStyles.section}>
             <Text style={styles.sectionLabel}>SCREENSHOT ALERTS</Text>
             <Pressable
@@ -8514,11 +8246,11 @@ function CoupleSettingsSheet({
               />
               <View style={{ flex: 1 }}>
                 <Text style={coupleStyles.privacyTitle}>
-                  Notify both people
+                  Tell me when they take a screenshot
                 </Text>
                 <Text style={coupleStyles.privacyBody}>
-                  When a supported native device reports a capture, Apnajoda
-                  records the event and alerts the other person.
+                  If {match.name} takes a screenshot of this chat in the
+                  Apnajoda app, you see "📸 Took a screenshot of this chat".
                 </Text>
               </View>
               <View
@@ -8549,6 +8281,7 @@ function CoupleSettingsSheet({
               </Text>
             </View>
           </View>
+          )}
           <View style={coupleStyles.section}>
             <View style={shared.row}>
               <Text style={styles.sectionLabel}>COUPLE THEME</Text>
@@ -8568,6 +8301,9 @@ function CoupleSettingsSheet({
               {coupleThemes.map((theme) => (
                 <Pressable
                   key={theme.name}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Theme ${theme.name}`}
+                  accessibilityState={{ checked: settings.theme === theme.name }}
                   onPress={() => chooseTheme(theme)}
                   style={[
                     coupleStyles.themeCard,

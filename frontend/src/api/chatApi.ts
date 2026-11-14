@@ -39,6 +39,12 @@ export type ConversationSummary = {
   unread: number;
   /** Days in a row both people wrote. Shown from 2 days. */
   streak?: ChatStreak;
+  /** From your chat settings: pinned to the top. */
+  pinned?: boolean;
+  /** In Archived until a new message arrives. */
+  archived?: boolean;
+  /** Notifications off for now. */
+  muted?: boolean;
 };
 
 /** 🔥 - `atRisk` means it is alive from yesterday but neither has finished today. */
@@ -184,6 +190,11 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify({ typing }),
     });
+  },
+
+  /** You took a screenshot of this chat: the other person is told (if their alerts are on). */
+  async screenshot(accessToken: string, conversationId: string): Promise<void> {
+    await authFetch(`/chat/${conversationId}/screenshot`, accessToken, { method: "POST" });
   },
 
   async getSettings(

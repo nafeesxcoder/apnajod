@@ -20,6 +20,8 @@ self.addEventListener("push", (event) => {
           ? `post-${data.postId}`
           : undefined,
       renotify: !!(data.conversationId || data.postId),
+      // A chat set to Silent comes in without a sound.
+      silent: !!data.silent,
     }),
   );
 });

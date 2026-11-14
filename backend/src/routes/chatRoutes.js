@@ -34,6 +34,7 @@ router.post('/:conversationId/location', chatController.postLocation);
 router.get('/:conversationId/presence', chatController.getPresence);
 router.get('/:conversationId/streak', chatController.getStreak);
 router.post('/:conversationId/typing', chatController.postTyping);
+router.post('/:conversationId/screenshot', chatController.postScreenshot);
 router.put('/:conversationId/messages/:messageId', chatController.putEditMessage);
 router.delete('/:conversationId/messages/:messageId', chatController.deleteMessageHandler);
 router.put('/:conversationId/messages/:messageId/state', chatController.putMessageState);

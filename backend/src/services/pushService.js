@@ -81,9 +81,10 @@ function expoMessages(tokens, payload) {
     title: title || "Apnajoda",
     body: body || "",
     data: extra,
-    sound: "default",
+    // A chat set to Silent: no sound, on Android's quiet channel.
+    sound: extra.silent ? null : "default",
     priority: "high",
-    channelId: "default",
+    channelId: extra.silent ? "quiet" : "default",
   }));
 }
 
