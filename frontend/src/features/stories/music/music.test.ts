@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("react-native", () => ({ Platform: { OS: "web" } }));
 
 import { clampStart, clipLengths, nudgeStart, storySeconds } from "./clip";
-import { EMPTY_STATE, musicLabel, removeItem, setMusic } from "../editor/model";
+import { EMPTY_STATE, liveStickers, musicLabel, removeItem, setMusic } from "../editor/model";
+import { clipLines, lineAt, nextMusicLook } from "./lyrics";
 
 const read = (path: string) => readFileSync(join(__dirname, path), "utf8").replace(/\r\n/g, "\n");
 const song = { trackId: "t1", title: "Monsoon Evening", artist: "Lofi Desi", url: "https://x/a.mp3", start: 12, length: 15 };
@@ -49,7 +50,9 @@ describe("story music", () => {
   it("puts a song sticker on the story and takes the song off with it", () => {
     const withSong = setMusic(EMPTY_STATE, song, "m1");
     expect(withSong.music).toEqual(song);
-    expect(withSong.items[0]).toMatchObject({ kind: "music", value: "♫ Monsoon Evening · Lofi Desi" });
+    // The sticker starts as a card, and is live (not drawn into the photo).
+    expect(withSong.items[0]).toMatchObject({ kind: "music", style: "card" });
+    expect(liveStickers(withSong).map((item) => item.kind)).toEqual(["music"]);
     const changed = setMusic(withSong, { ...song, title: "Other" }, "m2");
     expect(changed.items).toHaveLength(1);
     expect(removeItem(withSong, "m1").music).toBeNull();
@@ -68,5 +71,51 @@ describe("story music", () => {
     expect(viewer).toContain('accessibilityLabel={muted ? "Sound on" : "Sound off"}');
     expect(viewer).toContain("if (paused) clip.current.pause();");
     expect(viewer).toContain("duration: storySeconds(story) * 1000");
+  });
+});
+
+// Made-up lines for the tests (the admin adds a song's real words).
+const LINES = [
+  { at: 1.5, text: "Test line one" },
+  { at: 5, text: "Test line two" },
+  { at: 9.25, text: "Test line three" },
+  { at: 14, text: "" },
+  { at: 62.5, text: "Test line four" },
+];
+
+describe("song sticker, like Instagram", () => {
+  it("keeps the lines of the clip, from the one already playing", () => {
+    expect(clipLines(LINES, 6, 10).map((l) => l.at)).toEqual([5, 9.25, 14]);
+    expect(clipLines(LINES, 0, 5).map((l) => l.at)).toEqual([1.5]);
+    expect(clipLines(undefined, 0, 15)).toEqual([]);
+  });
+
+  it("knows which line is playing", () => {
+    expect(lineAt(LINES, 0.5)).toBe(-1);
+    expect(lineAt(LINES, 1.5)).toBe(0);
+    expect(lineAt(LINES, 7)).toBe(1);
+    expect(lineAt(LINES, 14.2)).toBe(3);
+    expect(lineAt(LINES, 99)).toBe(4);
+  });
+
+  it("taps through card, pill and three lyric looks (lyrics only when there are words)", () => {
+    let look: { style: "card" | "pill" | "lyrics"; lyricFont?: "classic" | "box" | "glow" } = { style: "card" };
+    const seen: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      look = nextMusicLook(look, true);
+      seen.push(look.style === "lyrics" ? `lyrics:${look.lyricFont}` : look.style);
+    }
+    expect(seen).toEqual(["pill", "lyrics:classic", "lyrics:box", "lyrics:glow", "card"]);
+    expect(nextMusicLook({ style: "pill" }, false)).toEqual({ style: "card" });
+  });
+
+  it("shows the sticker live on the story and lets the admin add a cover and words", () => {
+    const viewer = read("../StoryViewer.tsx");
+    expect(viewer).toContain("setSongTime(music.start + done.current * storySeconds(story))");
+    expect(viewer).toContain("lyrics: story.music.lyrics");
+    expect(read("../editor/StoryEditor.tsx")).toContain("nextMusicLook(tapped, !!stickerMusic?.lyrics.length)");
+    const admin = read("../../admin/screens/MusicTab.tsx");
+    expect(admin).toContain("adminApi.musicLyrics(accessToken, track.id, lyricsDraft)");
+    expect(admin).toContain("adminApi.musicCover(accessToken, track.id, blob, asset.name)");
   });
 });

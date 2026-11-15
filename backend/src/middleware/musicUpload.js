@@ -36,4 +36,20 @@ const musicUpload = multer({
   limits: { fileSize: MAX_MUSIC_BYTES },
 });
 
-module.exports = { musicUpload, MUSIC_DIR, MAX_MUSIC_BYTES, MUSIC_TYPES };
+/** A song's cover picture (square, shown on the music sticker). */
+const COVER_TYPES = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+const MAX_COVER_BYTES = 3 * 1024 * 1024;
+
+const coverUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, MUSIC_DIR),
+    filename: (req, file, cb) => cb(null, `cover-${crypto.randomUUID()}${extensionFor(file.mimetype, COVER_TYPES)}`),
+  }),
+  fileFilter: (req, file, cb) => {
+    if (extensionFor(file.mimetype, COVER_TYPES)) cb(null, true);
+    else cb(new ApiError(400, 'Only JPG, PNG or WebP pictures can be a cover'));
+  },
+  limits: { fileSize: MAX_COVER_BYTES },
+});
+
+module.exports = { musicUpload, coverUpload, MUSIC_DIR, MAX_MUSIC_BYTES, MUSIC_TYPES, COVER_TYPES };

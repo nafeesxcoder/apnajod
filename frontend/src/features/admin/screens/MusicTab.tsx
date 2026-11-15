@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Platform, Pressable, Text, TextInput, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -36,6 +36,9 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The song whose words are open for editing, and the text in the box.
+  const [lyricsFor, setLyricsFor] = useState<string | null>(null);
+  const [lyricsDraft, setLyricsDraft] = useState("");
   const player = useRef<ClipPlayer | null>(null);
 
   const load = useCallback(async () => {
@@ -121,6 +124,53 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
       setTracks((list) => list.map((t) => (t.id === track.id ? { ...t, durationSec: seconds } : t)));
     } catch (e: any) {
       setError(e?.message || "Could not fix the length");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  /** The words as the box shows them: "[mm:ss.xx] line" each. */
+  const lyricsText = (track: MusicTrack) =>
+    (track.lyrics ?? [])
+      .map((line) => {
+        const m = Math.floor(line.at / 60);
+        return `[${String(m).padStart(2, "0")}:${(line.at - m * 60).toFixed(2).padStart(5, "0")}] ${line.text}`;
+      })
+      .join("\n");
+
+  const openLyrics = (track: MusicTrack) => {
+    if (lyricsFor === track.id) return setLyricsFor(null);
+    setLyricsFor(track.id);
+    setLyricsDraft(lyricsText(track));
+  };
+
+  const saveLyrics = async (track: MusicTrack) => {
+    setBusyId(track.id);
+    setError("");
+    try {
+      const res: any = await adminApi.musicLyrics(accessToken, track.id, lyricsDraft);
+      setTracks((list) => list.map((t) => (t.id === track.id ? { ...t, lyrics: res?.lyrics ?? [] } : t)));
+      setLyricsFor(null);
+    } catch (e: any) {
+      setError(e?.message || "Could not save the words");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const chooseCover = async (track: MusicTrack) => {
+    setError("");
+    const result = await DocumentPicker.getDocumentAsync({ type: ["image/jpeg", "image/png", "image/webp"], copyToCacheDirectory: true });
+    const asset = result.canceled ? null : result.assets[0];
+    if (!asset) return;
+    if (asset.size && asset.size > 3 * 1024 * 1024) return setError("That picture is too big (3 MB at most).");
+    setBusyId(track.id);
+    try {
+      const blob: Blob = (asset as { file?: Blob }).file ?? (await fetch(asset.uri).then((r) => r.blob()));
+      const res = await adminApi.musicCover(accessToken, track.id, blob, asset.name);
+      setTracks((list) => list.map((t) => (t.id === track.id ? { ...t, coverUrl: res.coverUrl } : t)));
+    } catch (e: any) {
+      setError(e?.message || "Could not save the cover");
     } finally {
       setBusyId(null);
     }
@@ -212,7 +262,16 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
             {tracks.length} song{tracks.length === 1 ? "" : "s"} in the library
           </Text>
           {tracks.map((track) => (
-            <View key={track.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.border }}>
+            <View key={track.id} style={{ borderTopWidth: 1, borderTopColor: C.border }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 10, flexWrap: "wrap" }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={track.coverUrl ? `Change the cover of ${track.title}` : `Add a cover to ${track.title}`}
+                onPress={() => void chooseCover(track)}
+                style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden", backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.border }}
+              >
+                {track.coverUrl ? <Image source={{ uri: track.coverUrl }} style={{ width: 44, height: 44 }} /> : <Ionicons name="image-outline" size={18} color={C.muted} />}
+              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={playingId === track.id ? `Stop ${track.title}` : `Play ${track.title}`}
@@ -228,7 +287,30 @@ export function MusicTab({ accessToken }: { accessToken: string }) {
                 </Text>
               </View>
               {!track.durationSec && button("Fix length", () => void fixLength(track), "plain", busyId === track.id)}
+              {button(track.lyrics?.length ? `Lyrics ✓ (${track.lyrics.length})` : "Add lyrics", () => openLyrics(track), "plain", false, "text-outline")}
               {button(confirmId === track.id ? "Confirm remove" : "Remove", () => void remove(track), confirmId === track.id ? "danger" : "plain", busyId === track.id)}
+            </View>
+            {lyricsFor === track.id && (
+              <View style={{ paddingHorizontal: 14, paddingBottom: 14, gap: 8 }}>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: C.muted, lineHeight: 18 }}>
+                  One line each, with the time it starts: [minutes:seconds] then the words, e.g. [00:12.5] for 12.5 seconds in. A time with no
+                  words is a gap. These show on the song's lyrics sticker as it plays. Only add words you have the rights to use.
+                </Text>
+                <TextInput
+                  accessibilityLabel={`Lyrics of ${track.title}`}
+                  value={lyricsDraft}
+                  onChangeText={setLyricsDraft}
+                  multiline
+                  placeholder={"[00:05] First line\n[00:09.5] Second line\n[00:15]"}
+                  placeholderTextColor={C.muted}
+                  style={[input, { minHeight: 160, textAlignVertical: "top", fontFamily: Platform.OS === "web" ? "monospace" : fonts.body }]}
+                />
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {button("Save lyrics", () => void saveLyrics(track), "navy", busyId === track.id, "checkmark")}
+                  {button("Cancel", () => setLyricsFor(null), "plain")}
+                </View>
+              </View>
+            )}
             </View>
           ))}
         </View>

@@ -24,7 +24,8 @@ type Placed = { id: string; x: number; y: number; scale: number; rotation: numbe
 export type StorySticker =
   | (Placed & { kind: "poll"; question: string; options: [string, string]; counts?: [number, number]; myVote?: number | null })
   | (Placed & { kind: "question"; prompt: string })
-  | (Placed & { kind: "mention"; userId: string; username: string });
+  | (Placed & { kind: "mention"; userId: string; username: string })
+  | (Placed & { kind: "music"; style: "card" | "pill" | "lyrics"; lyricFont?: "classic" | "box" | "glow" });
 
 /** For the story's owner: who voted what, and the answers. */
 export type StoryResponses = {

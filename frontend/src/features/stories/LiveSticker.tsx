@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { fonts, palette } from "../../theme";
 import { MENTION_SIZE, POLL_WIDTH, QUESTION_WIDTH, type LiveItem } from "./editor/model";
+import { MusicSticker, type StickerMusic } from "./MusicSticker";
 
 /** What a live sticker can do when someone watches the story (not while editing). */
 export type LiveActions = {
@@ -19,9 +20,28 @@ export type LiveActions = {
 
 const shadow = { shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 } as const;
 
-/** A poll, question box or @mention, sized to a story `width` pixels wide. */
-export function LiveSticker({ item, width, actions }: { item: LiveItem; width: number; actions?: LiveActions }) {
+/** A poll, question box, @mention or the song's sticker, sized to a story `width` pixels wide. */
+export function LiveSticker({
+  item,
+  width,
+  actions,
+  music,
+  time = 0,
+  playing = true,
+}: {
+  item: LiveItem;
+  width: number;
+  actions?: LiveActions;
+  /** The story's song (for its sticker), and how far into it we are. */
+  music?: StickerMusic | null;
+  time?: number;
+  playing?: boolean;
+}) {
   const u = width; // every size below is a fraction of the story's width
+
+  if (item.kind === "music") {
+    return music ? <MusicSticker music={music} style={item.style} lyricFont={item.lyricFont} width={u} time={time} playing={playing} /> : null;
+  }
 
   if (item.kind === "mention") {
     const size = MENTION_SIZE * u;

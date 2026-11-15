@@ -323,7 +323,16 @@ export function MusicSheet({
                 accessibilityLabel="Use this song"
                 onPress={() => {
                   stopPreview();
-                  onPick({ trackId: chosen.id, title: chosen.title, artist: chosen.artist, url: chosen.url, start: clampStart(start, length, duration), length });
+                  onPick({
+                    trackId: chosen.id,
+                    title: chosen.title,
+                    artist: chosen.artist,
+                    url: chosen.url,
+                    start: clampStart(start, length, duration),
+                    length,
+                    coverUrl: chosen.coverUrl ?? null,
+                    lyrics: chosen.lyrics ?? [],
+                  });
                 }}
                 style={{ flex: 2, minHeight: 46, borderRadius: radius.pill, backgroundColor: palette.crimson, alignItems: "center", justifyContent: "center" }}
               >

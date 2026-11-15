@@ -154,6 +154,18 @@ export function StoryViewer({
   useEffect(() => {
     clip.current?.setMuted(muted);
   }, [muted]);
+  // How far into the song we are: the words on the song's sticker follow it.
+  const [songTime, setSongTime] = useState(0);
+  const hasMusicSticker = !!story?.music && !!story.stickers?.some((sticker) => sticker.kind === "music");
+  useEffect(() => {
+    if (!open || !hasMusicSticker || !story?.music) return;
+    const music = story.music;
+    const tick = () => setSongTime(music.start + done.current * storySeconds(story));
+    tick();
+    const timer = setInterval(tick, 200);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, story?.id, hasMusicSticker]);
 
   useEffect(() => {
     if (!story || paused) return;
@@ -217,7 +229,7 @@ export function StoryViewer({
               />
             </View>
 
-            {/* Poll, question and @mention stickers - live, so they can be tapped.
+            {/* Poll, question, @mention and song stickers - live, so they can be tapped (and the words move).
                 They sit where they were put on the 9:16 story, which is shown whole. */}
             {loaded && !!story.stickers?.length && (() => {
               const fw = Math.min(screenWidth, height * FRAME_ASPECT);
@@ -240,6 +252,9 @@ export function StoryViewer({
                           <LiveSticker
                             item={sticker}
                             width={fw}
+                            music={story.music ? { title: story.music.title, artist: story.music.artist, coverUrl: story.music.coverUrl, lyrics: story.music.lyrics } : null}
+                            time={songTime}
+                            playing={!paused}
                             actions={{
                               mine: !!person?.mine,
                               counts: result?.counts,

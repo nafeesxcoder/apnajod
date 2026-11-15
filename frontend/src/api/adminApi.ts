@@ -107,6 +107,17 @@ export const adminApi = {
   /** Saves a song's length when the upload could not read it. */
   musicDuration: (token: string, id: string, durationSec: number) =>
     authFetch(`/admin/music/${id}/duration`, token, { method: "POST", body: JSON.stringify({ durationSec }) }),
+  /** A song's words with times ("[00:12] a line"), or "" to take them off. */
+  musicLyrics: (token: string, id: string, lyrics: string) =>
+    authFetch(`/admin/music/${id}/lyrics`, token, { method: "POST", body: JSON.stringify({ lyrics }) }),
+  musicCover: async (token: string, id: string, file: Blob, fileName: string) => {
+    const body = new FormData();
+    body.append("cover", file, fileName);
+    const response = await fetch(`${API_URL}/admin/music/${id}/cover`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(response.status === 413 ? "That picture is too big (3 MB at most)." : data.error || "Could not save the cover");
+    return data as { ok: boolean; coverUrl: string };
+  },
   musicAdd: async (token: string, file: Blob, fileName: string, title: string, artist: string, durationSec: number) => {
     const body = new FormData();
     body.append("title", title);

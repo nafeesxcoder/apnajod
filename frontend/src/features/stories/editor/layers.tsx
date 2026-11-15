@@ -4,10 +4,10 @@ import { PanResponder, Platform, Text, View, type GestureResponderEvent } from "
 import { fonts, palette } from "../../../theme";
 import { EMOJI_CSS, PILL_PAD, STORY_FONTS, TEXT_PAD, textLines } from "./fonts";
 import { LiveSticker } from "../LiveSticker";
+import type { StickerMusic } from "../MusicSticker";
 import {
   EMOJI_SIZE,
   LINE_HEIGHT,
-  MUSIC_SIZE,
   PILL_SIZE,
   TEXT_SIZE,
   clampScale,
@@ -21,7 +21,7 @@ type Frame = { width: number; height: number };
 type Pose = { x: number; y: number; scale: number; rotation: number };
 
 /** One text or sticker, unscaled, centred on its own middle. */
-export function ItemBody({ item, frame }: { item: Item; frame: Frame }) {
+export function ItemBody({ item, frame, music, time }: { item: Item; frame: Frame; music?: StickerMusic | null; time?: number }) {
   if (item.kind === "text") {
     const size = TEXT_SIZE * frame.width;
     const { text, box } = textColors(item);
@@ -55,7 +55,7 @@ export function ItemBody({ item, frame }: { item: Item; frame: Frame }) {
       </View>
     );
   }
-  if (isLive(item)) return <LiveSticker item={item} width={frame.width} />;
+  if (isLive(item)) return <LiveSticker item={item} width={frame.width} music={music} time={time} />;
   if (item.kind === "emoji") {
     const size = EMOJI_SIZE * frame.width;
     return (
@@ -64,7 +64,7 @@ export function ItemBody({ item, frame }: { item: Item; frame: Frame }) {
       </Text>
     );
   }
-  const size = (item.kind === "music" ? MUSIC_SIZE : PILL_SIZE) * frame.width;
+  const size = PILL_SIZE * frame.width;
   return (
     <View
       style={{
@@ -102,9 +102,14 @@ export function DraggableItem({
   onMove,
   onCommit,
   onTap,
+  music,
+  time,
 }: {
   item: Item;
   frame: Frame;
+  /** The story's song and the time into it (for the song's sticker). */
+  music?: StickerMusic | null;
+  time?: number;
   disabled?: boolean;
   onGrab: (id: string) => void;
   onMove: (pose: Pose) => void;
@@ -203,14 +208,16 @@ export function DraggableItem({
                 ? `Question: ${item.prompt}`
                 : item.kind === "mention"
                   ? `Mention @${item.username}`
-                  : `Sticker ${item.value}`
+                  : item.kind === "music"
+                    ? "Song sticker. Tap to change its look."
+                    : `Sticker ${item.value}`
         }
         style={{
           transform: [{ rotate: `${pose.rotation}deg` }, { scale: pose.scale }],
           ...(Platform.OS === "web" ? ({ cursor: disabled ? "default" : "move", touchAction: "none", userSelect: "none" } as object) : null),
         }}
       >
-        <ItemBody item={item} frame={frame} />
+        <ItemBody item={item} frame={frame} music={music} time={time} />
       </View>
     </View>
   );

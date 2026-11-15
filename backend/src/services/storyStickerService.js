@@ -13,6 +13,8 @@ const MAX_MENTIONS = 5;
 const MAX_ANSWER = 300;
 /** Answers one person may send to one story. */
 const MAX_ANSWERS_EACH = 5;
+const MUSIC_STYLES = ['card', 'pill', 'lyrics'];
+const LYRIC_FONTS = ['classic', 'box', 'glow'];
 
 function fail(status, message) {
   const error = new Error(message);
@@ -46,6 +48,7 @@ function cleanStickers(raw) {
   let polls = 0;
   let questions = 0;
   let mentions = 0;
+  let musics = 0;
   for (const item of list.slice(0, 20)) {
     if (!item || typeof item !== 'object' || out.length >= MAX_STICKERS) continue;
     const id = String(item.id || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 40);
@@ -73,6 +76,12 @@ function cleanStickers(raw) {
       if (!userId || !username) continue;
       out.push({ ...place, kind: 'mention', userId, username });
       mentions += 1;
+    } else if (item.kind === 'music' && musics < 1) {
+      // The song's sticker: a card, a small pill, or the words as they play.
+      const style = MUSIC_STYLES.includes(item.style) ? item.style : 'card';
+      const lyricFont = LYRIC_FONTS.includes(item.lyricFont) ? item.lyricFont : 'classic';
+      out.push({ ...place, kind: 'music', style, ...(style === 'lyrics' ? { lyricFont } : {}) });
+      musics += 1;
     } else continue;
     seen.add(id);
   }

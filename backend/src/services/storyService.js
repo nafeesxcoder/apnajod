@@ -29,6 +29,16 @@ async function removeFile(file) {
   await fs.promises.unlink(file).catch(() => undefined);
 }
 
+/** The song's words for the part a story plays: from the line playing at the start to the end of the clip. */
+function clipLyrics(raw, start, length) {
+  if (!raw) return [];
+  const lines = require('./musicService').parseLyrics(raw);
+  // The line already playing when the clip starts, then every line before its end.
+  let from = 0;
+  for (let i = 0; i < lines.length; i += 1) if (lines[i].at <= start) from = i;
+  return lines.slice(from).filter((line) => line.at < start + length);
+}
+
 async function create(userId, file, publicBase, music = {}, rawStickers = null, rawAudience = 'all') {
   const { STORY_DIR } = require('../middleware/storyUpload');
   // A song clip, checked before anything is saved (5 to 30 seconds).
@@ -62,7 +72,10 @@ async function create(userId, file, publicBase, music = {}, rawStickers = null, 
   // On a close-friends story you can only mention people on the list (others could not see it).
   const stickerService = require('./storyStickerService');
   const stickers = (await stickerService.keepRealMentions(userId, stickerService.cleanStickers(rawStickers))).filter(
-    (sticker) => !closeIds || sticker.kind !== 'mention' || closeIds.has(sticker.userId),
+    (sticker) =>
+      (!closeIds || sticker.kind !== 'mention' || closeIds.has(sticker.userId)) &&
+      // A song's sticker only on a story with a song.
+      (sticker.kind !== 'music' || !!clip),
   );
   const id = crypto.randomUUID();
   const mediaUrl = `${publicBase}/uploads/stories/${file.filename}`;
@@ -116,6 +129,7 @@ async function tray(viewerId) {
     `SELECT s.id, s.user_id, s.media_url, s.created_at, s.expires_at,
             s.music_start, s.music_length, s.stickers, s.audience,
             mt.id AS music_id, mt.title AS music_title, mt.artist AS music_artist, mt.media_url AS music_url,
+            mt.cover_url AS music_cover, mt.lyrics AS music_lyrics,
             u.username,
             COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
             COALESCE(
@@ -162,6 +176,9 @@ async function tray(viewerId) {
             url: row.music_url,
             start: Number(row.music_start) || 0,
             length: Number(row.music_length) || 15,
+            coverUrl: row.music_cover || null,
+            // Only the lines inside the clip (and the one playing as it starts).
+            lyrics: clipLyrics(row.music_lyrics, Number(row.music_start) || 0, Number(row.music_length) || 15),
           }
         : null,
     });
@@ -233,4 +250,13 @@ async function purgeExpired(storyDir) {
   return { rows, files };
 }
 
-module.exports = { STORY_HOURS, MAX_STORIES_PER_DAY, create, tray, remove, purgeExpired, storyFilePath };
+module.exports = {
+  clipLyrics,
+  STORY_HOURS,
+  MAX_STORIES_PER_DAY,
+  create,
+  tray,
+  remove,
+  purgeExpired,
+  storyFilePath,
+};

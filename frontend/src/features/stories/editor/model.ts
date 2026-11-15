@@ -1,3 +1,5 @@
+import type { LyricFont, LyricLine, MusicStyle } from "../music/lyrics";
+
 /**
  * What a story is made of before it is saved: the photo's filter, the text
  * and stickers on top, and the drawing. Every position is a fraction of the
@@ -10,7 +12,7 @@ export type TextBg = "none" | "solid" | "soft";
 type Placed = { id: string; x: number; y: number; scale: number; rotation: number };
 export type TextItem = Placed & { kind: "text"; text: string; font: FontKey; color: string; bg: TextBg };
 /** "greeting" is a festival sticker ("🪔 Happy Diwali"), drawn like the date pill. */
-export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "music" | "greeting"; value: string };
+export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "greeting"; value: string };
 /**
  * Stickers people can use on the story - a poll, a question box, an
  * @mention. They are not drawn into the photo: they are sent alongside it
@@ -19,10 +21,13 @@ export type StickerItem = Placed & { kind: "emoji" | "time" | "date" | "music" |
 export type PollItem = Placed & { kind: "poll"; question: string; options: [string, string] };
 export type QuestionItem = Placed & { kind: "question"; prompt: string };
 export type MentionItem = Placed & { kind: "mention"; userId: string; username: string };
-export type LiveItem = PollItem | QuestionItem | MentionItem;
+/** The song's sticker: a card, a pill or the words as they play. Shown live, so it moves with the song. */
+export type MusicItem = Placed & { kind: "music"; style: MusicStyle; lyricFont?: LyricFont };
+export type LiveItem = PollItem | QuestionItem | MentionItem | MusicItem;
 export type Item = TextItem | StickerItem | LiveItem;
 
-export const isLive = (item: Item): item is LiveItem => item.kind === "poll" || item.kind === "question" || item.kind === "mention";
+export const isLive = (item: Item): item is LiveItem =>
+  item.kind === "poll" || item.kind === "question" || item.kind === "mention" || item.kind === "music";
 
 /** The live stickers as the server takes them. */
 export function liveStickers(state: EditorState): LiveItem[] {
@@ -45,8 +50,17 @@ export type Stroke = {
   points: number[];
 };
 
-/** The song clip a story plays (at most 30 seconds). */
-export type EditorMusic = { trackId: string; title: string; artist: string; url: string; start: number; length: number };
+/** The song clip a story plays (at most 30 seconds), with its cover and words if it has them. */
+export type EditorMusic = {
+  trackId: string;
+  title: string;
+  artist: string;
+  url: string;
+  start: number;
+  length: number;
+  coverUrl?: string | null;
+  lyrics?: LyricLine[];
+};
 
 export type EditorState = { filter: string; items: Item[]; strokes: Stroke[]; music: EditorMusic | null };
 
@@ -58,7 +72,6 @@ export const FRAME_ASPECT = 9 / 16;
 export const TEXT_SIZE = 0.075;
 export const EMOJI_SIZE = 0.17;
 export const PILL_SIZE = 0.065;
-export const MUSIC_SIZE = 0.045;
 /** Text wraps at this much of the frame's width (before it is scaled). */
 export const TEXT_WRAP = 0.86;
 export const LINE_HEIGHT = 1.25;
@@ -118,12 +131,12 @@ export function musicLabel(music: Pick<EditorMusic, "title" | "artist">): string
   return `♫ ${text.length > 34 ? `${text.slice(0, 33)}…` : text}`;
 }
 
-/** Puts a song on the story, with its sticker (or changes the song). */
+/** Puts a song on the story, with its sticker (a card to start), or changes the song. */
 export function setMusic(state: EditorState, music: EditorMusic, id: string): EditorState {
   const sticker = state.items.find((item) => item.kind === "music");
-  const items = sticker
-    ? state.items.map((item) => (item.kind === "music" ? { ...item, value: musicLabel(music) } : item))
-    : [...state.items, { id, kind: "music" as const, value: musicLabel(music), x: 0.5, y: 0.2, scale: 1, rotation: 0 }];
+  const items: Item[] = sticker
+    ? state.items
+    : [...state.items, { id, kind: "music" as const, style: "card" as const, x: 0.5, y: 0.22, scale: 1, rotation: 0 }];
   return { ...state, music, items };
 }
 

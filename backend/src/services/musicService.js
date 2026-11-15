@@ -17,12 +17,54 @@ function fail(status, message) {
   return error;
 }
 
+/** Most lines of words a song can have, and the longest line. */
+const MAX_LYRIC_LINES = 300;
+const MAX_LYRIC_TEXT = 100;
+
+/**
+ * Words with times, written the usual way ("[01:05.20] a line"), read into
+ * lines [{ at: seconds, text }] in time order. Lines without a time are
+ * left out; a time with no words is a gap (an instrumental part).
+ */
+function parseLyrics(raw) {
+  const lines = [];
+  for (const row of String(raw || '').replace(/\r\n?/g, '\n').split('\n')) {
+    const times = [];
+    let rest = row;
+    let match;
+    while ((match = /^\s*\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/.exec(rest))) {
+      const fraction = match[3] ? Number(`0.${match[3]}`) : 0;
+      times.push(Number(match[1]) * 60 + Number(match[2]) + fraction);
+      rest = rest.slice(match[0].length);
+    }
+    if (!times.length) continue;
+    const text = rest.replace(/\s+/g, ' ').trim().slice(0, MAX_LYRIC_TEXT);
+    for (const at of times) lines.push({ at: Math.round(at * 100) / 100, text });
+  }
+  return lines.sort((a, b) => a.at - b.at).slice(0, MAX_LYRIC_LINES);
+}
+
+/** The words as they are kept: one "[mm:ss.xx] text" line each. */
+function lyricsText(lines) {
+  return lines
+    .map(({ at, text }) => {
+      const m = Math.floor(at / 60);
+      const s = (at - m * 60).toFixed(2).padStart(5, '0');
+      return `[${String(m).padStart(2, '0')}:${s}] ${text}`;
+    })
+    .join('\n');
+}
+
+const COLUMNS = 'id, title, artist, media_url, duration_sec, cover_url, lyrics';
+
 const track = (row) => ({
   id: row.id,
   title: row.title,
   artist: row.artist || '',
   url: row.media_url,
   durationSec: Number(row.duration_sec) || 0,
+  coverUrl: row.cover_url || null,
+  lyrics: row.lyrics ? parseLyrics(row.lyrics) : [],
 });
 
 /** Songs whose title or artist matches, newest first; all songs if no words. */
@@ -30,17 +72,17 @@ async function search(words) {
   const q = String(words || '').trim().slice(0, 60);
   const rows = q
     ? await query(
-        `SELECT id, title, artist, media_url, duration_sec FROM music_tracks
+        `SELECT ${COLUMNS} FROM music_tracks
           WHERE title LIKE ? OR artist LIKE ?
           ORDER BY created_at DESC LIMIT 60`,
         [`%${q}%`, `%${q}%`],
       )
-    : await query('SELECT id, title, artist, media_url, duration_sec FROM music_tracks ORDER BY created_at DESC LIMIT 60');
+    : await query(`SELECT ${COLUMNS} FROM music_tracks ORDER BY created_at DESC LIMIT 60`);
   return rows.map(track);
 }
 
 async function list() {
-  const rows = await query('SELECT id, title, artist, media_url, duration_sec FROM music_tracks ORDER BY created_at DESC LIMIT 500');
+  const rows = await query(`SELECT ${COLUMNS} FROM music_tracks ORDER BY created_at DESC LIMIT 500`);
   return rows.map(track);
 }
 
@@ -67,18 +109,47 @@ async function add({ title, artist, durationSec, file, publicBase }) {
     mediaUrl,
     seconds,
   ]);
-  return { id, title: name, artist: String(artist || '').trim().slice(0, 120), url: mediaUrl, durationSec: seconds };
+  return { id, title: name, artist: String(artist || '').trim().slice(0, 120), url: mediaUrl, durationSec: seconds, coverUrl: null, lyrics: [] };
+}
+
+/** The song's words with times; empty takes them off. */
+async function setLyrics(id, raw) {
+  const text = String(raw ?? '');
+  const lines = parseLyrics(text);
+  if (text.trim() && !lines.length) {
+    throw fail(400, 'Put a time before each line, like [00:12] the words.');
+  }
+  const result = await query('UPDATE music_tracks SET lyrics = ? WHERE id = ?', [lines.length ? lyricsText(lines) : null, String(id || '')]);
+  if (!result.affectedRows) throw fail(404, 'That song is not in the library.');
+  return { ok: true, lyrics: lines };
+}
+
+/** A new cover picture for the song (the old one is deleted). */
+async function setCover(id, file, publicBase) {
+  const { MUSIC_DIR } = require('../middleware/musicUpload');
+  const [row] = await query('SELECT cover_url FROM music_tracks WHERE id = ?', [String(id || '')]);
+  if (!row) {
+    await fs.promises.unlink(path.join(MUSIC_DIR, file.filename)).catch(() => undefined);
+    throw fail(404, 'That song is not in the library.');
+  }
+  const coverUrl = `${publicBase}/uploads/music/${file.filename}`;
+  await query('UPDATE music_tracks SET cover_url = ? WHERE id = ?', [coverUrl, id]);
+  const old = musicFilePath(row.cover_url, MUSIC_DIR);
+  if (old) await fs.promises.unlink(old).catch(() => undefined);
+  return { ok: true, coverUrl };
 }
 
 /** Takes a song out of the library: its file, and off any story still playing it. */
 async function remove(id) {
   const { MUSIC_DIR } = require('../middleware/musicUpload');
-  const [row] = await query('SELECT media_url FROM music_tracks WHERE id = ?', [String(id || '')]);
+  const [row] = await query('SELECT media_url, cover_url FROM music_tracks WHERE id = ?', [String(id || '')]);
   if (!row) throw fail(404, 'That song is not in the library.');
   await query('UPDATE stories SET music_track_id = NULL, music_start = NULL, music_length = NULL WHERE music_track_id = ?', [id]);
   await query('DELETE FROM music_tracks WHERE id = ?', [id]);
-  const file = musicFilePath(row.media_url, MUSIC_DIR);
-  if (file) await fs.promises.unlink(file).catch(() => undefined);
+  for (const url of [row.media_url, row.cover_url]) {
+    const file = musicFilePath(url, MUSIC_DIR);
+    if (file) await fs.promises.unlink(file).catch(() => undefined);
+  }
   return { ok: true };
 }
 
@@ -112,4 +183,4 @@ async function clipFor(trackId, start, length) {
   return { trackId: row.id, start: from, length: seconds };
 }
 
-module.exports = { MIN_CLIP, MAX_CLIP, search, list, add, remove, setDuration, clipFor, musicFilePath };
+module.exports = { MIN_CLIP, MAX_CLIP, search, list, add, remove, setDuration, setLyrics, setCover, clipFor, musicFilePath, parseLyrics, lyricsText };

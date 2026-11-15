@@ -42,6 +42,7 @@ import { MusicSheet } from "../music/MusicSheet";
 import { LiveComposer, type PollDraft, type QuestionDraft } from "./LiveComposer";
 import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
+import { clipLines, nextMusicLook } from "../music/lyrics";
 import { TextComposer, type TextDraft } from "./TextComposer";
 import { TEXT_STORY_SCALE, stepTheme, textThemesWith } from "./themes";
 import { currentFestival } from "../../festival/festivalStore";
@@ -169,12 +170,21 @@ export function StoryEditor({
 
   // The story's song plays (on repeat) while you edit, like Instagram.
   const song = state.music;
+  const [songTime, setSongTime] = useState(0);
   useEffect(() => {
     if (!photo || !song || musicOpen) return;
     const clip = createClipPlayer(song.url, song.start, song.length, true);
     clip.play();
-    return () => clip.stop();
+    // A clock for the words on the song's sticker, in step with the repeat.
+    const began = Date.now();
+    const timer = setInterval(() => setSongTime(song.start + (((Date.now() - began) / 1000) % song.length)), 200);
+    return () => {
+      clip.stop();
+      clearInterval(timer);
+    };
   }, [photo, song?.trackId, song?.start, song?.length, musicOpen]);
+  // The song's sticker shows only the words of the part the story plays.
+  const stickerMusic = song ? { title: song.title, artist: song.artist, coverUrl: song.coverUrl, lyrics: clipLines(song.lyrics, song.start, song.length) } : null;
 
   const commit = (next: EditorState, keep = true) => {
     if (next === stateRef.current) return;
@@ -401,6 +411,8 @@ export function StoryEditor({
                   key={item.id}
                   item={item}
                   frame={frame}
+                  music={stickerMusic}
+                  time={songTime}
                   disabled={mode !== "idle" || busy}
                   onGrab={(id) => {
                     const next = toFront(stateRef.current, id);
@@ -421,7 +433,12 @@ export function StoryEditor({
                     if (tapped?.kind === "text") {
                       setEditing(id);
                       setMode("text");
-                    } else if (tapped?.kind === "music") setMusicOpen(true);
+                    } else if (tapped?.kind === "music") {
+                      // Tap: the next look (card, pill, the words), like Instagram.
+                      const look = nextMusicLook(tapped, !!stickerMusic?.lyrics.length);
+                      commit(updateItem(stateRef.current, id, { style: look.style, lyricFont: look.lyricFont }));
+                      showToast(look.style === "card" ? "Card" : look.style === "pill" ? "Small" : `Lyrics · ${look.lyricFont === "box" ? "Box" : look.lyricFont === "glow" ? "Glow" : "Classic"}`);
+                    }
                     else if (tapped?.kind === "poll" || tapped?.kind === "question") {
                       setLiveDraft({ kind: tapped.kind, id });
                       setMode("live");
