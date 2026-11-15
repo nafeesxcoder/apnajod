@@ -41,6 +41,14 @@
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_REQUIRE_REAL_BACKEND": "true"
       }
+    },
+    "apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
