@@ -10,7 +10,7 @@
  * - Voice: turn the mic on to talk to everyone in the game, mute, speaker.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,6 +24,7 @@ import { LudoBoard } from "./LudoBoard";
 import { Avatar, Banner, Confetti, Dice, GoldButton, NightBackground, PlayerCard, SoundButton, SoundPanel, VoiceBar } from "./LudoBits";
 import { type LudoBanner, ludoChange } from "./ludoEvents";
 import { ludoSound } from "./ludoSound";
+import { filterInvitees } from "./ludoText";
 import { L } from "./ludoTheme";
 import { VoiceRoom, type VoiceUser } from "./voiceRoom";
 
@@ -66,6 +67,7 @@ export function LudoScreen({
   const [matches, setMatches] = useState<MutualMatchSummary[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [count, setCount] = useState(2);
+  const [search, setSearch] = useState("");
   const [voice, setVoice] = useState<VoiceRoom | null>(null);
   const [voiceUsers, setVoiceUsers] = useState<VoiceUser[]>([]);
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -100,6 +102,7 @@ export function LudoScreen({
 
   useEffect(() => {
     seenRef.current = null;
+    setSearch("");
     void load();
   }, [load]);
 
@@ -205,6 +208,30 @@ export function LudoScreen({
       }
     });
 
+  const searchBox = (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, height: 46, borderRadius: 23, backgroundColor: L.glassStrong, borderWidth: 1, borderColor: L.glassBorder }}>
+      <Ionicons name="search" size={18} color={L.textSoft} />
+      <TextInput
+        accessibilityLabel="Search people to invite"
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Search by name or @username"
+        placeholderTextColor={L.textMuted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={[{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: L.text, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as never) : null]}
+      />
+      {!!search && (
+        <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearch("")} hitSlop={10}>
+          <Ionicons name="close-circle" size={18} color={L.textSoft} />
+        </Pressable>
+      )}
+    </View>
+  );
+  const noneFound = (
+    <Text style={{ fontFamily: fonts.body, fontSize: 13, color: L.textSoft, textAlign: "center", paddingVertical: 8 }}>No one called "{search.trim()}" in your matches.</Text>
+  );
+
   const header = (title: string) => (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} hitSlop={10} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: L.glassStrong, alignItems: "center", justifyContent: "center" }}>
@@ -306,7 +333,13 @@ export function LudoScreen({
           Invite {count - 1} {count - 1 === 1 ? "match" : "matches"} ({picked.length}/{count - 1})
         </Text>
         {matches.length === 0 && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: L.textSoft }}>Match with someone first to play together.</Text>}
-        {matches.map((m) => {
+        {matches.length > 0 && searchBox}
+        {!!search.trim() && filterInvitees(matches, search).length === 0 && noneFound}
+        {[
+          // Whoever is already picked stays in view while you search.
+          ...matches.filter((m) => picked.includes(m.id) && !filterInvitees([m], search).length),
+          ...filterInvitees(matches, search),
+        ].map((m) => {
           const on = picked.includes(m.id);
           return (
             <Pressable
@@ -403,7 +436,9 @@ export function LudoScreen({
         {game.isHost && game.status === "waiting" && open > 0 && invitable.length > 0 && (
           <View style={{ gap: 8 }}>
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: L.text }}>Invite more ({open} open)</Text>
-            {invitable.slice(0, 20).map((m) => (
+            {invitable.length > 5 && searchBox}
+            {!!search.trim() && filterInvitees(invitable, search).length === 0 && noneFound}
+            {filterInvitees(invitable, search).slice(0, 50).map((m) => (
               <Pressable key={m.id} accessibilityRole="button" accessibilityLabel={`Invite ${m.name}`} onPress={() => void run(() => ludoApi.invite(accessToken, game.id, [m.id]))} style={[glassRow, { padding: 9 }]}>
                 <Avatar member={{ name: m.name, photo: m.photo || null }} size={36} />
                 <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 14, color: L.text }}>{m.name}</Text>

@@ -56,3 +56,10 @@ export function ludoInviteState(game: LudoGame | null | undefined, myId: string,
   if (me?.status === "declined" || me?.status === "left") return { line: "You said not now", action: null, live: false };
   return { line: `${joined} of ${game.maxPlayers} joined`, action: "Open", live: false };
 }
+
+/** People to invite that match what was typed: name, @username or city, any case. */
+export function filterInvitees<T extends { name: string; username?: string; city?: string }>(list: T[], query: string): T[] {
+  const q = query.trim().toLowerCase().replace(/^@/, "");
+  if (!q) return list;
+  return list.filter((p) => [p.name, p.username ?? "", p.city ?? ""].some((field) => field.toLowerCase().includes(q)));
+}

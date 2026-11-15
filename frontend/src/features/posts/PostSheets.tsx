@@ -9,7 +9,7 @@ import { postApi, postLink, type Post, type PostAuthor, type PostComment } from 
 import { safetyApi } from "../../api/safetyApi";
 import { fonts, palette, radius } from "../../theme";
 import { canOpenProfile, openProfile } from "./profileLink";
-import { shareText, timeAgo } from "./postFormat";
+import { commentThreads, shareText, timeAgo } from "./postFormat";
 import { keyboardBehavior } from "../../layout/keyboardBehavior";
 
 /**
@@ -282,13 +282,19 @@ export function CommentsSheet({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const listRef = useRef<FlatList<PostComment>>(null);
+  // Reply: the comment being answered, and which threads are open.
+  const [replyTarget, setReplyTarget] = useState<PostComment | null>(null);
+  const [openThreads, setOpenThreads] = useState<Record<string, boolean>>({});
+  const listRef = useRef<FlatList<{ comment: PostComment; replies: PostComment[] }>>(null);
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (!visible) return;
     let live = true;
     setComments(null);
     setError("");
+    setReplyTarget(null);
+    setOpenThreads({});
     postApi
       .comments(accessToken, post.id)
       .then((list) => {
@@ -309,12 +315,18 @@ export function CommentsSheet({
     setSending(true);
     setError("");
     try {
-      const comment = await postApi.addComment(accessToken, post.id, body);
+      const comment = await postApi.addComment(accessToken, post.id, body, replyTarget?.id);
       const next = [...(comments ?? []), comment];
       setComments(next);
       onCountChange?.(next.length);
       setDraft("");
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+      if (comment.parentId) {
+        // Keep the thread with the new reply open.
+        setOpenThreads((open) => ({ ...open, [comment.parentId!]: true }));
+      } else {
+        setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+      }
+      setReplyTarget(null);
     } catch (e: any) {
       setError(e?.message || "Could not post that comment.");
     } finally {
@@ -324,7 +336,9 @@ export function CommentsSheet({
 
   const remove = async (comment: PostComment) => {
     const before = comments ?? [];
-    const next = before.filter((c) => c.id !== comment.id);
+    // Its replies go with it.
+    const next = before.filter((c) => c.id !== comment.id && c.parentId !== comment.id);
+    if (replyTarget && !next.some((c) => c.id === replyTarget.id)) setReplyTarget(null);
     setComments(next);
     onCountChange?.(next.length);
     try {
@@ -336,14 +350,67 @@ export function CommentsSheet({
     }
   };
 
+  const startReply = (comment: PostComment) => {
+    setReplyTarget(comment);
+    const tag = comment.author.username ? `@${comment.author.username} ` : "";
+    setDraft((text) => (text.trim() && !text.startsWith("@") ? text : tag));
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const renderComment = (item: PostComment, isReply: boolean) => (
+    <View style={{ flexDirection: "row", gap: 12, paddingLeft: isReply ? 62 : 16, paddingRight: 16, paddingVertical: isReply ? 7 : 9 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open @${item.author.username}`}
+        disabled={!canOpenProfile()}
+        onPress={() => goToProfile(item.author.userId, onClose)}
+      >
+        <Avatar person={item.author} size={isReply ? 26 : 34} />
+      </Pressable>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.ink, lineHeight: 20 }}>
+          <Text
+            accessibilityRole="link"
+            onPress={canOpenProfile() ? () => goToProfile(item.author.userId, onClose) : undefined}
+            style={{ fontFamily: fonts.bodyBold }}
+          >
+            {item.author.username}{" "}
+          </Text>
+          {item.body}
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: 2 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{timeAgo(item.created_at)}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Reply to ${item.author.username}`}
+            onPress={() => startReply(item)}
+            hitSlop={8}
+          >
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.slate }}>Reply</Text>
+          </Pressable>
+        </View>
+      </View>
+      {item.canDelete && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={isReply ? "Delete reply" : "Delete comment"}
+          onPress={() => void remove(item)}
+          style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+        >
+          <Ionicons name="trash-outline" size={17} color={palette.slate} />
+        </Pressable>
+      )}
+    </View>
+  );
+
   const author = post.author;
   return (
     <Sheet visible={visible} title="Comments" onClose={onClose} tall>
       <FlatList
         ref={listRef}
         style={{ flex: 1 }}
-        data={comments ?? []}
-        keyExtractor={(comment) => comment.id}
+        data={commentThreads(comments ?? [])}
+        keyExtractor={(thread) => thread.comment.id}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingVertical: 8 }}
         ListHeaderComponent={
@@ -377,48 +444,52 @@ export function CommentsSheet({
             </View>
           )
         }
-        renderItem={({ item }) => (
-          <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingVertical: 9 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Open @${item.author.username}`}
-              disabled={!canOpenProfile()}
-              onPress={() => goToProfile(item.author.userId, onClose)}
-            >
-              <Avatar person={item.author} size={34} />
-            </Pressable>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.ink, lineHeight: 20 }}>
-                <Text
-                  accessibilityRole="link"
-                  onPress={canOpenProfile() ? () => goToProfile(item.author.userId, onClose) : undefined}
-                  style={{ fontFamily: fonts.bodyBold }}
+        renderItem={({ item: thread }) => {
+          const open = !!openThreads[thread.comment.id];
+          const count = thread.replies.length;
+          return (
+            <View>
+              {renderComment(thread.comment, false)}
+              {count > 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={open ? "Hide replies" : `View ${count} ${count === 1 ? "reply" : "replies"}`}
+                  onPress={() => setOpenThreads((all) => ({ ...all, [thread.comment.id]: !open }))}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 62, paddingVertical: 4 }}
                 >
-                  {item.author.username}{" "}
-                </Text>
-                {item.body}
-              </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 2 }}>
-                {timeAgo(item.created_at)}
-              </Text>
+                  <View style={{ width: 24, height: 1, backgroundColor: palette.slate, opacity: 0.6 }} />
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12.5, color: palette.slate }}>
+                    {open ? "Hide replies" : `View ${count} ${count === 1 ? "reply" : "replies"}`}
+                  </Text>
+                </Pressable>
+              )}
+              {open && thread.replies.map((reply) => <View key={reply.id}>{renderComment(reply, true)}</View>)}
             </View>
-            {item.canDelete && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Delete comment"
-                onPress={() => void remove(item)}
-                style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
-              >
-                <Ionicons name="trash-outline" size={17} color={palette.slate} />
-              </Pressable>
-            )}
-          </View>
-        )}
+          );
+        }}
       />
       {!!error && (
         <Text style={{ color: palette.crimson, fontFamily: fonts.body, fontSize: 13, textAlign: "center", paddingHorizontal: 16 }}>
           {error}
         </Text>
+      )}
+      {replyTarget && (
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: palette.paperSand }}>
+          <Text style={{ flex: 1, fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
+            Replying to <Text style={{ fontFamily: fonts.bodyBold, color: palette.ink }}>{replyTarget.author.username}</Text>
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancel reply"
+            onPress={() => {
+              setReplyTarget(null);
+              setDraft((text) => (text.trim() === `@${replyTarget.author.username}` ? "" : text));
+            }}
+            hitSlop={10}
+          >
+            <Ionicons name="close" size={18} color={palette.slate} />
+          </Pressable>
+        </View>
       )}
       <View
         style={{
@@ -432,10 +503,11 @@ export function CommentsSheet({
         }}
       >
         <TextInput
-          accessibilityLabel="Add a comment"
+          ref={inputRef}
+          accessibilityLabel={replyTarget ? `Reply to ${replyTarget.author.username}` : "Add a comment"}
           value={draft}
           onChangeText={setDraft}
-          placeholder={author ? `Add a comment for ${author.username}...` : "Add a comment..."}
+          placeholder={replyTarget ? `Reply to ${replyTarget.author.username}...` : author ? `Add a comment for ${author.username}...` : "Add a comment..."}
           placeholderTextColor={palette.slate}
           multiline
           maxLength={500}
@@ -457,7 +529,7 @@ export function CommentsSheet({
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Post comment"
+          accessibilityLabel={replyTarget ? "Post reply" : "Post comment"}
           disabled={!draft.trim() || sending}
           onPress={() => void send()}
           style={{ minWidth: 56, height: 42, alignItems: "center", justifyContent: "center" }}

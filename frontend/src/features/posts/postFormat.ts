@@ -37,3 +37,24 @@ export function shareText(username: string, caption: string, link: string): stri
   const line = caption.trim() ? `@${username}: ${caption.trim().slice(0, 120)}` : `A post by @${username} on Apnajoda`;
   return `${line}\n${link}`;
 }
+
+/**
+ * Comments as threads: each top comment with its replies under it, oldest
+ * first. A reply whose comment is not in the list (deleted, or by someone
+ * hidden from you) shows on its own.
+ */
+export function commentThreads<T extends { id: string; parentId?: string | null }>(list: T[]): { comment: T; replies: T[] }[] {
+  const ids = new Set(list.map((c) => c.id));
+  const threads: { comment: T; replies: T[] }[] = [];
+  const byId = new Map<string, { comment: T; replies: T[] }>();
+  for (const c of list) {
+    if (c.parentId && ids.has(c.parentId)) continue;
+    const thread = { comment: c, replies: [] as T[] };
+    threads.push(thread);
+    byId.set(c.id, thread);
+  }
+  for (const c of list) {
+    if (c.parentId && ids.has(c.parentId)) byId.get(c.parentId)?.replies.push(c);
+  }
+  return threads;
+}

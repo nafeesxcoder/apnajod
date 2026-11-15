@@ -92,30 +92,45 @@ async function likers(viewerId, postId) {
   return rows.map(member);
 }
 
-/** A post's comments, oldest first (a conversation reads top to bottom). */
-async function comments(viewerId, postId) {
-  const ownerId = await requireVisible(viewerId, postId);
-  const rows = await query(
-    `SELECT c.id, c.body, c.created_at, ${MEMBER_COLUMNS}
+const COMMENT_COLUMNS = `c.id, c.body, c.created_at, c.parent_id, c.reply_to_user_id, ru.username AS reply_to_username, ${MEMBER_COLUMNS}`;
+const COMMENT_FROM = `
        FROM post_comments c
        JOIN users u ON u.id = c.user_id
        LEFT JOIN profiles pr ON pr.user_id = u.id
+       LEFT JOIN users ru ON ru.id = c.reply_to_user_id`;
+
+function shapeComment(row, viewerId, ownerId) {
+  return {
+    id: row.id,
+    body: row.body,
+    created_at: row.created_at,
+    author: member(row),
+    // A reply: the comment it sits under, and whom it answers.
+    parentId: row.parent_id || null,
+    replyTo: row.reply_to_user_id ? { userId: row.reply_to_user_id, username: row.reply_to_username || "" } : null,
+    // Your own comment, or any comment on your own post.
+    canDelete: row.user_id === viewerId || ownerId === viewerId,
+  };
+}
+
+/** A post's comments, oldest first (a conversation reads top to bottom). Replies are in the list too, with their parentId. */
+async function comments(viewerId, postId) {
+  const ownerId = await requireVisible(viewerId, postId);
+  const rows = await query(
+    `SELECT ${COMMENT_COLUMNS} ${COMMENT_FROM}
       WHERE c.post_id = ? AND ${VISIBLE_MEMBER}
       ORDER BY c.created_at ASC
       LIMIT 500`,
     [postId, viewerId, viewerId],
   );
-  return rows.map((row) => ({
-    id: row.id,
-    body: row.body,
-    created_at: row.created_at,
-    author: member(row),
-    // Your own comment, or any comment on your own post.
-    canDelete: row.user_id === viewerId || ownerId === viewerId,
-  }));
+  return rows.map((row) => shapeComment(row, viewerId, ownerId));
 }
 
-async function addComment(viewerId, postId, body) {
+/**
+ * Adds a comment, or a reply to one (replyTo: the comment answered). A reply
+ * to a reply goes under the same top comment, so threads stay one level deep.
+ */
+async function addComment(viewerId, postId, body, replyTo) {
   const text = cleanComment(body);
   if (!text) {
     const error = new Error("Write something first.");
@@ -123,30 +138,49 @@ async function addComment(viewerId, postId, body) {
     throw error;
   }
   const ownerId = await requireVisible(viewerId, postId);
+  let parentId = null;
+  let replyToUserId = null;
+  if (replyTo) {
+    const [target] = await query(
+      `SELECT c.id, c.parent_id, c.user_id FROM post_comments c
+         JOIN users u ON u.id = c.user_id
+        WHERE c.id = ? AND c.post_id = ? AND ${VISIBLE_MEMBER}
+        LIMIT 1`,
+      [String(replyTo), postId, viewerId, viewerId],
+    );
+    if (!target) {
+      const error = new Error("That comment is not there any more.");
+      error.status = 404;
+      throw error;
+    }
+    parentId = target.parent_id || target.id;
+    replyToUserId = target.user_id;
+  }
   const id = crypto.randomUUID();
-  await query("INSERT INTO post_comments (id, post_id, user_id, body) VALUES (?, ?, ?, ?)", [
-    id,
-    postId,
-    viewerId,
-    text,
-  ]);
-  const [row] = await query(
-    `SELECT c.id, c.body, c.created_at, ${MEMBER_COLUMNS}
-       FROM post_comments c
-       JOIN users u ON u.id = c.user_id
-       LEFT JOIN profiles pr ON pr.user_id = u.id
-      WHERE c.id = ?`,
-    [id],
+  await query(
+    "INSERT INTO post_comments (id, post_id, user_id, body, parent_id, reply_to_user_id) VALUES (?, ?, ?, ?, ?, ?)",
+    [id, postId, viewerId, text, parentId, replyToUserId],
   );
-  require("./postActivityService").notifyComment(viewerId, postId, ownerId, text).catch(() => undefined);
-  return {
-    id,
-    body: text,
-    created_at: row?.created_at || new Date(),
-    author: row ? member(row) : { userId: viewerId, username: "", name: "", avatarUrl: null },
-    canDelete: true,
-    ownerId,
-  };
+  const [row] = await query(`SELECT ${COMMENT_COLUMNS} ${COMMENT_FROM} WHERE c.id = ?`, [id]);
+  const activity = require("./postActivityService");
+  // The one answered hears "replied to your comment"; the post's owner hears
+  // "commented" - once, never both, and never about their own words.
+  if (replyToUserId && replyToUserId !== viewerId) {
+    activity.notifyReply(viewerId, postId, replyToUserId, text).catch(() => undefined);
+  }
+  if (ownerId !== replyToUserId) activity.notifyComment(viewerId, postId, ownerId, text).catch(() => undefined);
+  const shaped = row
+    ? shapeComment(row, viewerId, ownerId)
+    : {
+        id,
+        body: text,
+        created_at: new Date(),
+        author: { userId: viewerId, username: "", name: "", avatarUrl: null },
+        parentId,
+        replyTo: replyToUserId ? { userId: replyToUserId, username: "" } : null,
+        canDelete: true,
+      };
+  return { ...shaped, canDelete: true, ownerId };
 }
 
 /** Removes a comment: its writer can, and so can the post's owner. */
@@ -162,7 +196,8 @@ async function deleteComment(viewerId, postId, commentId) {
     error.status = 403;
     throw error;
   }
-  await query("DELETE FROM post_comments WHERE id = ?", [commentId]);
+  // Its replies go with it.
+  await query("DELETE FROM post_comments WHERE post_id = ? AND (id = ? OR parent_id = ?)", [postId, commentId, commentId]);
   return { ok: true };
 }
 

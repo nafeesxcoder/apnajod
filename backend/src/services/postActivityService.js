@@ -68,6 +68,20 @@ async function notifyComment(actorId, postId, ownerId, body) {
   return { sent: true };
 }
 
+/** "@rahul replied to your comment: Sahi kaha!" - every reply. */
+async function notifyReply(actorId, postId, toUserId, body) {
+  if (!toUserId || actorId === toUserId) return { sent: false, reason: "self" };
+  if (await blockedBetween(actorId, toUserId)) return { sent: false, reason: "blocked" };
+  const who = await actorName(actorId);
+  const text = String(body || "").replace(/\s+/g, " ").trim();
+  await push(toUserId, {
+    title: "Apnajoda",
+    body: `${who} replied to your comment: ${text.length > 80 ? `${text.slice(0, 79)}…` : text}`,
+    postId,
+  });
+  return { sent: true };
+}
+
 const ACTOR = `
   u.id AS actor_id, u.username AS actor_username,
   COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS actor_name,
@@ -86,9 +100,10 @@ const ACTIVITY_DAYS = 30;
 
 /**
  * Everything that shows in Activity, one row per event, from newest:
- * likes and comments on your posts, likes and answers on your stories, and
- * stories that mention you. Story rows are deleted with the story, so they
- * vanish after 24 hours. Takes the member's id four times per part, five parts.
+ * likes and comments on your posts, replies to your comments on other
+ * people's posts, likes and answers on your stories, and stories that
+ * mention you. Story rows are deleted with the story, so they
+ * vanish after 24 hours. Takes the member's id four times in each of five parts, and five times in the replies part.
  */
 const EVENTS = `
        SELECT 'like' AS kind, l.created_at AS at, NULL AS body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
@@ -104,6 +119,13 @@ const EVENTS = `
          JOIN users u ON u.id = c.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
         WHERE ${VISIBLE_ACTOR} AND c.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY
+       UNION ALL
+       SELECT 'reply' AS kind, c.created_at AS at, c.body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
+         FROM post_comments c
+         JOIN posts p ON p.id = c.post_id AND p.user_id <> ?
+         JOIN users u ON u.id = c.user_id
+         LEFT JOIN profiles pr ON pr.user_id = u.id
+        WHERE c.reply_to_user_id = ? AND ${VISIBLE_ACTOR} AND c.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY
        UNION ALL
        SELECT 'story_like' AS kind, sl.created_at AS at, NULL AS body, NULL AS post_id, s.id AS story_id, s.media_url, ${ACTOR}
          FROM story_likes sl
@@ -125,7 +147,7 @@ const EVENTS = `
          JOIN users u ON u.id = s.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
         WHERE ${VISIBLE_ACTOR} AND s.expires_at > NOW(6)`;
-const eventParams = (userId) => Array(5 * 4).fill(userId);
+const eventParams = (userId) => Array(5 * 4 + 5).fill(userId);
 
 /** Your activity, newest first, and how many are new. */
 async function activity(userId, limit = 60) {
@@ -165,4 +187,4 @@ async function markSeen(userId) {
   return { unread: 0 };
 }
 
-module.exports = { LIKE_PUSH_GAP_MS, ACTIVITY_DAYS, notifyLike, notifyComment, activity, unreadCount, markSeen };
+module.exports = { LIKE_PUSH_GAP_MS, ACTIVITY_DAYS, notifyLike, notifyComment, notifyReply, activity, unreadCount, markSeen };

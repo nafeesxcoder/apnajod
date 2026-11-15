@@ -18,6 +18,8 @@ export function activityText(item: ActivityItem): string {
       return " liked your post.";
     case "comment":
       return ` commented: ${item.body ?? ""}`;
+    case "reply":
+      return ` replied to your comment: ${item.body ?? ""}`;
     case "story_like":
       return " liked your story.";
     case "story_answer":

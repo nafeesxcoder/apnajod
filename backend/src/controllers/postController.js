@@ -90,7 +90,7 @@ const unlikePost = social((req) => postSocialService.unlike(req.user.id, req.par
 const getLikers = social(async (req) => ({ users: await postSocialService.likers(req.user.id, req.params.id) }));
 const getComments = social(async (req) => ({ comments: await postSocialService.comments(req.user.id, req.params.id) }));
 const addComment = social(async (req) => {
-  const { ownerId: _owner, ...comment } = await postSocialService.addComment(req.user.id, req.params.id, req.body.body);
+  const { ownerId: _owner, ...comment } = await postSocialService.addComment(req.user.id, req.params.id, req.body.body, req.body.replyTo);
   return { comment };
 });
 const deleteComment = social((req) =>

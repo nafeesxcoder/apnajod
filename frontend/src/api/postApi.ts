@@ -32,14 +32,18 @@ export type PostComment = {
   author: PostAuthor;
   /** Your own comment, or any comment on your own post. */
   canDelete: boolean;
+  /** A reply: the top comment it sits under (null for a comment). */
+  parentId?: string | null;
+  /** A reply: whom it answers. */
+  replyTo?: { userId: string; username: string } | null;
 };
 
 export type PostCounts = { likes: number; comments: number; liked: boolean; saved: boolean };
 
 /** A like or comment on one of your posts (Activity). */
 export type ActivityItem = {
-  /** On your posts: like, comment. On your stories: story_like, story_answer. Someone's story naming you: mention. */
-  kind: "like" | "comment" | "story_like" | "story_answer" | "mention";
+  /** On your posts: like, comment. Your comment on someone's post: reply. On your stories: story_like, story_answer. Someone's story naming you: mention. */
+  kind: "like" | "comment" | "reply" | "story_like" | "story_answer" | "mention";
   at: string;
   body: string | null;
   /** The post it is about, or null when it is about a story. */
@@ -132,10 +136,11 @@ export const postApi = {
     return (data.comments as PostComment[]) || [];
   },
 
-  async addComment(accessToken: string, postId: string, body: string): Promise<PostComment> {
+  /** A comment, or with replyTo (a comment's id) a reply to it. */
+  async addComment(accessToken: string, postId: string, body: string, replyTo?: string): Promise<PostComment> {
     const data = await authFetch(`/posts/${postId}/comments`, accessToken, {
       method: "POST",
-      body: JSON.stringify({ body }),
+      body: JSON.stringify(replyTo ? { body, replyTo } : { body }),
     });
     return data.comment as PostComment;
   },
