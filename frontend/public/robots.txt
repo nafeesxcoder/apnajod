@@ -1,0 +1,15 @@
+# Apnajoda - public pages are open to search engines.
+# Members' profiles, posts, stories, chats and shared links are private: never indexed.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+Disallow: /*?share=
+Disallow: /*?post=
+Disallow: /*?story=
+Disallow: /*?chat=
+Disallow: /*?ludo=
+Disallow: /*?invite=
+Disallow: /*?screen=
+
+Sitemap: https://apnajoda.com/sitemap.xml

@@ -152,7 +152,8 @@ describe('the web shell in public/', () => {
   it('is Apnajoda in the manifest, the template and the worker', () => {
     expect(manifest.name).toBe('Apnajoda');
     expect(manifest.short_name).toBe('Apnajoda');
-    expect(html).not.toMatch(/Milaan/i);
+    // The sign-in token's storage key keeps its old name (never shown to anyone).
+    expect(html.replace(/milaan_access_token/g, "")).not.toMatch(/Milaan/i);
     expect(sw).not.toMatch(/Milaan/i);
   });
 
