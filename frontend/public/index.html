@@ -64,35 +64,11 @@
       html, body { width: 100%; height: 100%; margin: 0; }
       body { overflow: hidden; }
       #root { display: flex; flex: 1; width: 100%; height: 100%; }
-      /* The loading screen (like WhatsApp Web's): logo, name, one line - the app replaces it. */
-      #seo-landing { position: absolute; inset: 0; background: #FDF7F4; color: #14202E; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      #seo-landing .sl-in { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
-      #seo-landing .sl-logo { border-radius: 22px; box-shadow: 0 6px 24px rgba(31, 77, 122, 0.18); }
-      #seo-landing h1 { font: 400 30px Georgia, serif; color: #1F4D7A; margin: 18px 0 6px; }
-      #seo-landing .sl-lead { font-size: 16px; color: #14202E; margin: 0 0 4px; }
-      #seo-landing .sl-sub { font-size: 13px; color: #5A6878; margin: 0; }
-      #seo-landing .sl-spin { width: 34px; height: 34px; margin: 26px 0; border-radius: 50%; border: 3px solid #E7DDD5; border-top-color: #A8243A; animation: sl-turn 0.9s linear infinite; }
-      #seo-landing .sl-legal { position: absolute; bottom: 18px; font-size: 12px; color: #5A6878; }
-      #seo-landing a { color: #5A6878; }
-      @keyframes sl-turn { to { transform: rotate(360deg); } }
 
     </style>
   </head>
   <body>
-    <div id="root">
-      <!-- What visitors and search engines see while the app loads (the app replaces it). -->
-      <div id="seo-landing">
-        <div class="sl-in">
-          <img class="sl-logo" src="/icon-192.png?v=2" width="88" height="88" alt="Apnajoda" />
-          <h1>Apnajoda</h1>
-          <p class="sl-lead">Dating app for serious relationships &amp; marriage in India</p>
-          <p class="sl-sub">Selfie-verified people · Safe chat and video calls · Kundli match</p>
-          <div class="sl-spin" aria-hidden="true"></div>
-          <noscript><p class="sl-sub">Apnajoda runs in your browser. Please turn on JavaScript to sign up or log in.</p></noscript>
-          <p class="sl-legal"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/contact.html">Contact</a></p>
-        </div>
-      </div>
-    </div>
+    <div id="root"></div>
     <script>
       /* Keep the app exactly as tall as the visible area, so when the keyboard
          opens the chat input moves up with it instead of staying hidden below. */

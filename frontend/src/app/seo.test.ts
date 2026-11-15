@@ -5,8 +5,7 @@ import { describe, expect, it } from "vitest";
 /**
  * Search engines see apnajoda.com the way WhatsApp Web works: the app
  * itself. The home page carries the title, description, share card and
- * app details; the loading screen shows the name and one line; members'
- * links are never indexed. (A separate website comes later.)
+ * app details (nothing extra on screen); members' links are never indexed. (A separate website comes later.)
  */
 const PUBLIC = join(__dirname, "..", "..", "public");
 const read = (p: string) => readFileSync(join(PUBLIC, p), "utf8");
@@ -30,10 +29,9 @@ describe("search engines", () => {
     expect(existsSync(join(PUBLIC, "og-image.png"))).toBe(true);
   });
 
-  it("shows a simple loading screen like WhatsApp Web: the name and one line", () => {
-    expect(home).toContain("<h1>Apnajoda</h1>");
-    expect(home).toContain('<p class="sl-lead">Dating app for serious relationships &amp; marriage in India</p>');
-    expect(home).not.toContain("Why people choose Apnajoda");
+  it("adds nothing on screen: the app's own loader shows while it loads", () => {
+    expect(home).toContain('<div id="root"></div>');
+    expect(home).not.toContain("seo-landing");
   });
 
   it("has no separate website pages for now", () => {
