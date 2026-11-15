@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Alert, Platform } from "react-native";
 import { Modal } from "../../../components/BackModal";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -131,7 +131,7 @@ export function ProfileSetupScreen({
     if (trimmedBio.length > BIO_MAX_LENGTH) {
       const overBy = trimmedBio.length - BIO_MAX_LENGTH;
       const message = `Bio must be ${BIO_MAX_LENGTH} characters or less.\n\nYou have ${trimmedBio.length} characters. Please remove ${overBy} character${overBy === 1 ? "" : "s"}.`;
-      if (typeof window !== "undefined") {
+      if (Platform.OS === "web" && typeof window !== "undefined" && typeof window.alert === "function") {
         window.alert(message);
       } else {
         Alert.alert("Bio too long", message);

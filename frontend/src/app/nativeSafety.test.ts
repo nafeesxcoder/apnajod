@@ -55,6 +55,18 @@ describe("the phone app", () => {
     expect(found).toEqual([]);
   });
 
+  it("only uses the browser's window functions behind a web check", () => {
+    // On the phone `window` exists but has no addEventListener or alert, so
+    // `typeof window !== "undefined"` alone lets the call through and it
+    // crashes ("undefined is not a function") right after sign-in.
+    const found = files("src").filter((file) =>
+      /typeof window !== "undefined"\)\s*\{?\s*window\.(addEventListener|removeEventListener|alert|open)\(/.test(readFileSync(file, "utf8")),
+    );
+    const renew = readFileSync("src/app/MilaanApp.tsx", "utf8");
+    expect(found.filter((file) => !file.endsWith("MilaanApp.tsx"))).toEqual([]);
+    expect(renew).toMatch(/if \(Platform\.OS !== "web"\) \{\s*const appState = AppState\.addEventListener/);
+  });
+
   it("reports a crash to the server log so it can be found", () => {
     expect(readFileSync("src/components/ErrorBoundary.tsx", "utf8")).toContain("`${API_URL}/client-errors`");
   });

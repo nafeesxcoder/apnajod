@@ -5,7 +5,7 @@ import {
   storedInvite,
 } from "../features/onboarding/inviteTracking";
 import { SharedProfilePage } from "../features/share/SharedProfilePage";
-import { BackHandler, Platform, View } from "react-native";
+import { AppState, BackHandler, Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authApi, AuthRequestError, isSessionRejected } from "../api/authApi";
 import { profileApi, onProfileReward } from "../api/profileApi";
@@ -1359,6 +1359,17 @@ function MilaanApp() {
     const interval = setInterval(() => void renew(), 5 * 60 * 1000);
     // Phones pause timers while the app is in the background, so renew right
     // away when the app comes back or the connection returns.
+    // The phone app has a window object but no window events, so it listens
+    // for the app coming back to the front instead.
+    if (Platform.OS !== "web") {
+      const appState = AppState.addEventListener("change", (state) => {
+        if (state === "active") void renew();
+      });
+      return () => {
+        clearInterval(interval);
+        appState.remove();
+      };
+    }
     const onWake = () => {
       if (
         typeof document === "undefined" ||
