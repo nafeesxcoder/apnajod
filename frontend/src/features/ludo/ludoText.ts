@@ -63,3 +63,13 @@ export function filterInvitees<T extends { name: string; username?: string; city
   if (!q) return list;
   return list.filter((p) => [p.name, p.username ?? "", p.city ?? ""].some((field) => field.toLowerCase().includes(q)));
 }
+
+/**
+ * How far the spinner turns (degrees, clockwise) to stop with slice
+ * `index` under the pointer at the top, after `turns` whole turns.
+ * Slice i covers i*360/n to (i+1)*360/n from the top.
+ */
+export function spinLanding(index: number, count: number, turns = 5) {
+  const slice = 360 / count;
+  return turns * 360 + (360 - (index * slice + slice / 2));
+}

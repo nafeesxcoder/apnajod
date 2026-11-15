@@ -17,6 +17,26 @@ export const L = {
   red: "#F43F5E",
 };
 
+/**
+ * The board theme chosen in Settings paints the room: these values change
+ * with it (everything reads them while drawing).
+ */
+export function setActiveTheme(theme: { bg: [string, string, string]; frame: [string, string, string]; cell: string; text: string; textSoft: string; glass: string; glassBorder: string }) {
+  L.bgTop = theme.bg[0];
+  L.bgMid = theme.bg[1];
+  L.bgBottom = theme.bg[2];
+  L.goldLight = theme.frame[0];
+  L.gold = theme.frame[1];
+  L.goldDark = theme.frame[2];
+  L.boardCream = theme.cell;
+  L.text = theme.text;
+  L.textSoft = theme.textSoft;
+  L.textMuted = theme.textSoft;
+  L.glass = theme.glass;
+  L.glassBorder = theme.glassBorder;
+  L.glassStrong = theme.glass.replace(/[\d.]+\)$/, (a) => `${Math.min(0.9, parseFloat(a) * 1.8).toFixed(2)})`);
+}
+
 /** Lighter and darker shades of each seat's colour (red, green, yellow, blue). */
 export const SEAT_LIGHT = ["#FF8A80", "#81E68A", "#FFE57A", "#7CC4FF"];
 export const SEAT_DARK = ["#B71C1C", "#1B6B2A", "#C79A00", "#0D4FA0"];

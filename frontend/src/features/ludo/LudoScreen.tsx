@@ -10,7 +10,7 @@
  * - Voice: turn the mic on to talk to everyone in the game, mute, speaker.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, Vibration, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,7 +25,12 @@ import { Avatar, Banner, Confetti, Dice, GoldButton, NightBackground, PlayerCard
 import { type LudoBanner, ludoChange } from "./ludoEvents";
 import { ludoSound } from "./ludoSound";
 import { filterInvitees } from "./ludoText";
-import { L } from "./ludoTheme";
+import { L, setActiveTheme } from "./ludoTheme";
+import { allowedPrefs, BOARD_THEMES, DEFAULT_PREFS, DICE_SKINS, stepMs, TOKEN_STYLES } from "./ludoLooks";
+import { CoinChip, LudoStore, useLudoPrefs, useWallet } from "./LudoStore";
+import { showDailySpin } from "./DailySpin";
+import { coinsApi, type LeaderRow } from "../../api/coinsApi";
+import { walletStore } from "./walletStore";
 import { VoiceRoom, type VoiceUser } from "./voiceRoom";
 
 const MAX_BOARD = 440;
@@ -73,6 +78,22 @@ export function LudoScreen({
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [soundOpen, setSoundOpen] = useState(false);
   const [banner, setBanner] = useState<{ banner: LudoBanner; stamp: number } | null>(null);
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [reactOpen, setReactOpen] = useState(false);
+  const [reactions, setReactions] = useState<Record<string, { value: string; kind: "emoji" | "chat"; stamp: number }>>({});
+  const [leaders, setLeaders] = useState<LeaderRow[]>([]);
+  // Settings: only what you have unlocked is used.
+  const wallet = useWallet(accessToken);
+  const rawPrefs = useLudoPrefs();
+  const prefs = wallet ? allowedPrefs(rawPrefs, wallet.unlocked) : DEFAULT_PREFS;
+  const theme = BOARD_THEMES[prefs.theme]!;
+  setActiveTheme(theme);
+  useEffect(() => {
+    ludoSound.setPack(prefs.sound);
+  }, [prefs.sound]);
+  const buzz = (ms: number) => {
+    if (prefs.vibrate) Vibration.vibrate(ms);
+  };
   const [, force] = useState(0);
   const voiceRef = useRef<VoiceRoom | null>(null);
   const seenRef = useRef<LudoGame | null>(null);
@@ -82,6 +103,10 @@ export function LudoScreen({
     ludoSound.warm();
     return () => ludoSound.release();
   }, []);
+
+  useEffect(() => {
+    if (!gameId) void coinsApi.leaderboard(accessToken).then(setLeaders).catch(() => undefined);
+  }, [accessToken, gameId]);
 
   useEffect(() => {
     void matchApi
@@ -116,12 +141,19 @@ export function LudoScreen({
     const onVoice = (data: { gameId: string; users: VoiceUser[] }) => {
       if (data?.gameId === gameId) setVoiceUsers(data.users ?? []);
     };
+    const onReact = (data: { gameId: string; from: string; kind: "emoji" | "chat"; value: string }) => {
+      if (data?.gameId !== gameId) return;
+      setReactions((all) => ({ ...all, [data.from]: { value: data.value, kind: data.kind, stamp: Date.now() } }));
+      if (data.from !== myId) ludoSound.play("step");
+    };
     socket.on("ludo:update", onUpdate);
     socket.on("ludo:voice", onVoice);
+    socket.on("ludo:react", onReact);
     socket.on("connect", load);
     return () => {
       socket.off("ludo:update", onUpdate);
       socket.off("ludo:voice", onVoice);
+      socket.off("ludo:react", onReact);
       socket.off("connect", load);
     };
   }, [gameId, load]);
@@ -134,6 +166,10 @@ export function LudoScreen({
     if (!prev) return;
     const { sounds, banner: next } = ludoChange(prev, game, myId);
     sounds.forEach((name, i) => setTimeout(() => ludoSound.play(name), i * 160));
+    if (sounds.includes("turn")) buzz(40);
+    if (sounds.includes("cut")) buzz(120);
+    // The game just ended: coins may have come in.
+    if (game.state?.finished && !prev.state?.finished) setTimeout(() => void walletStore.refresh(accessToken), 600);
     if (next) setBanner({ banner: next, stamp: Date.now() });
   }, [game, gameId, myId]);
 
@@ -240,6 +276,10 @@ export function LudoScreen({
       <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.display, fontSize: 21, color: L.text }}>
         {title}
       </Text>
+      <CoinChip coins={wallet?.coins} onPress={() => setStoreOpen(true)} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Ludo settings and store" onPress={() => setStoreOpen(true)} hitSlop={8} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: L.glassStrong, alignItems: "center", justifyContent: "center" }}>
+        <Ionicons name="settings-sharp" size={18} color={L.text} />
+      </Pressable>
       <SoundButton onPress={() => setSoundOpen((v) => !v)} />
       {game && game.status !== "finished" && game.status !== "cancelled" && game.members.some((m) => m.userId === myId && m.status === "joined") && (
         <Pressable
@@ -275,6 +315,7 @@ export function LudoScreen({
         {errorLine}
         {body}
         {soundOpen && <SoundPanel onClose={() => setSoundOpen(false)} />}
+        <LudoStore visible={storeOpen} accessToken={accessToken} onClose={() => setStoreOpen(false)} />
       </SafeAreaView>
       {overlay}
     </View>
@@ -300,6 +341,45 @@ export function LudoScreen({
           <Text style={{ fontFamily: fonts.display, fontSize: 28, color: L.text, marginTop: 8 }}>Play Ludo together</Text>
           <Text style={{ fontFamily: fonts.body, fontSize: 14, color: L.textSoft }}>Talk live on mic while you play 🎙️</Text>
         </View>
+
+        {wallet && (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Open the Ludo store" onPress={() => setStoreOpen(true)} style={{ flex: 1, padding: 12, borderRadius: 18, backgroundColor: L.glass, borderWidth: 1, borderColor: L.glassBorder, gap: 2 }}>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.gold }}>🪙 {wallet.coins}</Text>
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: L.textSoft }}>
+                {wallet.level} · {wallet.wins} wins{wallet.streak > 1 ? ` · 🔥${wallet.streak}` : ""}
+              </Text>
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: L.text, marginTop: 4 }}>🛍️ Store & settings ›</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={wallet.canSpin ? "Daily spin is ready" : "Daily spin"}
+              onPress={() => showDailySpin()}
+              style={{ flex: 1, padding: 12, borderRadius: 18, backgroundColor: wallet.canSpin ? "rgba(246,196,69,0.16)" : L.glass, borderWidth: 1, borderColor: wallet.canSpin ? L.gold : L.glassBorder, gap: 2 }}
+            >
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.text }}>🎡 Spin</Text>
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: wallet.canSpin ? L.gold : L.textSoft }}>
+                {wallet.canSpin ? "Ready! Tap to spin" : `Next at ${new Date(wallet.spinReadyAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {leaders.length > 0 && (
+          <View style={{ padding: 12, borderRadius: 18, backgroundColor: L.glass, borderWidth: 1, borderColor: L.glassBorder, gap: 8 }}>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: L.text }}>🏆 This week's top players</Text>
+            {leaders.slice(0, 5).map((row) => (
+              <View key={row.userId} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text style={{ width: 24, fontFamily: fonts.bodyBold, fontSize: 14, color: row.rank <= 3 ? L.gold : L.textSoft }}>{["🥇", "🥈", "🥉"][row.rank - 1] ?? row.rank}</Text>
+                <Avatar member={{ name: row.name, photo: row.photo }} size={30} />
+                <Text numberOfLines={1} style={{ flex: 1, fontFamily: row.me ? fonts.bodyBold : fonts.bodySemi, fontSize: 14, color: L.text }}>
+                  {row.me ? "You" : row.name}
+                </Text>
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: L.gold }}>🪙 {row.coins}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: L.text }}>How many players?</Text>
         <View style={{ flexDirection: "row", gap: 10 }}>
@@ -479,6 +559,22 @@ export function LudoScreen({
       <LinearGradient colors={["#3A1F86", "#1E0F4D"]} style={{ width: "100%", maxWidth: 380, borderRadius: 28, padding: 22, alignItems: "center", gap: 10, borderWidth: 2, borderColor: L.gold }}>
         <Text style={{ fontSize: 56 }}>🏆</Text>
         <Text style={{ fontFamily: fonts.display, fontSize: 28, color: L.gold }}>{state.winner === myId ? "You won!" : `${winner?.name ?? "Someone"} won!`}</Text>
+        {(() => {
+          const mine = state.rewards?.[myId];
+          if (!mine) return null;
+          return (
+            <View style={{ alignItems: "center", gap: 2 }}>
+              <Text accessibilityLabel={`You earned ${mine.coins} coins`} style={{ fontFamily: fonts.bodyBold, fontSize: 26, color: "#FFFFFF" }}>
+                {mine.coins > 0 ? `+${mine.coins} 🪙` : "🪙 Daily coin limit reached"}
+              </Text>
+              {(mine.notes ?? []).map((note) => (
+                <Text key={note} style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: L.gold }}>
+                  {note}
+                </Text>
+              ))}
+            </View>
+          );
+        })()}
         <View style={{ width: "100%", gap: 8, marginTop: 6 }}>
           {state.places.map((id, i) => {
             const m = game.members.find((x) => x.userId === id);
@@ -518,8 +614,8 @@ export function LudoScreen({
     "Ludo",
     <ScrollView contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 30, gap: 10 }}>
       <View style={{ flexDirection: "row", gap: 8 }}>
-        <PlayerCard game={game} seat={0} voice={voiceUsers} myId={myId} />
-        <PlayerCard game={game} seat={1} voice={voiceUsers} myId={myId} flip />
+        <PlayerCard game={game} seat={0} voice={voiceUsers} myId={myId} reaction={reactions[state.players.find((p) => p.seat === 0)?.userId ?? ""] ?? null} />
+        <PlayerCard game={game} seat={1} voice={voiceUsers} myId={myId} flip reaction={reactions[state.players.find((p) => p.seat === 1)?.userId ?? ""] ?? null} />
       </View>
       <View>
         <LudoBoard
@@ -528,12 +624,15 @@ export function LudoScreen({
           size={boardSize}
           onMove={(token) => void run(() => ludoApi.move(accessToken, game.id, token))}
           onStep={() => ludoSound.play("step")}
+          theme={theme}
+          tokenStyle={TOKEN_STYLES[prefs.token]!}
+          stepMs={stepMs(prefs.speed)}
         />
         <Banner banner={banner?.banner ?? null} stamp={banner?.stamp ?? 0} />
       </View>
       <View style={{ flexDirection: "row", gap: 8 }}>
-        <PlayerCard game={game} seat={3} voice={voiceUsers} myId={myId} />
-        <PlayerCard game={game} seat={2} voice={voiceUsers} myId={myId} flip />
+        <PlayerCard game={game} seat={3} voice={voiceUsers} myId={myId} reaction={reactions[state.players.find((p) => p.seat === 3)?.userId ?? ""] ?? null} />
+        <PlayerCard game={game} seat={2} voice={voiceUsers} myId={myId} flip reaction={reactions[state.players.find((p) => p.seat === 2)?.userId ?? ""] ?? null} />
       </View>
 
       {!state.finished && (
@@ -544,7 +643,7 @@ export function LudoScreen({
           style={{ flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 22, padding: 14, borderWidth: 1.5, borderColor: myTurn ? L.gold : L.glassBorder }}
         >
           <Pressable accessibilityRole="button" accessibilityLabel={canRoll ? "Roll the dice" : `Dice ${state.dice ?? ""}`} disabled={!canRoll} onPress={() => void roll()} hitSlop={10}>
-            <Dice value={state.dice} rolling={rolling} live={canRoll} />
+            <Dice value={state.dice} rolling={rolling} live={canRoll} skin={DICE_SKINS[prefs.dice]} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: myTurn ? L.gold : L.text }}>
@@ -554,7 +653,64 @@ export function LudoScreen({
               {lastLine(game, myId)}
             </Text>
           </View>
+          {amPlaying && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send an emoji or a quick message"
+              onPress={() => setReactOpen((v) => !v)}
+              hitSlop={8}
+              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: reactOpen ? L.gold : L.glassStrong, alignItems: "center", justifyContent: "center" }}
+            >
+              <Text style={{ fontSize: 20 }}>😊</Text>
+            </Pressable>
+          )}
         </LinearGradient>
+      )}
+
+      {reactOpen && amPlaying && !state.finished && wallet && (
+        <View style={{ borderRadius: 18, padding: 10, gap: 8, backgroundColor: L.glass, borderWidth: 1, borderColor: L.glassBorder }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+            {wallet.catalog
+              .filter((item) => item.kind === "emoji" && wallet.unlocked.includes(item.key))
+              .flatMap((item) => item.items ?? [])
+              .map((value) => (
+                <Pressable
+                  key={value}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Send ${value}`}
+                  onPress={() => {
+                    getChatSocket()?.emit("ludo:react", { gameId: game.id, kind: "emoji", value });
+                    setReactOpen(false);
+                  }}
+                  style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={{ fontSize: 28 }}>{value}</Text>
+                </Pressable>
+              ))}
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {wallet.catalog
+              .filter((item) => item.kind === "chat" && wallet.unlocked.includes(item.key))
+              .flatMap((item) => item.items ?? [])
+              .map((value) => (
+                <Pressable
+                  key={value}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Send ${value}`}
+                  onPress={() => {
+                    getChatSocket()?.emit("ludo:react", { gameId: game.id, kind: "chat", value });
+                    setReactOpen(false);
+                  }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: L.glassStrong }}
+                >
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: L.text }}>{value}</Text>
+                </Pressable>
+              ))}
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel="Get more emoji and messages" onPress={() => setStoreOpen(true)} style={{ alignSelf: "center", paddingVertical: 4 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12.5, color: L.gold }}>🔓 More in the store</Text>
+          </Pressable>
+        </View>
       )}
 
       {amPlaying && !state.finished && <VoiceBar room={voice} users={voiceUsers} onJoin={() => void joinVoice()} onLeave={leaveVoice} busy={voiceBusy} />}

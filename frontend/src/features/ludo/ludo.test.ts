@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { HOME_COLUMNS, pathFor, pointFor, squareKey, START, TRACK, YARDS } from "./board";
 import { ludoInviteState, ludoRoomLabel } from "./ludoText";
 import { clampVolume, ludoChange } from "./ludoEvents";
+import { allowedPrefs, BOARD_THEMES, cleanPrefs, DEFAULT_PREFS, DICE_SKINS, SOUND_PACKS, splitKey, stepMs, TOKEN_STYLES } from "./ludoLooks";
+import { spinLanding } from "./ludoText";
 import { pushTarget } from "../../app/push/nativePush";
 import type { LudoGame } from "../../api/ludoApi";
 
@@ -144,13 +146,15 @@ describe("Ludo sounds and big moments", () => {
   });
 
   it("ships our own sounds and a volume control", () => {
-    for (const name of ["dice", "step", "out", "cut", "home", "turn", "six", "tick", "win"]) {
-      expect(existsSync(join(__dirname, "../../../assets/sounds/ludo", `${name}.mp3`))).toBe(true);
+    for (const pack of SOUND_PACKS) {
+      for (const name of ["dice", "step", "out", "cut", "home", "turn", "six", "tick", "win"]) {
+        expect(existsSync(join(__dirname, "../../../assets/sounds/ludo", pack, `${name}.mp3`))).toBe(true);
+      }
     }
     const bits = read("src/features/ludo/LudoBits.tsx");
     expect(bits).toContain('accessibilityLabel="Game sound and volume"');
     expect(bits).toContain("ludoSound.set({ volume: level, muted: false })");
-    expect(read("src/features/ludo/LudoBoard.tsx")).toContain("setTimeout(onStep, 150 * (i + 1))");
+    expect(read("src/features/ludo/LudoBoard.tsx")).toContain("setTimeout(onStep, stepMs * (i + 1))");
   });
 });
 
@@ -170,5 +174,52 @@ describe("Ludo invites in chat", () => {
     expect(chat).toContain('message.type === "ludo" && message.ludo && (');
     expect(chat).toContain("onOpen={onOpenLudo}");
     expect(read("src/app/MilaanApp.tsx")).toContain('setLudoReturn("chat");');
+  });
+});
+
+describe("Ludo settings, store and the daily spin", () => {
+  it("has six boards, seven sound packs, five dice and four tokens", () => {
+    expect(Object.keys(BOARD_THEMES)).toHaveLength(6);
+    expect(SOUND_PACKS).toHaveLength(7);
+    expect(Object.keys(DICE_SKINS)).toHaveLength(5);
+    expect(Object.keys(TOKEN_STYLES)).toHaveLength(4);
+  });
+
+  it("matches the server's store: every board, sound, dice and token key has a look", () => {
+    const server = read("../backend/src/services/coinService.js");
+    const keys = [...server.matchAll(/key: "(theme|sound|dice|token)\.([a-z]+)"/g)].map((m) => [m[1] ?? "", m[2] ?? ""] as const);
+    expect(keys.length).toBe(22);
+    for (const [kind, look] of keys) {
+      const table = { theme: BOARD_THEMES, dice: DICE_SKINS, token: TOKEN_STYLES } as Record<string, Record<string, unknown>>;
+      if (kind === "sound") expect(SOUND_PACKS).toContain(look);
+      else expect(table[kind]![look]).toBeTruthy();
+    }
+  });
+
+  it("keeps settings sane, and only uses what you have unlocked", () => {
+    expect(cleanPrefs({ theme: "lava", sound: "dhol", speed: "warp", vibrate: false })).toEqual({ ...DEFAULT_PREFS, sound: "dhol", vibrate: false });
+    const free = ["theme.royal", "sound.classic", "dice.classic", "token.glossy"];
+    expect(allowedPrefs({ ...DEFAULT_PREFS, theme: "diwali", dice: "gold" }, free)).toMatchObject({ theme: "royal", dice: "classic" });
+    expect(allowedPrefs({ ...DEFAULT_PREFS, theme: "diwali" }, [...free, "theme.diwali"]).theme).toBe("diwali");
+    expect(splitKey("dice.galaxy")).toEqual({ kind: "dice", look: "galaxy" });
+    expect(stepMs("fast")).toBeLessThan(stepMs("normal"));
+  });
+
+  it("lands the spinner with the prize under the pointer", () => {
+    for (let i = 0; i < 8; i += 1) {
+      const centre = (i + 0.5) * 45;
+      expect((centre + spinLanding(i, 8, 5)) % 360).toBe(0);
+      expect(spinLanding(i, 8, 5)).toBeGreaterThan(5 * 360 - 1);
+    }
+  });
+
+  it("is wired in: store, coins, emoji, rewards and the spinner on Home", () => {
+    const screen = read("src/features/ludo/LudoScreen.tsx");
+    expect(screen).toContain('accessibilityLabel="Ludo settings and store"');
+    expect(screen).toContain('getChatSocket()?.emit("ludo:react"');
+    expect(screen).toContain("state.rewards?.[myId]");
+    expect(screen).toContain("tokenStyle={TOKEN_STYLES[prefs.token]!}");
+    expect(read("src/app/MilaanApp.tsx")).toContain('<DailySpinHost accessToken={accessToken} auto={screen === "home"} />');
+    expect(read("src/features/ludo/LudoStore.tsx")).toContain("coinsApi.unlock(accessToken, item.key)");
   });
 });

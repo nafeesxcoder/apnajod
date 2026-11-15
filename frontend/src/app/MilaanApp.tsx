@@ -207,6 +207,7 @@ import { loadStories, openStoriesOf, takeStoryParam } from "../features/stories/
 import { setFestival, startFestivalWatch } from "../features/festival/festivalStore";
 import { setPromo } from "../features/promo/promoStore";
 import { PromoHost } from "../features/promo/PromoHost";
+import { DailySpinHost } from "../features/ludo/DailySpin";
 import { KundliHost } from "../features/kundli/KundliSheet";
 import { KundliEditorHost } from "../features/kundli/KundliEditor";
 import type { Promo } from "../features/promo/styles";
@@ -4074,6 +4075,8 @@ function MilaanApp() {
             <KundliEditorHost accessToken={accessToken} onPremium={() => navigateTo("premium")} />
           </>
         )}
+        {/* The daily spinner: once in 24 hours, a moment after Home opens. */}
+        {!!accessToken && onboardingComplete && <DailySpinHost accessToken={accessToken} auto={screen === "home"} />}
         {/* The offer popup the admin has on: each time the app opens, until closed. */}
         {!!accessToken && onboardingComplete && (
           <PromoHost

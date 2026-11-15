@@ -1,7 +1,8 @@
 /**
  * Ludo's sounds: the dice, each step of a token, a cut, a token home, a
- * six, your turn, the clock running out and the win. They are our own
- * (made in code, in assets/sounds/ludo), small enough to load at once.
+ * six, your turn, the clock running out and the win - in seven packs to
+ * choose from in Settings. They are our own (made in code, in
+ * assets/sounds/ludo), small enough to load at once.
  *
  * Volume (0-1) and mute are kept on the phone. expo-audio plays them on
  * the website and in the app alike.
@@ -10,20 +11,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAudioPlayer, type AudioPlayer } from "expo-audio";
 
 import { clampVolume, type LudoCue } from "./ludoEvents";
+import { SOUND_FILES } from "./soundFiles";
 
 export type LudoSoundName = LudoCue | "step" | "tick";
 
-const FILES: Record<LudoSoundName, number> = {
-  dice: require("../../../assets/sounds/ludo/dice.mp3"),
-  step: require("../../../assets/sounds/ludo/step.mp3"),
-  out: require("../../../assets/sounds/ludo/out.mp3"),
-  cut: require("../../../assets/sounds/ludo/cut.mp3"),
-  home: require("../../../assets/sounds/ludo/home.mp3"),
-  turn: require("../../../assets/sounds/ludo/turn.mp3"),
-  six: require("../../../assets/sounds/ludo/six.mp3"),
-  tick: require("../../../assets/sounds/ludo/tick.mp3"),
-  win: require("../../../assets/sounds/ludo/win.mp3"),
-};
+/** The pack in use (Settings): its nine sounds. */
+let pack = "classic";
+const filesOf = (name: string) => SOUND_FILES[name] ?? SOUND_FILES.classic!;
 /** Steps come fast, one per square: a few players take turns. */
 const COPIES: Partial<Record<LudoSoundName, number>> = { step: 3, tick: 2 };
 const KEY = "apnajoda.ludo.sound";
@@ -38,6 +32,7 @@ const listeners = new Set<() => void>();
 function ensure() {
   if (players) return players;
   players = {};
+  const FILES = filesOf(pack) as Record<LudoSoundName, number>;
   for (const name of Object.keys(FILES) as LudoSoundName[]) {
     const list: AudioPlayer[] = [];
     for (let i = 0; i < (COPIES[name] ?? 1); i += 1) {
@@ -105,6 +100,23 @@ export const ludoSound = {
     } catch {
       // A sound that cannot play is skipped.
     }
+  },
+  /** A sound pack from Settings ("classic", "wood"...). */
+  setPack(next: string) {
+    if (next === pack || !SOUND_FILES[next]) return;
+    this.release();
+    pack = next;
+  },
+  get pack() {
+    return pack;
+  },
+  /** Settings: hear a pack before choosing it. */
+  preview(name: string) {
+    const before = pack;
+    this.setPack(name);
+    this.play("dice");
+    setTimeout(() => this.play("six"), 950);
+    if (before !== name) setTimeout(() => this.setPack(before), 1600);
   },
   /** Leaving the game: free the players. */
   release() {

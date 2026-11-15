@@ -10,6 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import type { LudoGame } from "../../api/ludoApi";
 import { HOME_COLUMNS, pathFor, pointFor, SEAT_COLORS, squareKey, STARS, START, TRACK, YARDS } from "./board";
 import { L, SEAT_DARK, SEAT_LIGHT } from "./ludoTheme";
+import type { BoardTheme, TokenStyle } from "./ludoLooks";
 
 const SEAT_NAMES = ["Red", "Green", "Yellow", "Blue"];
 
@@ -22,6 +23,8 @@ function Token({
   movable,
   onPress,
   onStep,
+  look,
+  stepMs,
 }: {
   seat: number;
   token: number;
@@ -31,6 +34,8 @@ function Token({
   movable: boolean;
   onPress: () => void;
   onStep: () => void;
+  look: TokenStyle;
+  stepMs: number;
 }) {
   const size = cell * 0.82;
   const place = (p: { x: number; y: number }) => ({ x: (p.x + offset.x) * cell - size / 2, y: (p.y + offset.y) * cell - size / 2 });
@@ -61,16 +66,16 @@ function Token({
     Animated.sequence(
       steps.map((p) =>
         Animated.parallel([
-          Animated.timing(pos, { toValue: place(p), duration: 150, easing: Easing.out(Easing.quad), useNativeDriver: false }),
+          Animated.timing(pos, { toValue: place(p), duration: stepMs, easing: Easing.out(Easing.quad), useNativeDriver: false }),
           Animated.sequence([
-            Animated.timing(lift, { toValue: 1, duration: 75, easing: Easing.out(Easing.quad), useNativeDriver: false }),
-            Animated.timing(lift, { toValue: 0, duration: 75, easing: Easing.in(Easing.quad), useNativeDriver: false }),
+            Animated.timing(lift, { toValue: 1, duration: stepMs / 2, easing: Easing.out(Easing.quad), useNativeDriver: false }),
+            Animated.timing(lift, { toValue: 0, duration: stepMs / 2, easing: Easing.in(Easing.quad), useNativeDriver: false }),
           ]),
         ]),
       ),
     ).start();
     // One tap of sound as it lands on each square.
-    const timers = steps.map((_, i) => setTimeout(onStep, 150 * (i + 1)));
+    const timers = steps.map((_, i) => setTimeout(onStep, stepMs * (i + 1)));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress, cell, offset.x, offset.y]);
@@ -135,9 +140,21 @@ function Token({
             colors={[SEAT_LIGHT[seat]!, SEAT_COLORS[seat]!, SEAT_DARK[seat]!]}
             start={{ x: 0.25, y: 0 }}
             end={{ x: 0.75, y: 1 }}
-            style={{ flex: 1, borderRadius: size / 2, borderWidth: 2.5, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+            style={{
+              flex: 1,
+              borderRadius: look.shape === "gem" ? size * 0.18 : size / 2,
+              borderWidth: 2.5,
+              borderColor: "#FFFFFF",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: look.shape === "gem" ? [{ rotate: "45deg" }, { scale: 0.86 }] : undefined,
+            }}
           >
-            <View style={{ width: size * 0.42, height: size * 0.42, borderRadius: size, backgroundColor: SEAT_DARK[seat], borderWidth: 2, borderColor: "rgba(255,255,255,0.85)" }} />
+            {look.mark ? (
+              <Text style={{ color: "#FFFFFF", fontSize: size * 0.5, lineHeight: size * 0.62, textShadowColor: "rgba(0,0,0,0.35)", textShadowRadius: 2 }}>{look.mark}</Text>
+            ) : (
+              <View style={{ width: size * 0.42, height: size * 0.42, borderRadius: look.shape === "gem" ? size * 0.08 : size, backgroundColor: SEAT_DARK[seat], borderWidth: 2, borderColor: "rgba(255,255,255,0.85)" }} />
+            )}
             {/* Gloss. */}
             <View style={{ position: "absolute", top: size * 0.1, left: size * 0.2, width: size * 0.3, height: size * 0.16, borderRadius: size, backgroundColor: "rgba(255,255,255,0.6)" }} />
           </LinearGradient>
@@ -153,12 +170,18 @@ export function LudoBoard({
   size,
   onMove,
   onStep,
+  theme,
+  tokenStyle,
+  stepMs = 150,
 }: {
   game: LudoGame;
   myId: string;
   size: number;
   onMove: (token: number) => void;
   onStep: () => void;
+  theme: BoardTheme;
+  tokenStyle: TokenStyle;
+  stepMs?: number;
 }) {
   const frame = 6;
   const inner = size - frame * 2;
@@ -191,7 +214,7 @@ export function LudoBoard({
   const square = (key: string, r: number, c: number, color: string, children?: React.ReactNode) => (
     <View
       key={key}
-      style={{ position: "absolute", top: r * cell, left: c * cell, width: cell, height: cell, backgroundColor: color, borderWidth: 0.6, borderColor: "rgba(60,40,20,0.14)", alignItems: "center", justifyContent: "center" }}
+      style={{ position: "absolute", top: r * cell, left: c * cell, width: cell, height: cell, backgroundColor: color, borderWidth: 0.6, borderColor: theme.line, alignItems: "center", justifyContent: "center" }}
     >
       {children}
     </View>
@@ -199,12 +222,12 @@ export function LudoBoard({
 
   return (
     <LinearGradient
-      colors={[L.goldLight, L.gold, L.goldDark]}
+      colors={theme.frame}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={{ width: size, height: size, alignSelf: "center", borderRadius: 22, padding: frame, shadowColor: L.gold, shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 10 }}
+      style={{ width: size, height: size, alignSelf: "center", borderRadius: 22, padding: frame, shadowColor: theme.frame[1], shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 10 }}
     >
-      <View style={{ width: inner, height: inner, borderRadius: 16, overflow: "hidden", backgroundColor: L.boardCream }}>
+      <View style={{ width: inner, height: inner, borderRadius: 16, overflow: "hidden", backgroundColor: theme.cell }}>
         {YARDS.map((yard, seat) => {
           const on = active.has(seat);
           const glowing = seat === turnSeat;
@@ -241,7 +264,7 @@ export function LudoBoard({
         {TRACK.map((sq, i) => {
           const startSeat = START.indexOf(i as 0 | 13 | 26 | 39);
           if (startSeat >= 0) return square(`t${i}`, sq.r, sq.c, SEAT_COLORS[startSeat]!, <Text style={{ fontSize: cell * 0.6, color: "#FFFFFF", lineHeight: cell * 0.8 }}>★</Text>);
-          return square(`t${i}`, sq.r, sq.c, L.boardCream, STARS.has(i) ? <Text style={{ fontSize: cell * 0.62, color: L.goldDark, lineHeight: cell * 0.8 }}>★</Text> : null);
+          return square(`t${i}`, sq.r, sq.c, theme.cell, STARS.has(i) ? <Text style={{ fontSize: cell * 0.62, color: theme.star, lineHeight: cell * 0.8 }}>★</Text> : null);
         })}
         {HOME_COLUMNS.map((column, seat) =>
           column.map((sq, i) => square(`h${seat}-${i}`, sq.r, sq.c, active.has(seat) ? SEAT_COLORS[seat]! : "#9CA3AF")),
@@ -266,9 +289,9 @@ export function LudoBoard({
         />
         <View
           pointerEvents="none"
-          style={{ position: "absolute", top: 7.5 * cell - cell * 0.55, left: 7.5 * cell - cell * 0.55, width: cell * 1.1, height: cell * 1.1, borderRadius: cell, backgroundColor: L.gold, borderWidth: 2, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+          style={{ position: "absolute", top: 7.5 * cell - cell * 0.55, left: 7.5 * cell - cell * 0.55, width: cell * 1.1, height: cell * 1.1, borderRadius: cell, backgroundColor: theme.center, borderWidth: 2, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
         >
-          <Text style={{ fontSize: cell * 0.62, color: "#FFFFFF", lineHeight: cell * 0.8 }}>★</Text>
+          <Text style={{ fontSize: cell * 0.62, color: "#FFFFFF", lineHeight: cell * 0.8 }}>{theme.centerMark ?? "★"}</Text>
         </View>
         {state.players
           .filter((p) => !p.out)
@@ -284,6 +307,8 @@ export function LudoBoard({
                 movable={myTurn && p.userId === myId && state.movable.includes(i)}
                 onPress={() => onMove(i)}
                 onStep={onStep}
+                look={tokenStyle}
+                stepMs={stepMs}
               />
             )),
           )}

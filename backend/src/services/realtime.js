@@ -207,6 +207,24 @@ function init(httpServer) {
         ack?.({ ok: false });
       }
     });
+    // An emoji or a quick line to everyone in the game (from a pack you have).
+    let lastReact = 0;
+    socket.on("ludo:react", async (data) => {
+      try {
+        const now = Date.now();
+        if (now - lastReact < 1200) return;
+        const gameId = String(data?.gameId || "");
+        const kind = data?.kind === "chat" ? "chat" : "emoji";
+        const value = String(data?.value || "").slice(0, 60);
+        if (!(await ludo().isPlayer(userId, gameId))) return;
+        if (!(await require("./coinService").canSay(userId, kind, value))) return;
+        lastReact = now;
+        for (const id of await ludo().playerIds(gameId)) emitToUser(id, "ludo:react", { gameId, from: userId, kind, value });
+      } catch {
+        // A lost reaction is fine.
+      }
+    });
+
     socket.on("ludo:signal", async (data) => {
       try {
         const gameId = String(data?.gameId || "");

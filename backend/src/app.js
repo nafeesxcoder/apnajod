@@ -72,6 +72,7 @@ app.use("/daily-question", dailyQuestionRoutes);
 app.use("/share", shareRoutes);
 app.use("/app", require("./routes/appRoutes"));
 app.use("/ludo", require("./routes/ludoRoutes"));
+app.use("/games", require("./routes/gameRoutes"));
 app.use("/admin", adminRoutes);
 
 // 404 handler

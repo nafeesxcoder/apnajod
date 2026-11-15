@@ -15,6 +15,7 @@ import { SEAT_COLORS } from "./board";
 import type { LudoBanner } from "./ludoEvents";
 import { ludoSound } from "./ludoSound";
 import { L, SEAT_DARK, SEAT_LIGHT } from "./ludoTheme";
+import { DICE_SKINS, type DiceSkin } from "./ludoLooks";
 import type { VoiceRoom, VoiceUser } from "./voiceRoom";
 
 // --- Background -----------------------------------------------------------
@@ -101,7 +102,61 @@ function ClockRing({ deadline, seconds, size, color }: { deadline: string | null
   );
 }
 
-export function PlayerCard({ game, seat, voice, myId, flip }: { game: LudoGame; seat: number; voice: VoiceUser[]; myId: string; flip?: boolean }) {
+/** An emoji or quick line someone sent, floating over their card for a moment. */
+function ReactionBubble({ reaction }: { reaction: { value: string; kind: "emoji" | "chat"; stamp: number } }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    v.setValue(0);
+    Animated.sequence([
+      Animated.spring(v, { toValue: 1, friction: 5, tension: 140, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(v, { toValue: 2, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [reaction.stamp, v]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessibilityLiveRegion="polite"
+      style={{
+        position: "absolute",
+        top: reaction.kind === "emoji" ? 4 : 8,
+        right: 8,
+        zIndex: 50,
+        opacity: v.interpolate({ inputRange: [0, 0.2, 1, 2], outputRange: [0, 1, 1, 0] }),
+        transform: [
+          { translateY: v.interpolate({ inputRange: [0, 1, 2], outputRange: [12, 0, -14] }) },
+          { scale: v.interpolate({ inputRange: [0, 1, 2], outputRange: [0.5, 1, 1] }) },
+        ],
+      }}
+    >
+      {reaction.kind === "emoji" ? (
+        <Text style={{ fontSize: 34 }}>{reaction.value}</Text>
+      ) : (
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, maxWidth: 170 }}>
+          <Text numberOfLines={2} style={{ fontFamily: fonts.bodyBold, fontSize: 12.5, color: "#1A0D45" }}>
+            {reaction.value}
+          </Text>
+        </View>
+      )}
+    </Animated.View>
+  );
+}
+
+export function PlayerCard({
+  game,
+  seat,
+  voice,
+  myId,
+  flip,
+  reaction,
+}: {
+  game: LudoGame;
+  seat: number;
+  voice: VoiceUser[];
+  myId: string;
+  flip?: boolean;
+  reaction?: { value: string; kind: "emoji" | "chat"; stamp: number } | null;
+}) {
   const state = game.state!;
   const player = state.players.find((p) => p.seat === seat);
   if (!player) return <View style={{ flex: 1 }} />;
@@ -130,6 +185,7 @@ export function PlayerCard({ game, seat, voice, myId, flip }: { game: LudoGame; 
         shadowOffset: { width: 0, height: 0 },
       }}
     >
+      {reaction && <ReactionBubble reaction={reaction} />}
       <View style={{ width: ring, height: ring, alignItems: "center", justifyContent: "center" }}>
         <Avatar member={member} size={ring - 16} ring={SEAT_COLORS[seat]} />
         {turn && <ClockRing deadline={game.turnDeadline} seconds={game.turnSeconds} size={ring} color={SEAT_LIGHT[seat]!} />}
@@ -170,12 +226,12 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[0, 0], [1, 0], [2, 0], [0, 2], [1, 2], [2, 2]],
 };
 
-function DiceFace({ value, size }: { value: number; size: number }) {
+export function DiceFace({ value, size, skin = DICE_SKINS.classic! }: { value: number; size: number; skin?: DiceSkin }) {
   const pip = size * 0.19;
   const gap = (size - pip * 3) / 4;
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.22, backgroundColor: "#C9C4DE", paddingBottom: size * 0.07 }}>
-      <LinearGradient colors={["#FFFFFF", "#F1EEF9"]} style={{ flex: 1, borderRadius: size * 0.22 }}>
+    <View style={{ width: size, height: size, borderRadius: size * 0.22, backgroundColor: skin.edge, paddingBottom: size * 0.07 }}>
+      <LinearGradient colors={skin.face} style={{ flex: 1, borderRadius: size * 0.22 }}>
         {(PIPS[value] ?? []).map(([row, col], i) => (
           <View
             key={i}
@@ -184,7 +240,7 @@ function DiceFace({ value, size }: { value: number; size: number }) {
               width: pip,
               height: pip,
               borderRadius: pip / 2,
-              backgroundColor: value === 1 || value === 6 ? "#D7263D" : "#1F1640",
+              backgroundColor: value === 1 || value === 6 ? skin.special : skin.pip,
               top: gap * 0.9 + row * (pip + gap * 0.9),
               left: gap + col * (pip + gap),
               borderTopWidth: 1.5,
@@ -197,7 +253,7 @@ function DiceFace({ value, size }: { value: number; size: number }) {
   );
 }
 
-export function Dice({ value, rolling, size = 66, live }: { value: number | null; rolling: boolean; size?: number; live?: boolean }) {
+export function Dice({ value, rolling, size = 66, live, skin }: { value: number | null; rolling: boolean; size?: number; live?: boolean; skin?: DiceSkin }) {
   const spin = useRef(new Animated.Value(0)).current;
   const hop = useRef(new Animated.Value(0)).current;
   const breathe = useRef(new Animated.Value(0)).current;
@@ -261,7 +317,7 @@ export function Dice({ value, rolling, size = 66, live }: { value: number | null
         elevation: 8,
       }}
     >
-      <DiceFace value={face} size={size} />
+      <DiceFace value={face} size={size} skin={skin} />
     </Animated.View>
   );
 }
@@ -330,27 +386,22 @@ export function useLudoSoundSettings() {
 
 const LEVELS = [0.2, 0.4, 0.6, 0.8, 1];
 
-export function SoundPanel({ onClose }: { onClose: () => void }) {
+/** Mute and five volume levels (used in the quick panel and in the store). */
+export function SoundPanelBody() {
   const { volume, muted } = useLudoSoundSettings();
   const shown = muted ? 0 : volume;
   return (
-    <View
-      accessibilityLabel="Game sound"
-      style={{ position: "absolute", top: 54, right: 12, zIndex: 80, width: 236, borderRadius: 20, padding: 14, backgroundColor: "#24154F", borderWidth: 1, borderColor: L.glassBorder, shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-        <Text style={{ flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: L.text }}>Game sound</Text>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: L.textSoft }}>{Math.round(shown * 100)}%</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10} style={{ marginLeft: 10 }}>
-          <Ionicons name="close" size={20} color={L.textSoft} />
-        </Pressable>
+    <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Text style={{ flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>Game sound</Text>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#C9BDF5" }}>{Math.round(shown * 100)}%</Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={muted ? "Sound on" : "Mute"}
           onPress={() => ludoSound.set({ muted: !muted })}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: muted ? L.red : L.glassStrong, alignItems: "center", justifyContent: "center" }}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: muted ? L.red : "rgba(255,255,255,0.14)", alignItems: "center", justifyContent: "center" }}
         >
           <Ionicons name={muted ? "volume-mute" : "volume-high"} size={19} color="#FFFFFF" />
         </Pressable>
@@ -364,10 +415,24 @@ export function SoundPanel({ onClose }: { onClose: () => void }) {
               ludoSound.play("step");
             }}
             hitSlop={{ top: 12, bottom: 12, left: 2, right: 2 }}
-            style={{ flex: 1, height: 14 + i * 7, borderRadius: 5, backgroundColor: shown >= level - 0.001 ? L.gold : "rgba(255,255,255,0.18)" }}
+            style={{ flex: 1, height: 14 + i * 7, borderRadius: 5, backgroundColor: shown >= level - 0.001 ? "#F6C445" : "rgba(255,255,255,0.18)" }}
           />
         ))}
       </View>
+    </View>
+  );
+}
+
+export function SoundPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <View
+      accessibilityLabel="Game sound"
+      style={{ position: "absolute", top: 54, right: 12, zIndex: 80, width: 236, borderRadius: 20, padding: 14, backgroundColor: "#24154F", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 }}
+    >
+      <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10} style={{ position: "absolute", top: 10, right: 10, zIndex: 2 }}>
+        <Ionicons name="close" size={18} color="#C9BDF5" />
+      </Pressable>
+      <SoundPanelBody />
     </View>
   );
 }

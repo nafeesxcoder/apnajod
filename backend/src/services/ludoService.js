@@ -100,6 +100,8 @@ function shape(game, members, viewerId) {
           winner: state.winner,
           finished: state.finished,
           moveNo: state.moveNo,
+          // What each player earned (coins) when the game ended.
+          rewards: state.rewards || null,
         }
       : null,
   };
@@ -220,6 +222,12 @@ async function decline(userId, gameId) {
 /** Save a new state if nobody changed the game meanwhile (version check). */
 async function save(game, state, extra = {}) {
   const finished = state.finished;
+  // Just finished: pay the players (once - a second save cannot pay again).
+  if (finished && !state.rewards) {
+    state.rewards = await require("./coinService")
+      .rewardLudo(game.id, state)
+      .catch(() => ({}));
+  }
   const deadline = finished ? null : sqlUtc(new Date(Date.now() + TURN_SECONDS * 1000));
   const result = await query(
     `UPDATE ludo_games SET state = ?, status = ?, turn_deadline = ?, version = version + 1

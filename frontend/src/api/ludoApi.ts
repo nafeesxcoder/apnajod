@@ -58,6 +58,8 @@ export type LudoGame = {
     winner: string | null;
     finished: boolean;
     moveNo: number;
+    /** Coins each player earned when the game ended. */
+    rewards?: Record<string, { coins: number; place: number; notes?: string[]; capped?: boolean }> | null;
   } | null;
 };
 

@@ -13,6 +13,7 @@ import { PressScale } from "../../components/motion";
 import { colors, fonts, palette, radius, typeScale } from "../../theme";
 import { SEAT_COLORS } from "./board";
 import { ludoRoomLabel } from "./ludoText";
+import { useWallet } from "./LudoStore";
 
 export function LudoEntry({
   accessToken,
@@ -26,6 +27,7 @@ export function LudoEntry({
   onOpen: (gameId: string | null) => void;
 }) {
   const [games, setGames] = useState<LudoGame[]>([]);
+  const wallet = useWallet(accessToken);
 
   const load = useCallback(() => {
     ludoApi
@@ -65,6 +67,12 @@ export function LudoEntry({
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: fonts.display, fontSize: 20, color: "#FFFFFF" }}>Ludo 🎲</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: "#D1D5DB", marginTop: 2 }}>2, 3 or 4 players · talk live on mic</Text>
+            {!!wallet && (
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12.5, color: "#F6C445", marginTop: 3 }}>
+                🪙 {wallet.coins} · {wallet.level}
+                {wallet.canSpin ? " · 🎡 Spin ready!" : ""}
+              </Text>
+            )}
           </View>
           <View style={{ backgroundColor: "#16A34A", borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 }}>
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Play</Text>
