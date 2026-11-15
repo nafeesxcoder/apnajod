@@ -13,16 +13,15 @@
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, interactive-widget=resizes-content" />
-    <title>Apnajoda - Verified Dating App for Serious Relationships &amp; Marriage in India</title>
-    <meta name="description" content="Apnajoda is a dating app for marriage-minded Indians: selfie-verified profiles, daily picks, optional Kundli Gun Milan, and safe chat, voice and video calls. Free to join." />
+    <title>Apnajoda - Dating App for Serious Relationships &amp; Marriage in India</title>
+    <meta name="description" content="Apnajoda is a dating app for India: meet selfie-verified singles who want a serious relationship or marriage. Chat, voice and video call safely, see Kundli Gun Milan, and play Ludo together. Free to join on web and Android." />
     <link rel="canonical" href="https://apnajoda.com/" />
-    <link rel="alternate" hreflang="en-IN" href="https://apnajoda.com/" />
-    <link rel="alternate" hreflang="hi-IN" href="https://apnajoda.com/hi/" />
-    <link rel="alternate" hreflang="x-default" href="https://apnajoda.com/" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="application-name" content="Apnajoda" />
+    <meta name="keywords" content="Apnajoda, dating app, dating app India, Indian dating app, dating app for marriage, verified dating app, serious relationship app" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Apnajoda" />
-    <meta property="og:title" content="Apnajoda - Serious, verified dating for India" />
+    <meta property="og:title" content="Apnajoda - Dating App for Serious Relationships in India" />
     <meta property="og:description" content="Meet selfie-verified, marriage-minded people. Daily picks, Kundli match and safe in-app calls. Free to join." />
     <meta property="og:url" content="https://apnajoda.com/" />
     <meta property="og:image" content="https://apnajoda.com/og-image.png" />
@@ -30,7 +29,7 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="en_IN" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Apnajoda - Serious, verified dating for India" />
+    <meta name="twitter:title" content="Apnajoda - Dating App for Serious Relationships in India" />
     <meta name="twitter:description" content="Meet selfie-verified, marriage-minded people. Daily picks, Kundli match and safe in-app calls." />
     <meta name="twitter:image" content="https://apnajoda.com/og-image.png" />
     <script>
@@ -46,10 +45,6 @@
           var r = document.querySelector('meta[name="robots"]');
           if (r && r !== m) r.parentNode.removeChild(r);
         }
-        /* Signed in already: show a plain splash, not the welcome page, while the app loads. */
-        try {
-          if (localStorage.getItem("milaan_access_token")) document.documentElement.className += " member";
-        } catch (e) {}
       })();
     </script>
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://apnajoda.com/#org","name":"Apnajoda","url":"https://apnajoda.com/","logo":"https://apnajoda.com/icon-512.png"},{"@type":"WebSite","@id":"https://apnajoda.com/#site","name":"Apnajoda","url":"https://apnajoda.com/","inLanguage":"en-IN","publisher":{"@id":"https://apnajoda.com/#org"}},{"@type":"MobileApplication","name":"Apnajoda","operatingSystem":"Android, Web","applicationCategory":"LifestyleApplication","url":"https://apnajoda.com/","description":"Serious, selfie-verified dating for marriage-minded people in India.","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},"publisher":{"@id":"https://apnajoda.com/#org"}}]}</script>
@@ -69,17 +64,17 @@
       html, body { width: 100%; height: 100%; margin: 0; }
       body { overflow: hidden; }
       #root { display: flex; flex: 1; width: 100%; height: 100%; }
-      /* The welcome text shown while the app loads. */
-      #seo-landing { position: absolute; inset: 0; overflow: auto; background: linear-gradient(135deg, #1F4D7A, #A8243A); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      #seo-landing .sl-in { max-width: 720px; margin: 0 auto; padding: 48px 22px; line-height: 1.6; }
-      #seo-landing .sl-logo { border-radius: 18px; }
-      #seo-landing h1 { font: 400 32px/1.25 Georgia, serif; margin: 18px 0 12px; }
-      #seo-landing h2 { font: 400 22px Georgia, serif; margin: 26px 0 8px; }
-      #seo-landing a { color: #FFE4EA; }
-      #seo-landing .sl-lead { font-size: 17px; opacity: 0.95; }
-      #seo-landing .sl-legal { font-size: 13px; opacity: 0.8; }
-      .member #seo-landing h1, .member #seo-landing p, .member #seo-landing .sl-more { display: none; }
-      .member #seo-landing .sl-in { display: flex; height: 100%; align-items: center; justify-content: center; padding: 0; }
+      /* The loading screen (like WhatsApp Web's): logo, name, one line - the app replaces it. */
+      #seo-landing { position: absolute; inset: 0; background: #FDF7F4; color: #14202E; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      #seo-landing .sl-in { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+      #seo-landing .sl-logo { border-radius: 22px; box-shadow: 0 6px 24px rgba(31, 77, 122, 0.18); }
+      #seo-landing h1 { font: 400 30px Georgia, serif; color: #1F4D7A; margin: 18px 0 6px; }
+      #seo-landing .sl-lead { font-size: 16px; color: #14202E; margin: 0 0 4px; }
+      #seo-landing .sl-sub { font-size: 13px; color: #5A6878; margin: 0; }
+      #seo-landing .sl-spin { width: 34px; height: 34px; margin: 26px 0; border-radius: 50%; border: 3px solid #E7DDD5; border-top-color: #A8243A; animation: sl-turn 0.9s linear infinite; }
+      #seo-landing .sl-legal { position: absolute; bottom: 18px; font-size: 12px; color: #5A6878; }
+      #seo-landing a { color: #5A6878; }
+      @keyframes sl-turn { to { transform: rotate(360deg); } }
 
     </style>
   </head>
@@ -88,24 +83,13 @@
       <!-- What visitors and search engines see while the app loads (the app replaces it). -->
       <div id="seo-landing">
         <div class="sl-in">
-          <img class="sl-logo" src="/icon-192.png?v=2" width="72" height="72" alt="Apnajoda logo" />
-          <h1>Serious, verified dating for marriage-minded India</h1>
-          <p class="sl-lead">Apnajoda helps you meet real, selfie-verified people who want a relationship that can lead to marriage. Get a few thoughtful introductions every day, see your Kundli Gun score if you follow it, and chat, voice or video call inside the app before you share your number.</p>
-          <div class="sl-more">
-            <h2>Why people choose Apnajoda</h2>
-            <ul>
-              <li><b>Selfie-verified profiles</b> - a blue tick means a real person.</li>
-              <li><b>Aaj ke 5</b> - daily picks chosen for what you are looking for.</li>
-              <li><b>Kundli &amp; Gun Milan</b> - optional and private.</li>
-              <li><b>Safe in-app calls</b> - no need to share your phone number.</li>
-              <li><b>Meet up plans</b> - suggest a safe public place from the chat.</li>
-              <li><b>Ludo with live voice</b> and chat games to break the ice.</li>
-            </ul>
-            <p><a href="/features/">Features</a> · <a href="/how-it-works/">How it works</a> · <a href="/safety/">Safety</a> · <a href="/faq/">FAQ</a> · <a href="/kundli-matching/">Kundli matching</a> · <a href="/dating-app-for-marriage/">Dating for marriage</a> · <a href="/verified-dating-app-india/">Verified dating</a> · <a href="/dating-in/">Cities</a> · <a href="/blog/">Blog</a> · <a href="/hi/">हिन्दी</a></p>
-            <p>Popular cities: <a href="/dating-in/delhi/">Delhi</a> · <a href="/dating-in/mumbai/">Mumbai</a> · <a href="/dating-in/bangalore/">Bengaluru</a> · <a href="/dating-in/hyderabad/">Hyderabad</a> · <a href="/dating-in/chennai/">Chennai</a> · <a href="/dating-in/kolkata/">Kolkata</a> · <a href="/dating-in/pune/">Pune</a> · <a href="/dating-in/jaipur/">Jaipur</a> · <a href="/dating-in/lucknow/">Lucknow</a></p>
-            <p class="sl-legal"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/pricing.html">Pricing</a> · <a href="/contact.html">Contact</a></p>
-          </div>
-          <noscript><p>Apnajoda needs JavaScript to run. Please turn it on, or read about us on the pages above.</p></noscript>
+          <img class="sl-logo" src="/icon-192.png?v=2" width="88" height="88" alt="Apnajoda" />
+          <h1>Apnajoda</h1>
+          <p class="sl-lead">Dating app for serious relationships &amp; marriage in India</p>
+          <p class="sl-sub">Selfie-verified people · Safe chat and video calls · Kundli match</p>
+          <div class="sl-spin" aria-hidden="true"></div>
+          <noscript><p class="sl-sub">Apnajoda runs in your browser. Please turn on JavaScript to sign up or log in.</p></noscript>
+          <p class="sl-legal"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/contact.html">Contact</a></p>
         </div>
       </div>
     </div>
