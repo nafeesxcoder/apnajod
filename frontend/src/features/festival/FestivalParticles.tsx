@@ -35,7 +35,7 @@ function ScreenFireworks({ theme, width, height }: { theme: FestivalTheme; width
 function BigFirework({ x, y, colors }: { x: number; y: number; colors: string[] }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(v, { toValue: 1, duration: 1300, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(v, { toValue: 1, duration: 1300, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [v]);
   const sparks = 16;
   return (
@@ -160,7 +160,7 @@ function Falling({
       duration: bit.duration,
       delay: bit.delay,
       easing: rise ? Easing.out(Easing.quad) : Easing.in(Easing.quad),
-      useNativeDriver: true,
+      useNativeDriver: false,
     });
     anim.start(() => onDone?.());
     return () => anim.stop();

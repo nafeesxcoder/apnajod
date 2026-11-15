@@ -44,15 +44,15 @@ export function PromoCard({
     if (still) return;
     const beat = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 700, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: false }),
+        Animated.timing(pulse, { toValue: 0, duration: 700, easing: Easing.in(Easing.quad), useNativeDriver: false }),
       ]),
     );
     const sweep = Animated.loop(
       Animated.sequence([
-        Animated.timing(shine, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(shine, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: false }),
         Animated.delay(1600),
-        Animated.timing(shine, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.timing(shine, { toValue: 0, duration: 0, useNativeDriver: false }),
       ]),
     );
     beat.start();
@@ -226,7 +226,7 @@ function Burst({ emojis }: { emojis: string[] }) {
     [emojis],
   );
   useEffect(() => {
-    Animated.timing(progress, { toValue: 1, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(progress, { toValue: 1, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [progress]);
   return (
     <View pointerEvents="none" style={{ position: "absolute", top: "50%", left: "50%" }}>
@@ -276,7 +276,7 @@ export function PromoPopup({
   useEffect(() => {
     if (!visible) return;
     enter.setValue(0);
-    Animated.spring(enter, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }).start();
+    Animated.spring(enter, { toValue: 1, friction: 6, tension: 70, useNativeDriver: false }).start();
   }, [visible, enter]);
 
   return (

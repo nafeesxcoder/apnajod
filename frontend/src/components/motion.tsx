@@ -3,7 +3,6 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  Platform,
   Pressable,
   View,
   type PressableProps,
@@ -19,8 +18,12 @@ import { brand } from "./brand";
  *
  * Everything here stands still when the phone asks for less motion
  * (Settings > Accessibility > Reduce motion / Remove animations).
+ *
+ * Animations run on the JavaScript side everywhere (useNativeDriver: false).
+ * In the Android app, native-driven fades that started after the screen
+ * had drawn (a Reveal with a delay, the splash wordmark) were never applied,
+ * so whole cards stayed invisible.
  */
-const nativeDriver = Platform.OS !== "web";
 
 /** True when the member has asked their phone for less motion. */
 export function useReducedMotion(): boolean {
@@ -67,7 +70,7 @@ export function Reveal({
       duration: 480,
       delay,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: nativeDriver,
+      useNativeDriver: false,
     });
     run.start();
     return () => run.stop();
@@ -108,7 +111,7 @@ export function PressScale({
   const reduced = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const to = (value: number) =>
-    Animated.spring(scale, { toValue: value, useNativeDriver: nativeDriver, speed: 40, bounciness: 6 }).start();
+    Animated.spring(scale, { toValue: value, useNativeDriver: false, speed: 40, bounciness: 6 }).start();
   return (
     <Pressable
       {...props}
@@ -160,7 +163,7 @@ export function SpinRing({
 }) {
   const reduced = useReducedMotion();
   const turn = useLoop(
-    (v) => Animated.timing(v, { toValue: 1, duration: 4000, easing: Easing.linear, useNativeDriver: nativeDriver }),
+    (v) => Animated.timing(v, { toValue: 1, duration: 4000, easing: Easing.linear, useNativeDriver: false }),
     reduced || !spin,
   );
   const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
@@ -196,10 +199,10 @@ export function HeartBeat({ children, active = true }: { children: ReactNode; ac
   const beat = useLoop(
     (v) =>
       Animated.sequence([
-        Animated.timing(v, { toValue: 1, duration: 160, useNativeDriver: nativeDriver }),
-        Animated.timing(v, { toValue: 0.4, duration: 140, useNativeDriver: nativeDriver }),
-        Animated.timing(v, { toValue: 0.8, duration: 160, useNativeDriver: nativeDriver }),
-        Animated.timing(v, { toValue: 0, duration: 240, useNativeDriver: nativeDriver }),
+        Animated.timing(v, { toValue: 1, duration: 160, useNativeDriver: false }),
+        Animated.timing(v, { toValue: 0.4, duration: 140, useNativeDriver: false }),
+        Animated.timing(v, { toValue: 0.8, duration: 160, useNativeDriver: false }),
+        Animated.timing(v, { toValue: 0, duration: 240, useNativeDriver: false }),
         Animated.delay(900),
       ]),
     reduced || !active,
@@ -227,7 +230,7 @@ export function GlowPulse({
   const pulse = useLoop(
     (v) =>
       Animated.sequence([
-        Animated.timing(v, { toValue: 1, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: nativeDriver }),
+        Animated.timing(v, { toValue: 1, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: false }),
         Animated.delay(500),
       ]),
     reduced,

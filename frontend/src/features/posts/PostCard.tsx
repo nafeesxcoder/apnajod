@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { postApi, type Post } from "../../api/postApi";
@@ -10,8 +10,6 @@ import { StoryRing } from "../stories/StoryRing";
 import { Avatar, CommentsSheet, LikersSheet, ReportSheet, ShareSheet, Sheet } from "./PostSheets";
 import { countLabel, timeAgo } from "./postFormat";
 import { canOpenProfile, openProfile } from "./profileLink";
-
-const nativeDriver = Platform.OS !== "web";
 
 /**
  * One post the way Instagram shows it:
@@ -83,9 +81,9 @@ export function PostCard({
     if (reduced) return;
     heart.setValue(0);
     Animated.sequence([
-      Animated.spring(heart, { toValue: 1, useNativeDriver: nativeDriver, speed: 18, bounciness: 12 }),
+      Animated.spring(heart, { toValue: 1, useNativeDriver: false, speed: 18, bounciness: 12 }),
       Animated.delay(450),
-      Animated.timing(heart, { toValue: 2, duration: 220, easing: Easing.in(Easing.quad), useNativeDriver: nativeDriver }),
+      Animated.timing(heart, { toValue: 2, duration: 220, easing: Easing.in(Easing.quad), useNativeDriver: false }),
     ]).start();
   };
 

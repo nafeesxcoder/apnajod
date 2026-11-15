@@ -67,6 +67,18 @@ describe("the phone app", () => {
     expect(renew).toMatch(/if \(Platform\.OS !== "web"\) \{\s*const appState = AppState\.addEventListener/);
   });
 
+  it("runs every animation on the JavaScript side", () => {
+    // Native-driven fades that started after the screen had drawn never
+    // showed in the Android app: cards, the splash and the sign-in form
+    // stayed invisible.
+    const all = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? all(join(dir, e.name)) : /\.tsx?$/.test(e.name) && !e.name.includes(".test.") ? [join(dir, e.name)] : [],
+      );
+    const found = all("src").filter((file) => /useNativeDriver:(?!\s*false\b)/.test(readFileSync(file, "utf8")));
+    expect(found).toEqual([]);
+  });
+
   it("reports a crash to the server log so it can be found", () => {
     expect(readFileSync("src/components/ErrorBoundary.tsx", "utf8")).toContain("`${API_URL}/client-errors`");
   });

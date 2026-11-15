@@ -108,9 +108,9 @@ function ReactionBubble({ reaction }: { reaction: { value: string; kind: "emoji"
   useEffect(() => {
     v.setValue(0);
     Animated.sequence([
-      Animated.spring(v, { toValue: 1, friction: 5, tension: 140, useNativeDriver: true }),
+      Animated.spring(v, { toValue: 1, friction: 5, tension: 140, useNativeDriver: false }),
       Animated.delay(1800),
-      Animated.timing(v, { toValue: 2, duration: 300, useNativeDriver: true }),
+      Animated.timing(v, { toValue: 2, duration: 300, useNativeDriver: false }),
     ]).start();
   }, [reaction.stamp, v]);
   return (
@@ -264,18 +264,18 @@ export function Dice({ value, rolling, size = 66, live, skin }: { value: number 
       if (value) setFace(value);
       // Lands with a little bounce.
       Animated.sequence([
-        Animated.timing(hop, { toValue: -0.25, duration: 90, useNativeDriver: true }),
-        Animated.timing(hop, { toValue: 0, duration: 260, easing: Easing.bounce, useNativeDriver: true }),
+        Animated.timing(hop, { toValue: -0.25, duration: 90, useNativeDriver: false }),
+        Animated.timing(hop, { toValue: 0, duration: 260, easing: Easing.bounce, useNativeDriver: false }),
       ]).start();
       return;
     }
     const timer = setInterval(() => setFace(1 + Math.floor(Math.random() * 6)), 70);
     const anim = Animated.loop(
       Animated.parallel([
-        Animated.timing(spin, { toValue: 1, duration: 380, easing: Easing.linear, useNativeDriver: true }),
+        Animated.timing(spin, { toValue: 1, duration: 380, easing: Easing.linear, useNativeDriver: false }),
         Animated.sequence([
-          Animated.timing(hop, { toValue: -1, duration: 190, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(hop, { toValue: 0, duration: 190, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.timing(hop, { toValue: -1, duration: 190, easing: Easing.out(Easing.quad), useNativeDriver: false }),
+          Animated.timing(hop, { toValue: 0, duration: 190, easing: Easing.in(Easing.quad), useNativeDriver: false }),
         ]),
       ]),
     );
@@ -294,8 +294,8 @@ export function Dice({ value, rolling, size = 66, live, skin }: { value: number 
     }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breathe, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(breathe, { toValue: 0, duration: 600, useNativeDriver: true }),
+        Animated.timing(breathe, { toValue: 1, duration: 600, useNativeDriver: false }),
+        Animated.timing(breathe, { toValue: 0, duration: 600, useNativeDriver: false }),
       ]),
     );
     loop.start();
@@ -338,9 +338,9 @@ export function Banner({ banner, stamp }: { banner: LudoBanner | null; stamp: nu
     if (!banner) return;
     v.setValue(0);
     Animated.sequence([
-      Animated.spring(v, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
+      Animated.spring(v, { toValue: 1, friction: 5, tension: 120, useNativeDriver: false }),
       Animated.delay(900),
-      Animated.timing(v, { toValue: 2, duration: 280, useNativeDriver: true }),
+      Animated.timing(v, { toValue: 2, duration: 280, useNativeDriver: false }),
     ]).start();
   }, [stamp, banner, v]);
   if (!banner) return null;
@@ -529,7 +529,7 @@ export function Confetti() {
     [width],
   );
   useEffect(() => {
-    bits.forEach((b) => Animated.timing(b.v, { toValue: 1, duration: 2600, delay: b.delay, easing: Easing.in(Easing.quad), useNativeDriver: true }).start());
+    bits.forEach((b) => Animated.timing(b.v, { toValue: 1, duration: 2600, delay: b.delay, easing: Easing.in(Easing.quad), useNativeDriver: false }).start());
   }, [bits]);
   return (
     <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 }}>

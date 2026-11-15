@@ -45,7 +45,7 @@ export function SplashScreen() {
       toValue: 1,
       friction: 6,
       tension: 70,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
 
     Animated.parallel([
@@ -53,14 +53,14 @@ export function SplashScreen() {
         toValue: 1,
         duration: 700,
         delay: 450,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(wordSlide, {
         toValue: 0,
         duration: 700,
         delay: 450,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]).start();
 
@@ -70,14 +70,14 @@ export function SplashScreen() {
           toValue: 1,
           duration: JOIN_MS,
           easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.delay(420),
         Animated.timing(join, {
           toValue: 0,
           duration: PART_MS,
           easing: Easing.in(Easing.cubic),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.delay(160),
       ]),
