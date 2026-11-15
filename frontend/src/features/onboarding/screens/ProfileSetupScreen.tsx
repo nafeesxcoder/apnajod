@@ -1,15 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Modal,
-  Alert,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Alert } from "react-native";
+import { Modal } from "../../../components/BackModal";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";

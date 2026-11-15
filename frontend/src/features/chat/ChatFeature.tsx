@@ -11,7 +11,24 @@ import { StoryReplyLabel } from "../stories/StoryReplyBar";
 import { StoryRing } from "../stories/StoryRing";
 import { useStoryStatus } from "../stories/storyStore";
 import { postIdFromText } from "../posts/profileLink";
-import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, PanResponder, Platform, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  PanResponder,
+  Platform,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Pressable } from "../../components/Pressable";
 import type { GestureResponderEvent } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -60,6 +77,8 @@ import {
 } from "./planCards";
 import { useFestival } from "../festival/festivalStore";
 import { alreadyWished, FestivalWishCard, FestivalWishChip } from "../festival/FestivalWish";
+import { LudoInviteCard } from "../ludo/LudoInviteCard";
+import { userIdFromToken } from "../posts/profileLink";
 import {
   chatApi,
   fetchIcebreakers,
@@ -138,6 +157,7 @@ import type {
 } from "./contracts/ChatRuntimePorts";
 import { AppCanvas } from "../../components/AppCanvas";
 import { keyboardBehavior } from "../../layout/keyboardBehavior";
+import { serverMs } from "../../domain/serverTime";
 
 // 🚀 BACKGROUND IMAGE ADDED HERE
 
@@ -826,7 +846,7 @@ function webFileToImagePickerAsset(file: File): ImagePicker.ImagePickerAsset {
 // Turns a last-active ISO timestamp into a short relative label like
 // WhatsApp's "last seen 5 minutes ago" / "last seen today at 2:40 PM".
 function formatLastSeen(iso: string): string {
-  const then = new Date(iso).getTime();
+  const then = serverMs(iso);
   if (Number.isNaN(then)) return "Last seen recently";
   const diffMs = Date.now() - then;
   if (diffMs < 60 * 1000) return "Last seen just now";
@@ -877,7 +897,10 @@ export function ChatScreen({
   partnerLastActiveAt,
   livePartnerTyping,
   onTypingChange,
+  onOpenLudo,
 }: {
+  /** A Ludo invite card was tapped: open that game room. */
+  onOpenLudo?: (gameId: string) => void;
   runtimePorts: ChatRuntimePorts;
   previewState?: PreviewState;
   showcaseDateStatus?: DatePlanStatus;
@@ -2882,6 +2905,8 @@ export function ChatScreen({
                   }
                   onDateAction={accessToken ? (action) => void dateAction(message, action) : undefined}
                   onPollVote={accessToken ? (choice) => void votePoll(message, choice) : undefined}
+                  accessToken={accessToken}
+                  onOpenLudo={onOpenLudo}
                   onPress={() => selectMessage(message)}
                   onSwipeReply={() => setReplyTarget(message)}
                   onSwipeEdit={
@@ -3715,7 +3740,11 @@ function ChatBubble({
   onQuickReact,
   onSwipeReply,
   onSwipeEdit,
+  accessToken,
+  onOpenLudo,
 }: {
+  accessToken?: string;
+  onOpenLudo?: (gameId: string) => void;
   message: ChatMessage;
   status: ChatMessage["status"];
   accent?: string;
@@ -3878,6 +3907,8 @@ function ChatBubble({
     },
     // A festival wish is its own card: no bubble around it.
     message.type === "festival" && { backgroundColor: "transparent", padding: 0, borderWidth: 0 },
+    // So is a Ludo invite.
+    message.type === "ludo" && { backgroundColor: "transparent", padding: 0, borderWidth: 0 },
     // A photo bubble needs a real width. Without one it sizes to its
     // content, the frame's `width: 100%` has nothing to resolve against,
     // and the photo collapses to a thumbnail a few pixels across.
@@ -4269,6 +4300,15 @@ function ChatBubble({
           {message.type === "poll" && message.poll && <PollCard message={message} onVote={onPollVote} />}
           {message.type === "contact" && message.contact && <ContactCard message={message} />}
           {message.type === "festival" && message.festival && <FestivalWishCard wish={message.festival} mine={mine} />}
+          {message.type === "ludo" && message.ludo && (
+            <LudoInviteCard
+              invite={message.ludo}
+              mine={mine}
+              accessToken={accessToken}
+              myId={accessToken ? userIdFromToken(accessToken) || undefined : undefined}
+              onOpen={onOpenLudo}
+            />
+          )}
           {message.type === "voice" && message.uri && (
             <View>
               <VoiceNote
@@ -4325,7 +4365,7 @@ function ChatBubble({
                   // A big emoji or a festival card has no bubble behind it,
                   // so its time is grey, not white.
                   color:
-                    mine && !emojiOnly && !isJustEmoji && message.type !== "festival"
+                    mine && !emojiOnly && !isJustEmoji && message.type !== "festival" && message.type !== "ludo"
                       ? "rgba(255,255,255,.82)"
                       : colors.muted,
                 },

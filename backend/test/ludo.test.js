@@ -128,3 +128,47 @@ test("a whole random game always ends with a winner", () => {
     assert.strictEqual(s.places.length, 4);
   }
 });
+
+test("an invite also lands in the chat, with no second notification", async () => {
+  const Module = require("node:module");
+  const sent = [];
+  const pushes = [];
+  const original = Module.prototype.require;
+  Module.prototype.require = function patched(id) {
+    if (id === "../config/db") {
+      return {
+        query: async (sql) => {
+          if (/FROM ludo_games/.test(sql)) return [{ id: "g1", host_id: "h", max_players: 3, status: "waiting", version: 0, state: null }];
+          if (/FROM ludo_members/.test(sql)) return [{ user_id: "h", status: "joined", first_name: "Aarav" }];
+          if (/first_name/.test(sql)) return [{ first_name: "Aarav" }];
+          return [];
+        },
+      };
+    }
+    if (id === "./chatService") {
+      return {
+        assertParticipant: async () => ["h", "x"],
+        sendMessage: async (peerId, userId, message, options) => sent.push({ peerId, userId, message, options }),
+      };
+    }
+    if (id === "./pushService") return { notifyUser: async (userId, body) => pushes.push({ userId, body }) };
+    if (id === "./realtime") return { emitToUser: () => undefined };
+    return original.apply(this, arguments);
+  };
+  let ludo;
+  try {
+    delete require.cache[require.resolve("../src/services/ludoService")];
+    ludo = require("../src/services/ludoService");
+  } finally {
+    Module.prototype.require = original;
+  }
+  await ludo.create("h", { maxPlayers: 3, invite: ["x", "y"] });
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(
+    sent.map((s) => [s.peerId, s.userId, s.message.type, s.message.ludo.maxPlayers, s.options.push]),
+    [["x", "h", "ludo", 3, false], ["y", "h", "ludo", 3, false]],
+  );
+  assert.equal(sent[0].message.ludo.gameId.length, 36);
+  assert.equal(pushes.length, 2);
+  assert.equal(pushes[0].body.ludoGameId, sent[0].message.ludo.gameId);
+});

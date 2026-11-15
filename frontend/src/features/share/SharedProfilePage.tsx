@@ -15,6 +15,7 @@ import { intentBadges } from "../../domain/intentBadges";
 import { palette, radius } from "../../theme";
 import { brand, whiteCard } from "../../components/brand";
 import { GlowPulse, PressScale } from "../../components/motion";
+import { serverDate } from "../../domain/serverTime";
 
 /**
  * What family sees when they open a "show my family" link.
@@ -26,7 +27,7 @@ import { GlowPulse, PressScale } from "../../components/motion";
  */
 function formatDate(iso: string | null) {
   if (!iso) return "";
-  const date = new Date(iso);
+  const date = serverDate(iso);
   return Number.isNaN(date.getTime())
     ? ""
     : date.toLocaleDateString(undefined, { day: "numeric", month: "short" });

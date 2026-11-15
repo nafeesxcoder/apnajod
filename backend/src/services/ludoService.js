@@ -134,7 +134,7 @@ async function firstName(userId) {
   return row?.first_name || row?.username || "Someone";
 }
 
-async function sendInvites(gameId, hostId, userIds) {
+async function sendInvites(gameId, hostId, userIds, maxPlayers) {
   const name = await firstName(hostId);
   for (const userId of userIds) {
     await query(
@@ -148,6 +148,11 @@ async function sendInvites(gameId, hostId, userIds) {
         body: "Join the game - you can talk while you play.",
         ludoGameId: gameId,
       })
+      .catch(() => undefined);
+    // The invite also lands in your chat with them, with a Join button.
+    // (No second notification: the one above opens the game.)
+    chatService
+      .sendMessage(userId, hostId, { type: "ludo", text: "🎲 Let's play Ludo!", ludo: { gameId, maxPlayers } }, { push: false })
       .catch(() => undefined);
   }
 }
@@ -165,7 +170,7 @@ async function create(hostId, input) {
     "INSERT INTO ludo_members (game_id, user_id, status, joined_at) VALUES (?, ?, 'joined', UTC_TIMESTAMP())",
     [id, hostId],
   );
-  await sendInvites(id, hostId, invite);
+  await sendInvites(id, hostId, invite, maxPlayers);
   await announce(id);
   return view(id, hostId);
 }
@@ -181,7 +186,7 @@ async function invite(hostId, gameId, userIds) {
     throw fail(400, "That is more people than this game has seats for.");
   }
   for (const userId of list) await assertCanInvite(hostId, userId);
-  await sendInvites(gameId, hostId, list);
+  await sendInvites(gameId, hostId, list, Number(game.max_players));
   await announce(gameId);
   return view(gameId, hostId);
 }

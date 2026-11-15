@@ -24,6 +24,7 @@ import { matchApi, type MutualMatchSummary } from "../../../api/matchApi";
 import { matchFromSocialUser } from "../../../domain/socialMatch";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
+import { serverMs } from "../../../domain/serverTime";
 
 type IncomingLike = {
   id: string;
@@ -161,7 +162,7 @@ function matchFromLike(like: IncomingLike): Match {
 
 function sinceLabel(iso: string | null) {
   if (!iso) return "";
-  const then = new Date(iso).getTime();
+  const then = serverMs(iso);
   if (Number.isNaN(then)) return "";
   const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
   if (mins < 1) return "just now";
@@ -178,7 +179,7 @@ const NEW_MATCH_DAYS = 30;
 function recentMatches(list: MutualMatchSummary[], now = Date.now()) {
   const since = now - NEW_MATCH_DAYS * 24 * 60 * 60 * 1000;
   return list.filter((m) => {
-    const at = m.matchedAt ? new Date(m.matchedAt).getTime() : 0;
+    const at = m.matchedAt ? serverMs(m.matchedAt) || 0 : 0;
     return at >= since;
   });
 }

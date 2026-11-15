@@ -23,7 +23,7 @@ import { useFestival } from "../../festival/festivalStore";
 /** "till 17 Nov" in India time, or "" with no end. */
 function offerEnds(value: string | null | undefined) {
   if (!value) return "";
-  const date = new Date(value);
+  const date = serverDate(value);
   if (Number.isNaN(date.getTime())) return "";
   return `till ${date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" })}`;
 }
@@ -32,6 +32,7 @@ import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
 import { LinearGradient } from "expo-linear-gradient";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
+import { serverDate } from "../../../domain/serverTime";
 
 const COLUMN = 800;
 
@@ -516,7 +517,7 @@ export function PremiumScreen({
                         }}
                       >
                         Until{" "}
-                        {new Date(summary.premiumUntil).toLocaleDateString()}
+                        {serverDate(summary.premiumUntil).toLocaleDateString()}
                       </Text>
                     )}
                   </Reveal>
@@ -1034,7 +1035,7 @@ function CreditsCard({
   if (!summary.premium && boosts === 0 && superlikes === 0 && !active) return null;
 
   const until = active
-    ? new Date(active.endsAt).toLocaleTimeString([], {
+    ? serverDate(active.endsAt).toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
       })

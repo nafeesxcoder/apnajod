@@ -1,14 +1,7 @@
 import { startRingback } from "./ringback";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";

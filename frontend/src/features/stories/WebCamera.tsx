@@ -1,5 +1,6 @@
 import { createElement, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 
 import { fonts, palette, radius } from "../../theme";

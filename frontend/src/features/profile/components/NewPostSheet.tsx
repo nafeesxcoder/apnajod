@@ -1,17 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Modal,
-  PanResponder,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, Image, PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Modal } from "../../../components/BackModal";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 

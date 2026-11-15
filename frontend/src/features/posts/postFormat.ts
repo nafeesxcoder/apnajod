@@ -1,10 +1,11 @@
 /**
  * Small words under a post, the way Instagram writes them.
  */
+import { serverMs } from "../../domain/serverTime";
 
 /** "now", "5m", "3h", "2d", "4w", then a date ("12 Nov", "12 Nov 2024"). */
 export function timeAgo(value: string | number | Date, now: number = Date.now()): string {
-  const at = new Date(value).getTime();
+  const at = serverMs(value);
   if (!Number.isFinite(at)) return "";
   const seconds = Math.max(0, Math.round((now - at) / 1000));
   if (seconds < 60) return "now";

@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Image, Platform, Pressable, Text, TouchableOpacity, View } from "react-native";
+import { Modal } from "../../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -420,7 +411,7 @@ export function PostsSection({
       </Modal>
 
       {/* Post options */}
-      <Modal visible={!!menuFor} transparent animationType="fade">
+      <Modal visible={!!menuFor} transparent animationType="fade" onRequestClose={() => setMenuFor(null)}>
         <Pressable
           onPress={() => setMenuFor(null)}
           style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}

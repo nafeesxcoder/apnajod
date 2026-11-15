@@ -22,6 +22,7 @@ import { PROMO_STYLES, type Promo } from "../../promo/styles";
 import { GrowthTab } from "./GrowthTab";
 import { MusicTab } from "./MusicTab";
 import { fonts, radius } from "../../../theme";
+import { serverDate } from "../../../domain/serverTime";
 
 // 👇 Naya tab "security" add kiya
 type Tab =
@@ -595,7 +596,7 @@ const displayName = (u: any) =>
 
 function joinedLabel(value: unknown) {
   if (!value) return "";
-  const date = new Date(String(value));
+  const date = serverDate(String(value));
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-IN", {
     day: "numeric",
@@ -2058,7 +2059,7 @@ function PaymentsTab({ accessToken }: { accessToken: string }) {
   if (loading) return <Loading />;
 
   const when = (value: unknown) => {
-    const date = new Date(String(value ?? ""));
+    const date = serverDate(String(value ?? ""));
     return Number.isNaN(date.getTime())
       ? ""
       : date.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -2565,7 +2566,7 @@ const FESTIVAL_DAYS: { label: string; days: number | null }[] = [
 /** "14 Nov, 5:30 pm" in India time. */
 function istTime(value: string | null | undefined) {
   if (!value) return "";
-  const date = new Date(value);
+  const date = serverDate(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",

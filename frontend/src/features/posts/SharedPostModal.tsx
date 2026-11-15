@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 

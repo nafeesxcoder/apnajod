@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { HOME_COLUMNS, pathFor, pointFor, squareKey, START, TRACK, YARDS } from "./board";
-import { ludoRoomLabel } from "./ludoText";
+import { ludoInviteState, ludoRoomLabel } from "./ludoText";
+import { clampVolume, ludoChange } from "./ludoEvents";
 import { pushTarget } from "../../app/push/nativePush";
 import type { LudoGame } from "../../api/ludoApi";
 
@@ -96,5 +97,78 @@ describe("Ludo rooms in Games", () => {
     expect(screen).toContain("new VoiceRoom(");
     expect(screen).toContain("voiceRef.current?.stop()");
     expect(screen).toContain('socket.on("ludo:update"');
+  });
+});
+
+describe("Ludo sounds and big moments", () => {
+  const base = (state: Partial<NonNullable<LudoGame["state"]>>, over: Partial<LudoGame> = {}): LudoGame =>
+    game({
+      status: "playing",
+      members: [
+        { userId: "me", name: "Anaya", photo: null, status: "joined", seat: 0, color: "red" },
+        { userId: "x", name: "Sana", photo: null, status: "joined", seat: 2, color: "yellow" },
+      ],
+      state: { players: [], turnUserId: "x", dice: null, rolled: false, movable: [], last: null, places: [], winner: null, finished: false, moveNo: 1, ...state } as LudoGame["state"],
+      ...over,
+    });
+
+  it("rattles someone else's dice, shouts SIX on a 6 and rings when it is my turn", () => {
+    const before = base({ moveNo: 4 });
+    const six = ludoChange(before, base({ moveNo: 5, dice: 6, last: { type: "roll", userId: "x", dice: 6 } }), "me");
+    expect(six.sounds).toEqual(["dice", "six"]);
+    expect(six.banner?.text).toBe("SIX!");
+    const mine = ludoChange(before, base({ moveNo: 5, last: { type: "no_move", userId: "x", dice: 3 }, turnUserId: "me" }), "me");
+    expect(mine.sounds).toEqual(["dice", "turn"]);
+    // My own roll already made its sound when I tapped.
+    expect(ludoChange(before, base({ moveNo: 5, dice: 4, last: { type: "roll", userId: "me", dice: 4 } }), "me").sounds).toEqual([]);
+  });
+
+  it("cuts, gets home, brings a token out and wins with the right sound and word", () => {
+    const before = base({ moveNo: 8 });
+    const cut = ludoChange(before, base({ moveNo: 9, last: { type: "move", userId: "x", token: 0, from: 3, to: 9, dice: 6, cut: [{ userId: "me", token: 1 }] } }), "me");
+    expect(cut.sounds).toEqual(["cut"]);
+    expect(cut.banner).toMatchObject({ kind: "cut", text: "CUT!", sub: "Sana cut you" });
+    const home = ludoChange(before, base({ moveNo: 9, last: { type: "move", userId: "me", token: 0, from: 52, to: 56, dice: 4, cut: [] } }), "me");
+    expect(home.sounds).toEqual(["home"]);
+    expect(ludoChange(before, base({ moveNo: 9, last: { type: "move", userId: "x", token: 0, from: -1, to: 0, dice: 6, cut: [] } }), "me").sounds).toEqual(["out"]);
+    const won = ludoChange(before, base({ moveNo: 9, finished: true, turnUserId: null, last: { type: "move", userId: "me", token: 3, from: 50, to: 56, dice: 6, cut: [] } }), "me");
+    expect(won.sounds).toEqual(["home", "win"]);
+    expect(ludoChange(before, before, "me").sounds).toEqual([]);
+  });
+
+  it("keeps the volume between 0 and 1", () => {
+    expect(clampVolume(1.7)).toBe(1);
+    expect(clampVolume(-1)).toBe(0);
+    expect(clampVolume(0.333)).toBe(0.33);
+    expect(clampVolume(Number.NaN)).toBe(0.8);
+  });
+
+  it("ships our own sounds and a volume control", () => {
+    for (const name of ["dice", "step", "out", "cut", "home", "turn", "six", "tick", "win"]) {
+      expect(existsSync(join(__dirname, "../../../assets/sounds/ludo", `${name}.mp3`))).toBe(true);
+    }
+    const bits = read("src/features/ludo/LudoBits.tsx");
+    expect(bits).toContain('accessibilityLabel="Game sound and volume"');
+    expect(bits).toContain("ludoSound.set({ volume: level, muted: false })");
+    expect(read("src/features/ludo/LudoBoard.tsx")).toContain("setTimeout(onStep, 150 * (i + 1))");
+  });
+});
+
+describe("Ludo invites in chat", () => {
+  it("says Join, then Game on, then who won, and closes with the room", () => {
+    expect(ludoInviteState(undefined, "me", false)).toMatchObject({ action: "Join" });
+    expect(ludoInviteState(game({}), "me", false)).toMatchObject({ line: "1 of 3 joined", action: "Join" });
+    const playing = game({ status: "playing", state: { players: [{ userId: "me" }], turnUserId: "x" } as unknown as LudoGame["state"] });
+    expect(ludoInviteState(playing, "me", false)).toMatchObject({ line: "Game on! 🎲", action: "Open", live: true });
+    const done = game({ status: "finished", state: { winner: "host" } as unknown as LudoGame["state"] });
+    expect(ludoInviteState(done, "me", false).line).toBe("Aarav Sharma won 🏆");
+    expect(ludoInviteState(null, "me", false)).toMatchObject({ line: "This room was closed", action: null });
+  });
+
+  it("shows the card in the chat and opens the room from it", () => {
+    const chat = read("src/features/chat/ChatFeature.tsx");
+    expect(chat).toContain('message.type === "ludo" && message.ludo && (');
+    expect(chat).toContain("onOpen={onOpenLudo}");
+    expect(read("src/app/MilaanApp.tsx")).toContain('setLudoReturn("chat");');
   });
 });

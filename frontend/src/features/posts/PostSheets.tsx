@@ -1,20 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Share, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 
 import { chatApi, type ConversationSummary } from "../../api/chatApi";

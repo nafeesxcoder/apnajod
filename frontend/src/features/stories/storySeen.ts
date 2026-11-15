@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { serverMs } from "../../domain/serverTime";
 
 /**
  * Which stories you have already watched - kept only on this phone, never
@@ -29,7 +30,7 @@ export async function loadSeen(): Promise<Set<string>> {
 export function markSeen(id: string, expiresAt: string) {
   if (!seen) seen = new Map();
   if (seen.has(id)) return;
-  const until = new Date(expiresAt).getTime();
+  const until = serverMs(expiresAt);
   seen.set(id, Number.isFinite(until) ? until : Date.now() + 24 * 60 * 60 * 1000);
   const now = Date.now();
   const keep: Record<string, number> = {};
@@ -39,5 +40,5 @@ export function markSeen(id: string, expiresAt: string) {
 
 /** Stories that have not run out yet - the server hides them too, this just covers a tray left open. */
 export function liveStories<T extends { expiresAt: string }>(stories: T[], now = Date.now()): T[] {
-  return stories.filter((story) => new Date(story.expiresAt).getTime() > now);
+  return stories.filter((story) => serverMs(story.expiresAt) > now);
 }

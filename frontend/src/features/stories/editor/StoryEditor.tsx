@@ -1,17 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Animated,
-  Image,
-  Modal,
-  PanResponder,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, Animated, Image, PanResponder, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Modal } from "../../../components/BackModal";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 

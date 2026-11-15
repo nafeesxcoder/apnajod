@@ -1,5 +1,6 @@
 import { createElement, useEffect, useRef, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { Modal } from "../../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 
 /**

@@ -34,3 +34,25 @@ export function takeLudoParam(): string | null {
     return null;
   }
 }
+
+/**
+ * What a Ludo invite in a chat says about its room, and its button.
+ * `game` undefined: still looking; null: the room is gone.
+ */
+export function ludoInviteState(game: LudoGame | null | undefined, myId: string, mine: boolean): { line: string; action: "Join" | "Open" | null; live: boolean } {
+  if (game === undefined) return { line: mine ? "Invite sent" : "Tap to join", action: mine ? "Open" : "Join", live: false };
+  if (game === null || game.status === "cancelled") return { line: "This room was closed", action: null, live: false };
+  if (game.status === "finished") {
+    const winner = game.members.find((m) => m.userId === game.state?.winner);
+    return { line: winner ? `${winner.userId === myId ? "You" : winner.name} won 🏆` : "Game over", action: "Open", live: false };
+  }
+  const me = game.members.find((m) => m.userId === myId);
+  const joined = game.members.filter((m) => m.status === "joined").length;
+  if (game.status === "playing") {
+    const inIt = game.state?.players.some((p) => p.userId === myId);
+    return { line: "Game on! 🎲", action: inIt ? "Open" : null, live: true };
+  }
+  if (me?.status === "invited") return { line: `${joined} of ${game.maxPlayers} joined`, action: "Join", live: false };
+  if (me?.status === "declined" || me?.status === "left") return { line: "You said not now", action: null, live: false };
+  return { line: `${joined} of ${game.maxPlayers} joined`, action: "Open", live: false };
+}

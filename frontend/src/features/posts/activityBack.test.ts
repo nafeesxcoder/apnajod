@@ -18,6 +18,28 @@ describe('Activity and the back button', () => {
   });
 });
 
+describe('The back button closes every popup', () => {
+  it('uses the back-aware Modal everywhere (Activity has its own)', () => {
+    const { readdirSync, statSync } = require('node:fs') as typeof import('node:fs');
+    const root = join(__dirname, '../..');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (path.endsWith('.tsx') && !path.endsWith('.test.tsx')) files.push(path);
+      }
+    };
+    walk(root);
+    const plain = files.filter((file) => {
+      if (file.endsWith('BackModal.tsx') || file.endsWith('ActivityModal.tsx')) return false;
+      const text = readFileSync(file, 'utf8');
+      return /import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*['"]react-native['"]/.test(text);
+    });
+    expect(plain).toEqual([]);
+  });
+});
+
 describe('Meet up in chat', () => {
   it('is called Meet up with a cup, not Date with a calendar', () => {
     const meet = chatPrimaryAttachments.find((item) => item.id === 'date');

@@ -12,18 +12,8 @@
  * comes back once we have a merchant UPI ID.
  */
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 
 import {

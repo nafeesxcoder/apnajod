@@ -2,7 +2,8 @@
 import { Platform } from 'react-native';
 import { safetyApi, type BlockedPerson } from '../../../api/safetyApi';
 import { Avatar } from '../../posts/PostSheets';
-import { Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { Modal } from '../../../components/BackModal';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';

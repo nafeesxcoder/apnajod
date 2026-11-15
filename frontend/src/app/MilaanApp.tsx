@@ -834,6 +834,8 @@ function MilaanApp() {
   // A game picked on the Games tab, started when that chat opens.
   const [chatLaunchGame, setChatLaunchGame] = useState<GameKind | null>(null);
   const [ludoGameId, setLudoGameId] = useState<string | null>(null);
+  // Where Back from Ludo goes: Games, or the chat the invite was opened from.
+  const [ludoReturn, setLudoReturn] = useState<Screen>("games");
   // A Ludo invite that was tapped (cold start on the website: /?ludo=<id>).
   const [pendingLudo, setPendingLudo] = useState<string | null>(() => takeLudoParam());
   const [hydrated, setHydrated] = useState(false);
@@ -1431,6 +1433,7 @@ function MilaanApp() {
   useEffect(() => {
     if (!pendingLudo || !accessToken || !onboardingComplete) return;
     setLudoGameId(pendingLudo);
+    setLudoReturn("games");
     setPendingLudo(null);
     navigateTo("ludo");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3736,6 +3739,11 @@ function MilaanApp() {
         {screen === "chat" &&
           (hasSelected || coupleMode.experienceMode === "couple") && (
             <ChatScreen
+              onOpenLudo={(id) => {
+                setLudoGameId(id);
+                setLudoReturn("chat");
+                navigateTo("ludo");
+              }}
               runtimePorts={{
                 realtime: { connect: async () => null },
                 gifSearch: {
@@ -3967,6 +3975,7 @@ function MilaanApp() {
             myId={userIdFromToken(accessToken) || undefined}
             onOpenLudo={(id) => {
               setLudoGameId(id);
+              setLudoReturn("games");
               navigateTo("ludo");
             }}
           />
@@ -3976,7 +3985,7 @@ function MilaanApp() {
             accessToken={accessToken}
             myId={userIdFromToken(accessToken) || ""}
             gameId={ludoGameId}
-            onBack={() => navigateTo("games")}
+            onBack={() => navigateTo(ludoReturn)}
             onOpenGame={setLudoGameId}
           />
         )}

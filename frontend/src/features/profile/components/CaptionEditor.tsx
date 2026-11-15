@@ -1,4 +1,5 @@
-import { Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Modal } from "../../../components/BackModal";
 
 const PINK = "#5087BE";
 const DARK = "#151719";
@@ -29,7 +30,7 @@ export function CaptionEditor({
   onSave: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <View
         style={{
           flex: 1,

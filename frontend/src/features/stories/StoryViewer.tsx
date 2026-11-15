@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Easing, Image, Modal, Pressable, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, Pressable, Text, View, useWindowDimensions } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 
 import { safetyApi } from "../../api/safetyApi";

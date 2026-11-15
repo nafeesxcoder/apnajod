@@ -368,7 +368,7 @@ async function markConversationRead(peerId, userId) {
   return { ids };
 }
 
-async function sendMessage(peerId, userId, message) {
+async function sendMessage(peerId, userId, message, options = {}) {
   const conversationId = storageKey(userId, peerId);
   const participants = await assertParticipant(peerId, userId);
   const id = String(message.id || crypto.randomUUID());
@@ -426,14 +426,14 @@ async function sendMessage(peerId, userId, message) {
       conversationId: addressFor(participants, recipientId),
       message: rowToMessage(row, recipientId),
     });
-    notifyRecipient(conversationId, userId, recipientId, stored).catch(
+    notifyRecipient(conversationId, userId, recipientId, stored, options).catch(
       () => undefined,
     );
   }
   return stored;
 }
 
-async function notifyRecipient(conversationId, senderId, recipientId, message) {
+async function notifyRecipient(conversationId, senderId, recipientId, message, options = {}) {
   await query(
     `UPDATE chat_messages SET status = 'delivered', updated_at_ms = ?
      WHERE id = ? AND conversation_id = ? AND status = 'sent'`,
@@ -444,6 +444,8 @@ async function notifyRecipient(conversationId, senderId, recipientId, message) {
     ids: [message.id],
     status: "delivered",
   });
+  // The caller sends its own notification (a Ludo invite opens the game).
+  if (options.push === false) return;
   const settingsRows = await query(
     "SELECT settings FROM chat_conversation_settings WHERE conversation_id = ? AND user_id = ?",
     [conversationId, recipientId],

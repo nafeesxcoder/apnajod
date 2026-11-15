@@ -7,7 +7,8 @@
  * left ticks down and the coupon sits on a ticket ready to use.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Modal, Platform, Pressable, Text, View } from "react-native";
+import { AccessibilityInfo, Animated, Easing, Platform, Pressable, Text, View } from "react-native";
+import { Modal } from "../../components/BackModal";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 

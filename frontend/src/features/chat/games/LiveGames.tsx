@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Modal } from "../../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 import {
   gamesApi,
