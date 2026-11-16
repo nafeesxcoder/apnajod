@@ -11,8 +11,7 @@
   "include": [
     "App.tsx",
     "src/**/*.ts",
-    "src/**/*.tsx",
-    "nativewind-env.d.ts"
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

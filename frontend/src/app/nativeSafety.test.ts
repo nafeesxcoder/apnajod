@@ -67,6 +67,17 @@ describe("the phone app", () => {
     expect(renew).toMatch(/if \(Platform\.OS !== "web"\) \{\s*const appState = AppState\.addEventListener/);
   });
 
+  it("keeps NativeWind and Reanimated out of the phone app", () => {
+    // NativeWind was never used (no className anywhere), but it wrapped every
+    // element on the phone and pulled in Reanimated, and together they kept
+    // Animated fades from ever showing: cards, the splash and the sign-in
+    // form stayed invisible on Android while the website looked fine.
+    const pkg = readFileSync("package.json", "utf8");
+    const babel = readFileSync("babel.config.js", "utf8");
+    expect(pkg).not.toMatch(/"(nativewind|react-native-css-interop|react-native-reanimated|tailwindcss)"/);
+    expect(babel).not.toMatch(/nativewind|jsxImportSource/);
+  });
+
   it("runs every animation on the JavaScript side", () => {
     // Native-driven fades that started after the screen had drawn never
     // showed in the Android app: cards, the splash and the sign-in form

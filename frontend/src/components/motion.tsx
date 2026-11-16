@@ -19,10 +19,9 @@ import { brand } from "./brand";
  * Everything here stands still when the phone asks for less motion
  * (Settings > Accessibility > Reduce motion / Remove animations).
  *
- * Animations run on the JavaScript side everywhere (useNativeDriver: false).
- * In the Android app, native-driven fades that started after the screen
- * had drawn (a Reveal with a delay, the splash wordmark) were never applied,
- * so whole cards stayed invisible.
+ * Animations run on the JavaScript side everywhere (useNativeDriver: false),
+ * the same way they run on the website, so the phone app and the browser
+ * behave alike.
  */
 
 /** True when the member has asked their phone for less motion. */
