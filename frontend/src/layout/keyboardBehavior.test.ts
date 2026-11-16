@@ -17,9 +17,17 @@ describe("the keyboard on Android", () => {
       "features/stories/editor/TextComposer.tsx",
       "features/stories/editor/LiveComposer.tsx",
       "features/stories/StoryReplyBar.tsx",
+      "components/forms/FormScaffold.tsx",
+      "features/premium/UpiPay.tsx",
     ]) {
       const source = read(file);
       expect(source, file).toContain("behavior={keyboardBehavior}");
+      // The chat box is the one exception: there the keyboard's height comes
+      // from useKeyboardInset on Android (see chatKeyboard.test.ts).
+      if (file.endsWith("ChatFeature.tsx")) {
+        expect(source).toContain("{ paddingBottom: keyboardInset }");
+        continue;
+      }
       expect(source, file).not.toContain('behavior={Platform.OS === "ios" ? "padding" : undefined}');
     }
   });

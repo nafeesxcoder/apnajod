@@ -3127,16 +3127,11 @@ export function ChatScreen({
             )}
           </ScrollView>
           <KeyboardAvoidingView
-            behavior={
-              Platform.OS === "ios"
-                ? "padding"
-                : Platform.OS === "android"
-                  ? "height"
-                  : undefined
-            }
-            // On the web KeyboardAvoidingView takes no behaviour, so the
-            // keyboard covered the composer and the emoji panel - and the
-            // search field inside it that had just been tapped.
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            // Web and Android lift the composer by the keyboard's height
+            // (useKeyboardInset): on the web KeyboardAvoidingView does
+            // nothing, and on Android "height" squeezed the composer under
+            // the keyboard, so you could not see what you were typing.
             style={[chatStyles.keyboardWrap, { paddingBottom: keyboardInset }]}
           >
             {!!text.trim() && messageSafety.signals.length > 0 && (

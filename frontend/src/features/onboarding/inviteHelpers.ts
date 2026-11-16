@@ -71,7 +71,7 @@ function inviteLink(senderName?: string) {
   const base =
     Platform.OS === "web" && typeof window !== "undefined"
       ? window.location.origin
-      : "https://milaan.in";
+      : "https://apnajoda.com";
   const who = senderName?.trim();
   return who ? `${base}/?invite=${encodeURIComponent(who.slice(0, 40))}` : base;
 }

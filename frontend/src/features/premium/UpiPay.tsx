@@ -26,6 +26,7 @@ import {
 import { fonts, palette, radius } from "../../theme";
 import { PressScale } from "../../components/motion";
 import { cleanUtr, UPI_STATUS_LABEL, utrValid } from "./upiLink";
+import { keyboardBehavior } from "../../layout/keyboardBehavior";
 
 const QR = require("../../../assets/upi-qr.jpg");
 const QR_WIDTH = 220;
@@ -356,7 +357,7 @@ export function UpiPaySheet({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={keyboardBehavior}
         style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 16 }}
       >
         <Pressable

@@ -14,6 +14,7 @@ import { StepBar, shared } from "../../components";
 import { ReferenceIconTile } from "../premium/PremiumIcon";
 import { colors } from "../../theme";
 import { styles } from "../../theme/appStyles";
+import { keyboardBehavior } from "../../layout/keyboardBehavior";
 
 type FormPageProps = {
   children: React.ReactNode;
@@ -63,13 +64,7 @@ export function FormPage({
     >
       <SafeAreaView style={shared.safe}>
         <KeyboardAvoidingView
-          behavior={
-            Platform.OS === "ios"
-              ? "padding"
-              : Platform.OS === "android"
-                ? "height"
-                : undefined
-          }
+          behavior={keyboardBehavior}
           style={formPageStyles.keyboard}
         >
           <ScrollView
