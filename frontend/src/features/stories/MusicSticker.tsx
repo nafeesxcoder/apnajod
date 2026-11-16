@@ -61,7 +61,7 @@ function Lyrics({ music, time, font, u }: { music: StickerMusic; time: number; f
   const appear = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     appear.setValue(0);
-    Animated.timing(appear, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.timing(appear, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [index, appear]);
 
   const size = 0.068 * u;

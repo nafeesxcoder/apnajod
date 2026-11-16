@@ -3757,7 +3757,7 @@ function ChatBubble({
       toValue: 0,
       friction: 7,
       tension: 80,
-      useNativeDriver: false,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   const swipeResponder = useRef(
     PanResponder.create({
@@ -4469,13 +4469,13 @@ function AnimatedEmojiMessage({
           toValue: 1,
           duration: fast ? 210 : emotion === "love" ? 360 : 520,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(motion, {
           toValue: 0,
           duration: fast ? 210 : emotion === "love" ? 360 : 520,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]),
     );
@@ -4485,12 +4485,12 @@ function AnimatedEmojiMessage({
           toValue: 1,
           duration: ["laugh", "cry"].includes(emotion) ? 760 : 1050,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(particles, {
           toValue: 0,
           duration: 1,
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.delay(120),
       ]),
@@ -5393,13 +5393,13 @@ function VoiceRecordingComposer({
           toValue: 1,
           duration: 620,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 0.35,
           duration: 620,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
       ]),
     );
@@ -5824,13 +5824,13 @@ export function RoseReceivedPopup({
           toValue: 1,
           duration: 900,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(pulse, {
           toValue: 0,
           duration: 900,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]),
     );
@@ -6098,13 +6098,13 @@ function CatalogGifArtwork({
           toValue: 1,
           duration: fast ? 260 : emotion === "love" ? 420 : 620,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(motion, {
           toValue: 0,
           duration: fast ? 260 : emotion === "love" ? 420 : 620,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]),
     );

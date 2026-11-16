@@ -69,12 +69,12 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
     setError("");
     angle.setValue(0);
     // Starts turning at once; slows onto the prize when the server answers.
-    const warm = Animated.timing(angle, { toValue: 720, duration: 900, easing: Easing.in(Easing.quad), useNativeDriver: false });
+    const warm = Animated.timing(angle, { toValue: 720, duration: 900, easing: Easing.in(Easing.quad), useNativeDriver: true });
     warm.start();
     try {
       const result = await coinsApi.spin(accessToken);
       warm.stop();
-      Animated.timing(angle, { toValue: spinLanding(result.slice, slices.length || 8, 5), duration: 3200, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => {
+      Animated.timing(angle, { toValue: spinLanding(result.slice, slices.length || 8, 5), duration: 3200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => {
         setPrize(result.prize);
         walletStore.set(result.wallet);
         setSpinning(false);

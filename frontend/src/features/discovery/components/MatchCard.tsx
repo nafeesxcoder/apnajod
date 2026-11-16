@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Animated, Easing, Image, PanResponder, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, Image, PanResponder, Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Pressable } from '../../../components/Pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,8 +24,8 @@ export function MatchCard({match,reasons,onPress,onInterested,onSkip,onRose,comp
   const visibleVibes=match.vibes.slice(0,2);
   const hiddenVibes=Math.max(0,match.vibes.length-visibleVibes.length);
   const alignmentLabel=match.familyPriority==='high'?'Family-first':'Balanced future';
-  const reset=()=>Animated.spring(pan,{toValue:{x:0,y:0},friction:6,tension:75,useNativeDriver:false}).start();
-  const fly=(toValue:{x:number;y:number},done:()=>void)=>Animated.timing(pan,{toValue,duration:190,easing:Easing.out(Easing.cubic),useNativeDriver:false}).start(()=>{pan.setValue({x:0,y:0});done()});
+  const reset=()=>Animated.spring(pan,{toValue:{x:0,y:0},friction:6,tension:75,useNativeDriver:Platform.OS!=='web'}).start();
+  const fly=(toValue:{x:number;y:number},done:()=>void)=>Animated.timing(pan,{toValue,duration:190,easing:Easing.out(Easing.cubic),useNativeDriver:Platform.OS!=='web'}).start(()=>{pan.setValue({x:0,y:0});done()});
   const panResponder=useRef(PanResponder.create({
     onMoveShouldSetPanResponder:(_,gesture)=>Math.abs(gesture.dx)>8||Math.abs(gesture.dy)>10,
     onPanResponderMove:(_,gesture)=>pan.setValue({x:gesture.dx,y:gesture.dy}),

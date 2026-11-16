@@ -36,7 +36,7 @@ function useLoop(make: (value: Animated.Value) => Animated.CompositeAnimation, d
 
 const ease = Easing.inOut(Easing.quad);
 const timing = (value: Animated.Value, toValue: number, duration: number) =>
-  Animated.timing(value, { toValue, duration, easing: ease, useNativeDriver: false });
+  Animated.timing(value, { toValue, duration, easing: ease, useNativeDriver: true });
 
 /** A star or spark that fades in and out. */
 function Twinkle({ x, y, size, char, color, delay }: { x: number; y: number; size: number; char: string; color: string; delay: number }) {
@@ -99,7 +99,7 @@ function Firework({ x, y, colors, size = 46 }: { x: number; y: number; colors: s
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     v.setValue(0);
-    Animated.timing(v, { toValue: 1, duration: 1000, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.timing(v, { toValue: 1, duration: 1000, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [v]);
   const sparks = 10;
   return (
@@ -151,7 +151,7 @@ function Fireworks({ box, colors, every }: { box: Box; colors: string[]; every: 
 
 /** Something that falls (snow, petals) or rises (hearts) through the banner, round and round. */
 function Drift({ box, char, size, x, delay, duration, rise, color }: { box: Box; char: string; size: number; x: number; delay: number; duration: number; rise?: boolean; color?: string }) {
-  const v = useLoop((value) => Animated.sequence([Animated.timing(value, { toValue: 1, duration, easing: Easing.linear, useNativeDriver: false }), Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: false })]), delay);
+  const v = useLoop((value) => Animated.sequence([Animated.timing(value, { toValue: 1, duration, easing: Easing.linear, useNativeDriver: true }), Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: true })]), delay);
   const from = rise ? box.height + 10 : -24;
   const to = rise ? -30 : box.height + 10;
   return (
@@ -182,7 +182,7 @@ function Puff({ box, color, delay }: { box: Box; color: string; delay: number })
     let live = true;
     const run = () => {
       v.setValue(0);
-      Animated.timing(v, { toValue: 1, duration: 1600, easing: Easing.out(Easing.quad), useNativeDriver: false }).start(() => {
+      Animated.timing(v, { toValue: 1, duration: 1600, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(() => {
         if (!live) return;
         setSpot({ x: Math.random(), y: Math.random() });
         run();
@@ -286,7 +286,7 @@ function Beat({ char, x, y }: { char: string; x: number; y: number }) {
 
 /** A shine that sweeps across now and then. */
 function Shine({ box }: { box: Box }) {
-  const v = useLoop((value) => Animated.sequence([Animated.timing(value, { toValue: 1, duration: 1600, easing: ease, useNativeDriver: false }), Animated.delay(2600), Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: false })]));
+  const v = useLoop((value) => Animated.sequence([Animated.timing(value, { toValue: 1, duration: 1600, easing: ease, useNativeDriver: true }), Animated.delay(2600), Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: true })]));
   return (
     <Animated.View
       style={{
@@ -305,7 +305,7 @@ function Shine({ box }: { box: Box }) {
 export function TapBurst({ x, y, theme }: { x: number; y: number; theme: FestivalTheme }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(v, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.timing(v, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [v]);
   const emoji = theme.particles.emoji ?? [];
   const bits = 12;

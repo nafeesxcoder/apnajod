@@ -204,7 +204,7 @@ export function StoryEditor({
   const showToast = (text: string) => {
     setToastText(text);
     toast.setValue(1);
-    Animated.timing(toast, { toValue: 0, duration: 1100, delay: 400, useNativeDriver: false }).start();
+    Animated.timing(toast, { toValue: 0, duration: 1100, delay: 400, useNativeDriver: Platform.OS !== "web" }).start();
   };
   const setFilter = (id: string) => {
     commit({ ...stateRef.current, filter: id });
