@@ -42,10 +42,20 @@ describe('the Premium screen', () => {
   it('shows the Razorpay button only while checkout is open and the account is live', () => {
     // The flag still closes Razorpay; the server also has to say its keys
     // are live ones, so test keys never reach members.
-    expect(screen).toContain('const razorpayOpen = billingApi.checkoutAvailable && !!payOptions?.razorpay;');
+    // Razorpay is web-only: the Play Store app pays through Google Play.
+    expect(screen).toContain('const razorpayOpen = billingApi.checkoutAvailable && Platform.OS === "web" && !!payOptions?.razorpay;');
     expect(screen).toMatch(
       /\{razorpayOpen && \(\s*<PressScale[\s\S]{0,200}?onPress=\{\(\) => void handleBuy\(\)\}/,
     );
+  });
+
+  it('turns Premium on only after the server has checked the receipt', () => {
+    // No more "Premium is now active" on a timer: the signed receipt goes to
+    // /billing/verify first, and the happy message waits for its answer.
+    expect(screen).toContain('billingApi.verifyPayment(accessToken, {');
+    expect(screen).not.toMatch(/setTimeout\(\(\) => \{\s*reload\(\);\s*setNotice\("Premium is now active/);
+    expect(screen).toMatch(/granted\s*\?\s*"Premium is now active\. Enjoy!"/);
+    expect(api).toContain('authFetch("/billing/verify", accessToken');
   });
 
   it('says plainly that everything is free while payments are closed', () => {

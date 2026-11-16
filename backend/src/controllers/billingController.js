@@ -43,11 +43,58 @@ const checkCoupon = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Whether this member may pay with Razorpay right now. Live keys: everyone.
+ * Test keys (rzp_test_): only admins, so the owner can try checkout before
+ * the account is approved while no member can unlock Premium with a test card.
+ */
+async function checkoutOpenFor(userId) {
+  const mode = razorpayService.keyMode();
+  if (mode === "live") return true;
+  if (mode !== "test") return false;
+  const [user] = await query("SELECT role FROM users WHERE id = ?", [userId]);
+  return !!user && user.role === "admin";
+}
+
+/**
+ * Turns on what a paid Razorpay order bought. The webhook and the app's own
+ * check after checkout both land here, and `granted_at IS NULL` lets only
+ * the first of them grant, so a payment never gives Premium twice.
+ */
+async function grantOrder(orderId, providerPaymentId) {
+  const [paymentRow] = await query(
+    "SELECT * FROM payments WHERE provider_ref = ? AND provider = 'razorpay'",
+    [orderId],
+  );
+  if (!paymentRow) return { result: "missing" };
+  if (paymentRow.granted_at) return { result: "already", paymentRow };
+
+  const [plan] = await query(
+    "SELECT * FROM billing_plans WHERE code = ?",
+    [paymentRow.plan_code],
+  );
+  if (!plan) throw new ApiError(400, "Unknown plan on payment");
+
+  const updateResult = await query(
+    `UPDATE payments
+        SET status = 'paid',
+            granted_at = NOW(6),
+            provider_payment_id = ?
+      WHERE id = ? AND granted_at IS NULL`,
+    [providerPaymentId, paymentRow.id],
+  );
+  if (updateResult.affectedRows === 0) return { result: "already", paymentRow };
+
+  await billingService.grantPlan(paymentRow.user_id, plan, "razorpay");
+  await couponService.redeem(paymentRow);
+  return { result: "granted", paymentRow };
+}
+
 const createOrder = asyncHandler(async (req, res) => {
   const { planCode, couponCode } = req.body || {};
   if (!planCode) throw new ApiError(400, "planCode is required");
 
-  if (!razorpayService.isConfigured()) {
+  if (!(await checkoutOpenFor(req.user.id))) {
     throw new ApiError(503, "Payments are not available yet");
   }
 
@@ -109,37 +156,9 @@ const webhook = asyncHandler(async (req, res) => {
   }
 
   if (eventType === "payment.captured" || eventType === "order.paid") {
-    const [paymentRow] = await query(
-      "SELECT * FROM payments WHERE provider_ref = ? AND provider = 'razorpay'",
-      [orderId],
-    );
-    if (!paymentRow) return res.json({ ok: true, ignored: "no payment row" });
-
-    if (paymentRow.granted_at) {
-      return res.json({ ok: true, already_granted: true });
-    }
-
-    const [plan] = await query(
-      "SELECT * FROM billing_plans WHERE code = ?",
-      [paymentRow.plan_code],
-    );
-    if (!plan) throw new ApiError(400, "Unknown plan on payment");
-
-    const updateResult = await query(
-      `UPDATE payments
-          SET status = 'paid',
-              granted_at = NOW(6),
-              provider_payment_id = ?
-        WHERE id = ? AND granted_at IS NULL`,
-      [paymentEntity.id, paymentRow.id],
-    );
-
-    if (updateResult.affectedRows === 0) {
-      return res.json({ ok: true, already_granted: true });
-    }
-
-    await billingService.grantPlan(paymentRow.user_id, plan, "razorpay");
-    await couponService.redeem(paymentRow);
+    const { result } = await grantOrder(orderId, paymentEntity.id);
+    if (result === "missing") return res.json({ ok: true, ignored: "no payment row" });
+    if (result === "already") return res.json({ ok: true, already_granted: true });
     return res.json({ ok: true, granted: true });
   }
 
@@ -157,15 +176,43 @@ const webhook = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Right after checkout the app sends Razorpay's signed receipt here, so
+ * Premium turns on at once instead of waiting for the webhook (which still
+ * arrives and changes nothing, as the payment is already granted).
+ */
+const verify = asyncHandler(async (req, res) => {
+  const { orderId, paymentId, signature } = req.body || {};
+  if (!orderId || !paymentId || !signature) {
+    throw new ApiError(400, "orderId, paymentId and signature are required");
+  }
+  if (!razorpayService.verifyPaymentSignature(orderId, paymentId, signature)) {
+    throw new ApiError(400, "This payment could not be verified");
+  }
+  const [owner] = await query(
+    "SELECT user_id FROM payments WHERE provider_ref = ? AND provider = 'razorpay'",
+    [orderId],
+  );
+  if (!owner || owner.user_id !== req.user.id) {
+    throw new ApiError(404, "Payment not found");
+  }
+  const { result } = await grantOrder(orderId, paymentId);
+  res.json({
+    ok: true,
+    granted: result === "granted" || result === "already",
+    billing: await billingService.summaryFor(req.user.id),
+  });
+});
+
+/**
  * How a member can pay right now: our UPI ID (checked by hand) and, once
- * the Razorpay account is live, Razorpay. Test keys never reach members.
+ * the Razorpay account is live, Razorpay. Test keys never reach members:
+ * with rzp_test_ keys only admins see Razorpay, to try checkout.
  */
 const payOptions = asyncHandler(async (req, res) => {
-  const keyId = String(process.env.RAZORPAY_KEY_ID || "");
   res.json({
     ok: true,
     upi: upiService.config(),
-    razorpay: razorpayService.isConfigured() && keyId.startsWith("rzp_live_"),
+    razorpay: await checkoutOpenFor(req.user.id),
     payments: await upiService.mine(req.user.id),
     // A coupon the admin shows at payment, if this member can still use it.
     coupon: await couponService.checkoutCoupon(req.user.id),
@@ -184,4 +231,4 @@ const submitUpi = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { plans, me, boost, createOrder, webhook, payOptions, submitUpi, checkCoupon };
+module.exports = { plans, me, boost, createOrder, webhook, verify, payOptions, submitUpi, checkCoupon };

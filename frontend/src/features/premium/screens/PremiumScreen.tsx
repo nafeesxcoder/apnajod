@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   Text,
   View,
@@ -186,13 +187,33 @@ export function PremiumScreen({
         name: "Apnajoda",
         description: order.planTitle,
         theme: { color: "#1F4D7A" },
-        handler: async () => {
+        handler: async (response: {
+          razorpay_order_id?: string;
+          razorpay_payment_id?: string;
+          razorpay_signature?: string;
+        }) => {
           setNotice("Payment successful. Verifying...");
           setBuying(false);
-          setTimeout(() => {
-            reload();
-            setNotice("Premium is now active. Enjoy!");
-          }, 2000);
+          // Only say Premium is on once the server has checked the receipt.
+          // If that check cannot finish now, the webhook still turns it on.
+          let granted = false;
+          try {
+            const result = await billingApi.verifyPayment(accessToken, {
+              orderId: response?.razorpay_order_id ?? order.orderId,
+              paymentId: response?.razorpay_payment_id ?? "",
+              signature: response?.razorpay_signature ?? "",
+            });
+            granted = result.granted;
+          } catch {
+            granted = false;
+          }
+          reload();
+          setNotice(
+            granted
+              ? "Premium is now active. Enjoy!"
+              : "Payment received. We are confirming it and Premium will turn on in a minute.",
+          );
+          if (!granted) setTimeout(reload, 15000);
         },
         modal: {
           ondismiss: () => {
@@ -231,7 +252,9 @@ export function PremiumScreen({
   const payPaise = selectedPlan ? (coupon?.amountPaise ?? selectedPlan.amount_paise) : 0;
   const payPlan = selectedPlan ? { ...selectedPlan, amount_paise: payPaise } : null;
   const upiOpen = !!payOptions?.upi.enabled;
-  const razorpayOpen = billingApi.checkoutAvailable && !!payOptions?.razorpay;
+  // Razorpay is the website's checkout; the Play Store app pays through
+  // Google Play instead, so the phone app never shows it.
+  const razorpayOpen = billingApi.checkoutAvailable && Platform.OS === "web" && !!payOptions?.razorpay;
 
   const currentPlanName =
     selectedCode === "pro_monthly"

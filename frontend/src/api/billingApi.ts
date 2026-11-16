@@ -119,6 +119,22 @@ export const billingApi = {
     };
   },
 
+  /**
+   * Hands Razorpay's signed receipt to the server right after checkout, so
+   * Premium turns on at once. `granted` is false only if the server could
+   * not confirm it (the webhook may still turn it on a moment later).
+   */
+  async verifyPayment(
+    accessToken: string,
+    receipt: { orderId: string; paymentId: string; signature: string },
+  ): Promise<{ granted: boolean }> {
+    const data = await authFetch("/billing/verify", accessToken, {
+      method: "POST",
+      body: JSON.stringify(receipt),
+    });
+    return { granted: !!data.granted };
+  },
+
   async payOptions(accessToken: string): Promise<PayOptions> {
     const data = await authFetch("/billing/pay-options", accessToken);
     return { upi: data.upi, razorpay: !!data.razorpay, payments: data.payments ?? [], coupon: data.coupon ?? null };

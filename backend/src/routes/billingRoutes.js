@@ -12,6 +12,7 @@ router.use(requireAuth);
 router.get("/me", billingController.me);
 router.post("/boost", billingController.boost);
 router.post("/order", billingController.createOrder);
+router.post("/verify", billingController.verify);
 router.get("/pay-options", billingController.payOptions);
 router.post("/upi", billingController.submitUpi);
 router.post("/coupon", billingController.checkCoupon);

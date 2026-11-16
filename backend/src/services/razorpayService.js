@@ -53,8 +53,35 @@ function verifyWebhookSignature(rawBody, signature) {
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
+/**
+ * Checkout's own proof that a payment went through: Razorpay signs
+ * "order_id|payment_id" with our key secret. Only our server and Razorpay
+ * know the secret, so a member's app cannot forge it.
+ */
+function verifyPaymentSignature(orderId, paymentId, signature) {
+  if (!RAZORPAY_KEY_SECRET) return false;
+  if (!orderId || !paymentId || typeof signature !== "string") return false;
+  const expected = crypto
+    .createHmac("sha256", RAZORPAY_KEY_SECRET)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+  if (expected.length !== signature.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+/** "live", "test" (rzp_test_ keys, for trying checkout) or "none". */
+function keyMode() {
+  const keyId = String(process.env.RAZORPAY_KEY_ID || "");
+  if (!process.env.RAZORPAY_KEY_SECRET) return "none";
+  if (keyId.startsWith("rzp_live_")) return "live";
+  if (keyId.startsWith("rzp_test_")) return "test";
+  return "none";
+}
+
 module.exports = {
   createOrder,
   verifyWebhookSignature,
+  verifyPaymentSignature,
+  keyMode,
   isConfigured: () => !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET),
 };
