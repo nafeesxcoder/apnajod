@@ -153,6 +153,23 @@ export const billingApi = {
     return { granted: !!data.granted };
   },
 
+  /**
+   * Android: whether a Google Play subscription is set to renew, when it runs
+   * until, and the Play Store page where the member manages it.
+   */
+  async playSubscriptionStatus(
+    accessToken: string,
+    productId: string,
+  ): Promise<{ known: boolean; autoRenew: boolean; expiresAt: string | null; manageUrl: string }> {
+    const data = await authFetch(`/billing/play/status?productId=${encodeURIComponent(productId)}`, accessToken);
+    return {
+      known: !!data.known,
+      autoRenew: !!data.autoRenew,
+      expiresAt: data.expiresAt ?? null,
+      manageUrl: String(data.manageUrl || ""),
+    };
+  },
+
   async payOptions(accessToken: string): Promise<PayOptions> {
     const data = await authFetch("/billing/pay-options", accessToken);
     return { upi: data.upi, razorpay: !!data.razorpay, payments: data.payments ?? [], coupon: data.coupon ?? null };

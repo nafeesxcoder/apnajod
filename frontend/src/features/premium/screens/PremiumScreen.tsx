@@ -31,6 +31,16 @@ import { CouponBox } from "../CouponBox";
 import type { AppliedCoupon } from "../couponStore";
 import { useFestival } from "../../festival/festivalStore";
 
+// Android: what Google Play says about one of the member's subscriptions.
+type PlayStatusRow = {
+  productId: string;
+  title: string;
+  known: boolean;
+  autoRenew: boolean;
+  expiresAt: string | null;
+  manageUrl: string;
+};
+
 /** "till 17 Nov" in India time, or "" with no end. */
 function offerEnds(value: string | null | undefined) {
   if (!value) return "";
@@ -119,6 +129,7 @@ export function PremiumScreen({
   const [buying, setBuying] = useState(false);
   // Android: the Google Play products, by plan code, with the price Google shows.
   const [playProducts, setPlayProducts] = useState<Record<string, PlayProduct>>({});
+  const [playStatuses, setPlayStatuses] = useState<PlayStatusRow[]>([]);
   const [notice, setNotice] = useState("");
   // How a member can pay: our UPI (checked by hand) and Razorpay once live.
   const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
@@ -285,6 +296,30 @@ export function PremiumScreen({
       cancelled = true;
     };
   }, [plans]);
+
+  // Android: renewal status of each subscription the member has on Google Play.
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const subs = plans.filter((plan) => plan.kind === "subscription" && plan.play_product_id);
+    if (!subs.length) return;
+    let cancelled = false;
+    void Promise.all(
+      subs.map(async (plan): Promise<PlayStatusRow | null> => {
+        const productId = plan.play_product_id as string;
+        try {
+          const status = await billingApi.playSubscriptionStatus(accessToken, productId);
+          return { productId, title: plan.title, ...status };
+        } catch {
+          return null;
+        }
+      }),
+    ).then((rows) => {
+      if (!cancelled) setPlayStatuses(rows.filter((row): row is PlayStatusRow => !!row && row.known));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, plans]);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
@@ -739,6 +774,46 @@ export function PremiumScreen({
                   >
                     {superlikePacks.some((pack) => pack.code === selectedCode) && buyBlock}
                   </PackGroup>
+                )}
+
+                {Platform.OS === "android" && playStatuses.length > 0 && (
+                  <View style={{ marginTop: 18, gap: 10 }}>
+                    {playStatuses.map((row) => (
+                      <View
+                        key={row.productId}
+                        style={{
+                          backgroundColor: palette.paperBase,
+                          borderRadius: 12,
+                          padding: 14,
+                          gap: 8,
+                        }}
+                      >
+                        <Text style={{ color: palette.ink, fontFamily: fonts.bodySemi, fontSize: 14 }}>
+                          {row.title}:{" "}
+                          {row.autoRenew ? "Auto-renew is on" : "Auto-renew is off"}
+                          {row.expiresAt ? ` · ${row.autoRenew ? "renews" : "ends"} ${offerEnds(row.expiresAt)}` : ""}
+                        </Text>
+                        <PressScale
+                          accessibilityRole="link"
+                          accessibilityLabel={`Manage ${row.title} on Google Play`}
+                          onPress={() => void Linking.openURL(row.manageUrl)}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: palette.crimson,
+                            paddingVertical: 10,
+                            borderRadius: radius.pill,
+                            alignItems: "center",
+                            minHeight: 42,
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Text style={{ color: palette.crimson, fontFamily: fonts.bodySemi, fontSize: 14 }}>
+                            Manage on Google Play
+                          </Text>
+                        </PressScale>
+                      </View>
+                    ))}
+                  </View>
                 )}
 
                 {!upiOpen && !razorpayOpen && Platform.OS === "web" && (

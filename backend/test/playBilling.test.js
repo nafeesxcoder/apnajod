@@ -34,6 +34,7 @@ function fakeDb({ plan, owned = null } = {}) {
         if (row) row.granted_at = new Date();
         return { affectedRows: row ? 1 : 0 };
       }
+      if (/INSERT INTO play_subscriptions/.test(sql)) return { affectedRows: 1 };
       throw new Error(`unexpected SQL: ${sql}`);
     },
   };

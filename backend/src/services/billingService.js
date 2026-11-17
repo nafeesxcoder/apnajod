@@ -201,6 +201,19 @@ async function grantFeature(userId, feature, days, source) {
   );
 }
 
+/**
+ * Set a feature to run until an exact moment. Google Play tells us the real
+ * renewal date, so it is used as is rather than adding days.
+ */
+async function setFeatureUntil(userId, feature, expiresAt, source) {
+  await query(
+    `INSERT INTO entitlements (user_id, feature, expires_at, source)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at), source = VALUES(source)`,
+    [userId, feature, sqlTime(new Date(expiresAt)), source],
+  );
+}
+
 async function addCredits(userId, kind, quantity) {
   await query(
     `INSERT INTO credit_balances (user_id, kind, balance)
@@ -419,6 +432,7 @@ module.exports = {
   trustStatus,
   premiumUntil,
   grantFeature,
+  setFeatureUntil,
   grantPlan,
   addCredits,
   creditBalance,

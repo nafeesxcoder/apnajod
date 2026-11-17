@@ -245,4 +245,39 @@ const submitUpi = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { plans, me, boost, createOrder, webhook, verify, playVerify, payOptions, submitUpi, checkCoupon };
+// Google Play tells us about renewals, cancellations and expiries here.
+// Google sends this, not a member, so it is checked with a shared secret.
+const playNotify = asyncHandler(async (req, res) => {
+  const expected = process.env.PLAY_NOTIFY_TOKEN || "";
+  const given = String(req.query.token || "");
+  const same =
+    expected.length >= 20 &&
+    given.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+  if (!same) return res.status(403).json({ ok: false });
+  try {
+    await require("../services/playBillingService").playBilling.handleNotification(req.body || {});
+    res.json({ ok: true });
+  } catch (error) {
+    // A message we cannot read will not get better on a retry: acknowledge it.
+    // Anything else (Google unreachable) answers 500 so Google sends it again.
+    if (error.status === 400) return res.json({ ok: false });
+    throw new ApiError(500, error.message);
+  }
+});
+
+const playStatus = asyncHandler(async (req, res) => {
+  try {
+    const status = await require("../services/playBillingService").playBilling.status(
+      req.user.id,
+      String(req.query.productId || ""),
+    );
+    res.json({ ok: true, ...status });
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+});
+
+module.exports = {
+  plans, me, boost, createOrder, webhook, verify, playVerify, playNotify, playStatus, payOptions, submitUpi, checkCoupon,
+};
