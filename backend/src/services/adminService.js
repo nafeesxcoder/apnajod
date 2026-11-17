@@ -1,4 +1,6 @@
 const { query } = require("../config/db");
+const fc = require("./fieldCrypto");
+const { normalizeIndianPhone } = require("../utils/otp");
 const billingService = require("./billingService");
 const safetyService = require("./safetyService");
 const profileService = require("./profileService");
@@ -94,9 +96,17 @@ async function listUsers(search = "", limit = 200, filter = "all") {
   const params = [];
 
   if (search && search.trim() !== "") {
-    sql += " AND (u.username LIKE ? OR u.full_name LIKE ? OR p.first_name LIKE ? OR u.phone LIKE ?)";
+    // Phone numbers are stored encrypted, so LIKE cannot find part of one.
+    // A full mobile number is matched exactly through its blind index.
     const term = `%${search.trim()}%`;
-    params.push(term, term, term, term);
+    const phone = normalizeIndianPhone(search);
+    if (phone) {
+      sql += " AND (u.username LIKE ? OR u.full_name LIKE ? OR p.first_name LIKE ? OR u.phone_hash = ? OR u.phone = ?)";
+      params.push(term, term, term, fc.blindIndex("phone", phone), phone);
+    } else {
+      sql += " AND (u.username LIKE ? OR u.full_name LIKE ? OR p.first_name LIKE ?)";
+      params.push(term, term, term);
+    }
   }
 
   const which = USER_FILTERS.includes(filter) ? filter : "all";
@@ -115,6 +125,7 @@ async function listUsers(search = "", limit = 200, filter = "all") {
   const rows = await query(sql, params);
   return rows.map((row) => ({
     ...row,
+    phone: fc.decrypt(row.phone),
     verified: Number(row.verified) === 1 ? 1 : 0,
     blue_tick: Number(row.blue_tick) === 1 ? 1 : 0,
     // Pro includes everything Plus has; show the higher plan.

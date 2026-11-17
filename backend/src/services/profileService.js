@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { query } = require("../config/db");
+const { decrypt } = require("./fieldCrypto");
 const billingService = require("./billingService");
 const kundliService = require("./kundliService");
 const limits = require("../config/billing");
@@ -238,6 +239,7 @@ async function listPendingVerifications(limit = 50) {
       ORDER BY p.updated_at ASC
       LIMIT ${Number(limit)}`,
   );
+  for (const row of rows) row.phone = decrypt(row.phone);
   if (!rows.length) return rows;
 
   // The profile photos go alongside the selfie, so the reviewer compares

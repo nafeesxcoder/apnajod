@@ -1,4 +1,5 @@
 const { query } = require("../config/db");
+const { decrypt } = require("./fieldCrypto");
 
 /**
  * "Download my data" in Safety Center: everything Apnajoda keeps about you,
@@ -19,6 +20,10 @@ async function exportFor(userId) {
        FROM users WHERE id = ?`,
     [userId],
   ).catch(() => query("SELECT id, username, full_name, phone, is_private, created_at, last_active_at FROM users WHERE id = ?", [userId]));
+  if (account) {
+    account.phone = decrypt(account.phone);
+    if ("email" in account) account.email = decrypt(account.email);
+  }
   const [profile] = await query("SELECT * FROM profiles WHERE user_id = ?", [userId]);
   const [intent] = await query("SELECT intent, timeline, children, family, relocation FROM profile_intent WHERE user_id = ?", [userId]);
   const [preferences] = await query("SELECT * FROM matching_preferences WHERE user_id = ?", [userId]);

@@ -12,6 +12,7 @@
  */
 const crypto = require("crypto");
 const { query } = require("../config/db");
+const { decrypt } = require("./fieldCrypto");
 const billingService = require("./billingService");
 const couponService = require("./couponService");
 const pushService = require("./pushService");
@@ -166,7 +167,7 @@ async function listForAdmin() {
     ...rowToPayment(row),
     userId: row.user_id,
     username: row.username ?? null,
-    phone: row.phone ?? null,
+    phone: decrypt(row.phone),
     firstName: row.first_name ?? null,
     city: row.city ?? null,
   });

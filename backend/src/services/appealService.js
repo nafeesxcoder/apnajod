@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { query } = require("../config/db");
+const { decrypt } = require("./fieldCrypto");
 const env = require("../config/env");
 const safetyService = require("./safetyService");
 
@@ -63,7 +64,7 @@ async function submitAppeal(userId, rawMessage) {
 }
 
 async function listOpenAppeals(limit = 50) {
-  return query(
+  const rows = await query(
     `SELECT a.id, a.user_id, a.message, a.created_at, a.updated_at,
             u.username, u.phone, p.first_name, p.city,
             (SELECT COUNT(DISTINCT r.reporter_id) FROM reports r WHERE r.reported_id = u.id) AS report_count
@@ -74,6 +75,7 @@ async function listOpenAppeals(limit = 50) {
       ORDER BY a.updated_at DESC
       LIMIT ${Math.min(Math.max(Number(limit) || 50, 1), 200)}`,
   );
+  return rows.map((row) => ({ ...row, phone: decrypt(row.phone) }));
 }
 
 async function resolveAppeal(appealId, action) {
