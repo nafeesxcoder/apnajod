@@ -23,6 +23,7 @@ ALTER TABLE users ADD COLUMN locked_until DATETIME NULL AFTER failed_login_count
 
 -- A password reset consumes a phone OTP, so the OTP purpose list needs the
 -- new value. ENUM changes are not in the skippable-error list used by the
--- migration runner, so this is written to be safe to re-run.
+-- migration runner, so this is written to be safe to re-run. The list
+-- matches migration 073 (two_factor), so re-running it never drops a value.
 ALTER TABLE otp_codes MODIFY COLUMN purpose
-  ENUM('login', 'verify', 'register', 'password_reset') NOT NULL DEFAULT 'login';
+  ENUM('login', 'verify', 'register', 'password_reset', 'two_factor') NOT NULL DEFAULT 'login';
