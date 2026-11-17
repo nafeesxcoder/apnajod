@@ -26,6 +26,9 @@ function timeUntil(iso: string, now = Date.now()) {
  * Nothing renders if the picks cannot load. With no picks today it still
  * shows the card, so members know the feature is there and when to look.
  */
+import { OnlineDot } from "../../social/OnlineDot";
+import { useOnlineIds } from "../../social/useOnlineIds";
+
 export function DailyPicksRow({
   accessToken,
   onOpen,
@@ -35,6 +38,7 @@ export function DailyPicksRow({
 }) {
   const [data, setData] = useState<DailyPicks | null>(null);
   const [, setTick] = useState(0);
+  const online = useOnlineIds(accessToken, data?.picks.map((p) => p.id) ?? []);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -105,6 +109,7 @@ export function DailyPicksRow({
               style={{ width: 56, alignItems: "center", gap: 4, opacity: passed ? 0.5 : 1 }}
             >
               <View>
+                {online[pick.id] && <OnlineDot size={13} />}
                 <SpinRing size={54} spin={!liked && !passed}>
                   {pick.photo ? (
                     <Image source={{ uri: pick.photo }} style={{ width: "100%", height: "100%", backgroundColor: palette.paperSand }} />

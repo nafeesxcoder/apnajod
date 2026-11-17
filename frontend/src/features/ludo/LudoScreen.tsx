@@ -50,6 +50,9 @@ function lastLine(game: LudoGame, myId: string) {
   return `${who} moved ${last.dice}`;
 }
 
+import { OnlineDot } from "../social/OnlineDot";
+import { useOnlineIds } from "../social/useOnlineIds";
+
 export function LudoScreen({
   accessToken,
   myId,
@@ -84,6 +87,7 @@ export function LudoScreen({
   const [leaders, setLeaders] = useState<LeaderRow[]>([]);
   // Settings: only what you have unlocked is used.
   const wallet = useWallet(accessToken);
+  const online = useOnlineIds(accessToken, game?.members.map((m) => m.userId) ?? []);
   const rawPrefs = useLudoPrefs();
   const prefs = wallet ? allowedPrefs(rawPrefs, wallet.unlocked) : DEFAULT_PREFS;
   const theme = BOARD_THEMES[prefs.theme]!;
@@ -476,7 +480,12 @@ export function LudoScreen({
           const onMic = voiceUsers.find((v) => v.userId === member?.userId);
           return (
             <View key={i} style={[glassRow, { borderLeftWidth: 5, borderLeftColor: SEAT_COLORS[i] }]}>
-              {member ? <Avatar member={member} size={44} ring={SEAT_COLORS[i]} /> : <View style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", borderColor: L.textMuted }} />}
+              {member ? (
+                <View>
+                  <Avatar member={member} size={44} ring={SEAT_COLORS[i]} />
+                  {online[member.userId] && <OnlineDot size={12} />}
+                </View>
+              ) : <View style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", borderColor: L.textMuted }} />}
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: L.text }}>
                   {member ? `${member.name}${member.userId === myId ? " (you)" : ""}${member.userId === game.hostId ? " · host" : ""}` : "Open seat"}

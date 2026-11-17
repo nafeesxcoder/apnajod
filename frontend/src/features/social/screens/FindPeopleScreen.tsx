@@ -19,6 +19,8 @@ import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { HeartBeat, PressScale, Reveal, SpinRing } from "../../../components/motion";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { pickContacts } from "../../onboarding/inviteHelpers";
+import { OnlineDot } from "../OnlineDot";
+import { useOnlineIds } from "../useOnlineIds";
 import { inviteLink, shareInvite } from "../../profile/components/InviteCard";
 import { contactInviteText, matchesQuery, type BookContact, type ContactInvite } from "../contactBook";
 
@@ -61,6 +63,8 @@ export type FindPeopleProps = {
   discoverUsers?: SocialUser[];
   /** Active now / New: the server's members for that chip. */
   onLoadFiltered?: (filter: "active" | "new") => Promise<SocialUser[]>;
+  /** For the green dot on each card. */
+  accessToken?: string;
 };
 
 function formatPhone(phone: string) {
@@ -104,6 +108,7 @@ export function FindPeopleScreen({
   getMyUsername,
   discoverUsers = [],
   onLoadFiltered,
+  accessToken,
 }: FindPeopleProps) {
   const contactsSupported = contactsMode !== "none";
   // Search inside your contacts (they can be hundreds).
@@ -158,6 +163,7 @@ export function FindPeopleScreen({
     };
   }, [filter]);
   const shownUsers = filter === "all" ? discoverUsers : filtered;
+  const online = useOnlineIds(accessToken, shownUsers.map((u) => u.userId));
   const [searchMode, setSearchMode] = useState(false);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const token = useRef(0);
@@ -651,6 +657,7 @@ export function FindPeopleScreen({
                                 ...cardShadow,
                               }}
                             >
+                              {online[user.userId] && <OnlineDot size={14} inset={10} />}
                               {user.avatarUrl ? (
                                 <Image
                                   source={{ uri: user.avatarUrl }}

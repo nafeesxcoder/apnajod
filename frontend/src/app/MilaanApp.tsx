@@ -3747,6 +3747,7 @@ function MilaanApp() {
 
         {screen === "find" && accessToken && (
           <FindPeopleScreen
+            accessToken={accessToken}
             contactsMode={Platform.OS !== "web" ? "device" : canPickContacts() ? "picker" : "none"}
             getMyUsername={async () => {
               const me: any = await authApi.me(accessToken).catch(() => null);
