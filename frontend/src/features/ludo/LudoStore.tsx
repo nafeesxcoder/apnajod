@@ -1,7 +1,7 @@
 /**
  * Ludo settings and store: choose the board, sounds, dice and tokens you
  * have, unlock more with coins, see your emoji and quick-chat packs, set
- * the volume and token speed, and swap coins for a Spark or a Super Like.
+ * the volume and token speed, and swap coins for a Spark, a Super Like or a Boost.
  */
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, Switch, Text, View } from "react-native";
@@ -30,6 +30,13 @@ const TABS: { kind: StoreItem["kind"] | "swap"; label: string; icon: keyof typeo
 ];
 
 const S = { bg: "#160B3A", card: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.14)", text: "#FFFFFF", soft: "#C9BDF5", gold: "#F6C445", green: "#22C55E" };
+
+// Swap deals: an icon for each (no emoji, so it draws the same everywhere).
+const DEAL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  spark: "sparkles-outline",
+  superlike: "star-outline",
+  boost: "rocket-outline",
+};
 
 export function useLudoPrefs() {
   const [prefs, setPrefs] = useState<LudoPrefs>(ludoPrefs.get());
@@ -266,7 +273,7 @@ export function LudoStore({ visible, accessToken, onClose, startTab = "theme" }:
                 <Text style={{ fontFamily: fonts.body, fontSize: 13, color: S.soft }}>Swap your coins for things that help you match.</Text>
                 {Object.entries(wallet.exchange).map(([what, deal]) => (
                   <View key={what} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, backgroundColor: S.card, borderWidth: 1, borderColor: S.border }}>
-                    <Text style={{ fontSize: 30 }}>{what === "spark" ? "✨" : "⭐"}</Text>
+                    <Ionicons name={DEAL_ICON[what] ?? "gift-outline"} size={28} color={S.gold} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: S.text }}>{deal.label}</Text>
                       <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: S.soft }}>{deal.coins} coins</Text>

@@ -56,7 +56,11 @@ const CATALOG = [
 const BY_KEY = new Map(CATALOG.map((item) => [item.key, item]));
 
 /** Coins swapped for app features. */
-const EXCHANGE = { spark: { coins: 150, credit: "spark", label: "1 Spark" }, superlike: { coins: 400, credit: "superlike", label: "1 Super Like" } };
+const EXCHANGE = {
+  spark: { coins: 150, credit: "spark", label: "1 Spark" },
+  superlike: { coins: 400, credit: "superlike", label: "1 Super Like" },
+  boost: { coins: 1000, credit: "boost", label: "1 Boost" },
+};
 
 /** Levels by experience (every coin earned is one point). */
 const LEVELS = [
@@ -177,7 +181,7 @@ async function unlock(userId, key) {
 
 async function exchange(userId, what) {
   const deal = EXCHANGE[String(what || "")];
-  if (!deal) throw fail(400, "Choose a Spark or a Super Like.");
+  if (!deal) throw fail(400, "Choose a Spark, a Super Like or a Boost.");
   await spend(userId, deal.coins, "exchange", null);
   await require("./billingService").addCredits(userId, deal.credit, 1);
   return { ...(await wallet(userId)), got: deal.label };
