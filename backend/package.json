@@ -10,6 +10,7 @@
     "db:create": "node src/migrations/create-database.js",
     "db:check": "node src/migrations/check.js",
     "migrate": "node src/migrations/run.js",
+    "backfill:encrypt": "node src/services/fieldBackfill.js",
     "seed:dev": "node src/scripts/seed-dev-users.js",
     "verify": "node src/scripts/review-verifications.js",
     "reports": "node src/scripts/review-reports.js",
