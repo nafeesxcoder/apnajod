@@ -30,6 +30,8 @@ router.post("/register/verify", otpVerifyLimiter, authController.registerVerify)
 
 // Sign in with username (or mobile) + password
 router.post("/login", loginLimiter, authController.login);
+router.post("/login/2fa", otpVerifyLimiter, authController.loginTwoFactor);
+router.post("/login/2fa/resend", otpRequestLimiter, authController.loginTwoFactorResend);
 router.post("/appeal", otpRequestLimiter, authController.submitSuspensionAppeal);
 
 // Forgot password: OTP to the registered mobile, then set a new password
@@ -44,6 +46,8 @@ router.post("/otp/verify", otpVerifyLimiter, authController.verifyOtp);
 router.post("/refresh", authController.refresh);
 router.post("/logout", requireAuth, authController.logout);
 router.get("/me", requireAuth, authController.me);
+router.post("/2fa/start", requireAuth, otpRequestLimiter, authController.twoFactorStart);
+router.post("/2fa/confirm", requireAuth, otpVerifyLimiter, authController.twoFactorConfirm);
 router.delete("/account", requireAuth, authController.deleteAccount);
 router.post("/deactivate", requireAuth, authController.deactivateAccount);
 // Google

@@ -487,7 +487,7 @@ export function OtpScreen({
 }: {
   destination: string;
   /** Changes only the copy; the code itself is scoped on the server. */
-  purpose: "signup" | "reset";
+  purpose: "signup" | "reset" | "twoFactor";
   onBack: () => void;
   onResend: () => Promise<void>;
   onVerify: (code: string) => Promise<void>;
@@ -585,7 +585,7 @@ export function OtpScreen({
       </View>
 
       <Action
-        label={purpose === "reset" ? "Check code" : "Create my account"}
+        label={purpose === "reset" ? "Check code" : purpose === "twoFactor" ? "Log in" : "Create my account"}
         onPress={() => void verify()}
         disabled={code.length !== 6}
         loading={loading}

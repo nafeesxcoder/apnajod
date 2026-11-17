@@ -49,6 +49,7 @@ export type Screen =
   | "profile"
   | "premium"
   | "settings"
+  | "two-step"
   | "safety"
   | "verifyHub"
   | "support";

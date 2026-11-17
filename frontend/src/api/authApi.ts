@@ -30,6 +30,14 @@ export const isSessionRejected = (error: unknown) =>
   error instanceof AuthRequestError &&
   (error.status === 401 || error.status === 403);
 
+/** Password was right but two-step verification is on: a code is on its way. */
+export type TwoFactorChallenge = {
+  ok: true;
+  twoFactorRequired: true;
+  challengeToken: string;
+  maskedPhone: string;
+};
+
 export type AuthSession = {
   ok: true;
   user: {
@@ -43,6 +51,7 @@ export type AuthSession = {
     emailVerified: boolean;
     hasPassword: boolean;
     mustChangePassword: boolean;
+    twoFactorEnabled?: boolean;
     role?: "user" | "admin" | string | null;
   };
   accessToken: string;
@@ -51,6 +60,21 @@ export type AuthSession = {
   accountReactivated?: boolean;
   mustChangePassword?: boolean;
 };
+
+/** Signed-in POST: the same error handling, with the session's bearer token. */
+async function authPost<T>(route: string, body: unknown, accessToken: string, fallback: string): Promise<T> {
+  const response = await fetch(`${API_URL}${route}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}) as Record<string, unknown>);
+  if (!response.ok) {
+    const failure = data as { error?: string; details?: Record<string, unknown> };
+    throw new AuthRequestError(failure.error || fallback, response.status, failure.details);
+  }
+  return data as T;
+}
 
 /** POST helper that turns a server error into a readable message. */
 async function post<T>(route: string, body: unknown, fallback: string): Promise<T> {
@@ -96,8 +120,26 @@ export const authApi = {
   },
 
   // ---- Sign in with username (or mobile) + password ----
+  /** With two-step verification on, this returns a challenge instead of a session. */
   login(input: { identifier: string; password: string }) {
-    return post<AuthSession>("/auth/login", input, "Could not sign you in");
+    return post<AuthSession | TwoFactorChallenge>("/auth/login", input, "Could not sign you in");
+  },
+  loginTwoFactor(challengeToken: string, code: string) {
+    return post<AuthSession>("/auth/login/2fa", { challengeToken, code }, "That code did not work");
+  },
+  loginTwoFactorResend(challengeToken: string) {
+    return post<{ ok: boolean }>("/auth/login/2fa/resend", { challengeToken }, "Could not send a new code");
+  },
+  twoFactorStart(accessToken: string) {
+    return authPost<{ ok: boolean }>("/auth/2fa/start", {}, accessToken, "Could not send a code");
+  },
+  twoFactorConfirm(accessToken: string, code: string, enable: boolean) {
+    return authPost<{ ok: boolean; twoFactorEnabled: boolean }>(
+      "/auth/2fa/confirm",
+      { code, enable },
+      accessToken,
+      "That code did not work",
+    );
   },
   /** A suspended member asks for a review; lands in the admin dashboard. */
   submitAppeal(appealToken: string, message: string) {

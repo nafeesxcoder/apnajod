@@ -9,6 +9,7 @@ const oauthService = require("../services/oauthService");
 const env = require("../config/env");
 const { normalizeIndianPhone } = require("../utils/otp");
 const appealService = require("../services/appealService");
+const twoFactorService = require("../services/twoFactorService");
 // In-memory OAuth state store (swap for Redis in production / multi-instance deploys)
 const oauthStates = new Map();
 function createState(meta = {}) {
@@ -262,6 +263,22 @@ const login = asyncHandler(async (req, res) => {
   }
 
   await userService.clearFailedLogins(user.id);
+  // Two-step verification on: the password is only the first half. A code goes
+  // to the verified mobile, and the session starts once that code is confirmed.
+  if (Number(user.two_factor_enabled) === 1) {
+    await twoFactorService.sendCode(user);
+    return res.json({
+      ok: true,
+      twoFactorRequired: true,
+      challengeToken: twoFactorService.signChallenge(user.id),
+      maskedPhone: twoFactorService.maskPhone(user.phone),
+    });
+  }
+  return finishLogin(user, res);
+});
+
+/** Starts the session once the password (and any second step) is confirmed. */
+async function finishLogin(user, res) {
   const { accountRestored, accountReactivated } = await resolveAccountState(user);
   const tokens = await sessionService.issueSession(user.id);
 
@@ -274,6 +291,40 @@ const login = asyncHandler(async (req, res) => {
     mustChangePassword: !!user.must_change_password,
     ...tokens,
   });
+}
+
+/** Second step of sign-in: the code from the SMS, with the challenge token. */
+const loginTwoFactor = asyncHandler(async (req, res) => {
+  const { challengeToken, code } = req.body;
+  if (!challengeToken || !code) {
+    throw new ApiError(400, "challengeToken and code are required");
+  }
+  const user = await twoFactorService.userForChallenge(challengeToken);
+  await twoFactorService.checkCode(user, code);
+  return finishLogin(user, res);
+});
+
+const loginTwoFactorResend = asyncHandler(async (req, res) => {
+  const user = await twoFactorService.userForChallenge(req.body?.challengeToken);
+  await twoFactorService.sendCode(user);
+  res.json({ ok: true });
+});
+
+/** Turning two-step verification on or off: a code to the mobile confirms it. */
+const twoFactorStart = asyncHandler(async (req, res) => {
+  const user = await userService.findUserById(req.user.id);
+  await twoFactorService.sendCode(user);
+  res.json({ ok: true });
+});
+
+const twoFactorConfirm = asyncHandler(async (req, res) => {
+  const { code, enable } = req.body;
+  if (!code) throw new ApiError(400, "code is required");
+  const user = await userService.findUserById(req.user.id);
+  await twoFactorService.checkCode(user, code);
+  const turnOn = enable === true;
+  await twoFactorService.setEnabled(user.id, turnOn);
+  res.json({ ok: true, twoFactorEnabled: turnOn });
 });
 
 // ---------- Forgot password: send an OTP to the registered mobile ----------
@@ -497,10 +548,15 @@ function publicUser(user) {
     mustChangePassword: !!user.must_change_password,
     isPrivate: user.is_private === 1 || user.is_private === true,
     role: user.role || 'user',
+    twoFactorEnabled: Number(user.two_factor_enabled) === 1,
   };
 }
 module.exports = {
   submitSuspensionAppeal,
+  loginTwoFactor,
+  loginTwoFactorResend,
+  twoFactorStart,
+  twoFactorConfirm,
   requestOtp,
   verifyOtp,
   checkUsername,

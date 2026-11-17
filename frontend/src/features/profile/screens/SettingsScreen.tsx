@@ -534,6 +534,11 @@ export function SettingsScreen({
                 />
               </View>
               <SettingsRow
+                icon="lock-closed-outline"
+                label="Two-step verification"
+                onPress={() => navigate("two-step")}
+              />
+              <SettingsRow
                 icon="shield-outline"
                 label="Safety & Privacy"
                 onPress={() => navigate("safety")}

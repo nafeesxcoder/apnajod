@@ -180,6 +180,7 @@ import type { GameKind } from "../api/gamesApi";
 import { HomeScreen } from "../features/discovery/screens/HomeScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { SettingsScreen } from "../features/profile/screens/SettingsScreen";
+import { TwoStepScreen } from "../features/profile/screens/TwoStepScreen";
 import { SupportScreen } from "../features/help/screens/SupportScreen";
 import { MatchDetailScreen } from "../features/discovery/screens/MatchDetailScreen";
 import {
@@ -726,7 +727,9 @@ function MilaanApp() {
   const [resetCode, setResetCode] = useState("");
   // The OTP screen is shared by sign-up and password reset; this only picks
   // the copy and where "back" goes. The server scopes the code itself.
-  const [otpPurpose, setOtpPurpose] = useState<"signup" | "reset">("signup");
+  const [otpPurpose, setOtpPurpose] = useState<"signup" | "reset" | "twoFactor">("signup");
+  // Set while a password sign-in waits for its two-step code.
+  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null);
   const [quickProfile, setQuickProfile] = useState<QuickProfile>({
     firstName: "",
     age: "",
@@ -3375,7 +3378,15 @@ function MilaanApp() {
               setScreen("forgotPassword");
             }}
             onSubmit={async (input) => {
-              const session = await authApi.login(input);
+              const result = await authApi.login(input);
+              if ("twoFactorRequired" in result) {
+                setTwoFactorToken(result.challengeToken);
+                setAuthDestination(result.maskedPhone);
+                setOtpPurpose("twoFactor");
+                setScreen("otp");
+                return;
+              }
+              const session = result;
               const next = await adoptSession(session);
               // A reset done elsewhere can mark the account as needing a new
               // password; that screen comes before the app either way.
@@ -3393,9 +3404,15 @@ function MilaanApp() {
             destination={authDestination}
             purpose={otpPurpose}
             onBack={() =>
-              setScreen(otpPurpose === "reset" ? "forgotPassword" : "signup")
+              setScreen(
+                otpPurpose === "reset" ? "forgotPassword" : otpPurpose === "twoFactor" ? "login" : "signup",
+              )
             }
             onResend={async () => {
+              if (otpPurpose === "twoFactor" && twoFactorToken) {
+                await authApi.loginTwoFactorResend(twoFactorToken);
+                return;
+              }
               if (otpPurpose === "reset") {
                 await authApi.forgotPassword(resetIdentifier);
                 return;
@@ -3403,6 +3420,12 @@ function MilaanApp() {
               if (signUpDraft) await authApi.registerStart(signUpDraft);
             }}
             onVerify={async (code) => {
+              if (otpPurpose === "twoFactor" && twoFactorToken) {
+                const session = await authApi.loginTwoFactor(twoFactorToken, code);
+                setTwoFactorToken(null);
+                setScreen(await adoptSession(session));
+                return;
+              }
               // Resetting a password: the code is checked when the new
               // password is submitted, so the update screen always comes
               // first. Holding the code here keeps that order.
@@ -4049,6 +4072,9 @@ function MilaanApp() {
           }}
         />
 
+        {screen === "two-step" && accessToken && (
+          <TwoStepScreen accessToken={accessToken} onBack={() => setScreen("settings")} />
+        )}
         {screen === "settings" && (
           <SettingsScreen accessToken={accessToken}
             navigate={navigateTo}

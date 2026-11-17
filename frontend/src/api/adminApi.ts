@@ -59,6 +59,9 @@ export type Growth = {
 export const adminApi = {
   login: async (identifier: string, password: string) => {
     const session = await authApi.login({ identifier, password });
+    if ("twoFactorRequired" in session) {
+      throw new Error("Two-step verification is not supported on the admin sign-in yet.");
+    }
     
     // Check agar user admin hai
     if (session.user.role !== "admin") {
