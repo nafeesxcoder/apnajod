@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const pub = (name: string) => readFileSync(join(__dirname, "..", "..", "..", "public", name), "utf8");
 const welcome = readFileSync(join(__dirname, "screens", "WelcomeScreen.tsx"), "utf8");
+const accessScreens = readFileSync(join(__dirname, "screens", "AccessScreens.tsx"), "utf8");
+const settings = readFileSync(join(__dirname, "..", "profile", "screens", "SettingsScreen.tsx"), "utf8");
 
 describe("the pages the store and payment reviews look for", () => {
   it("exist: contact, shipping and pricing", () => {
@@ -32,18 +34,22 @@ describe("the pages the store and payment reviews look for", () => {
   it("list the same prices as the server's plans", () => {
     const pricing = pub("pricing.html");
     for (const price of ["₹99", "₹249", "₹49", "₹199", "₹29", "₹119"]) expect(pricing).toContain(price);
-    expect(pricing).toContain("do not renew automatically");
+    expect(pricing).toContain("renew automatically every 30 days");
   });
 
-  it("are linked from every policy page and from the first screen", () => {
+  it("are linked from every policy page, and from Settings rather than the login screen", () => {
     for (const name of ["privacy.html", "terms.html", "refund.html", "contact.html", "shipping.html", "pricing.html"]) {
       const page = pub(name);
       for (const link of ["/contact.html", "/shipping.html", "/pricing.html", "/refund.html"]) {
         expect(page, `${name} → ${link}`).toContain(link);
       }
     }
-    for (const label of ["Privacy", "Terms", "Refund", "Shipping", "Pricing", "Contact Us"]) {
-      expect(welcome).toContain(`label: "${label}"`);
+    // The login screen shows no policy links and no consent line.
+    expect(welcome).not.toContain("apnajoda.com/privacy.html");
+    expect(welcome).not.toContain("POLICY_LINKS");
+    expect(accessScreens).not.toContain("By continuing you agree");
+    for (const page of ["privacy.html", "terms.html", "refund.html", "shipping.html", "pricing.html", "contact.html"]) {
+      expect(settings).toContain(`https://apnajoda.com/${page}`);
     }
   });
 });

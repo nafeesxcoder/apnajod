@@ -6,6 +6,7 @@ import {
   Switch,
   Image,
   Platform,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +43,20 @@ function urlBase64ToUint8Array(base64String: string) {
  * These live outside the screen so they are not re-created on every
  * render (that remounted the switches and replayed the animations).
  */
+// The policy pages. They are listed here only, not on the login screen.
+const LEGAL_LINKS: {
+  label: string;
+  url: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { label: "Privacy Policy", url: "https://apnajoda.com/privacy.html", icon: "shield-checkmark-outline" },
+  { label: "Terms of Service", url: "https://apnajoda.com/terms.html", icon: "document-text-outline" },
+  { label: "Refund & Cancellation", url: "https://apnajoda.com/refund.html", icon: "receipt-outline" },
+  { label: "Shipping & Delivery", url: "https://apnajoda.com/shipping.html", icon: "cube-outline" },
+  { label: "Pricing", url: "https://apnajoda.com/pricing.html", icon: "pricetag-outline" },
+  { label: "Contact Us", url: "https://apnajoda.com/contact.html", icon: "mail-outline" },
+];
+
 function SettingsRow({
   icon,
   label,
@@ -535,6 +550,20 @@ export function SettingsScreen({
                 onPress={() => navigate("support")}
                 isLast
               />
+            </SettingsCard>
+
+            {/* Legal - the policy pages, listed here only */}
+            <SectionLabel title="Legal" />
+            <SettingsCard delay={390}>
+              {LEGAL_LINKS.map((link, index) => (
+                <SettingsRow
+                  key={link.url}
+                  icon={link.icon}
+                  label={link.label}
+                  onPress={() => void Linking.openURL(link.url).catch(() => undefined)}
+                  isLast={index === LEGAL_LINKS.length - 1}
+                />
+              ))}
             </SettingsCard>
 
             {/* Danger Zone */}

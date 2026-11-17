@@ -7,7 +7,6 @@ import {
   Easing,
   Image,
   ImageBackground,
-  Linking,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,18 +19,6 @@ const NAVY = "#1F4D7A";
 const NAVY_DARK = "#12355A";
 const WHITE = "#FFFFFF";
 
-/**
- * The policy pages, linked under the buttons so anyone (and the Google Play
- * reviewers) can find them from the first screen.
- */
-export const POLICY_LINKS = [
-  { label: "Privacy", url: "https://apnajoda.com/privacy.html" },
-  { label: "Terms", url: "https://apnajoda.com/terms.html" },
-  { label: "Refund", url: "https://apnajoda.com/refund.html" },
-  { label: "Shipping", url: "https://apnajoda.com/shipping.html" },
-  { label: "Pricing", url: "https://apnajoda.com/pricing.html" },
-  { label: "Contact Us", url: "https://apnajoda.com/contact.html" },
-] as const;
 const DARK = "#151719";
 
 const MAX_WIDTH = 480;
@@ -183,27 +170,6 @@ export function AccessWelcomeScreen({
                   </TouchableOpacity>
                 </View>
 
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    justifyContent: "center",
-                    columnGap: 14,
-                    rowGap: 4,
-                    marginTop: 18,
-                  }}
-                >
-                  {POLICY_LINKS.map((link) => (
-                    <Text
-                      key={link.label}
-                      accessibilityRole="link"
-                      onPress={() => void Linking.openURL(link.url).catch(() => undefined)}
-                      style={{ fontSize: 12, color: "#555", textDecorationLine: "underline", paddingVertical: 4 }}
-                    >
-                      {link.label}
-                    </Text>
-                  ))}
-                </View>
               </Animated.View>
             </SafeAreaView>
           </LinearGradient>

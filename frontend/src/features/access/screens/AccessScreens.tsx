@@ -307,9 +307,6 @@ export function AccessWelcomeScreen({
           <Text style={access.secondaryText}>I already have an account</Text>
         </Pressable>
       </View>
-      <Text style={access.legal}>
-        By continuing you agree to our Terms and Privacy Policy.
-      </Text>
     </AccessPage>
   );
 }
