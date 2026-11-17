@@ -4,7 +4,7 @@
  * the volume and token speed, and swap coins for a Spark or a Super Like.
  */
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -49,43 +49,17 @@ export function useWallet(accessToken: string) {
   return wallet;
 }
 
-/** A small stack of three gold coins, drawn with plain views (no emoji, no image). */
-export function CoinStack({ size = 14 }: { size?: number }) {
-  const width = size + 8;
-  const face = Math.round(size * 0.6);
-  const step = Math.round(size * 0.3);
-  // Top coin first in the list; drawn bottom-first so the top coin sits over the rest.
-  const coins = [
-    { top: 0, color: "#F6C445" },
-    { top: step, color: "#E9B032" },
-    { top: step * 2, color: "#D4951F" },
-  ].reverse();
-  return (
-    <View style={{ width, height: face + step * 2 }}>
-      {coins.map((coin) => (
-        <View
-          key={coin.top}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: coin.top,
-            width,
-            height: face,
-            borderRadius: width / 2,
-            backgroundColor: coin.color,
-            borderWidth: 1,
-            borderColor: "#B7791F",
-          }}
-        />
-      ))}
-    </View>
-  );
+const coinImage = require("../../../assets/coin.png");
+
+/** The gold coin icon shown next to coin counts. */
+export function CoinIcon({ size = 14 }: { size?: number }) {
+  return <Image source={coinImage} style={{ width: size + 8, height: size + 8 }} resizeMode="contain" />;
 }
 
 export function CoinChip({ coins, onPress, size = 14 }: { coins: number | null | undefined; onPress?: () => void; size?: number }) {
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, height: 32, borderRadius: 16, backgroundColor: "rgba(246,196,69,0.16)", borderWidth: 1, borderColor: "rgba(246,196,69,0.5)" }}>
-      <CoinStack size={size} />
+      <CoinIcon size={size} />
       <Text style={{ fontFamily: fonts.bodyBold, fontSize: size, color: S.gold }}>{coins ?? "…"}</Text>
     </View>
   );
