@@ -21,6 +21,7 @@ import { PromoCard } from "../../promo/PromoPopup";
 import { PROMO_STYLES, type Promo } from "../../promo/styles";
 import { GrowthTab } from "./GrowthTab";
 import { MusicTab } from "./MusicTab";
+import { PlansTab } from "./PlansTab";
 import { fonts, radius } from "../../../theme";
 import { serverDate } from "../../../domain/serverTime";
 
@@ -35,6 +36,7 @@ type Tab =
   | "payments"
   | "festivals"
   | "coupons"
+  | "plans"
   | "promo"
   | "questions"
   | "music"
@@ -54,6 +56,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "payments", label: "UPI Payments", icon: "cash-outline" },
   { key: "festivals", label: "Festival Themes", icon: "sparkles-outline" },
   { key: "coupons", label: "Coupons", icon: "pricetags-outline" },
+  { key: "plans", label: "Plans & Prices", icon: "pricetag-outline" },
   { key: "promo", label: "Offer Popup", icon: "megaphone-outline" },
   { key: "questions", label: "Daily Questions", icon: "help-circle-outline" },
   { key: "music", label: "Music", icon: "musical-notes-outline" },
@@ -445,6 +448,7 @@ export function AdminDashboardScreen({
           {tab === "payments" && <PaymentsTab accessToken={accessToken} />}
           {tab === "festivals" && <FestivalsTab accessToken={accessToken} />}
           {tab === "coupons" && <CouponsTab accessToken={accessToken} />}
+          {tab === "plans" && <PlansTab accessToken={accessToken} />}
           {tab === "promo" && <PromoTab accessToken={accessToken} />}
           {tab === "questions" && <QuestionsTab accessToken={accessToken} />}
           {tab === "music" && <MusicTab accessToken={accessToken} />}

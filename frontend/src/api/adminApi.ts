@@ -139,6 +139,13 @@ export const adminApi = {
   ) => authFetch("/admin/coupons", token, { method: "POST", body: JSON.stringify(body) }),
   updateCoupon: (token: string, id: string, body: { active?: boolean; showAtCheckout?: boolean }) =>
     authFetch(`/admin/coupons/${id}`, token, { method: "POST", body: JSON.stringify(body) }),
+  // Plans and boost packs: price, title, on sale, Play product id.
+  plans: (token: string) => authFetch("/admin/plans", token),
+  updatePlan: (
+    token: string,
+    code: string,
+    body: { title?: string; blurb?: string; amountPaise?: number; active?: boolean; playProductId?: string | null },
+  ) => authFetch(`/admin/plans/${code}`, token, { method: "POST", body: JSON.stringify(body) }),
   promo: (token: string) => authFetch("/admin/promo", token),
   publishPromo: (
     token: string,

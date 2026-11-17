@@ -31,6 +31,8 @@ export type BillingPlan = {
   original_paise?: number;
   offer_percent?: number;
   offer_ends_at?: string | null;
+  /** The Google Play product this plan is sold under, when it is on Play. */
+  play_product_id?: string | null;
 };
 
 export type BillingSummary = {
@@ -131,6 +133,22 @@ export const billingApi = {
     const data = await authFetch("/billing/verify", accessToken, {
       method: "POST",
       body: JSON.stringify(receipt),
+    });
+    return { granted: !!data.granted };
+  },
+
+  /**
+   * Android: send the Google Play purchase token. The server checks it with
+   * Google and turns Premium or the boosts on. Resolves granted only when the
+   * server says so.
+   */
+  async verifyPlayPurchase(
+    accessToken: string,
+    purchase: { productId: string; purchaseToken: string },
+  ): Promise<{ granted: boolean }> {
+    const data = await authFetch("/billing/play/verify", accessToken, {
+      method: "POST",
+      body: JSON.stringify(purchase),
     });
     return { granted: !!data.granted };
   },

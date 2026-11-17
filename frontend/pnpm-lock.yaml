@@ -47,6 +47,9 @@ importers:
       expo-font:
         specifier: ~55.0.4
         version: 55.0.8(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1))(react@19.2.0)
+      expo-iap:
+        specifier: 6.5.0
+        version: 6.5.0(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1))(react@19.2.0)
       expo-image:
         specifier: ~55.0.11
         version: 55.0.11(expo@55.0.31)(react-native-web@0.21.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-native@0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1))(react@19.2.0)
@@ -1913,6 +1916,20 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
+
+  expo-iap@6.5.0:
+    resolution: {integrity: sha512-BRen4saw9PHQHq+ToObFF5C1AR8N0MihUokFD/RF7AcGoB/3n86vnwMsaAZ4WIOFXUIh7HdIZoLHob2k9HEn+Q==}
+    peerDependencies:
+      '@amazon-devices/keplerscript-appstore-iap-lib': ~2.13.0
+      '@amazon-devices/package-manager-lib': ~1.0.1767254401
+      expo: '*'
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      '@amazon-devices/keplerscript-appstore-iap-lib':
+        optional: true
+      '@amazon-devices/package-manager-lib':
+        optional: true
 
   expo-image-loader@55.0.1:
     resolution: {integrity: sha512-o8gCo1j59XpXDh0/llgNYPcnfecYQhafQAO0yw5pb+kukPizvNoEqea8tFQIIQmNYqxd6Ljgs7lLXed0gXpOdQ==}
@@ -5595,6 +5612,12 @@ snapshots:
     dependencies:
       expo: 55.0.31(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@55.0.6)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1))(react@19.2.0)(supports-color@8.1.1)(typescript@5.9.3)
       fontfaceobserver: 2.3.0
+      react: 19.2.0
+      react-native: 0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1)
+
+  expo-iap@6.5.0(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1))(react@19.2.0):
+    dependencies:
+      expo: 55.0.31(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@55.0.6)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1))(react@19.2.0)(supports-color@8.1.1)(typescript@5.9.3)
       react: 19.2.0
       react-native: 0.83.10(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.0)(supports-color@8.1.1)
 

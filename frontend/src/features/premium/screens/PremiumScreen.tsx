@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   ScrollView,
   Text,
@@ -17,6 +18,15 @@ import {
   rupees,
 } from "../../../api/billingApi";
 import { UpiPayments, UpiPaySheet } from "../UpiPay";
+import {
+  buyPlayProduct,
+  connectPlay,
+  disconnectPlay,
+  finishPlayPurchase,
+  loadPlayProducts,
+  onPlayPurchase,
+  type PlayProduct,
+} from "../playBilling";
 import { CouponBox } from "../CouponBox";
 import type { AppliedCoupon } from "../couponStore";
 import { useFestival } from "../../festival/festivalStore";
@@ -75,6 +85,10 @@ const PLAN_FEATURES: Record<string, readonly PlanFeature[]> = {
   pro_monthly: PRO_FEATURES,
 };
 
+// The website points people to the Android app, where Premium is bought
+// through Google Play (browsers cannot use Google Play billing).
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.apnajoda.app";
+
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") return resolve(false);
@@ -103,6 +117,8 @@ export function PremiumScreen({
   const [error, setError] = useState("");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
+  // Android: the Google Play products, by plan code, with the price Google shows.
+  const [playProducts, setPlayProducts] = useState<Record<string, PlayProduct>>({});
   const [notice, setNotice] = useState("");
   // How a member can pay: our UPI (checked by hand) and Razorpay once live.
   const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
@@ -246,15 +262,79 @@ export function PremiumScreen({
   );
 
   const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? null;
+
+  // Android only: connect to Google Play, read the prices, and handle each
+  // purchase by sending its token to the server before anything is granted.
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    void connectPlay();
+    return () => {
+      void disconnectPlay();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const ids = plans.map((plan) => plan.play_product_id).filter((id): id is string => !!id);
+    if (!ids.length) return;
+    let cancelled = false;
+    void loadPlayProducts(ids).then((found) => {
+      if (!cancelled) setPlayProducts(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [plans]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    return onPlayPurchase(
+      async (purchase) => {
+        const plan = plans.find((item) => item.play_product_id === purchase.productId);
+        if (!plan) return;
+        let granted = false;
+        try {
+          const result = await billingApi.verifyPlayPurchase(accessToken, {
+            productId: purchase.productId,
+            purchaseToken: purchase.purchaseToken,
+          });
+          granted = result.granted;
+        } catch {
+          granted = false;
+        }
+        setBuying(false);
+        if (granted) {
+          // Google only lets go of the purchase once the server has it.
+          await finishPlayPurchase(purchase, plan.kind === "consumable");
+          reload();
+          setError("");
+          setNotice("Premium is now active. Enjoy!");
+        } else {
+          setError("We could not confirm this purchase with Google Play yet. Try again in a minute.");
+        }
+      },
+      (message) => {
+        setBuying(false);
+        setError(message);
+      },
+    );
+    // reload is re-created each render but only reads accessToken.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, plans]);
   const festival = useFestival();
   const offerPlan = plans.find((plan) => !!plan.offer_percent) ?? null;
   // What the member pays now: the coupon's price when one is on.
   const payPaise = selectedPlan ? (coupon?.amountPaise ?? selectedPlan.amount_paise) : 0;
   const payPlan = selectedPlan ? { ...selectedPlan, amount_paise: payPaise } : null;
-  const upiOpen = !!payOptions?.upi.enabled;
+  // UPI QR is hidden everywhere (web and phone). Change this back to
+  // `!!payOptions?.upi.enabled` to show the QR again.
+  const upiOpen = false;
   // Razorpay is the website's checkout; the Play Store app pays through
   // Google Play instead, so the phone app never shows it.
   const razorpayOpen = billingApi.checkoutAvailable && Platform.OS === "web" && !!payOptions?.razorpay;
+  // Android: on once Google Play has at least one of our products.
+  const playOpen = Platform.OS === "android" && Object.keys(playProducts).length > 0;
+  const playProduct = selectedPlan?.play_product_id ? playProducts[selectedPlan.play_product_id] : undefined;
 
   const currentPlanName =
     selectedCode === "pro_monthly"
@@ -366,6 +446,47 @@ export function PremiumScreen({
 
       {/* Razorpay only once its account is live: never a Buy that fails,
           and never test keys in front of members. */}
+      {/* Android: Google's own payment sheet (UPI, card, Google Pay). */}
+      {playOpen && playProduct && (
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={buying ? "Opening Google Play" : "Buy with Google Play"}
+          onPress={() => {
+            setError("");
+            setNotice("");
+            setBuying(true);
+            buyPlayProduct(playProduct).catch((error: unknown) => {
+              setBuying(false);
+              setError(error instanceof Error ? error.message : "Google Play could not open the payment.");
+            });
+          }}
+          disabled={buying}
+          containerStyle={{ marginTop: 20 }}
+          style={{
+            backgroundColor: palette.crimson,
+            paddingVertical: 16,
+            borderRadius: radius.pill,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: 8,
+            minHeight: 52,
+            opacity: buying ? 0.5 : 1,
+          }}
+        >
+          {buying ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Ionicons name="logo-google-playstore" size={18} color="#FFFFFF" />
+          )}
+          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 16 }}>
+            {buying
+              ? "Opening Google Play..."
+              : `Buy with Google Play · ${playProduct.displayPrice}`}
+          </Text>
+        </PressScale>
+      )}
+
       {razorpayOpen && (
         <PressScale
           accessibilityRole="button"
@@ -620,7 +741,45 @@ export function PremiumScreen({
                   </PackGroup>
                 )}
 
-                {!upiOpen && !razorpayOpen && (
+                {!upiOpen && !razorpayOpen && Platform.OS === "web" && (
+                  <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
+                    <Text
+                      style={{
+                        color: palette.slate,
+                        fontSize: 14,
+                        textAlign: "center",
+                        lineHeight: 20,
+                        fontFamily: fonts.body,
+                      }}
+                    >
+                      Buy Premium inside the Apnajoda Android app. Payment is done
+                      through Google Play.
+                    </Text>
+                    <PressScale
+                      accessibilityRole="link"
+                      accessibilityLabel="Get Apnajoda on Google Play"
+                      onPress={() => void Linking.openURL(PLAY_STORE_URL)}
+                      style={{
+                        backgroundColor: palette.crimson,
+                        paddingVertical: 14,
+                        paddingHorizontal: 28,
+                        borderRadius: radius.pill,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "row",
+                        gap: 8,
+                        minHeight: 48,
+                      }}
+                    >
+                      <Ionicons name="logo-google-playstore" size={18} color="#FFFFFF" />
+                      <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}>
+                        Get it on Google Play
+                      </Text>
+                    </PressScale>
+                  </View>
+                )}
+
+                {!upiOpen && !razorpayOpen && !playOpen && Platform.OS !== "web" && (
                   <Text
                     style={{
                       color: palette.slate,

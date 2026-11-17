@@ -27,7 +27,9 @@ describe('frontend architecture boundaries', () => {
     const packageJson = readFileSync('package.json', 'utf8');
     const appJson = readFileSync('app.json', 'utf8');
     // expo-notifications is allowed: phone-app push lives behind src/app/push (see below).
-    const banned = ['@supabase/supabase-js', '@stripe/stripe-react-native', 'expo-iap'];
+    // expo-iap is allowed too: Google Play billing is the only store the phone app
+    // may buy through, and it lives behind src/features/premium/playBilling.native.ts (see below).
+    const banned = ['@supabase/supabase-js', '@stripe/stripe-react-native'];
     for (const dependency of banned) {
       expect(packageJson).not.toContain(dependency);
       expect(appJson).not.toContain(dependency);
@@ -43,10 +45,13 @@ describe('frontend architecture boundaries', () => {
       const pushAdapter = /src[\\/]app[\\/]push[\\/]nativePush\.native\.ts$/.test(path);
       // The phone app's calls: react-native-webrtc only behind the call adapters.
       const callAdapter = /src[\\/]features[\\/]chat[\\/](?:webrtcGlobals|callMedia)\.native\.tsx?$/.test(path);
+      // Google Play purchases: expo-iap only behind the Play Billing adapter.
+      const playAdapter = /src[\\/]features[\\/]premium[\\/]playBilling\.native\.ts$/.test(path);
       return imports
         .filter(([, dependency]) => banned.test(dependency ?? ''))
         .filter(([, dependency]) => !(pushAdapter && dependency === 'expo-notifications'))
         .filter(([, dependency]) => !(callAdapter && dependency === 'react-native-webrtc'))
+        .filter(([, dependency]) => !(playAdapter && dependency === 'expo-iap'))
         .map(([, dependency]) => `${path} -> ${dependency}`);
     });
 

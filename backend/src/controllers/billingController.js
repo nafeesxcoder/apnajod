@@ -180,6 +180,20 @@ const webhook = asyncHandler(async (req, res) => {
  * Premium turns on at once instead of waiting for the webhook (which still
  * arrives and changes nothing, as the payment is already granted).
  */
+// Android: the purchase token from Google Play, checked with Google before
+// anything is granted.
+const playVerify = asyncHandler(async (req, res) => {
+  try {
+    const result = await require("../services/playBillingService").playBilling.verifyPurchase(
+      req.user.id,
+      req.body || {},
+    );
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    throw new ApiError(error.status || 500, error.message);
+  }
+});
+
 const verify = asyncHandler(async (req, res) => {
   const { orderId, paymentId, signature } = req.body || {};
   if (!orderId || !paymentId || !signature) {
@@ -231,4 +245,4 @@ const submitUpi = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { plans, me, boost, createOrder, webhook, verify, payOptions, submitUpi, checkCoupon };
+module.exports = { plans, me, boost, createOrder, webhook, verify, playVerify, payOptions, submitUpi, checkCoupon };

@@ -261,7 +261,22 @@ const resetAdminPassword = asyncHandler(async (req, res) => {
   res.json({ ok: true, message: "Password reset successfully. You can now log in." });
 });
 
+// Plans and boost packs: price, title, on sale, Play product id.
+const getPlans = asyncHandler(async (req, res) => {
+  res.json({ ok: true, plans: await require("../services/planAdminService").list() });
+});
+
+const updatePlan = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await require("../services/planAdminService").update(req.params.code, req.body || {})) });
+  } catch (error) {
+    throw serviceError(error);
+  }
+});
+
 module.exports = {
+  getPlans,
+  updatePlan,
   getQuestions,
   createQuestion,
   setQuestionActive,

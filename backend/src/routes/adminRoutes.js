@@ -63,6 +63,10 @@ router.get("/promo", adminController.getPromo);
 router.post("/promo", adminController.publishPromo);
 router.post("/promo/off", adminController.stopPromo);
 
+// Plans and boost packs: price, title, on sale, Play product id.
+router.get("/plans", adminController.getPlans);
+router.post("/plans/:code", adminController.updatePlan);
+
 // UPI payments checked by hand.
 router.get("/payments", adminController.getPayments);
 router.post("/payments/:id/approve", adminController.approvePayment);
