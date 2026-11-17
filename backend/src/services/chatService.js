@@ -707,6 +707,30 @@ async function getPartnerPresence(peerId, userId) {
   return { online, lastActiveAt, typing };
 }
 
+/**
+ * Who is online among these members, for the chat list's green dots. A member
+ * who hid their status, or you hid yours, is never shown as online.
+ */
+async function onlineFor(userId, ids) {
+  const wanted = [...new Set(ids.map(String))]
+    .filter((id) => /^[0-9a-f-]{36}$/i.test(id))
+    .slice(0, 100);
+  const out = Object.fromEntries(wanted.map((id) => [id, false]));
+  if (!wanted.length) return out;
+  const [me] = await query("SELECT hide_activity FROM users WHERE id = ?", [userId]);
+  if (Number(me?.hide_activity) === 1) return out;
+  const rows = await query(
+    `SELECT id, last_active_at, hide_activity FROM users WHERE id IN (${wanted.map(() => "?").join(",")})`,
+    wanted,
+  );
+  const now = Date.now();
+  for (const row of rows) {
+    if (Number(row.hide_activity) === 1 || !row.last_active_at) continue;
+    out[row.id] = now - new Date(row.last_active_at).getTime() < ONLINE_WINDOW_MS;
+  }
+  return out;
+}
+
 async function getSettings(peerId, userId) {
   const conversationId = storageKey(userId, peerId);
   await assertParticipant(peerId, userId);
@@ -864,6 +888,7 @@ module.exports = {
   updateDatePlanStatus,
   shareLiveLocation,
   getPartnerPresence,
+  onlineFor,
   setTyping,
   isTypingFresh,
   markConversationRead,

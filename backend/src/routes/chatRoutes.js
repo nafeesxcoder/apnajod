@@ -20,6 +20,7 @@ router.use(requireAuth);
 router.get('/gifs/status', chatController.gifStatus);
 router.get('/gifs', gifLimiter, chatController.searchGifs);
 // Declared before the /:conversationId routes so it is not captured by them.
+router.get('/presence', chatController.presenceFor);
 router.get('/conversations', chatController.listConversations);
 router.get('/games/know-me-questions', chatController.knowMeSetup);
 router.get('/games/:gameId', chatController.getGame);

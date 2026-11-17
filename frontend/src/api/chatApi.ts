@@ -179,6 +179,15 @@ export const chatApi = {
     }) as Promise<PersistenceResult<{ ok: boolean }>>;
   },
 
+  /** Which of these members are online, for the chat list's green dots. */
+  async presenceFor(accessToken: string, userIds: string[]): Promise<Record<string, boolean>> {
+    if (!userIds.length) return {};
+    const result = (await authFetch(`/chat/presence?ids=${encodeURIComponent(userIds.join(","))}`, accessToken)) as {
+      data?: { online?: Record<string, boolean> };
+    };
+    return result.data?.online ?? {};
+  },
+
   async getPresence(
     accessToken: string,
     conversationId: string,

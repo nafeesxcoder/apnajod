@@ -3670,6 +3670,7 @@ function MilaanApp() {
         {(screen === "chats" || (appLayout.isDesktop && screen === "chat")) &&
           accessToken && (
             <ChatsScreen
+              accessToken={accessToken}
               pane={appLayout.isDesktop && screen === "chat"}
               activeConversationId={
                 screen === "chat"

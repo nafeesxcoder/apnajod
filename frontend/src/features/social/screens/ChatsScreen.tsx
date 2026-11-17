@@ -5,6 +5,8 @@
  * followed, so this screen is a list of threads and a way to start one.
  */
 import { useCallback, useEffect, useState } from 'react';
+
+import { chatApi } from '../../../api/chatApi';
 import {
   ActivityIndicator,
   Image,
@@ -84,9 +86,10 @@ function isYourTurn(conversation: ConversationSummary) {
  * Photo in the navy/crimson ring. The ring turns while a reply is waiting
  * (unread, or their turn), so the chats that need you stand out.
  */
-function Avatar({ name, url, waiting }: { name: string; url: string | null; waiting: boolean }) {
+function Avatar({ name, url, waiting, online = false }: { name: string; url: string | null; waiting: boolean; online?: boolean }) {
   const size = 54;
   return (
+    <View style={{ width: size, height: size }}>
     <SpinRing size={size} spin={waiting}>
       {url ? (
         <Image
@@ -104,6 +107,13 @@ function Avatar({ name, url, waiting }: { name: string; url: string | null; wait
         </View>
       )}
     </SpinRing>
+      {online && (
+        <View
+          accessibilityLabel="Online"
+          style={{ position: 'absolute', right: 0, bottom: 0, width: 13, height: 13, borderRadius: 7, backgroundColor: palette.emerald, borderWidth: 2, borderColor: '#FFFFFF' }}
+        />
+      )}
+    </View>
   );
 }
 
@@ -114,8 +124,10 @@ export function ChatsScreen({
   navigate,
   pane,
   activeConversationId,
+  accessToken,
 }: {
   pane?: boolean;
+  accessToken?: string;
   activeConversationId?: string;
   onLoad: () => Promise<ConversationSummary[]>;
   onOpenConversation: (conversation: ConversationSummary) => void;
@@ -124,6 +136,24 @@ export function ChatsScreen({
 }) {
   const navInset = useNavInset();
   const [items, setItems] = useState<ConversationSummary[] | null>(null);
+  // Green dots: who is online among the shown chats, checked every 30 seconds.
+  const [onlineIds, setOnlineIds] = useState<Record<string, boolean>>({});
+  const onlineKey = (items ?? []).map((c) => c.user.userId).join(",");
+  useEffect(() => {
+    if (!accessToken || !onlineKey) return;
+    let live = true;
+    const check = () =>
+      chatApi
+        .presenceFor(accessToken, onlineKey.split(","))
+        .then((map) => live && setOnlineIds(map))
+        .catch(() => undefined);
+    void check();
+    const timer = setInterval(check, 30_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [accessToken, onlineKey]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   // Archived chats sit in their own folder at the top of the list.
@@ -270,6 +300,7 @@ export function ChatsScreen({
                       name={conversation.user.name}
                       url={conversation.user.avatarUrl}
                       waiting={conversation.unread > 0 || isYourTurn(conversation)}
+                      online={!!onlineIds[conversation.user.userId]}
                     />
                     <View style={social.rowText}>
                       <View style={social.rowTitleLine}>

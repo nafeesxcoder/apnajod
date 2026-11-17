@@ -97,6 +97,11 @@ const getStreak = wrap(async (req) => {
   return streakService.forConversation(req.user.id, chatService.storageKey(req.user.id, peerId));
 });
 
+const presenceFor = wrap(async (req) => {
+  const ids = String(req.query.ids || "").split(",").filter(Boolean);
+  return { online: await chatService.onlineFor(req.user.id, ids) };
+});
+
 const getPresence = wrap(async (req) => {
   return chatService.getPartnerPresence(req.params.conversationId, req.user.id);
 });
@@ -173,6 +178,7 @@ module.exports = {
   postPollVote,
   postLocation,
   getPresence,
+  presenceFor,
   getStreak,
   postTyping,
   postScreenshot,
