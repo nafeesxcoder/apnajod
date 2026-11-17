@@ -22,7 +22,7 @@ let openSpin: (() => void) | null = null;
 export const showDailySpin = () => openSpin?.();
 
 function prizeText(prize: SpinPrize) {
-  if (prize.kind === "coins") return { big: `+${prize.amount} 🪙`, small: "Coins added to your wallet" };
+  if (prize.kind === "coins") return { big: `+${prize.amount} coins`, small: "Coins added to your wallet" };
   if (prize.kind === "credit") return { big: "✨ 1 Spark", small: "A free Spark to send someone special" };
   return { big: "🎁 Free unlock!", small: `${prize.name} (${prize.itemKind}) is yours in the Ludo store` };
 }
@@ -119,7 +119,7 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
                 <View key={i} style={{ position: "absolute", left: -6, top: -6, width: SIZE, height: SIZE, alignItems: "center", transform: [{ rotate: `${(i + 0.5) * (360 / n)}deg` }] }}>
                   <View style={{ width: 0, height: 0, borderLeftWidth: wedge / 2, borderRightWidth: wedge / 2, borderTopWidth: R, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: SLICE_COLORS[i % SLICE_COLORS.length] }} />
                   <Text style={{ position: "absolute", top: R * 0.16, fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF", textShadowColor: "rgba(0,0,0,0.4)", textShadowRadius: 3 }}>
-                    {/^\d+$/.test(slices[i] ?? "") ? `🪙${slices[i]}` : slices[i] === "Spark" ? "✨" : "🎁"}
+                    {/^\d+$/.test(slices[i] ?? "") ? `${slices[i]}` : slices[i] === "Spark" ? "✨" : "🎁"}
                   </Text>
                 </View>
               ))}

@@ -345,7 +345,7 @@ export function LudoScreen({
         {wallet && (
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Pressable accessibilityRole="button" accessibilityLabel="Open the Ludo store" onPress={() => setStoreOpen(true)} style={{ flex: 1, padding: 12, borderRadius: 18, backgroundColor: L.glass, borderWidth: 1, borderColor: L.glassBorder, gap: 2 }}>
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.gold }}>🪙 {wallet.coins}</Text>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.gold }}>{wallet.coins} coins</Text>
               <Text style={{ fontFamily: fonts.body, fontSize: 12, color: L.textSoft }}>
                 {wallet.level} · {wallet.wins} wins{wallet.streak > 1 ? ` · 🔥${wallet.streak}` : ""}
               </Text>
@@ -375,7 +375,7 @@ export function LudoScreen({
                 <Text numberOfLines={1} style={{ flex: 1, fontFamily: row.me ? fonts.bodyBold : fonts.bodySemi, fontSize: 14, color: L.text }}>
                   {row.me ? "You" : row.name}
                 </Text>
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: L.gold }}>🪙 {row.coins}</Text>
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: L.gold }}>{row.coins} coins</Text>
               </View>
             ))}
           </View>
@@ -565,7 +565,7 @@ export function LudoScreen({
           return (
             <View style={{ alignItems: "center", gap: 2 }}>
               <Text accessibilityLabel={`You earned ${mine.coins} coins`} style={{ fontFamily: fonts.bodyBold, fontSize: 26, color: "#FFFFFF" }}>
-                {mine.coins > 0 ? `+${mine.coins} 🪙` : "🪙 Daily coin limit reached"}
+                {mine.coins > 0 ? `+${mine.coins} coins` : "Daily coin limit reached"}
               </Text>
               {(mine.notes ?? []).map((note) => (
                 <Text key={note} style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: L.gold }}>

@@ -69,7 +69,7 @@ export function LudoEntry({
             <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: "#D1D5DB", marginTop: 2 }}>2, 3 or 4 players · talk live on mic</Text>
             {!!wallet && (
               <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12.5, color: "#F6C445", marginTop: 3 }}>
-                🪙 {wallet.coins} · {wallet.level}
+                {wallet.coins} coins · {wallet.level}
                 {wallet.canSpin ? " · 🎡 Spin ready!" : ""}
               </Text>
             )}

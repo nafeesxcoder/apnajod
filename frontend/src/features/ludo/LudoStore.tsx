@@ -52,7 +52,9 @@ export function useWallet(accessToken: string) {
 export function CoinChip({ coins, onPress, size = 14 }: { coins: number | null | undefined; onPress?: () => void; size?: number }) {
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, height: 32, borderRadius: 16, backgroundColor: "rgba(246,196,69,0.16)", borderWidth: 1, borderColor: "rgba(246,196,69,0.5)" }}>
-      <Text style={{ fontSize: size }}>🪙</Text>
+      <View style={{ width: size + 4, height: size + 4, borderRadius: (size + 4) / 2, backgroundColor: S.gold, borderWidth: 2, borderColor: "#B7791F", alignItems: "center", justifyContent: "center" }}>
+        <View style={{ width: size - 4, height: size - 4, borderRadius: (size - 4) / 2, borderWidth: 1, borderColor: "#FFF3C4" }} />
+      </View>
       <Text style={{ fontFamily: fonts.bodyBold, fontSize: size, color: S.gold }}>{coins ?? "…"}</Text>
     </View>
   );
@@ -262,7 +264,7 @@ export function LudoStore({ visible, accessToken, onClose, startTab = "theme" }:
                     <Text style={{ fontSize: 30 }}>{what === "spark" ? "✨" : "⭐"}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: S.text }}>{deal.label}</Text>
-                      <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: S.soft }}>🪙 {deal.coins}</Text>
+                      <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: S.soft }}>{deal.coins} coins</Text>
                     </View>
                     <Pressable
                       accessibilityRole="button"
@@ -297,7 +299,7 @@ export function LudoStore({ visible, accessToken, onClose, startTab = "theme" }:
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: S.text }}>{item.name}</Text>
                     <Text style={{ fontFamily: fonts.body, fontSize: 12, color: S.soft }}>
-                      {inUse ? "In use" : have ? (pref ? "Yours - tap Use" : "Yours - use it in games") : item.price === 0 ? "Free" : `🪙 ${item.price}`}
+                      {inUse ? "In use" : have ? (pref ? "Yours - tap Use" : "Yours - use it in games") : item.price === 0 ? "Free" : `${item.price} coins`}
                     </Text>
                   </View>
                   {have ? (
