@@ -7,6 +7,8 @@ function required(name, fallback = undefined) {
 
 module.exports = {
   port: Number(process.env.PORT || 4000),
+  // Only nginx on this server talks to the API, so it listens on localhost.
+  host: process.env.HOST || "127.0.0.1",
   nodeEnv: process.env.NODE_ENV || "development",
   appUrl: required("APP_URL", "http://localhost:8081"),
   apiUrl: required("API_URL", "http://localhost:4000"),
