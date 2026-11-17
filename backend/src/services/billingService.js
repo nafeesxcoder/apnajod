@@ -1,10 +1,10 @@
 /**
  * What a member has paid for, and what that lets them do.
  *
- * Two rails will sell the same things - Razorpay on the website, Google
- * Play Billing in the Android app, because Play does not allow anything
- * else to charge for digital goods inside an app. Both end at grantPlan()
- * below, so no gate anywhere else in the app has to know which one paid.
+ * Premium and boosts are bought through Google Play Billing in the Android
+ * app, because Play does not allow anything else to charge for digital goods
+ * inside an app. UPI payments checked by hand also end at grantPlan() below,
+ * so no gate anywhere else in the app has to know which one paid.
  *
  * Every check here runs on the server. The client is told what it may do
  * so it can draw the right screen, but it is never asked.

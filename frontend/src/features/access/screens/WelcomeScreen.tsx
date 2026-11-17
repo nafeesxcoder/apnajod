@@ -21,8 +21,8 @@ const NAVY_DARK = "#12355A";
 const WHITE = "#FFFFFF";
 
 /**
- * The policy pages, linked under the buttons so anyone (and Razorpay's
- * review) can find them from the first screen.
+ * The policy pages, linked under the buttons so anyone (and the Google Play
+ * reviewers) can find them from the first screen.
  */
 export const POLICY_LINKS = [
   { label: "Privacy", url: "https://apnajoda.com/privacy.html" },

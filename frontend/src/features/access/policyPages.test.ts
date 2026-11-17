@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const pub = (name: string) => readFileSync(join(__dirname, "..", "..", "..", "public", name), "utf8");
 const welcome = readFileSync(join(__dirname, "screens", "WelcomeScreen.tsx"), "utf8");
 
-describe("the pages Razorpay looks for", () => {
+describe("the pages the store and payment reviews look for", () => {
   it("exist: contact, shipping and pricing", () => {
     for (const name of ["contact.html", "shipping.html", "pricing.html"]) {
       expect(existsSync(join(__dirname, "..", "..", "..", "public", name))).toBe(true);

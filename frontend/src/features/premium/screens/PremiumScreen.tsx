@@ -99,18 +99,6 @@ const PLAN_FEATURES: Record<string, readonly PlanFeature[]> = {
 // through Google Play (browsers cannot use Google Play billing).
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.apnajoda.app";
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if ((window as any).Razorpay) return resolve(true);
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
-
 export function PremiumScreen({
   accessToken,
   onBack,
@@ -131,7 +119,7 @@ export function PremiumScreen({
   const [playProducts, setPlayProducts] = useState<Record<string, PlayProduct>>({});
   const [playStatuses, setPlayStatuses] = useState<PlayStatusRow[]>([]);
   const [notice, setNotice] = useState("");
-  // How a member can pay: our UPI (checked by hand) and Razorpay once live.
+  // How a member can pay: our UPI, checked by hand (hidden for now).
   const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
   const [upiSheetOpen, setUpiSheetOpen] = useState(false);
   // A coupon on the selected plan (the server worked out its price).
@@ -191,78 +179,6 @@ export function PremiumScreen({
       live = false;
     };
   }, [accessToken]);
-
-  const handleBuy = async () => {
-    if (!selectedCode || buying) return;
-    setBuying(true);
-    setError("");
-    setNotice("");
-
-    try {
-      const ok = await loadRazorpayScript();
-      if (!ok) {
-        throw new Error("Could not load Razorpay. Check your connection.");
-      }
-
-      const order = await billingApi.createOrder(accessToken, selectedCode, coupon?.code);
-
-      const rzp = new (window as any).Razorpay({
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency,
-        order_id: order.orderId,
-        name: "Apnajoda",
-        description: order.planTitle,
-        theme: { color: "#1F4D7A" },
-        handler: async (response: {
-          razorpay_order_id?: string;
-          razorpay_payment_id?: string;
-          razorpay_signature?: string;
-        }) => {
-          setNotice("Payment successful. Verifying...");
-          setBuying(false);
-          // Only say Premium is on once the server has checked the receipt.
-          // If that check cannot finish now, the webhook still turns it on.
-          let granted = false;
-          try {
-            const result = await billingApi.verifyPayment(accessToken, {
-              orderId: response?.razorpay_order_id ?? order.orderId,
-              paymentId: response?.razorpay_payment_id ?? "",
-              signature: response?.razorpay_signature ?? "",
-            });
-            granted = result.granted;
-          } catch {
-            granted = false;
-          }
-          reload();
-          setNotice(
-            granted
-              ? "Premium is now active. Enjoy!"
-              : "Payment received. We are confirming it and Premium will turn on in a minute.",
-          );
-          if (!granted) setTimeout(reload, 15000);
-        },
-        modal: {
-          ondismiss: () => {
-            setBuying(false);
-            setNotice("");
-          },
-        },
-      });
-
-      rzp.on("payment.failed", (response: any) => {
-        setError(
-          response?.error?.description || "Payment failed. Please try again.",
-        );
-        setBuying(false);
-      });
-
-      rzp.open();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start checkout.");
-      setBuying(false);
-    }
-  };
 
   const subscriptions = plans.filter((plan) => plan.kind === "subscription");
   const boostPacks = plans.filter(
@@ -364,9 +280,6 @@ export function PremiumScreen({
   // UPI QR is hidden everywhere (web and phone). Change this back to
   // `!!payOptions?.upi.enabled` to show the QR again.
   const upiOpen = false;
-  // Razorpay is the website's checkout; the Play Store app pays through
-  // Google Play instead, so the phone app never shows it.
-  const razorpayOpen = billingApi.checkoutAvailable && Platform.OS === "web" && !!payOptions?.razorpay;
   // Android: on once Google Play has at least one of our products.
   const playOpen = Platform.OS === "android" && Object.keys(playProducts).length > 0;
   const playProduct = selectedPlan?.play_product_id ? playProducts[selectedPlan.play_product_id] : undefined;
@@ -412,10 +325,9 @@ export function PremiumScreen({
         </Text>
       )}
 
-      {/* UPI to our own ID, approved by hand, while Razorpay KYC is
-          pending. One Pay button under the plan; the QR, the UPI ID and
-          the UTR box open from it. */}
-      {selectedPlan && payOptions && (upiOpen || razorpayOpen) && (
+      {/* UPI to our own ID, checked by hand. One Pay button under the plan;
+          the QR, the UPI ID and the UTR box open from it. */}
+      {selectedPlan && payOptions && upiOpen && (
         <CouponBox
           plan={selectedPlan}
           accessToken={accessToken}
@@ -479,8 +391,6 @@ export function PremiumScreen({
         </>
       )}
 
-      {/* Razorpay only once its account is live: never a Buy that fails,
-          and never test keys in front of members. */}
       {/* Android: Google's own payment sheet (UPI, card, Google Pay). */}
       {playOpen && playProduct && (
         <PressScale
@@ -518,45 +428,6 @@ export function PremiumScreen({
             {buying
               ? "Opening Google Play..."
               : `Buy with Google Play · ${playProduct.displayPrice}`}
-          </Text>
-        </PressScale>
-      )}
-
-      {razorpayOpen && (
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={buying ? "Opening Razorpay" : "Buy with Razorpay"}
-          onPress={() => void handleBuy()}
-          disabled={!selectedCode || buying}
-          containerStyle={{ marginTop: 20 }}
-          style={{
-            backgroundColor: palette.crimson,
-            paddingVertical: 16,
-            borderRadius: radius.pill,
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            gap: 8,
-            minHeight: 52,
-            opacity: !selectedCode || buying ? 0.5 : 1,
-          }}
-        >
-          {!!selectedCode && !buying && (
-            <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
-          )}
-          {buying ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
-          )}
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontFamily: fonts.bodySemi,
-              fontSize: 16,
-            }}
-          >
-            {buying ? "Opening Razorpay..." : "Buy with Razorpay"}
           </Text>
         </PressScale>
       )}
@@ -816,7 +687,7 @@ export function PremiumScreen({
                   </View>
                 )}
 
-                {!upiOpen && !razorpayOpen && Platform.OS === "web" && (
+                {!upiOpen && Platform.OS === "web" && (
                   <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
                     <Text
                       style={{
@@ -854,7 +725,7 @@ export function PremiumScreen({
                   </View>
                 )}
 
-                {!upiOpen && !razorpayOpen && !playOpen && Platform.OS !== "web" && (
+                {!upiOpen && !playOpen && Platform.OS !== "web" && (
                   <Text
                     style={{
                       color: palette.slate,

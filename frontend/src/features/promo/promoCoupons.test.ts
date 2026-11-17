@@ -41,7 +41,7 @@ describe('coupons', () => {
   it('asks the server for the price and sends the coupon with the payment', () => {
     const premium = read('../premium/screens/PremiumScreen.tsx');
     expect(premium).toContain('<CouponBox');
-    expect(premium).toContain('billingApi.createOrder(accessToken, selectedCode, coupon?.code)');
+    expect(premium).toContain('onApplied={setCoupon}');
     expect(premium).toContain('couponCode={coupon?.code ?? null}');
     const box = read('../premium/CouponBox.tsx');
     expect(box).toContain('billingApi.checkCoupon(accessToken, plan.code, value)');

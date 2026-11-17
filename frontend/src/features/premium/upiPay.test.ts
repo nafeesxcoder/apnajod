@@ -4,9 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { cleanUtr, upiLink, utrValid } from './upiLink';
 
 /**
- * Paying by UPI to our own ID while Razorpay waits on KYC. The member
- * sends the UTR and an admin approves it; Razorpay stays hidden until its
- * account is live.
+ * Paying by UPI to our own ID, checked by hand. The member sends the UTR
+ * and an admin approves it.
  */
 describe('UPI payments', () => {
   it('opens a UPI app with the ID, the exact amount and a note', () => {
@@ -29,8 +28,8 @@ describe('UPI payments', () => {
     expect(screen).toContain('setUpiSheetOpen(true)');
     expect(screen).not.toContain('<UpiPay\n');
     expect(screen).toContain('<UpiPayments');
-    // Razorpay test keys never reach members.
-    expect(screen).toContain('!!payOptions?.razorpay');
+    // Premium never shows a Razorpay checkout.
+    expect(screen.toLowerCase()).not.toContain('razorpay');
     const pay = readFileSync(join(__dirname, 'UpiPay.tsx'), 'utf8');
     expect(pay).toContain('assets/upi-qr.jpg');
     expect(pay).toContain('billingApi.submitUpi');

@@ -6,10 +6,9 @@ import { rupees } from '../../api/billingApi';
 /**
  * The Premium screen.
  *
- * Checkout is live through Razorpay. Prices come from the server so a
- * change is an UPDATE, not a deploy, and one flag in billingApi closes
- * payments again if ever needed - taking the Buy button with it, so nobody
- * is shown a button that cannot work.
+ * Android buys Premium through Google Play; the website only points people
+ * to the Play Store app. Prices come from the server so a change is an
+ * UPDATE, not a deploy.
  */
 const screen = readFileSync(
   'src/features/premium/screens/PremiumScreen.tsx',
@@ -39,34 +38,25 @@ describe('the Premium screen', () => {
     expect(screen).not.toMatch(/₹\s?[1-9]/);
   });
 
-  it('shows the Razorpay button only while checkout is open and the account is live', () => {
-    // The flag still closes Razorpay; the server also has to say its keys
-    // are live ones, so test keys never reach members.
-    // Razorpay is web-only: the Play Store app pays through Google Play.
-    expect(screen).toContain('const razorpayOpen = billingApi.checkoutAvailable && Platform.OS === "web" && !!payOptions?.razorpay;');
-    expect(screen).toMatch(
-      /\{razorpayOpen && \(\s*<PressScale[\s\S]{0,200}?onPress=\{\(\) => void handleBuy\(\)\}/,
-    );
+  it('never shows a Razorpay button or calls Razorpay', () => {
+    // Razorpay refused this dating business and no key will be issued, so
+    // neither the screen nor the API may mention it again.
+    expect(screen.toLowerCase()).not.toContain('razorpay');
+    expect(api.toLowerCase()).not.toContain('razorpay');
+    expect(api).not.toContain('createOrder');
+    expect(api).not.toContain('verifyPayment');
   });
 
-  it('turns Premium on only after the server has checked the receipt', () => {
-    // No more "Premium is now active" on a timer: the signed receipt goes to
-    // /billing/verify first, and the happy message waits for its answer.
-    expect(screen).toContain('billingApi.verifyPayment(accessToken, {');
-    expect(screen).not.toMatch(/setTimeout\(\(\) => \{\s*reload\(\);\s*setNotice\("Premium is now active/);
-    expect(screen).toMatch(/granted\s*\?\s*"Premium is now active\. Enjoy!"/);
-    expect(api).toContain('authFetch("/billing/verify", accessToken');
+  it('sends Android buyers to Google Play and web visitors to the Play Store', () => {
+    expect(screen).toContain('accessibilityLabel={buying ? "Opening Google Play" : "Buy with Google Play"}');
+    expect(screen).toContain('const PLAY_STORE_URL');
+    expect(screen).toContain('Get it on Google Play');
   });
 
   it('says plainly that everything is free while payments are closed', () => {
-    // Closed means no UPI and no Razorpay.
-    expect(screen).toContain('!upiOpen && !razorpayOpen');
+    // Closed on the web means no UPI and no Play button there.
+    expect(screen).toContain('!upiOpen && Platform.OS === "web"');
     expect(screen).toMatch(/free for\s*\n?\s*everyone/);
-  });
-
-  it('has one flag to open or close payments, in one place', () => {
-    expect(api).toMatch(/checkoutAvailable: (true|false),/);
-    expect(api.match(/checkoutAvailable:/g)).toHaveLength(1);
   });
 
   it('shows the member where they stand', () => {

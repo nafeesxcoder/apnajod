@@ -50,15 +50,6 @@ export type BillingSummary = {
   superlikes?: number;
 };
 
-export type RazorpayOrder = {
-  orderId: string;
-  amount: number;
-  currency: string;
-  keyId: string;
-  planCode: string;
-  planTitle: string;
-};
-
 /** A UPI payment the member sent, waiting for (or past) an admin's check. */
 export type UpiPayment = {
   id: string;
@@ -73,8 +64,6 @@ export type UpiPayment = {
 
 export type PayOptions = {
   upi: { enabled: boolean; upiId: string; payeeName: string; approvalHours: number };
-  /** Razorpay only once its account is live - never test keys. */
-  razorpay: boolean;
   payments: UpiPayment[];
   /** The coupon the admin shows at payment, if this member can still use it. */
   coupon: { code: string; percent: number; validUntil: string | null } | null;
@@ -100,41 +89,6 @@ export const billingApi = {
 
   async startBoost(accessToken: string) {
     return authFetch("/billing/boost", accessToken, { method: "POST" });
-  },
-
-  async createOrder(
-    accessToken: string,
-    planCode: string,
-    couponCode?: string | null,
-  ): Promise<RazorpayOrder> {
-    const data = await authFetch("/billing/order", accessToken, {
-      method: "POST",
-      body: JSON.stringify({ planCode, couponCode: couponCode || undefined }),
-    });
-    return {
-      orderId: data.orderId,
-      amount: data.amount,
-      currency: data.currency,
-      keyId: data.keyId,
-      planCode: data.planCode,
-      planTitle: data.planTitle,
-    };
-  },
-
-  /**
-   * Hands Razorpay's signed receipt to the server right after checkout, so
-   * Premium turns on at once. `granted` is false only if the server could
-   * not confirm it (the webhook may still turn it on a moment later).
-   */
-  async verifyPayment(
-    accessToken: string,
-    receipt: { orderId: string; paymentId: string; signature: string },
-  ): Promise<{ granted: boolean }> {
-    const data = await authFetch("/billing/verify", accessToken, {
-      method: "POST",
-      body: JSON.stringify(receipt),
-    });
-    return { granted: !!data.granted };
   },
 
   /**
@@ -172,7 +126,7 @@ export const billingApi = {
 
   async payOptions(accessToken: string): Promise<PayOptions> {
     const data = await authFetch("/billing/pay-options", accessToken);
-    return { upi: data.upi, razorpay: !!data.razorpay, payments: data.payments ?? [], coupon: data.coupon ?? null };
+    return { upi: data.upi, payments: data.payments ?? [], coupon: data.coupon ?? null };
   },
 
   async submitUpi(accessToken: string, planCode: string, utr: string, couponCode?: string | null): Promise<UpiPayment> {
@@ -200,6 +154,4 @@ export const billingApi = {
       percent: data.percent ?? null,
     };
   },
-
-  checkoutAvailable: true,
 };

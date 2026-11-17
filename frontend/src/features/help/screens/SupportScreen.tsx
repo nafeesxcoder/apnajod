@@ -32,7 +32,7 @@ const FAQS: FaqItem[] = [
     icon: "card-outline",
     question: "My payment went through but my plan is not active?",
     answer:
-      "Wait 5 minutes — Plus, Pro, Boosts and Super Likes are added automatically once Razorpay confirms the payment. If it is still not active after 30 minutes, email us with your Razorpay Payment ID (starts with pay_) and we will verify and activate it right away.",
+      "Wait 5 minutes — Plus, Pro, Boosts and Super Likes are added automatically once Google Play confirms the purchase. If it is still not active after 30 minutes, email us with your Google Play order ID (it starts with GPA.) and we will verify and activate it right away.",
   },
   {
     id: "refund",
