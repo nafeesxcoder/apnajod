@@ -14,8 +14,9 @@ describe('coins are never drawn with the coin emoji', () => {
     }
   });
 
-  it('draws the coin chip icon as a gold circle', () => {
+  it('draws the coin chip icon as a small stack of gold coins', () => {
     const store = readFileSync(join(__dirname, 'LudoStore.tsx'), 'utf8');
-    expect(store).toContain('backgroundColor: S.gold, borderWidth: 2, borderColor: "#B7791F"');
+    expect(store).toContain('<CoinStack size={size} />');
+    expect(store).toContain('export function CoinStack(');
   });
 });
