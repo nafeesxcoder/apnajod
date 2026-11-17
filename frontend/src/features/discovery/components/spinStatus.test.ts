@@ -22,9 +22,11 @@ describe('the daily spin on Home', () => {
     expect(spinStatus(new Date(NOW + 20_000).toISOString(), NOW).label).toBe('Next spin in under a minute');
   });
 
-  it('puts the coins and the spin in the Home header', () => {
+  it('puts the coins and the spin in the chat header, not on Home', () => {
+    const chat = readFileSync(join(__dirname, '..', '..', 'chat', 'ChatFeature.tsx'), 'utf8');
+    expect(chat).toContain('import { HomeCoinsSpin } from "../discovery/components/HomeCoinsSpin";');
+    expect(chat).toContain('<HomeCoinsSpin accessToken={accessToken} onOpenGames={() => navigate("games")} />');
     const home = readFileSync(join(__dirname, '..', 'screens', 'HomeScreen.tsx'), 'utf8');
-    expect(home).toContain('import { HomeCoinsSpin } from "../components/HomeCoinsSpin";');
-    expect(home).toContain('<HomeCoinsSpin accessToken={accessToken} onOpenGames={() => navigate("games")} />');
+    expect(home).not.toContain('<HomeCoinsSpin');
   });
 });

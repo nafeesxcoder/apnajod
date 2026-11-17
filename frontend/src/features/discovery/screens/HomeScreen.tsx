@@ -40,7 +40,6 @@ import { TrustBadge } from "../../../components/TrustBadge";
 
 import { DailyQuestionCard } from "../components/DailyQuestionCard";
 import { DailyPicksRow } from "../components/DailyPicksRow";
-import { HomeCoinsSpin } from "../components/HomeCoinsSpin";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
@@ -277,12 +276,6 @@ export function HomeScreen({
                   </Text>
                 )}
               </View>
-
-              {!!accessToken && (
-                <View style={{ marginRight: 12 }}>
-                  <HomeCoinsSpin accessToken={accessToken} onOpenGames={() => navigate("games")} />
-                </View>
-              )}
 
               <View style={{ marginRight: 12 }}>
                 <AddPostButton

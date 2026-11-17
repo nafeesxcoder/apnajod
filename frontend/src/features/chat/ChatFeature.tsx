@@ -79,6 +79,7 @@ import {
 import { useFestival } from "../festival/festivalStore";
 import { alreadyWished, FestivalWishCard, FestivalWishChip } from "../festival/FestivalWish";
 import { LudoInviteCard } from "../ludo/LudoInviteCard";
+import { HomeCoinsSpin } from "../discovery/components/HomeCoinsSpin";
 import { ringtone } from "./ringtones/ringtone";
 import { userIdFromToken } from "../posts/profileLink";
 import {
@@ -2507,6 +2508,10 @@ export function ChatScreen({
                 </Text>
               </View>
             </Pressable>
+
+            {!!accessToken && (
+              <HomeCoinsSpin accessToken={accessToken} onOpenGames={() => navigate("games")} />
+            )}
 
             <Pressable
               accessibilityRole="button"
