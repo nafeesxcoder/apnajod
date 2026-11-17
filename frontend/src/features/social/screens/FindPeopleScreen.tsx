@@ -59,6 +59,8 @@ export type FindPeopleProps = {
   /** Your username, for the invite link that earns you a Boost. */
   getMyUsername?: () => Promise<string>;
   discoverUsers?: SocialUser[];
+  /** Active now / New: the server's members for that chip. */
+  onLoadFiltered?: (filter: "active" | "new") => Promise<SocialUser[]>;
 };
 
 function formatPhone(phone: string) {
@@ -101,6 +103,7 @@ export function FindPeopleScreen({
   contactsMode,
   getMyUsername,
   discoverUsers = [],
+  onLoadFiltered,
 }: FindPeopleProps) {
   const contactsSupported = contactsMode !== "none";
   // Search inside your contacts (they can be hundreds).
@@ -127,6 +130,34 @@ export function FindPeopleScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterId>("all");
+  const [filtered, setFiltered] = useState<SocialUser[]>([]);
+  const [filterBusy, setFilterBusy] = useState(false);
+  const loadFiltered = useRef(onLoadFiltered);
+  loadFiltered.current = onLoadFiltered;
+  useEffect(() => {
+    const load = loadFiltered.current;
+    if (filter === "all" || !load) {
+      setFiltered([]);
+      setFilterBusy(false);
+      return;
+    }
+    let live = true;
+    setFilterBusy(true);
+    load(filter)
+      .then((users) => {
+        if (live) setFiltered(users);
+      })
+      .catch(() => {
+        if (live) setFiltered([]);
+      })
+      .finally(() => {
+        if (live) setFilterBusy(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [filter]);
+  const shownUsers = filter === "all" ? discoverUsers : filtered;
   const [searchMode, setSearchMode] = useState(false);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const token = useRef(0);
@@ -583,7 +614,7 @@ export function FindPeopleScreen({
                       ))}
                     </ScrollView>
 
-                    {discoverUsers.length > 0 && (
+                    {shownUsers.length > 0 && (
                       <>
                         <Text
                           style={{
@@ -602,7 +633,7 @@ export function FindPeopleScreen({
                             gap: 12,
                           }}
                         >
-                          {discoverUsers.slice(0, 4).map((user, index) => (
+                          {shownUsers.slice(0, 4).map((user, index) => (
                             <Reveal
                               key={user.userId}
                               delay={index * 70}
@@ -689,7 +720,7 @@ export function FindPeopleScreen({
                       </>
                     )}
 
-                    {discoverUsers.length === 0 && (
+                    {shownUsers.length === 0 && !filterBusy && (
                       <View
                         style={{
                           ...whiteCard,
@@ -711,7 +742,11 @@ export function FindPeopleScreen({
                             textAlign: "center",
                           }}
                         >
-                          New members appear here as they join
+                          {filter === "active"
+                            ? "Nobody is online right now"
+                            : filter === "new"
+                              ? "No new members in the last 7 days"
+                              : "New members appear here as they join"}
                         </Text>
                       </View>
                     )}

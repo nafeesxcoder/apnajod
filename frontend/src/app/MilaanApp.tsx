@@ -2372,6 +2372,13 @@ function MilaanApp() {
   const visibleMatches = rankedMatches.filter(
     (match) => !dismissedIds.includes(match.id),
   );
+  const toFindPersonUser = (m: Match) => ({
+    userId: m.id,
+    username: m.name?.toLowerCase().replace(/\s+/g, "_") || "member",
+    name: m.name || "Member",
+    avatarUrl: m.photo || null,
+    isPrivate: false,
+  });
   // Signed in, the server is the only source of truth. The local ledger is
   // for the preview build only - it is what let a reinstall hand out a
   // second free Spark.
@@ -3727,14 +3734,14 @@ function MilaanApp() {
             onMatchContacts={onMatchContacts}
             onOpenPerson={openPerson}
             onFollow={(userId) => likeFromSearch(userId)}
-            discoverUsers={visibleMatches.map((m) => ({
-              userId: m.id,
-              username:
-                m.name?.toLowerCase().replace(/\s+/g, "_") || "member",
-              name: m.name || "Member",
-              avatarUrl: m.photo || null,
-              isPrivate: false,
-            }))}
+            discoverUsers={visibleMatches.map(toFindPersonUser)}
+            onLoadFiltered={async (filter) => {
+              if (!accessToken) return [];
+              const result = await profileApi.discoverMatches(accessToken, 50, filter);
+              return ((result.matches ?? []) as Match[])
+                .filter((m) => !blockedIds.includes(m.id) && !dismissedIds.includes(m.id))
+                .map(toFindPersonUser);
+            }}
           />
         )}
 

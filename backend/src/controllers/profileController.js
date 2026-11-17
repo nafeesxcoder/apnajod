@@ -136,7 +136,7 @@ const getReferrals = asyncHandler(async (req, res) => {
 const discoverMatches = asyncHandler(async (req, res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
   const limit = Math.min(50, Number(req.query.limit) || 20);
-  const matches = await profileService.findMatches(req.user.id, limit);
+  const matches = await profileService.findMatches(req.user.id, limit, String(req.query.filter || "all"));
   res.json({ ok: true, matches });
 });
 /** My Rashi, Nakshatra, Manglik and (Premium) the lowest Gun score to show. */

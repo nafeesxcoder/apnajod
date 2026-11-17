@@ -378,7 +378,23 @@ async function markOnboardingComplete(userId) {
   ]);
 }
 
-async function findMatches(userId, limit = 20) {
+/**
+ * Find People's chips. "active" is online right now: the same 45 seconds as
+ * the green dot, never a member who hid their activity, and nothing for a
+ * viewer who hid theirs. "new" joined in the last 7 days.
+ */
+const DISCOVER_FILTERS = {
+  active: {
+    sql: "AND COALESCE(u.hide_activity, 0) = 0 AND u.last_active_at > NOW(6) - INTERVAL 45 SECOND AND (SELECT COALESCE(me.hide_activity, 0) FROM users me WHERE me.id = ?) = 0",
+    params: (userId) => [userId],
+  },
+  new: {
+    sql: "AND u.created_at > NOW(6) - INTERVAL 7 DAY",
+    params: () => [],
+  },
+};
+
+async function findMatches(userId, limit = 20, filter = "all") {
   const [myPrefs] = await query(
     "SELECT * FROM matching_preferences WHERE user_id = ?",
     [userId],
@@ -409,6 +425,12 @@ async function findMatches(userId, limit = 20) {
   const cityClause = cities.length ? cities.map(() => "LOWER(p.city) LIKE ?").join(" OR ") : "0";
   const intentClause = intents.length ? intents.map(() => "LOWER(pi.intent) LIKE ?").join(" OR ") : "0";
   const fitParams = [...cities.map((c) => `${c}%`), ...intents.map((i) => `%${i}%`)];
+
+  const discoverFilter = Object.prototype.hasOwnProperty.call(DISCOVER_FILTERS, filter)
+    ? DISCOVER_FILTERS[filter]
+    : null;
+  const filterSql = discoverFilter ? discoverFilter.sql : "";
+  const filterParams = discoverFilter ? discoverFilter.params(userId) : [];
 
   const candidates = await query(
     `SELECT
@@ -443,6 +465,7 @@ async function findMatches(userId, limit = 20) {
                          WHERE actor_id = ?
                            AND (decision = 'interested'
                                 OR updated_at > NOW() - INTERVAL ${PASS_RETURN_DAYS} DAY))
+       ${filterSql}
      ORDER BY
        boosted DESC,
        off_preference ASC,
@@ -456,7 +479,7 @@ async function findMatches(userId, limit = 20) {
        p.updated_at DESC,
        u.created_at DESC
      LIMIT ${pool}`,
-    [wantGender, wantGender, ...ageParams, ...fitParams, userId, userId, userId, userId],
+    [wantGender, wantGender, ...ageParams, ...fitParams, userId, userId, userId, userId, ...filterParams],
   );
 
   // The Gun Milan with each person (when both have a Rashi).

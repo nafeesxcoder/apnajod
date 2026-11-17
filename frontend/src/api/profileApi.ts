@@ -94,8 +94,8 @@ export const profileApi = {
   async getMyProfile(accessToken: string) {
     return announceReward(await authFetch("/profile/me", accessToken));
   },
-  async discoverMatches(accessToken: string, limit = 20) {
-    return authFetch(`/profile/discover?limit=${limit}`, accessToken);
+  async discoverMatches(accessToken: string, limit = 20, filter: "all" | "active" | "new" = "all") {
+    return authFetch(`/profile/discover?limit=${limit}&filter=${filter}`, accessToken);
   },
   async updateProfile(
     accessToken: string,
