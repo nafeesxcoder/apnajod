@@ -1,5 +1,6 @@
 ﻿const crypto = require('crypto');
 const { query } = require('../config/db');
+const { blindIndex, decrypt } = require('./fieldCrypto');
 
 const REQUEST_TTL_DAYS = 7;
 
@@ -53,8 +54,8 @@ async function searchByIdentifier(identifier, selfUserId) {
   const column = isEmail ? 'email' : 'phone';
   const value = isEmail ? identifier.trim().toLowerCase() : normalizePhone(identifier);
   const users = await query(
-    `SELECT id FROM users WHERE ${column} = ? AND id != ? LIMIT 1`,
-    [value, selfUserId],
+    `SELECT id FROM users WHERE (${column}_hash = ? OR ${column} = ?) AND id != ? LIMIT 1`,
+    [blindIndex(column, value), value, selfUserId],
   );
   if (!users.length) return null;
   const targetId = users[0].id;
@@ -310,8 +311,8 @@ async function matchContacts(userId, rawPhones) {
   if (!phones.length) return [];
   const placeholders = phones.map(() => '?').join(',');
   const users = await query(
-    `SELECT id, phone FROM users WHERE phone IN (${placeholders}) AND id != ?`,
-    [...phones, userId],
+    `SELECT id, phone FROM users WHERE (phone_hash IN (${placeholders}) OR phone IN (${placeholders})) AND id != ?`,
+    [...phones.map((phone) => blindIndex('phone', phone)), ...phones, userId],
   );
   if (!users.length) return [];
 
@@ -338,7 +339,7 @@ async function matchContacts(userId, rawPhones) {
     if (connected.has(user.id)) relation = 'connected';
     else if (pendingOut.has(user.id)) relation = 'pending_out';
     else if (pendingIn.has(user.id)) relation = 'pending_in';
-    results.push({ phone: user.phone, relation, member: toPartnerRow(profile, user.id) });
+    results.push({ phone: decrypt(user.phone), relation, member: toPartnerRow(profile, user.id) });
   }
   return results;
 }

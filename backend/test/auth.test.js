@@ -16,6 +16,8 @@ process.env.JWT_ACCESS_SECRET = "test-access-secret-value";
 process.env.JWT_REFRESH_SECRET = "test-refresh-secret-value";
 process.env.OTP_RESEND_COOLDOWN_SECONDS = "0";
 delete process.env.TWILIO_ACCOUNT_SID;
+// Field encryption needs a key before services/fieldCrypto.js loads.
+process.env.APP_ENC_KEY = Buffer.alloc(32, 3).toString("base64");
 
 // ---------------------------------------------------------------- fake db ---
 
@@ -28,11 +30,15 @@ async function query(sql, params = []) {
   const q = norm(sql);
 
   // ---- users: reads ----
-  if (q.startsWith("SELECT * FROM users WHERE phone =")) {
-    return db.users.filter((u) => u.phone === params[0]).slice(0, 1);
+  // Lookups use the blind-index columns (see services/userService.js). The
+  // plain column is a fallback for rows the back-fill has not reached yet.
+  if (q.startsWith("SELECT * FROM users WHERE phone_hash =")) {
+    const [hash, plain] = params;
+    return db.users.filter((u) => (hash && u.phone_hash === hash) || (plain && u.phone === plain)).slice(0, 1);
   }
-  if (q.startsWith("SELECT * FROM users WHERE email =")) {
-    return db.users.filter((u) => u.email === params[0]).slice(0, 1);
+  if (q.startsWith("SELECT * FROM users WHERE email_hash =")) {
+    const [hash, plain] = params;
+    return db.users.filter((u) => (hash && u.email_hash === hash) || (plain && u.email === plain)).slice(0, 1);
   }
   if (q.startsWith("SELECT * FROM users WHERE username =")) {
     return db.users.filter((u) => u.username === params[0]).slice(0, 1);
@@ -43,11 +49,13 @@ async function query(sql, params = []) {
 
   // ---- users: writes ----
   if (q.startsWith("INSERT INTO users")) {
-    const [id, phone, email, username, passwordHash, fullName, avatarUrl] = params;
+    const [id, phone, phoneHash, email, emailHash, username, passwordHash, fullName, avatarUrl] = params;
     db.users.push({
       id,
       phone,
+      phone_hash: phoneHash,
       email,
+      email_hash: emailHash,
       username,
       password_hash: passwordHash,
       full_name: fullName,

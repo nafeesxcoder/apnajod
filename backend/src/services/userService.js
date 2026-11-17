@@ -3,17 +3,37 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { query } = require('../config/db');
+const fc = require('./fieldCrypto');
+
+// Rows leave this module with phone and email decrypted, so callers keep
+// working with plain values. A row the back-fill has not reached yet holds
+// plain text, and decrypt() returns that unchanged.
+function openUser(row) {
+  if (!row) return null;
+  return { ...row, phone: fc.decrypt(row.phone), email: fc.decrypt(row.email) };
+}
+
+// The hash column does the lookup. The plain column is only a fallback for
+// rows the back-fill has not reached yet.
 async function findUserByPhone(phone) {
-  const rows = await query('SELECT * FROM users WHERE phone = ? LIMIT 1', [phone]);
-  return rows[0] || null;
+  const plain = fc.normalizePhone(phone);
+  const rows = await query(
+    'SELECT * FROM users WHERE phone_hash = ? OR phone = ? LIMIT 1',
+    [fc.blindIndex('phone', plain), plain],
+  );
+  return openUser(rows[0]);
 }
 async function findUserByEmail(email) {
-  const rows = await query('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
-  return rows[0] || null;
+  const plain = fc.normalizeEmail(email);
+  const rows = await query(
+    'SELECT * FROM users WHERE email_hash = ? OR email = ? LIMIT 1',
+    [fc.blindIndex('email', plain), plain],
+  );
+  return openUser(rows[0]);
 }
 async function findUserById(id) {
   const rows = await query('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
-  return rows[0] || null;
+  return openUser(rows[0]);
 }
 async function createUser({
   phone = null,
@@ -25,9 +45,19 @@ async function createUser({
 }) {
   const id = crypto.randomUUID();
   await query(
-    `INSERT INTO users (id, phone, email, username, password_hash, full_name, avatar_url, phone_verified_at, email_verified_at, password_changed_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ${phone ? 'NOW()' : 'NULL'}, ${email ? 'NOW()' : 'NULL'}, ${passwordHash ? 'NOW()' : 'NULL'})`,
-    [id, phone, email, username, passwordHash, fullName, avatarUrl],
+    `INSERT INTO users (id, phone, phone_hash, email, email_hash, username, password_hash, full_name, avatar_url, phone_verified_at, email_verified_at, password_changed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${phone ? 'NOW()' : 'NULL'}, ${email ? 'NOW()' : 'NULL'}, ${passwordHash ? 'NOW()' : 'NULL'})`,
+    [
+      id,
+      fc.encrypt(phone),
+      fc.blindIndex('phone', phone),
+      fc.encrypt(email),
+      fc.blindIndex('email', email),
+      username,
+      passwordHash,
+      fullName,
+      avatarUrl,
+    ],
   );
   return findUserById(id);
 }
@@ -57,7 +87,7 @@ function validatePassword(value) {
 
 async function findUserByUsername(username) {
   const rows = await query('SELECT * FROM users WHERE username = ? LIMIT 1', [normalizeUsername(username)]);
-  return rows[0] || null;
+  return openUser(rows[0]);
 }
 
 /**
@@ -155,7 +185,7 @@ async function findOrCreateByOAuth({ provider, providerUserId, email, fullName, 
   const linkId = crypto.randomUUID();
   await query(
     'INSERT INTO oauth_accounts (id, user_id, provider, provider_user_id, email) VALUES (?, ?, ?, ?, ?)',
-    [linkId, user.id, provider, providerUserId, email],
+    [linkId, user.id, provider, providerUserId, fc.encrypt(email)],
   );
   return user;
 }

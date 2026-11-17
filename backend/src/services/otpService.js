@@ -11,9 +11,17 @@ const {
 const { sendOtpSms } = require("./smsService");
 const { sendOtpEmail } = require("./emailService");
 const { ApiError } = require("../middleware/errorHandler");
+const { blindIndex } = require("./fieldCrypto");
+
+// otp_codes keeps a blind index, never the phone or email itself. The SMS or
+// email still goes to the plain value.
+function storedIdentifier(channel, normalized) {
+  return blindIndex(channel === "email" ? "email" : "phone", normalized);
+}
 
 async function requestOtp({ channel, identifier, purpose = 'login' }) {
   const normalized = normalizeIdentifier(channel, identifier);
+  const key = storedIdentifier(channel, normalized);
   if (channel === "phone" && !isValidPhone(normalized)) {
     throw new ApiError(
       400,
@@ -26,7 +34,7 @@ async function requestOtp({ channel, identifier, purpose = 'login' }) {
     `SELECT created_at FROM otp_codes
      WHERE identifier = ? AND channel = ? AND purpose = ? AND consumed_at IS NULL
      ORDER BY created_at DESC LIMIT 1`,
-    [normalized, channel, purpose],
+    [key, channel, purpose],
   );
   if (recent[0]) {
     const secondsSince =
@@ -47,7 +55,7 @@ async function requestOtp({ channel, identifier, purpose = 'login' }) {
   await query(
     `INSERT INTO otp_codes (id, identifier, channel, code_hash, purpose, max_attempts, expires_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, normalized, channel, codeHash, purpose, env.otp.maxAttempts, expiresAt],
+    [id, key, channel, codeHash, purpose, env.otp.maxAttempts, expiresAt],
   );
 
   try {
@@ -79,6 +87,7 @@ async function requestOtp({ channel, identifier, purpose = 'login' }) {
 
 async function verifyOtp({ channel, identifier, code, purpose = 'login' }) {
   const normalized = normalizeIdentifier(channel, identifier);
+  const key = storedIdentifier(channel, normalized);
 
   // Phone aur email dono ke liye database se hi check karo
   // (kyunki OTP humesha yahin generate/save hota hai, chahe SMS ho ya email)
@@ -86,7 +95,7 @@ async function verifyOtp({ channel, identifier, code, purpose = 'login' }) {
     `SELECT * FROM otp_codes
      WHERE identifier = ? AND channel = ? AND purpose = ? AND consumed_at IS NULL
      ORDER BY created_at DESC LIMIT 1`,
-    [normalized, channel, purpose],
+    [key, channel, purpose],
   );
   const record = rows[0];
 

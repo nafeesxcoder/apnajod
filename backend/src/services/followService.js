@@ -9,6 +9,7 @@
  */
 const crypto = require("crypto");
 const { query } = require("../config/db");
+const { blindIndex, decrypt } = require("./fieldCrypto");
 const billingService = require("./billingService");
 const { normalizeIndianPhone } = require("../utils/otp");
 
@@ -117,6 +118,8 @@ async function matchContacts(viewerId, phones, limit = 200) {
   }
 
   const placeholders = normalized.map(() => "?").join(",");
+  const hashes = normalized.map((phone) => blindIndex("phone", phone));
+  const hashPlaceholders = hashes.map(() => "?").join(",");
   const rows = await query(
     `SELECT u.id AS user_id, u.username, u.full_name,
             COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar_url,
@@ -125,16 +128,17 @@ async function matchContacts(viewerId, phones, limit = 200) {
       WHERE u.deleted_at IS NULL
         AND u.deactivated_at IS NULL
         AND u.id != ?
-        AND u.phone IN (${placeholders})
+        AND (u.phone_hash IN (${hashPlaceholders}) OR u.phone IN (${placeholders}))
         AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
         AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
       LIMIT ${Number(limit)}`,
-    [viewerId, ...normalized, viewerId, viewerId],
+    [viewerId, ...hashes, ...normalized, viewerId, viewerId],
   );
 
-  const matchedPhones = new Set(rows.map((r) => r.phone));
+  const plainRows = rows.map((row) => ({ ...row, phone: decrypt(row.phone) }));
+  const matchedPhones = new Set(plainRows.map((r) => r.phone));
   const unmatched = normalized.filter((p) => !matchedPhones.has(p));
-  const matched = await decorate(viewerId, rows);
+  const matched = await decorate(viewerId, plainRows);
 
   return { matched, unmatched };
 }
