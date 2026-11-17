@@ -639,7 +639,7 @@ export function FindPeopleScreen({
                             gap: 12,
                           }}
                         >
-                          {shownUsers.slice(0, 4).map((user, index) => (
+                          {shownUsers.map((user, index) => (
                             <Reveal
                               key={user.userId}
                               delay={index * 70}

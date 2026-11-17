@@ -15,7 +15,7 @@ describe("Find people filter chips", () => {
 
   it("shows the filtered list for Active now and New, the deck for All", () => {
     expect(screen).toContain('const shownUsers = filter === "all" ? discoverUsers : filtered;');
-    expect(screen).toContain("shownUsers.slice(0, 4).map((user, index) => (");
+    expect(screen).toContain("shownUsers.map((user, index) => (");
   });
 
   it("has an empty message for each chip", () => {

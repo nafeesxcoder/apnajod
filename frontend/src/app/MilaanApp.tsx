@@ -1126,7 +1126,7 @@ function MilaanApp() {
             try {
               const discoverResult = await profileApi.discoverMatches(
                 currentToken,
-                20,
+                50,
               );
               if (discoverResult.matches)
                 setServerDiscoveredMatches(discoverResult.matches);

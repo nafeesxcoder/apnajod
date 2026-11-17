@@ -18,7 +18,7 @@ function timeUntil(iso: string, now = Date.now()) {
 }
 
 /**
- * Aaj ke 5 on Home.
+ * Today's 5 on Home.
  *
  * Five profiles picked for this member, new every night at 9 PM. The row
  * shows which ones they have already acted on, and when the next five
@@ -66,7 +66,10 @@ export function DailyPicksRow({
 
   const header = (label: string) => (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-      <Text style={{ fontFamily: fonts.display, fontSize: 19, color: palette.ink }}>Aaj ke 5</Text>
+      <View>
+        <Text style={{ fontFamily: fonts.display, fontSize: 19, color: palette.ink }}>Today's picks for you</Text>
+        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>5 new people every day</Text>
+      </View>
       <View style={{ backgroundColor: brand.pillBg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
         <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: brand.pillText }}>{label}</Text>
       </View>
@@ -76,7 +79,7 @@ export function DailyPicksRow({
   if (data.picks.length === 0) {
     return (
       <View
-        accessibilityLabel="Aaj ke 5, no picks right now"
+        accessibilityLabel="Today's picks for you, none right now"
         style={{ ...whiteCard, marginBottom: 16, padding: 16, gap: 8 }}
       >
         {header(`Next in ${timeUntil(data.nextAt)}`)}
