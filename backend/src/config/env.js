@@ -78,4 +78,7 @@ module.exports = {
     subject: required("VAPID_SUBJECT", "mailto:support@milaan.in"),
   },
 
+  // 32 random bytes, base64. Generate: openssl rand -base64 32
+  fieldEncKey: required("APP_ENC_KEY", ""),
+
 };
