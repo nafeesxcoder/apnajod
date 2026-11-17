@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ConversationSummary } from '../../../api/chatApi';
+import { parseStickerPayload } from '../../../domain/chatMediaCatalog';
 import { archivedCount, listOrder } from "../chatListOrder";
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
@@ -43,10 +44,23 @@ function shortAge(ms: number) {
   return `${Math.round(days / 7)}w`;
 }
 
+/**
+ * A sticker travels as a text payload ("✨STICKER|id|emoji|label|...").
+ * Show the sticker, not the raw payload. A broken payload shows "Sticker".
+ */
+function stickerPreview(text: string): string | null {
+  try {
+    const sticker = parseStickerPayload(text);
+    return sticker ? `${sticker.emoji} Sticker: ${sticker.label}` : null;
+  } catch {
+    return text.startsWith('✨STICKER|') ? 'Sticker' : null;
+  }
+}
+
 function previewOf(conversation: ConversationSummary) {
   const message = conversation.lastMessage;
   if (!message) return 'Say hello';
-  if (message.text) return message.text;
+  if (message.text) return stickerPreview(message.text) ?? message.text;
   switch (message.type) {
     case 'image':
       return 'Photo';
