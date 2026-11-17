@@ -14,12 +14,13 @@ const BATCH = 200;
 async function backfillUsers(log = console.log) {
   let done = 0;
   for (;;) {
+    // The batch size is written into the SQL: mysql2 prepared statements do
+    // not accept a placeholder after LIMIT (ER_WRONG_ARGUMENTS on MySQL 8).
     const rows = await query(
       `SELECT id, phone, email FROM users
        WHERE (phone IS NOT NULL AND phone <> '' AND phone_hash IS NULL)
           OR (email IS NOT NULL AND email <> '' AND email_hash IS NULL)
-       LIMIT ?`,
-      [BATCH],
+       LIMIT ${Number(BATCH)}`,
     );
     if (!rows.length) break;
 

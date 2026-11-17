@@ -29,3 +29,8 @@ test("the migration widens the columns and adds the blind-index columns", () => 
 test("the back-fill has an npm script and runs by hand", () => {
   assert.ok(pkg.includes('"backfill:encrypt": "node src/services/fieldBackfill.js"'));
 });
+
+test("the batch limit is not a placeholder (prepared statements reject it)", () => {
+  assert.ok(!/LIMIT \?/.test(backfill));
+  assert.ok(backfill.includes("LIMIT ${Number(BATCH)}"));
+});
