@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Image, Pressable, Text, View } from "react-native";
 
 import { showDailySpin } from "../../ludo/DailySpin";
 import { CoinChip, useWallet } from "../../ludo/LudoStore";
 import { colors, fonts, palette } from "../../../theme";
 import { spinStatus } from "./spinStatus";
+
+const spinWheel = require("../../../../assets/spin-wheel.png");
 
 /**
  * Your coins and the daily spin, in the Home header. A red dot shows when a
@@ -51,7 +52,7 @@ export function HomeCoinsSpin({ accessToken, onOpenGames }: { accessToken: strin
             borderColor: "rgba(246,196,69,0.5)",
           }}
         >
-          <Ionicons name="gift-outline" size={17} color={palette.crimson} />
+          <Image source={spinWheel} style={{ width: 24, height: 24 }} resizeMode="contain" />
           {ready && (
             <View
               style={{
