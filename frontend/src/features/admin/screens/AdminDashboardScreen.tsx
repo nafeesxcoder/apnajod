@@ -1016,6 +1016,7 @@ function UsersTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [passOpenId, setPassOpenId] = useState<string | null>(null);
 
   const load = useCallback(
     async (q: string) => {
@@ -1148,8 +1149,8 @@ function UsersTab({
             const userId = String(u?.id || Math.random());
 
             return (
+              <View key={userId} style={{ gap: 8 }}>
               <Card
-                key={userId}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -1200,6 +1201,13 @@ function UsersTab({
                 </View>
                 {role !== "admin" && (
                   <SmallButton
+                    label={passOpenId === userId ? "Close" : "Pass"}
+                    tone="navy"
+                    onPress={() => setPassOpenId(passOpenId === userId ? null : userId)}
+                  />
+                )}
+                {role !== "admin" && (
+                  <SmallButton
                     label={banned ? "Restore" : "Suspend"}
                     tone={banned ? "plain" : "danger"}
                     busy={busyId === userId}
@@ -1207,11 +1215,139 @@ function UsersTab({
                   />
                 )}
               </Card>
+              {passOpenId === userId && (
+                <PassPanel
+                  accessToken={accessToken}
+                  userId={userId}
+                  onChanged={() => void load(query.trim())}
+                />
+              )}
+              </View>
             );
           })}
         </View>
       )}
     </View>
+  );
+}
+
+const PASS_PLAN_CHOICES = [
+  { id: "plus", label: "Plus" },
+  { id: "pro", label: "Pro" },
+  { id: "everything", label: "Everything" },
+] as const;
+
+const PASS_LENGTHS = [
+  { months: 1, label: "1 month" },
+  { months: 3, label: "3 months" },
+  { months: 12, label: "1 year" },
+] as const;
+
+function PassChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: selected ? COLORS.primary : "#D1D5DB",
+        backgroundColor: selected ? COLORS.primary : "#FFFFFF",
+      }}
+    >
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: selected ? "#FFFFFF" : COLORS.textMain }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Give or delete a free pass for one member. Opens under their card. */
+function PassPanel({ accessToken, userId, onChanged }: { accessToken: string; userId: string; onChanged: () => void }) {
+  const [plan, setPlan] = useState<(typeof PASS_PLAN_CHOICES)[number]["id"]>("pro");
+  const [months, setMonths] = useState<number>(1);
+  const [current, setCurrent] = useState<{ planLabel: string; expiresAt: string } | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    let live = true;
+    adminApi
+      .getPass(accessToken, userId)
+      .then((res: any) => {
+        if (live) setCurrent(res?.pass ?? null);
+      })
+      .catch((e) => {
+        if (live) setNote(errText(e, "Could not load the pass"));
+      })
+      .finally(() => {
+        if (live) setLoaded(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [accessToken, userId]);
+
+  const give = async () => {
+    setBusy(true);
+    setNote("");
+    try {
+      const res: any = await adminApi.givePass(accessToken, userId, plan, months);
+      setCurrent(res?.pass ?? null);
+      setNote("Pass given. Benefits are on now.");
+      onChanged();
+    } catch (e) {
+      setNote(errText(e, "Could not give the pass"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    setNote("");
+    try {
+      await adminApi.deletePass(accessToken, userId);
+      setCurrent(null);
+      setNote("Pass deleted. Benefits end now.");
+      onChanged();
+    } catch (e) {
+      setNote(errText(e, "Could not delete the pass"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card style={{ padding: 16, gap: 12, marginLeft: 16 }}>
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.textMain }}>Free pass</Text>
+      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+        {!loaded
+          ? "Checking..."
+          : current
+            ? `Running: ${current.planLabel}, till ${joinedLabel(current.expiresAt)}`
+            : "No pass running"}
+      </Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {PASS_PLAN_CHOICES.map((p) => (
+          <PassChip key={p.id} label={p.label} selected={plan === p.id} onPress={() => setPlan(p.id)} />
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {PASS_LENGTHS.map((l) => (
+          <PassChip key={l.months} label={l.label} selected={months === l.months} onPress={() => setMonths(l.months)} />
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <SmallButton label="Give pass" tone="navy" busy={busy} onPress={() => void give()} />
+        {current && <SmallButton label="Delete pass" tone="danger" busy={busy} onPress={() => void remove()} />}
+      </View>
+      {!!note && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>{note}</Text>}
+    </Card>
   );
 }
 

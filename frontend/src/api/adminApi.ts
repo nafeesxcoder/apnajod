@@ -195,4 +195,8 @@ export const adminApi = {
   setUserRole: (token: string, id: string, role: "user" | "admin") => authFetch(`/admin/users/${id}/role`, token, { method: "POST", body: JSON.stringify({ role }) }),
   banUser: (token: string, id: string) => authFetch(`/admin/users/${id}/ban`, token, { method: "POST" }),
   unbanUser: (token: string, id: string) => authFetch(`/admin/users/${id}/unban`, token, { method: "POST" }),
+  getPass: (token: string, id: string) => authFetch(`/admin/users/${id}/pass`, token),
+  givePass: (token: string, id: string, plan: string, months: number) =>
+    authFetch(`/admin/users/${id}/pass`, token, { method: "POST", body: JSON.stringify({ plan, months }) }),
+  deletePass: (token: string, id: string) => authFetch(`/admin/users/${id}/pass`, token, { method: "DELETE" }),
 };

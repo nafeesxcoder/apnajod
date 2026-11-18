@@ -41,6 +41,34 @@ const unbanUser = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+// Free passes: an admin gives a member Plus, Pro or Everything for a while.
+const passService = require("../services/passService");
+const { PASS_PLANS, PASS_MONTHS } = require("../config/passes");
+
+const getPass = asyncHandler(async (req, res) => {
+  res.json({ ok: true, pass: await passService.getPass(req.params.id) });
+});
+
+const givePass = asyncHandler(async (req, res) => {
+  const { plan, months } = req.body || {};
+  if (!Object.prototype.hasOwnProperty.call(PASS_PLANS, plan)) {
+    throw new ApiError(400, "Choose Plus, Pro or Everything.");
+  }
+  if (!PASS_MONTHS.includes(Number(months))) {
+    throw new ApiError(400, "Choose 1 month, 3 months or 1 year.");
+  }
+  const userService = require("../services/userService");
+  const target = await userService.findUserById(req.params.id);
+  if (!target) throw new ApiError(404, "User not found");
+  await passService.givePass(req.user.id, req.params.id, plan, Number(months));
+  res.json({ ok: true, pass: await passService.getPass(req.params.id) });
+});
+
+const deletePass = asyncHandler(async (req, res) => {
+  await passService.revokePass(req.params.id);
+  res.json({ ok: true, pass: null });
+});
+
 const dailyQuestionService = require("../services/dailyQuestionService");
 
 const getQuestions = asyncHandler(async (req, res) => {
@@ -280,6 +308,6 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival,
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getPass, givePass, deletePass, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival,
   getCoupons, createCoupon, updateCoupon, getPromo, publishPromo, stopPromo, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };
