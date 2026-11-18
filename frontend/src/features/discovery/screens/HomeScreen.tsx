@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   RefreshControl,
@@ -38,8 +37,8 @@ import { AppCanvas } from "../../../components/AppCanvas";
 
 import { DailyQuestionCard } from "../components/DailyQuestionCard";
 import { DailyPicksRow } from "../components/DailyPicksRow";
-import { brand, whiteCard } from "../../../components/brand";
-import { HeartBeat, Reveal } from "../../../components/motion";
+import { whiteCard } from "../../../components/brand";
+import { Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
 import { InviteCard } from "../../profile/components/InviteCard";
 import type { profileStrength } from "../../../domain/profileStrength";
@@ -144,7 +143,6 @@ export function HomeScreen({
     };
   }, [accessToken]);
   const { isDesktop: isDesktopHome } = useLayout();
-  const swipeDeck = items.slice(0, 10);
   const name = firstName.trim();
   // A festival theme the admin has put on (Diwali, Eid...), or null.
   const festival = useFestival();
@@ -159,19 +157,6 @@ export function HomeScreen({
     "No verified profiles meet your preferences right now. We will refresh your introductions as the community grows.";
 
   const loading = matchLoadState === "loading";
-
-  const summaryTitle = loading
-    ? "Finding your introductions"
-    : swipeDeck.length === 0
-      ? "No introductions yet"
-      : swipeDeck.length === 1
-        ? "1 introduction for you"
-        : `${swipeDeck.length} introductions for you`;
-  const summaryBody = loading
-    ? "Verified profiles are loading securely."
-    : swipeDeck.length === 0
-      ? "Check back soon. We refresh your list as new members join."
-      : "Each one is chosen for what you want from a relationship, so you can start with a real conversation.";
 
   return (
     <AppCanvas>
@@ -256,19 +241,6 @@ export function HomeScreen({
                 >
                   {name || "Welcome"}
                 </Text>
-                {items.length > 0 && (
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemi,
-                      fontSize: typeScale.caption,
-                      color: palette.crimson,
-                      marginTop: 3,
-                    }}
-                  >
-                    {items.length} {items.length === 1 ? "person" : "people"} to
-                    see
-                  </Text>
-                )}
               </View>
 
               <View style={{ marginRight: 12 }}>
@@ -435,60 +407,6 @@ export function HomeScreen({
               reloadKey={feedReload}
             />
 
-            {/* Summary — unboxed */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingBottom: 16,
-                marginBottom: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: palette.rule,
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: radius.pill,
-                  backgroundColor: brand.pillBg,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 14,
-                }}
-              >
-                {loading ? (
-                  <ActivityIndicator color={palette.crimson} />
-                ) : (
-                  <HeartBeat>
-                    <Ionicons name="heart" size={22} color={palette.crimson} />
-                  </HeartBeat>
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.section,
-                    color: colors.text,
-                  }}
-                >
-                  {summaryTitle}
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: typeScale.label,
-                    color: colors.muted,
-                    lineHeight: 19,
-                    marginTop: 3,
-                  }}
-                >
-                  {summaryBody}
-                </Text>
-              </View>
-            </View>
-
             {/* Cards arrive one after another (components/motion.tsx). */}
             {!preview && (
               <Reveal delay={60}>
@@ -557,7 +475,12 @@ export function HomeScreen({
             )}
 
             {/* Empty state — unboxed */}
-            {!items.length && !loading && (
+            {!items.length &&
+              !loading &&
+              (matchLoadState === "error" ||
+                matchLoadState === "preview" ||
+                poolNeedsVerification ||
+                poolNeedsPreferences) && (
               <View
                 style={{
                   alignItems: "center",
@@ -589,7 +512,11 @@ export function HomeScreen({
                     ? "Could not load your matches"
                     : matchLoadState === "preview"
                       ? "No profiles match these filters"
-                      : "Your next introduction is being curated"}
+                      : poolNeedsVerification
+                        ? "Verify your profile to see introductions"
+                        : poolNeedsPreferences
+                          ? "Finish your preferences to see introductions"
+                          : "No introductions right now"}
                 </Text>
                 <Text
                   style={{

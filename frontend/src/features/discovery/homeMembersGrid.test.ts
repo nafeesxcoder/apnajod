@@ -9,6 +9,8 @@ describe("Home shows picks, invite and posts only", () => {
     expect(home).not.toContain("More introductions");
     expect(home).not.toContain("featured.name");
     expect(home).not.toContain("others.map(");
+    expect(home).not.toContain("summaryTitle");
+    expect(home).not.toContain("Your next introduction is being curated");
   });
 
   it("keeps today's picks, the invite card and the posts feed", () => {
