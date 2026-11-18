@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { Button } from "../../../components";
 import {
@@ -36,12 +35,11 @@ import type { DiscoverySignal } from "../../../storage";
 import type { Screen } from "../../../app/navigation/types";
 import { colors, palette, fonts, radius, typeScale } from "../../../theme";
 import { AppCanvas } from "../../../components/AppCanvas";
-import { TrustBadge } from "../../../components/TrustBadge";
 
 import { DailyQuestionCard } from "../components/DailyQuestionCard";
 import { DailyPicksRow } from "../components/DailyPicksRow";
-import { brand, cardShadow, whiteCard } from "../../../components/brand";
-import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
+import { brand, whiteCard } from "../../../components/brand";
+import { HeartBeat, Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
 import { InviteCard } from "../../profile/components/InviteCard";
 import type { profileStrength } from "../../../domain/profileStrength";
@@ -72,8 +70,6 @@ export function HomeScreen({
   accessToken,
   crossedPaths,
   openDetail,
-  onInterested,
-  onSkip,
   onSparkRewarded,
   strength,
   completionRewardClaimed = false,
@@ -149,8 +145,6 @@ export function HomeScreen({
   }, [accessToken]);
   const { isDesktop: isDesktopHome } = useLayout();
   const swipeDeck = items.slice(0, 10);
-  const featured = swipeDeck[0];
-  const others = swipeDeck.slice(1);
   const name = firstName.trim();
   // A festival theme the admin has put on (Diwali, Eid...), or null.
   const festival = useFestival();
@@ -560,211 +554,6 @@ export function HomeScreen({
                   color={palette.crimson}
                 />
               </Pressable>
-            )}
-
-            {/* Top match — the photo card, with Pass and a beating Like */}
-            {featured && (
-              <Reveal delay={360} style={{ marginBottom: 28 }}>
-                <PressScale
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open ${featured.name}'s profile`}
-                  onPress={() => openDetail(featured)}
-                  scaleTo={0.985}
-                  style={{
-                    borderRadius: 22,
-                    overflow: "hidden",
-                    backgroundColor: palette.paperSand,
-                    ...cardShadow,
-                  }}
-                >
-                  <Image
-                    source={{ uri: featured.photo }}
-                    style={{
-                      width: "100%",
-                      height: isDesktopHome ? 520 : 460,
-                    }}
-                    resizeMode="cover"
-                  />
-                  <LinearGradient
-                    colors={["rgba(10,20,32,0)", "rgba(10,20,32,0.85)"]}
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      paddingTop: 90,
-                      paddingHorizontal: 20,
-                      paddingBottom: 20,
-                      flexDirection: "row",
-                      alignItems: "flex-end",
-                      gap: 12,
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Text
-                          style={{
-                            fontFamily: fonts.display,
-                            fontSize: typeScale.display - 4,
-                            color: "#FFF",
-                            flexShrink: 1,
-                          }}
-                        >
-                          {featured.name}, {featured.age}
-                        </Text>
-                        {featured.verified && <TrustBadge blueTick={featured.blueTick} size={22} />}
-                      </View>
-                      <Text
-                        style={{
-                          fontFamily: fonts.body,
-                          fontSize: typeScale.label,
-                          color: "#E7EDF3",
-                          marginTop: 4,
-                        }}
-                      >
-                        {[featured.profession, featured.city].filter(Boolean).join(" · ")}
-                      </Text>
-                      <Text
-                        style={{
-                          fontFamily: fonts.bodySemi,
-                          fontSize: 12,
-                          color: "#FFFFFF",
-                          marginTop: 8,
-                          opacity: 0.9,
-                        }}
-                      >
-                        Tap to view profile ›
-                      </Text>
-                    </View>
-                    {onSkip && (
-                      <PressScale
-                        accessibilityRole="button"
-                        accessibilityLabel={`Pass on ${featured.name}`}
-                        onPress={() => onSkip(featured)}
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: 26,
-                          backgroundColor: "#FFFFFF",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Ionicons name="close" size={24} color={palette.ink} />
-                      </PressScale>
-                    )}
-                    {onInterested && (
-                      <PressScale
-                        accessibilityRole="button"
-                        accessibilityLabel={`Interested in ${featured.name}`}
-                        onPress={() => onInterested(featured)}
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: 26,
-                          backgroundColor: palette.crimson,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <GlowPulse color={palette.crimson} radius={26} />
-                        <HeartBeat>
-                          <Ionicons name="heart" size={24} color="#FFFFFF" />
-                        </HeartBeat>
-                      </PressScale>
-                    )}
-                  </LinearGradient>
-                </PressScale>
-              </Reveal>
-            )}
-
-            {/* More introductions */}
-            {others.length > 0 && (
-              <View style={{ marginBottom: 8 }}>
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.section,
-                    color: colors.text,
-                    marginBottom: 14,
-                  }}
-                >
-                  More introductions
-                </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  {others.map((match) => (
-                    <PressScale
-                      key={match.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open ${match.name}'s profile`}
-                      onPress={() => openDetail(match)}
-                      containerStyle={{ width: "48%", marginBottom: 18 }}
-                      style={{
-                        borderRadius: 18,
-                        overflow: "hidden",
-                        backgroundColor: palette.paperSand,
-                        ...cardShadow,
-                      }}
-                    >
-                      <View style={{ position: "relative" }}>
-                        <Image
-                          source={{ uri: match.photo }}
-                          style={{ width: "100%", height: 200 }}
-                          resizeMode="cover"
-                        />
-                        <LinearGradient
-                          colors={["transparent", "rgba(0,0,0,0.75)"]}
-                          style={{
-                            position: "absolute",
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            height: 90,
-                            justifyContent: "flex-end",
-                            padding: 12,
-                          }}
-                        >
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 4,
-                            }}
-                          >
-                            <Text
-                              numberOfLines={1}
-                              style={{
-                                fontFamily: fonts.display,
-                                fontSize: 17,
-                                color: "#FFF",
-                                flexShrink: 1,
-                              }}
-                            >
-                              {match.name}, {match.age}
-                            </Text>
-                            {match.verified && <TrustBadge blueTick={match.blueTick} size={16} />}
-                          </View>
-                          <Text
-                            style={{
-                              fontFamily: fonts.body,
-                              fontSize: typeScale.caption,
-                              color: "#F4E9E0",
-                            }}
-                          >
-                            {match.city}
-                          </Text>
-                        </LinearGradient>
-                      </View>
-                    </PressScale>
-                  ))}
-                </View>
-              </View>
             )}
 
             {/* Empty state — unboxed */}

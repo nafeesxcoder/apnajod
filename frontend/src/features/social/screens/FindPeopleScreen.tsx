@@ -25,6 +25,8 @@ import { inviteLink, shareInvite } from "../../profile/components/InviteCard";
 import { contactInviteText, matchesQuery, type BookContact, type ContactInvite } from "../contactBook";
 
 const MAX_WIDTH = 720;
+// How many members show before the "More" button.
+const INITIAL_SHOWN = 12;
 const SIDE_PADDING = 16;
 
 type Tab = "discover" | "contacts";
@@ -137,6 +139,7 @@ export function FindPeopleScreen({
   const [filter, setFilter] = useState<FilterId>("all");
   const [filtered, setFiltered] = useState<SocialUser[]>([]);
   const [filterBusy, setFilterBusy] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_SHOWN);
   const loadFiltered = useRef(onLoadFiltered);
   loadFiltered.current = onLoadFiltered;
   useEffect(() => {
@@ -163,6 +166,10 @@ export function FindPeopleScreen({
     };
   }, [filter]);
   const shownUsers = filter === "all" ? discoverUsers : filtered;
+  const visibleUsers = shownUsers.slice(0, visibleCount);
+  useEffect(() => {
+    setVisibleCount(INITIAL_SHOWN);
+  }, [filter]);
   const online = useOnlineIds(accessToken, shownUsers.map((u) => u.userId));
   const [searchMode, setSearchMode] = useState(false);
   const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -639,7 +646,7 @@ export function FindPeopleScreen({
                             gap: 12,
                           }}
                         >
-                          {shownUsers.map((user, index) => (
+                          {visibleUsers.map((user, index) => (
                             <Reveal
                               key={user.userId}
                               delay={index * 70}
@@ -724,6 +731,27 @@ export function FindPeopleScreen({
                             </Reveal>
                           ))}
                         </View>
+                        {shownUsers.length > visibleCount && (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Show ${shownUsers.length - visibleCount} more people`}
+                            onPress={() => setVisibleCount(shownUsers.length)}
+                            style={{
+                              alignSelf: "center",
+                              marginTop: 8,
+                              paddingVertical: 12,
+                              paddingHorizontal: 28,
+                              borderRadius: 999,
+                              backgroundColor: palette.paper,
+                              borderWidth: 1,
+                              borderColor: palette.navy,
+                            }}
+                          >
+                            <Text style={{ fontFamily: fonts.body, fontSize: typeScale.caption, color: palette.navy }}>
+                              More ({shownUsers.length - visibleCount})
+                            </Text>
+                          </Pressable>
+                        )}
                       </>
                     )}
 

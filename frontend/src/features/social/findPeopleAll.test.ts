@@ -15,7 +15,7 @@ describe("Home shows today's 5, Find People shows everyone", () => {
   });
 
   it("Find People lists every member it was given, not just four", () => {
-    expect(findPeople).toContain("{shownUsers.map((user, index) => (");
+    expect(findPeople).toContain("{visibleUsers.map((user, index) => (");
     expect(findPeople).not.toContain("shownUsers.slice(0, 4)");
   });
 
