@@ -284,12 +284,9 @@ export function PremiumScreen({
   const playOpen = Platform.OS === "android" && Object.keys(playProducts).length > 0;
   const playProduct = selectedPlan?.play_product_id ? playProducts[selectedPlan.play_product_id] : undefined;
 
-  const currentPlanName =
-    selectedCode === "pro_monthly"
-      ? "Pro"
-      : selectedCode === "plus_monthly"
-        ? "Plus"
-        : "Premium";
+  // What the member actually has, from the server. The card they tapped is
+  // only the one they are looking at, so it must not change this name.
+  const currentPlanName = summary?.pro ? "Pro" : summary?.premium ? "Plus" : "Premium";
 
   // The Buy button sits right under the plan or pack you tapped, not at
   // the bottom of the page. Notes and errors from the payment go with it.
@@ -604,8 +601,10 @@ export function PremiumScreen({
 
                 {subscriptions.map((plan, index) => {
                   const features = PLAN_FEATURES[plan.code] ?? [];
+                  // The card the member really has: Pro if Pro runs, otherwise Plus.
                   const isCurrentPlan =
-                    summary?.premium && selectedCode === plan.code;
+                    !!summary?.premium &&
+                    (summary.pro ? plan.code === "pro_monthly" : plan.code === "plus_monthly");
                   return (
                     <View key={plan.code}>
                       <PlanCard
