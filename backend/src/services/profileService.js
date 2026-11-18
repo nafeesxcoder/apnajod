@@ -552,6 +552,8 @@ async function findMatches(userId, limit = 20, filter = "all") {
       match: "Great Match",
       verified: candidate.verified === 1,
       blueTick: Number(candidate.blue_tick) === 1,
+      // A boost is running right now (ends_at in the future).
+      boosted: Number(candidate.boosted) === 1,
       // Gun Milan with the viewer (only when both added their Rashi).
       gun: candidate.gun ?? null,
       manglik: candidate.manglik === "yes" ? true : candidate.manglik === "no" ? false : null,

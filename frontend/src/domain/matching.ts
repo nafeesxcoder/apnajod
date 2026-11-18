@@ -96,11 +96,14 @@ export function rankMatches(
       match,
       index,
       offPreference: passesFilters(match, filters) ? 0 : 1,
+      boosted: match.boosted ? 1 : 0,
       score: enabled ? scoreMatch(match, preferences, signals) : 0,
     }));
   return visible
     .sort(
       (a, b) =>
+        // A running boost goes first, as the server orders it.
+        b.boosted - a.boosted ||
         a.offPreference - b.offPreference ||
         b.score - a.score ||
         a.index - b.index,

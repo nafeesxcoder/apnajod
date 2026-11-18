@@ -1252,7 +1252,7 @@ function CreditsCard({
           <Text
             style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: boosts > 0 ? "#FFFFFF" : palette.slate }}
           >
-            {boosts > 0 ? "Boost me now - jump to the top" : "No boosts left"}
+            {boosts > 0 ? "Boost me now - top of Home and Find People" : "No boosts left"}
           </Text>
         </PressScale>
       )}

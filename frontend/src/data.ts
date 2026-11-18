@@ -6,6 +6,8 @@ export type Match = {
   verified?: boolean;
   /** Approved selfie AND Pro. The server never sets it without `verified`. */
   blueTick?: boolean;
+  /** A boost is running right now. Set by the server. */
+  boosted?: boolean;
   vibes: string[]; photo: string; photos: string[]; about: string; values: string; goals: string;
   timeline: string; children: string; family: string; relocation: string; languages: string[];
   interests: string[]; familyPriority: 'high' | 'balanced' | 'independent';

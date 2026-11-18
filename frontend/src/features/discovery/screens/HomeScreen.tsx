@@ -37,6 +37,7 @@ import { AppCanvas } from "../../../components/AppCanvas";
 
 import { DailyQuestionCard } from "../components/DailyQuestionCard";
 import { DailyPicksRow } from "../components/DailyPicksRow";
+import { BoostedRow } from "../components/BoostedRow";
 import { whiteCard } from "../../../components/brand";
 import { Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
@@ -424,6 +425,12 @@ export function HomeScreen({
                   onGo={(screen) => navigate(screen as Screen)}
                   rewardClaimed={completionRewardClaimed}
                 />
+              </Reveal>
+            )}
+
+            {!preview && (
+              <Reveal delay={120}>
+                <BoostedRow members={items.filter((m) => m.boosted).slice(0, 10)} onOpen={openDetail} />
               </Reveal>
             )}
 
