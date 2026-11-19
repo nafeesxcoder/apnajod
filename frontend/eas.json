@@ -9,6 +9,7 @@
       "node": "22.14.0",
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "env": {
         "APP_VARIANT": "development",
         "EXPO_PUBLIC_APP_ENV": "development",
@@ -20,6 +21,7 @@
     },
     "toronto-pilot": {
       "environment": "preview",
+      "channel": "preview",
       "node": "22.14.0",
       "distribution": "internal",
       "env": {
@@ -35,6 +37,7 @@
       "environment": "production",
       "node": "22.14.0",
       "distribution": "store",
+      "channel": "production",
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production",

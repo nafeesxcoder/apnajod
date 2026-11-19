@@ -3,6 +3,14 @@
     "name": "Apnajoda",
     "slug": "apnajoda",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/87ac25e0-158f-40b7-8e89-7c0873bddee9",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "description": "Serious, verified dating for India. Built for people looking for a real relationship, not casual swiping.",
     "icon": "./assets/icon.png",
     "scheme": "apnajoda",
