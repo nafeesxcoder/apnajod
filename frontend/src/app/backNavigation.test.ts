@@ -8,13 +8,19 @@ const admin = read("src/features/admin/screens/AdminDashboardScreen.tsx");
 
 describe("the back button", () => {
   it("never takes a signed-in member back to the sign-in pages", () => {
-    expect(app).toContain("if (target && signedInRef.current && AUTH_SCREENS.has(target)) {");
+    expect(app).toContain("if (target && signedInRef.current && NO_BACK_SCREENS.has(target)) {");
+    expect(app).toContain('const NO_BACK_SCREENS = new Set<Screen>([...AUTH_SCREENS, "profileSetup"]);');
     expect(app).toContain('const AUTH_SCREENS = new Set<Screen>(["splash", "welcome", "signup", "login", "otp", "forgotPassword", "newPassword", "adminLogin"]);');
   });
 
   it("works on Android: the screen before, then Home, then the phone's own back", () => {
     expect(app).toContain('BackHandler.addEventListener("hardwareBackPress"');
-    expect(app).toContain("if (signedInRef.current && AUTH_SCREENS.has(previous)) continue;");
+    expect(app).toContain("if (signedInRef.current && NO_BACK_SCREENS.has(previous)) continue;");
+  });
+
+  it("never reopens Edit profile after Save", () => {
+    expect(app).toContain("leftEditAtRef.current = Date.now();");
+    expect(app).toContain('if (target === "profileSetup" && Date.now() - leftEditAtRef.current < 800) return;');
   });
 
   it("walks back through the admin tabs and stays in the admin on Overview", () => {

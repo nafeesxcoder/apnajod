@@ -353,6 +353,12 @@ const showcasePreviewState = getPreviewState();
 const googleCallbackData = getGoogleCallback();
 /** The sign-in pages: once signed in, the back button never goes back to them. */
 const AUTH_SCREENS = new Set<Screen>(["splash", "welcome", "signup", "login", "otp", "forgotPassword", "newPassword", "adminLogin"]);
+/**
+ * Screens back never returns to once signed in: the sign-in pages, and Edit
+ * profile - a form you leave by saving (or backing out of), never one to
+ * land on again from Profile.
+ */
+const NO_BACK_SCREENS = new Set<Screen>([...AUTH_SCREENS, "profileSetup"]);
 
 const isAdminMode = Platform.OS === "web" && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "1";
 const isPreviewAccessMode =
@@ -536,6 +542,10 @@ function MilaanApp() {
   // back stack instead of going on top (leaving Edit profile after Save, so
   // back does not reopen it).
   const replaceScreenRef = useRef(false);
+  // When Edit profile was last left by saving. On a phone the Save tap can
+  // land a second time on Profile's own "Edit profile" button, which sits
+  // where Save was; that echo must not reopen the editor.
+  const leftEditAtRef = useRef(0);
   const hasMountedBackGuardRef = useRef(false);
   useEffect(() => {
     captureInviteFromUrl();
@@ -564,7 +574,7 @@ function MilaanApp() {
         ?.milaanScreen;
       // Signed in, back never returns to the sign-in pages left behind in
       // the browser's history: stay where you are instead.
-      if (target && signedInRef.current && AUTH_SCREENS.has(target)) {
+      if (target && signedInRef.current && NO_BACK_SCREENS.has(target)) {
         window.history.pushState({ milaanScreen: screenRef.current }, "");
         return;
       }
@@ -601,7 +611,7 @@ function MilaanApp() {
       while (stack.length > 1) {
         stack.pop();
         const previous = stack[stack.length - 1]!;
-        if (signedInRef.current && AUTH_SCREENS.has(previous)) continue;
+        if (signedInRef.current && NO_BACK_SCREENS.has(previous)) continue;
         isPoppingScreenRef.current = true;
         setScreen(previous);
         return true;
@@ -2085,6 +2095,7 @@ function MilaanApp() {
   if (!fontsLoaded)
     return <View style={{ flex: 1, backgroundColor: colors.black }} />;
   const navigateTo = (target: Screen) => {
+    if (target === "profileSetup" && Date.now() - leftEditAtRef.current < 800) return;
     setScreen(target);
   };
   // const openCoupleTool = (tool: Exclude<CoupleLaunchTool, null>) => {
@@ -3550,6 +3561,7 @@ function MilaanApp() {
                   // Profile takes Edit profile's place, so back does not
                   // reopen the editor.
                   replaceScreenRef.current = true;
+                  leftEditAtRef.current = Date.now();
                   setScreen("profile");
                   // The popup opens once Profile is on screen: a popup adds
                   // its own back-button entry, and opened in the same moment
