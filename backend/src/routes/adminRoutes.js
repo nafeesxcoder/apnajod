@@ -25,6 +25,8 @@ router.post("/users/:id/unban", adminController.unbanUser);
 router.get("/users/:id/pass", adminController.getPass);
 router.post("/users/:id/pass", adminController.givePass);
 router.delete("/users/:id/pass", adminController.deletePass);
+router.get("/users/:id/coins", adminController.getCoins);
+router.post("/users/:id/coins", adminController.giveCoins);
 
 router.get("/verifications", adminController.getVerifications);
 router.post("/verifications/:id/reject", adminController.rejectVerification);

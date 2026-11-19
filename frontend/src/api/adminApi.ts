@@ -199,4 +199,8 @@ export const adminApi = {
   givePass: (token: string, id: string, plan: string, months: number) =>
     authFetch(`/admin/users/${id}/pass`, token, { method: "POST", body: JSON.stringify({ plan, months }) }),
   deletePass: (token: string, id: string) => authFetch(`/admin/users/${id}/pass`, token, { method: "DELETE" }),
+  getCoins: (token: string, id: string) => authFetch(`/admin/users/${id}/coins`, token),
+  /** A positive amount gives coins, a negative one takes them back. */
+  giveCoins: (token: string, id: string, amount: number) =>
+    authFetch(`/admin/users/${id}/coins`, token, { method: "POST", body: JSON.stringify({ amount }) }),
 };

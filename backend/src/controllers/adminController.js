@@ -69,6 +69,23 @@ const deletePass = asyncHandler(async (req, res) => {
   res.json({ ok: true, pass: null });
 });
 
+// Coins: an admin gives a member as many game coins as they like, or takes some back.
+const coinService = require("../services/coinService");
+
+const getCoins = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await coinService.adminView(req.params.id)) });
+});
+
+const giveCoins = asyncHandler(async (req, res) => {
+  const amount = Number((req.body || {}).amount);
+  if (!Number.isInteger(amount) || amount === 0) throw new ApiError(400, "Enter a whole number of coins.");
+  const userService = require("../services/userService");
+  const target = await userService.findUserById(req.params.id);
+  if (!target) throw new ApiError(404, "User not found");
+  const result = await coinService.adminAdjust(req.user.id, req.params.id, amount);
+  res.json({ ok: true, ...result, ...(await coinService.adminView(req.params.id)) });
+});
+
 const dailyQuestionService = require("../services/dailyQuestionService");
 
 const getQuestions = asyncHandler(async (req, res) => {
@@ -308,6 +325,6 @@ module.exports = {
   getQuestions,
   createQuestion,
   setQuestionActive,
-  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getPass, givePass, deletePass, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival,
+  getStats, getGrowth, getUsers, updateUserRole, banUser, unbanUser, getPass, givePass, deletePass, getCoins, giveCoins, getVerifications, approveVerification, rejectVerification, getReports, resolveReport, removePost, keepPost, getAppeals, resolveAppeal, getPayments, approvePayment, rejectPayment, getFestivals, scheduleFestival, stopFestival, cancelFestival, pushFestival,
   getCoupons, createCoupon, updateCoupon, getPromo, publishPromo, stopPromo, updateAdminPassword, forgotAdminPassword, resetAdminPassword
 };

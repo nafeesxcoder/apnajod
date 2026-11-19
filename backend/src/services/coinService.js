@@ -313,10 +313,57 @@ async function leaderboard(userId) {
   return rows.map((row, i) => ({ rank: i + 1, userId: row.user_id, name: row.name || row.username, photo: row.photo || null, coins: Number(row.coins) || 0, me: row.user_id === userId }));
 }
 
+/** The most an admin can give or take in one go. */
+const ADMIN_MAX = 1000000;
+
+/**
+ * An admin gives a member coins (amount > 0) or takes them back (< 0).
+ * Taking never goes below zero. Gifts do not add XP - levels stay a
+ * measure of playing. Each one is its own ledger row, marked with the admin.
+ * Returns how many coins actually moved and the new balance.
+ */
+async function adminAdjust(adminId, userId, amount) {
+  const value = Math.trunc(Number(amount));
+  if (!Number.isFinite(value) || value === 0) throw fail(400, "Enter how many coins.");
+  if (Math.abs(value) > ADMIN_MAX) throw fail(400, `At most ${ADMIN_MAX.toLocaleString("en-IN")} coins at a time.`);
+  await ensureWallet(userId);
+  let moved = value;
+  if (value > 0) {
+    await query("UPDATE game_wallets SET coins = coins + ? WHERE user_id = ?", [value, userId]);
+  } else {
+    const [row] = await query("SELECT coins FROM game_wallets WHERE user_id = ?", [userId]);
+    moved = -Math.min(Number(row?.coins) || 0, -value);
+    if (moved === 0) throw fail(400, "This member has no coins to take.");
+    await query("UPDATE game_wallets SET coins = GREATEST(0, coins + ?) WHERE user_id = ?", [moved, userId]);
+  }
+  await query("INSERT INTO coin_ledger (id, user_id, amount, reason, ref) VALUES (?, ?, ?, 'admin', ?)", [
+    crypto.randomUUID(),
+    userId,
+    moved,
+    `${adminId}:${crypto.randomBytes(4).toString("hex")}`,
+  ]);
+  const [after] = await query("SELECT coins FROM game_wallets WHERE user_id = ?", [userId]);
+  return { moved, coins: Number(after?.coins) || 0 };
+}
+
+/** A member's balance and the last coins an admin gave or took. */
+async function adminView(userId) {
+  await ensureWallet(userId);
+  const [row] = await query("SELECT coins FROM game_wallets WHERE user_id = ?", [userId]);
+  const recent = await query(
+    "SELECT amount, created_at FROM coin_ledger WHERE user_id = ? AND reason = 'admin' ORDER BY created_at DESC LIMIT 5",
+    [userId],
+  );
+  return {
+    coins: Number(row?.coins) || 0,
+    recent: recent.map((r) => ({ amount: Number(r.amount) || 0, at: isoUtc(r.created_at) })),
+  };
+}
+
 /** Can this player send this emoji or line in a game (an unlocked pack has it)? */
 async function canSay(userId, kind, value) {
   const mine = await owned(userId);
   return CATALOG.some((item) => item.kind === kind && (item.price === 0 || mine.has(item.key)) && (item.items || []).includes(value));
 }
 
-module.exports = { CATALOG, EXCHANGE, LEVELS, LUDO, SPIN_SLICES, levelFor, pickSlice, wallet, credit, unlock, exchange, spin, rewardLudo, leaderboard, canSay, indianWeekStartUtc };
+module.exports = { CATALOG, EXCHANGE, LEVELS, LUDO, SPIN_SLICES, levelFor, pickSlice, wallet, credit, unlock, exchange, spin, rewardLudo, leaderboard, canSay, indianWeekStartUtc, ADMIN_MAX, adminAdjust, adminView };

@@ -1017,6 +1017,7 @@ function UsersTab({
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [passOpenId, setPassOpenId] = useState<string | null>(null);
+  const [coinsOpenId, setCoinsOpenId] = useState<string | null>(null);
 
   const load = useCallback(
     async (q: string) => {
@@ -1206,6 +1207,11 @@ function UsersTab({
                     onPress={() => setPassOpenId(passOpenId === userId ? null : userId)}
                   />
                 )}
+                <SmallButton
+                  label={coinsOpenId === userId ? "Close" : "Coins"}
+                  tone="navy"
+                  onPress={() => setCoinsOpenId(coinsOpenId === userId ? null : userId)}
+                />
                 {role !== "admin" && (
                   <SmallButton
                     label={banned ? "Restore" : "Suspend"}
@@ -1222,6 +1228,7 @@ function UsersTab({
                   onChanged={() => void load(query.trim())}
                 />
               )}
+              {coinsOpenId === userId && <CoinsPanel accessToken={accessToken} userId={userId} />}
               </View>
             );
           })}
@@ -1347,6 +1354,107 @@ function PassPanel({ accessToken, userId, onChanged }: { accessToken: string; us
         {current && <SmallButton label="Delete pass" tone="danger" busy={busy} onPress={() => void remove()} />}
       </View>
       {!!note && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>{note}</Text>}
+    </Card>
+  );
+}
+
+const COIN_QUICK = [100, 500, 1000, 5000, 10000] as const;
+const COIN_MAX = 1000000;
+
+/** Give a member game coins (any amount), or take some back. Opens under their card. */
+function CoinsPanel({ accessToken, userId }: { accessToken: string; userId: string }) {
+  const [coins, setCoins] = useState<number | null>(null);
+  const [recent, setRecent] = useState<{ amount: number; at: string }[]>([]);
+  const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    let live = true;
+    adminApi
+      .getCoins(accessToken, userId)
+      .then((res: any) => {
+        if (!live) return;
+        setCoins(Number(res?.coins) || 0);
+        setRecent(res?.recent ?? []);
+      })
+      .catch((e) => live && setNote(errText(e, "Could not load the coins")));
+    return () => {
+      live = false;
+    };
+  }, [accessToken, userId]);
+
+  const value = Number(amount);
+  const valid = Number.isInteger(value) && value > 0 && value <= COIN_MAX;
+
+  const send = async (sign: 1 | -1) => {
+    if (!valid) {
+      setNote(`Enter a whole number from 1 to ${COIN_MAX.toLocaleString("en-IN")}.`);
+      return;
+    }
+    setBusy(true);
+    setNote("");
+    try {
+      const res: any = await adminApi.giveCoins(accessToken, userId, sign * value);
+      setCoins(Number(res?.coins) || 0);
+      setRecent(res?.recent ?? []);
+      const moved = Math.abs(Number(res?.moved) || 0).toLocaleString("en-IN");
+      setNote(sign > 0 ? `${moved} coins given.` : `${moved} coins taken back.`);
+      setAmount("");
+    } catch (e) {
+      setNote(errText(e, sign > 0 ? "Could not give the coins" : "Could not take the coins"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card style={{ padding: 16, gap: 12, marginLeft: 16 }}>
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.textMain }}>Coins</Text>
+      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
+        {coins == null ? "Checking..." : `Balance: ${coins.toLocaleString("en-IN")} coins`}
+      </Text>
+      <TextInput
+        accessibilityLabel="Number of coins"
+        value={amount}
+        onChangeText={(t) => setAmount(t.replace(/[^0-9]/g, ""))}
+        keyboardType="number-pad"
+        placeholder="How many coins"
+        placeholderTextColor={COLORS.textMuted}
+        maxLength={7}
+        style={{
+          borderWidth: 1,
+          borderColor: "#D1D5DB",
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          fontFamily: fonts.body,
+          fontSize: 15,
+          color: COLORS.textMain,
+          backgroundColor: "#FFFFFF",
+        }}
+      />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {COIN_QUICK.map((n) => (
+          <PassChip key={n} label={n.toLocaleString("en-IN")} selected={value === n} onPress={() => setAmount(String(n))} />
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <SmallButton label="Give coins" tone="navy" busy={busy} onPress={() => void send(1)} />
+        {!!coins && <SmallButton label="Take back" tone="danger" busy={busy} onPress={() => void send(-1)} />}
+      </View>
+      {!!note && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>{note}</Text>}
+      {recent.length > 0 && (
+        <View style={{ gap: 2 }}>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: COLORS.textMuted }}>Last given by admin</Text>
+          {recent.map((r, i) => (
+            <Text key={`${r.at}-${i}`} style={{ fontFamily: fonts.body, fontSize: 12, color: COLORS.textMuted }}>
+              {r.amount > 0 ? "+" : ""}
+              {r.amount.toLocaleString("en-IN")} · {joinedLabel(r.at)}
+            </Text>
+          ))}
+        </View>
+      )}
     </Card>
   );
 }
