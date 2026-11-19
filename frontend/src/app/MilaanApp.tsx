@@ -178,7 +178,7 @@ import { LudoScreen } from "../features/ludo/LudoScreen";
 import { takeLudoParam } from "../features/ludo/ludoText";
 import type { GameKind } from "../api/gamesApi";
 import { HomeScreen } from "../features/discovery/screens/HomeScreen";
-import { cropCentredSquareWeb } from "../features/profile/cropImageWeb";
+import { DpCropSheet } from "../features/profile/components/DpCropSheet";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { SettingsScreen } from "../features/profile/screens/SettingsScreen";
 import { TwoStepScreen } from "../features/profile/screens/TwoStepScreen";
@@ -731,6 +731,8 @@ function MilaanApp() {
   const [otpPurpose, setOtpPurpose] = useState<"signup" | "reset" | "twoFactor">("signup");
   // Set while a password sign-in waits for its two-step code.
   const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null);
+  /** A photo picked on the web for the short profile, waiting to be cropped. */
+  const [quickCropUri, setQuickCropUri] = useState<string | null>(null);
   const [quickProfile, setQuickProfile] = useState<QuickProfile>({
     firstName: "",
     age: "",
@@ -3203,25 +3205,16 @@ function MilaanApp() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       // The phone crops in its own picker. A browser's picker does not, so
-      // the web gets the middle square cut below.
+      // the web opens DpCropSheet to choose the part that goes in the circle.
       allowsEditing: Platform.OS !== "web",
       aspect: [1, 1],
-      quality: 0.8,
+      quality: Platform.OS === "web" ? 1 : 0.8,
     });
     if (!result.canceled && result.assets[0]) {
-      let photoUri = result.assets[0].uri;
+      const photoUri = result.assets[0].uri;
       if (Platform.OS === "web") {
-        try {
-          photoUri = await cropCentredSquareWeb(photoUri);
-        } catch (err: any) {
-          setAppNotice({
-            title: "Photo could not be cropped",
-            body: err?.message || "Try another photo.",
-            icon: "images-outline",
-            tone: "ruby",
-          });
-          return;
-        }
+        setQuickCropUri(photoUri);
+        return;
       }
       setQuickProfile((current) => ({
         ...current,
@@ -3508,13 +3501,21 @@ function MilaanApp() {
             onSubmit={saveQuickProfile}
           />
         )}
+        {screen === "quickProfile" && (
+          <DpCropSheet
+            uri={quickCropUri}
+            onCancel={() => setQuickCropUri(null)}
+            onDone={(photoUri) => {
+              setQuickCropUri(null);
+              setQuickProfile((current) => ({ ...current, photoUri }));
+            }}
+          />
+        )}
         {screen === "profileSetup" && (
           <ProfileSetupScreen
             accessToken={accessToken}
             profile={profileDraft}
-            onProfileChange={setProfileDraft}
             photos={profilePhotos}
-            onPhotosChange={setProfilePhotos}
             voiceUri={voiceIntroUri}
             onVoiceChange={setVoiceIntroUri}
             allowPreviewContinue={isPreviewAccessMode}
@@ -3523,13 +3524,17 @@ function MilaanApp() {
             blueTick={blueTick}
             // Only once they have a profile - not in the middle of first sign-up.
             onVerify={accessToken && onboardingComplete ? () => navigateTo("verifyHub") : undefined}
-            onNext={async (latest?: any) => {
+            onNext={async (latest: any, latestPhotos: string[]) => {
               const draftToSave = latest ?? profileDraft;
+              const photosToSave = latestPhotos ?? profilePhotos;
               if (onboardingComplete && accessToken) {
                 try {
                   await saveProfileAndSync(accessToken, draftToSave);
 
-                  await profileApi.updatePhotos(accessToken, profilePhotos);
+                  await profileApi.updatePhotos(accessToken, photosToSave);
+                  // Only now, once the server has it, does the app show it.
+                  setProfileDraft(draftToSave);
+                  setProfilePhotos(photosToSave);
                   setAppNotice({
                     title: "Profile updated",
                     body: "Your changes have been saved.",
@@ -3552,6 +3557,8 @@ function MilaanApp() {
                 }
                 return;
               }
+              setProfileDraft(draftToSave);
+              setProfilePhotos(photosToSave);
               setScreen("vibes");
             }}
           />

@@ -12,6 +12,7 @@ import { authApi } from "../../../api/authApi";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { brand, whiteCard } from "../../../components/brand";
 import { PressScale } from "../../../components/motion";
+import { DpCropSheet } from "../../profile/components/DpCropSheet";
 
 const BIO_MAX_LENGTH = 500;
 const MAX_WIDTH = 720;
@@ -46,10 +47,8 @@ export const MASTER_HOBBIES = [
 
 export function ProfileSetupScreen({
   accessToken,
-  profile,
-  onProfileChange,
-  photos,
-  onPhotosChange,
+  profile: savedProfile,
+  photos: savedPhotos,
   onNext,
   verificationStatus = "none",
   verified = false,
@@ -58,13 +57,16 @@ export function ProfileSetupScreen({
 }: {
   accessToken: string;
   profile: any;
-  onProfileChange: (p: any) => void;
+  /** @deprecated Changes are handed over only on save, through onNext. */
+  onProfileChange?: (p: any) => void;
   photos: string[];
-  onPhotosChange: (p: string[]) => void;
+  /** @deprecated Changes are handed over only on save, through onNext. */
+  onPhotosChange?: (p: string[]) => void;
   voiceUri: string;
   onVoiceChange: (uri: string) => void;
   allowPreviewContinue: boolean;
-  onNext: (latest?: any) => void;
+  /** Save: the edited profile and photo. Nothing changes before this. */
+  onNext: (latest: any, latestPhotos: string[]) => void | Promise<void>;
   /** Selfie verification state, shown as its own row in Edit profile. */
   verificationStatus?: "none" | "pending" | "approved" | "rejected";
   verified?: boolean;
@@ -72,6 +74,17 @@ export function ProfileSetupScreen({
   /** Opens the pose-selfie screen. */
   onVerify?: () => void;
 }) {
+  // Edits stay on this screen until Save. Leaving without saving (back,
+  // another tab) throws them away, so the profile is never half-changed.
+  const [profile, setProfile] = useState<any>(savedProfile);
+  const [photos, setPhotos] = useState<string[]>(savedPhotos);
+  const onProfileChange = setProfile;
+  const onPhotosChange = setPhotos;
+  // The photo picked in the browser, waiting for the member to choose
+  // which part of it goes in the circle.
+  const [cropUri, setCropUri] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+
   // The @username is fixed at sign-up; Edit profile shows it, read-only.
   const [username, setUsername] = useState("");
   useEffect(() => {
@@ -111,21 +124,33 @@ export function ProfileSetupScreen({
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
+      // The phone app crops in the phone's own screen; a browser's picker
+      // cannot, so the web opens DpCropSheet instead.
+      allowsEditing: Platform.OS !== "web",
       aspect: [1, 1],
-      quality: 0.8,
+      quality: Platform.OS === "web" ? 1 : 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
-      const uploadedUrl = await uploadPhotoAsset(
-        result.assets[0].uri,
-        accessToken,
-      );
+      if (Platform.OS === "web") setCropUri(result.assets[0].uri);
+      else await applyPhoto(result.assets[0].uri);
+    }
+  };
+
+  /** Uploads the chosen (already cropped) photo and shows it here. */
+  const applyPhoto = async (uri: string) => {
+    setPhotoBusy(true);
+    try {
+      const uploadedUrl = await uploadPhotoAsset(uri, accessToken);
       onPhotosChange([uploadedUrl]);
+    } finally {
+      setPhotoBusy(false);
     }
   };
 
   const handleSave = () => {
+    // Wait for a new photo to finish uploading, or the old one is saved.
+    if (photoBusy) return;
     const trimmedBio = bio.trim();
 
     if (trimmedBio.length > BIO_MAX_LENGTH) {
@@ -141,7 +166,7 @@ export function ProfileSetupScreen({
 
     const latest = { ...profile, bio: trimmedBio };
     onProfileChange(latest);
-    onNext(latest);
+    onNext(latest, photos);
   };
 
   const bioLength = bio.length;
@@ -265,7 +290,7 @@ export function ProfileSetupScreen({
                   fontFamily: fonts.body,
                 }}
               >
-                Tap to {photos[0] ? "change" : "add"} your photo
+                {photoBusy ? "Uploading photo..." : `Tap to ${photos[0] ? "change" : "add"} your photo`}
               </Text>
               {!!username && (
                 <View
@@ -737,6 +762,14 @@ export function ProfileSetupScreen({
           </View>
         </Modal>
       </SafeAreaView>
+      <DpCropSheet
+        uri={cropUri}
+        onCancel={() => setCropUri(null)}
+        onDone={(cropped) => {
+          setCropUri(null);
+          void applyPhoto(cropped);
+        }}
+      />
     </AppCanvas>
   );
 }
