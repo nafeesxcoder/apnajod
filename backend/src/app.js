@@ -48,6 +48,27 @@ app.use(
   express.static(path.join(__dirname, "..", "uploads"), { dotfiles: "deny", index: false }),
 );
 
+// For an uptime monitor (UptimeRobot and the like): 200 when the server and
+// the database both answer, 503 when the database does not. Says nothing
+// else about the server.
+app.get("/health", async (req, res) => {
+  const { query } = require("./config/db");
+  let timer;
+  try {
+    await Promise.race([
+      query("SELECT 1"),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("timeout")), 3000);
+      }),
+    ]);
+    res.set("Cache-Control", "no-store").json({ ok: true });
+  } catch {
+    res.status(503).set("Cache-Control", "no-store").json({ ok: false, error: "Database not answering" });
+  } finally {
+    clearTimeout(timer);
+  }
+});
+
 // Mount routes
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
