@@ -178,6 +178,7 @@ import { LudoScreen } from "../features/ludo/LudoScreen";
 import { takeLudoParam } from "../features/ludo/ludoText";
 import type { GameKind } from "../api/gamesApi";
 import { HomeScreen } from "../features/discovery/screens/HomeScreen";
+import { cropCentredSquareWeb } from "../features/profile/cropImageWeb";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { SettingsScreen } from "../features/profile/screens/SettingsScreen";
 import { TwoStepScreen } from "../features/profile/screens/TwoStepScreen";
@@ -3201,14 +3202,30 @@ function MilaanApp() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
+      // The phone crops in its own picker. A browser's picker does not, so
+      // the web gets the middle square cut below.
+      allowsEditing: Platform.OS !== "web",
       aspect: [1, 1],
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
+      let photoUri = result.assets[0].uri;
+      if (Platform.OS === "web") {
+        try {
+          photoUri = await cropCentredSquareWeb(photoUri);
+        } catch (err: any) {
+          setAppNotice({
+            title: "Photo could not be cropped",
+            body: err?.message || "Try another photo.",
+            icon: "images-outline",
+            tone: "ruby",
+          });
+          return;
+        }
+      }
       setQuickProfile((current) => ({
         ...current,
-        photoUri: result.assets[0]!.uri,
+        photoUri,
       }));
     }
   };

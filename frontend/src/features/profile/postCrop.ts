@@ -107,6 +107,12 @@ export function outputSize(aspect: number): Size {
   return { width: OUTPUT_WIDTH, height: Math.round(OUTPUT_WIDTH / aspect) };
 }
 
+/** The largest square in the middle of a photo, in the photo's own pixels. */
+export function centredSquareRect(photoWidth: number, photoHeight: number) {
+  const side = Math.min(photoWidth, photoHeight);
+  return { x: (photoWidth - side) / 2, y: (photoHeight - side) / 2, width: side, height: side };
+}
+
 /** Distance between two touches, for pinch-to-zoom. */
 export function touchDistance(a: { pageX: number; pageY: number }, b: { pageX: number; pageY: number }): number {
   return Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);

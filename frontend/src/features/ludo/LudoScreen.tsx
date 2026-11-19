@@ -638,6 +638,8 @@ export function LudoScreen({
           stepMs={stepMs(prefs.speed)}
         />
         <Banner banner={banner?.banner ?? null} stamp={banner?.stamp ?? 0} />
+        {/* A token got home: a little confetti over the board, never in the way. */}
+        {banner?.banner.kind === "home" && <Confetti key={banner.stamp} />}
       </View>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <PlayerCard game={game} seat={3} voice={voiceUsers} myId={myId} reaction={reactions[state.players.find((p) => p.seat === 3)?.userId ?? ""] ?? null} />

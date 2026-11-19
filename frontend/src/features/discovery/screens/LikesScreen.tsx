@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Image,
+  type ImageStyle,
   ScrollView,
+  type StyleProp,
   Text,
   View,
   TouchableOpacity,
@@ -25,6 +27,7 @@ import { matchFromSocialUser } from "../../../domain/socialMatch";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { serverMs } from "../../../domain/serverTime";
+import { type CardWidth, likeCardWidth, likeColumnCount } from "../likesLayout";
 
 type IncomingLike = {
   id: string;
@@ -48,15 +51,44 @@ type IncomingLike = {
   spark?: { kind: "spark" | "superlike"; note: string } | null;
 };
 
-const LIKE_CARD_WIDTH = 420;
+/** The most a card grows to, so a very wide window does not stretch it. */
+const LIKE_CARD_MAX_WIDTH = 420;
+
+/**
+ * A photo that shows the placeholder when there is no picture, or when the
+ * picture fails to load. That is what left some avatars blank.
+ */
+function PhotoOrFallback({
+  uri,
+  style,
+  fallback,
+}: {
+  uri: string;
+  style: StyleProp<ImageStyle>;
+  fallback: ReactNode;
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [uri]);
+  if (!uri || failed) return <>{fallback}</>;
+  return (
+    <Image
+      source={{ uri }}
+      style={style}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 function LockedLikeCard({
   likedAt,
-  wide,
+  width,
   onUnlock,
 }: {
   likedAt: string | null;
-  wide: boolean;
+  width?: CardWidth;
   onUnlock?: () => void;
 }) {
   return (
@@ -66,7 +98,7 @@ function LockedLikeCard({
           ...whiteCard,
           overflow: "hidden",
         },
-        wide && { width: LIKE_CARD_WIDTH },
+        width && { width, maxWidth: LIKE_CARD_MAX_WIDTH },
       ]}
     >
       <View
@@ -234,26 +266,25 @@ function NewMatchesRow({
                 padding: 2,
               }}
             >
-              {match.photo ? (
-                <Image
-                  source={{ uri: match.photo }}
-                  style={{ width: "100%", height: "100%", borderRadius: 30 }}
-                />
-              ) : (
-                <View
-                  style={{
-                    flex: 1,
-                    borderRadius: 30,
-                    backgroundColor: palette.paper,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontFamily: fonts.display, fontSize: 22, color: colors.text }}>
-                    {(match.name || "?").charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              <PhotoOrFallback
+                uri={match.photo}
+                style={{ width: "100%", height: "100%", borderRadius: 30 }}
+                fallback={
+                  <View
+                    style={{
+                      flex: 1,
+                      borderRadius: 30,
+                      backgroundColor: palette.paper,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontFamily: fonts.display, fontSize: 22, color: colors.text }}>
+                      {(match.name || "?").charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                }
+              />
             </View>
             <Text
               numberOfLines={1}
@@ -298,7 +329,9 @@ export function LikesScreen({
   }) => void;
 }) {
   const navInset = useNavInset();
-  const { isWide: isWideLikes } = useLayout();
+  const layout = useLayout();
+  const isWideLikes = layout.isWide;
+  const cardWidth = likeCardWidth(likeColumnCount(layout));
   const [likes, setLikes] = useState<IncomingLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -586,6 +619,7 @@ export function LikesScreen({
                 isWideLikes && {
                   flexDirection: "row" as const,
                   flexWrap: "wrap" as const,
+                  justifyContent: "center" as const,
                 },
               ]}
             >
@@ -597,7 +631,7 @@ export function LikesScreen({
                     <LockedLikeCard
                       key={like.id}
                       likedAt={like.likedAt}
-                      wide={isWideLikes}
+                      width={cardWidth}
                     />
                   );
                 }
@@ -611,7 +645,7 @@ export function LikesScreen({
                         ...whiteCard,
                         overflow: "hidden",
                       },
-                      isWideLikes && { width: LIKE_CARD_WIDTH },
+                      isWideLikes && { width: cardWidth, maxWidth: LIKE_CARD_MAX_WIDTH },
                     ]}
                   >
                     <TouchableOpacity
@@ -620,34 +654,32 @@ export function LikesScreen({
                       onPress={() => openDetail(matchFromLike(like))}
                       style={{ flexDirection: "row", padding: 14, gap: 14 }}
                     >
-                      {like.photo ? (
-                        <Image
-                          source={{ uri: like.photo }}
-                          style={{
-                            width: 92,
-                            height: 112,
-                            borderRadius: radius.md,
-                          }}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View
-                          style={{
-                            width: 92,
-                            height: 112,
-                            borderRadius: radius.md,
-                            backgroundColor: palette.paper,
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Ionicons
-                            name="person"
-                            size={34}
-                            color={palette.navySoft}
-                          />
-                        </View>
-                      )}
+                      <PhotoOrFallback
+                        uri={like.photo}
+                        style={{
+                          width: 92,
+                          height: 112,
+                          borderRadius: radius.md,
+                        }}
+                        fallback={
+                          <View
+                            style={{
+                              width: 92,
+                              height: 112,
+                              borderRadius: radius.md,
+                              backgroundColor: palette.paper,
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Ionicons
+                              name="person"
+                              size={34}
+                              color={palette.navySoft}
+                            />
+                          </View>
+                        }
+                      />
 
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <View

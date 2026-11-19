@@ -1,4 +1,13 @@
-import { outputSize } from "./postCrop";
+import { centredSquareRect, outputSize } from "./postCrop";
+
+function loadImage(uri: string): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const element = new window.Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => reject(new Error("That photo could not be opened."));
+    element.src = uri;
+  });
+}
 
 /**
  * Cuts the chosen part out of a photo in the browser and returns it as a
@@ -10,12 +19,7 @@ export async function cropImageWeb(
   rect: { x: number; y: number; width: number; height: number },
   aspect: number,
 ): Promise<string> {
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const element = new window.Image();
-    element.onload = () => resolve(element);
-    element.onerror = () => reject(new Error("That photo could not be opened."));
-    element.src = uri;
-  });
+  const image = await loadImage(uri);
   const out = outputSize(aspect);
   const canvas = document.createElement("canvas");
   canvas.width = out.width;
@@ -27,4 +31,14 @@ export async function cropImageWeb(
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
   if (!blob) throw new Error("That photo could not be cropped.");
   return URL.createObjectURL(blob);
+}
+
+/**
+ * A profile photo in the browser: the middle square of the picture, saved
+ * the same way. The browser's picker cannot crop, so the square is cut here.
+ */
+export async function cropCentredSquareWeb(uri: string): Promise<string> {
+  const image = await loadImage(uri);
+  const rect = centredSquareRect(image.naturalWidth, image.naturalHeight);
+  return cropImageWeb(uri, rect, 1);
 }

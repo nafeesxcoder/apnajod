@@ -332,15 +332,22 @@ const BANNER_COLORS: Record<LudoBanner["kind"], [string, string]> = {
   none: ["#E5E7EB", "#6B7280"],
 };
 
+/** How long a SIX / CUT / HOME toast stays up, in total: about a second and a half. */
+const TOAST_HOLD_MS = 760;
+
+/**
+ * A small toast at the top of the board. It never covers the board or blocks a
+ * tap, and it leaves on its own after about a second and a half.
+ */
 export function Banner({ banner, stamp }: { banner: LudoBanner | null; stamp: number }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!banner) return;
     v.setValue(0);
     Animated.sequence([
-      Animated.spring(v, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
-      Animated.delay(900),
-      Animated.timing(v, { toValue: 2, duration: 280, useNativeDriver: true }),
+      Animated.spring(v, { toValue: 1, friction: 6, tension: 140, useNativeDriver: true }),
+      Animated.delay(TOAST_HOLD_MS),
+      Animated.timing(v, { toValue: 2, duration: 260, useNativeDriver: true }),
     ]).start();
   }, [stamp, banner, v]);
   if (!banner) return null;
@@ -351,19 +358,17 @@ export function Banner({ banner, stamp }: { banner: LudoBanner | null; stamp: nu
       accessibilityLiveRegion="polite"
       style={{
         position: "absolute",
-        top: 0,
-        bottom: 0,
+        top: 10,
         left: 0,
         right: 0,
         alignItems: "center",
-        justifyContent: "center",
         zIndex: 60,
-        opacity: v.interpolate({ inputRange: [0, 0.3, 1, 2], outputRange: [0, 1, 1, 0] }),
-        transform: [{ scale: v.interpolate({ inputRange: [0, 1, 2], outputRange: [0.3, 1, 1.3] }) }],
+        opacity: v.interpolate({ inputRange: [0, 0.25, 1, 2], outputRange: [0, 1, 1, 0] }),
+        transform: [{ translateY: v.interpolate({ inputRange: [0, 1, 2], outputRange: [-24, 0, -10] }) }],
       }}
     >
-      <LinearGradient colors={[light, dark]} style={{ paddingHorizontal: 26, paddingVertical: 10, borderRadius: 22, borderWidth: 3, borderColor: "#FFFFFF", alignItems: "center", transform: [{ rotate: "-4deg" }] }}>
-        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 38, lineHeight: 44, color: "#FFFFFF", letterSpacing: 2, textShadowColor: "rgba(0,0,0,0.35)", textShadowRadius: 4, textShadowOffset: { width: 0, height: 2 } }}>
+      <LinearGradient colors={[light, dark]} style={{ paddingHorizontal: 18, paddingVertical: 6, borderRadius: 16, borderWidth: 2, borderColor: "#FFFFFF", alignItems: "center" }}>
+        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 22, lineHeight: 28, color: "#FFFFFF", letterSpacing: 1.5, textShadowColor: "rgba(0,0,0,0.35)", textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } }}>
           {banner.kind === "cut" ? "✂️ " : banner.kind === "home" ? "🏠 " : banner.kind === "six" ? "🎲 " : ""}
           {banner.text}
         </Text>

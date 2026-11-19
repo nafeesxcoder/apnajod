@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   POST_SHAPES,
   centredOffset,
+  centredSquareRect,
   clampOffset,
   cropRect,
   frameSize,
@@ -26,6 +27,12 @@ describe("post sizes (like Instagram)", () => {
     expect(outputSize(1)).toEqual({ width: 1080, height: 1080 });
     expect(outputSize(0.8)).toEqual({ width: 1080, height: 1350 });
     expect(outputSize(1.91)).toEqual({ width: 1080, height: 565 });
+  });
+
+  it("cuts a profile photo to the middle square, whichever way it is turned", () => {
+    expect(centredSquareRect(4000, 3000)).toEqual({ x: 500, y: 0, width: 3000, height: 3000 });
+    expect(centredSquareRect(600, 800)).toEqual({ x: 0, y: 100, width: 600, height: 600 });
+    expect(centredSquareRect(1080, 1080)).toEqual({ x: 0, y: 0, width: 1080, height: 1080 });
   });
 
   it("fits the frame inside the space it is given", () => {
