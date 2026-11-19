@@ -27,6 +27,7 @@ import {
 } from "../playBilling";
 import { useFestival } from "../../festival/festivalStore";
 import { PassCodeBox } from "../PassCodeBox";
+import { festivalOffer } from "../festivalOffer";
 
 // Android: what Google Play says about one of the member's subscriptions.
 type PlayStatusRow = {
@@ -161,15 +162,30 @@ export function PremiumScreen({
     };
   }, [accessToken]);
 
-  const subscriptions = plans.filter((plan) => plan.kind === "subscription");
-  const boostPacks = plans.filter(
+  // The admin's festival offer (% off). On Android Google Play charges, so
+  // a plan shows the offer only when Play has the matching offer
+  // (festival50 for 50%); otherwise it shows the full price and no "% off".
+  const offerPercent = plans.find((plan) => !!plan.offer_percent)?.offer_percent ?? 0;
+  const playSells = (plan: BillingPlan) =>
+    !!festivalOffer(plan.play_product_id ? playProducts[plan.play_product_id] : undefined, offerPercent);
+  const shownPlans =
+    Platform.OS === "android" && offerPercent
+      ? plans.map((plan) =>
+          playSells(plan) || !plan.original_paise
+            ? plan
+            : { ...plan, amount_paise: plan.original_paise, original_paise: undefined, offer_percent: undefined },
+        )
+      : plans;
+
+  const subscriptions = shownPlans.filter((plan) => plan.kind === "subscription");
+  const boostPacks = shownPlans.filter(
     (plan) => plan.kind === "consumable" && plan.grants === "boost",
   );
-  const superlikePacks = plans.filter(
+  const superlikePacks = shownPlans.filter(
     (plan) => plan.kind === "consumable" && plan.grants === "superlike",
   );
 
-  const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? null;
+  const selectedPlan = shownPlans.find((plan) => plan.code === selectedCode) ?? null;
 
   // Android only: connect to Google Play, read the prices, and handle each
   // purchase by sending its token to the server before anything is granted.
@@ -254,12 +270,18 @@ export function PremiumScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, plans]);
   const festival = useFestival();
-  const offerPlan = plans.find((plan) => !!plan.offer_percent) ?? null;
+  const offerPlan = shownPlans.find((plan) => !!plan.offer_percent) ?? null;
   // Payment is only through Google Play, inside the Android app. The website
   // sends members to the app; there is no payment checked by hand.
   // Android: on once Google Play has at least one of our products.
   const playOpen = Platform.OS === "android" && Object.keys(playProducts).length > 0;
-  const playProduct = selectedPlan?.play_product_id ? playProducts[selectedPlan.play_product_id] : undefined;
+  const basePlayProduct = selectedPlan?.play_product_id ? playProducts[selectedPlan.play_product_id] : undefined;
+  // While the festival offer is on and Play has it, the purchase uses it.
+  const playFestival = festivalOffer(basePlayProduct, offerPercent);
+  const playProduct =
+    basePlayProduct && playFestival
+      ? { ...basePlayProduct, offerToken: playFestival.token, displayPrice: playFestival.displayPrice }
+      : basePlayProduct;
 
   // What the member actually has, from the server. The card they tapped is
   // only the one they are looking at, so it must not change this name.
@@ -417,7 +439,7 @@ export function PremiumScreen({
                   >
                     <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: festival?.ink ?? "#FFFFFF" }}>
                       {festival ? `${festival.emoji} ${festival.name} offer` : "Festival offer"}: {offerPlan.offer_percent}% off
-                      every plan
+                      {Platform.OS === "web" ? " Premium in the app" : " Premium"}
                     </Text>
                     {!!offerEnds(offerPlan.offer_ends_at) && (
                       <Text style={{ marginTop: 2, fontFamily: fonts.body, fontSize: 12, color: festival?.ink ?? "#FFFFFF", opacity: 0.85 }}>

@@ -10,9 +10,14 @@ export type PlayProduct = {
   productId: string;
   /** The price Google shows, in the member's currency. */
   displayPrice: string;
-  /** Subscriptions only: the offer Google needs to sell the plan. */
+  /** Subscriptions only: the base plan's offer Google needs to sell the plan. */
   offerToken: string | null;
   isSubscription: boolean;
+  /**
+   * Subscriptions only: the named offers made in the Play Console, by offer
+   * id (festival50 and so on), with the first price the member pays.
+   */
+  offers?: Record<string, { token: string; displayPrice: string }>;
 };
 
 export type PlayPurchase = {

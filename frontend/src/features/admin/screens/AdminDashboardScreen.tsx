@@ -3094,6 +3094,13 @@ function FestivalsTab({ accessToken }: { accessToken: string }) {
                 />
               ))}
             </View>
+            {!!offer && (
+              <Text style={{ fontFamily: fonts.body, fontSize: 12, lineHeight: 18, color: COLORS.textMuted }}>
+                Payment is through Google Play, so this needs an offer in the Play Console: on each Premium
+                subscription, add an offer with the id festival{offer} at {offer}% off. Without it the app shows the
+                full price and no offer.
+              </Text>
+            )}
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
             <SmallButton label={`Apply ${theme.name} now`} busy={busy} onPress={applyNow} />

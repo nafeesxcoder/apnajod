@@ -87,8 +87,10 @@ async function listPlans() {
   );
   const offer = await currentOffer();
   if (!offer) return plans;
-  // During a festival offer every plan shows its old price struck through.
-  return plans.map((plan) => ({
+  // During a festival offer the Premium plans show their old price struck
+  // through. Only subscriptions: they are sold through a Google Play
+  // subscription offer (festival50 and so on); packs keep their price.
+  return plans.map((plan) => plan.kind !== "subscription" ? plan : ({
     ...plan,
     original_paise: Number(plan.amount_paise),
     amount_paise: offerPrice(plan.amount_paise, offer.percent),

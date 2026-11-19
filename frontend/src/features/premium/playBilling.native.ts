@@ -47,12 +47,25 @@ export async function loadPlayProducts(productIds: string[]): Promise<Record<str
     const subs = await fetchProducts({ skus: productIds, type: "subs" });
     for (const item of subs ?? []) {
       if (!("subscriptionOffers" in item)) continue;
-      const offer = item.subscriptionOffers?.[0];
+      const all = item.subscriptionOffers ?? [];
+      // The base plan has no offer id of its own; named offers (festival50)
+      // are kept apart so the full price is never sold as a discount.
+      const isNamed = (o: (typeof all)[number]) => !!o.id && o.id !== o.basePlanIdAndroid;
+      const base = all.find((o) => !isNamed(o)) ?? all[0];
+      const offers: Record<string, { token: string; displayPrice: string }> = {};
+      for (const o of all) {
+        if (!isNamed(o) || !o.offerTokenAndroid) continue;
+        offers[o.id] = {
+          token: o.offerTokenAndroid,
+          displayPrice: o.pricingPhasesAndroid?.pricingPhaseList?.[0]?.formattedPrice || o.displayPrice,
+        };
+      }
       found[item.id] = {
         productId: item.id,
-        displayPrice: item.displayPrice,
-        offerToken: offer?.offerTokenAndroid ?? null,
+        displayPrice: base?.pricingPhasesAndroid?.pricingPhaseList?.[0]?.formattedPrice || item.displayPrice,
+        offerToken: base?.offerTokenAndroid ?? null,
         isSubscription: true,
+        offers,
       };
     }
     const packs = await fetchProducts({ skus: productIds, type: "in-app" });
