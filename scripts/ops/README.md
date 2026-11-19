@@ -4,7 +4,7 @@ Run these on the EC2 box from the repo root (`~/Milaan2`).
 
 | Script | What it does |
 | --- | --- |
-| `deploy.sh` | Pull, install, restart the backend, build and publish the frontend. Options: `--migrate`, `--backend-only`, `--frontend-only` |
+| `deploy.sh` | Pull, install, run the tests, build, then restart the backend (checked on `/health`) and publish the frontend. A failed test or build puts the code back and changes nothing live. Options: `--migrate`, `--backend-only`, `--frontend-only`, `--skip-tests` (emergencies only) |
 | `backup-db.sh` | Gzipped MySQL dump into `~/backups/milaan`, keeps 14 days |
 | `cleanup-disk.sh` | Frees disk space (logs, caches, old builds) |
 
