@@ -29,8 +29,8 @@ async function sendOtpSms(toPhone, code, purpose = "login") {
       from: env.twilio.fromNumber,
       body:
         purpose === "password_reset"
-          ? `${code} is your ApnaJod password reset code. It expires in ${env.otp.expiresMinutes} minutes. Do not share it with anyone.`
-          : `${code} is your ApnaJod verification code. It expires in ${env.otp.expiresMinutes} minutes. Do not share it with anyone.`,
+          ? `${code} is your Apnajoda password reset code. It expires in ${env.otp.expiresMinutes} minutes. Do not share it with anyone.`
+          : `${code} is your Apnajoda verification code. It expires in ${env.otp.expiresMinutes} minutes. Do not share it with anyone.`,
     });
     console.log(`[SMS SENT] to ${toPhone}, SID: ${result.sid}`);
     return { sid: result.sid };
