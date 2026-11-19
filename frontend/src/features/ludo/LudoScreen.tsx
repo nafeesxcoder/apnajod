@@ -10,7 +10,7 @@
  * - Voice: turn the mic on to talk to everyone in the game, mute, speaker.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, Vibration, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, TextInput, Vibration, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -331,9 +331,17 @@ export function LudoScreen({
   if (!gameId) {
     const toggle = (id: string) =>
       setPicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : list.length >= count - 1 ? list : [...list, id]));
+    const createAndInvite = () =>
+      void run(async () => {
+        const created = await ludoApi.create(accessToken, count, picked);
+        onOpenGame(created.id);
+        return created;
+      });
+    const inviteLabel = picked.length === 0 ? "Pick who to invite" : `Create room & invite ${picked.length}`;
     return shell(
       "Ludo",
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+      <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 24 }}>
         <View style={{ alignItems: "center", gap: 6, paddingVertical: 8 }}>
           <View style={{ width: 84, height: 84, borderRadius: 22, overflow: "hidden", flexDirection: "row", flexWrap: "wrap", transform: [{ rotate: "-10deg" }], borderWidth: 3, borderColor: L.gold }}>
             {SEAT_COLORS.map((c) => (
@@ -436,26 +444,37 @@ export function LudoScreen({
             >
               <Avatar member={{ name: m.name, photo: m.photo || null }} size={44} />
               <Text style={{ flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: L.text }}>{m.name}</Text>
-              <Ionicons name={on ? "checkmark-circle" : "ellipse-outline"} size={26} color={on ? L.gold : L.textMuted} />
+              {on ? (
+                // The invite is sent from the row you picked - no scrolling
+                // past the whole list to find the button.
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={picked.length > 1 ? `Invite ${picked.length} picked` : `Invite ${m.name} now`}
+                  disabled={busy}
+                  onPress={createAndInvite}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: L.gold, opacity: busy ? 0.6 : 1 }}
+                >
+                  {busy ? <ActivityIndicator size="small" color="#2B1466" /> : <Ionicons name="paper-plane" size={15} color="#2B1466" />}
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#2B1466" }}>{picked.length > 1 ? `Invite ${picked.length}` : "Invite"}</Text>
+                </Pressable>
+              ) : (
+                <Ionicons name="ellipse-outline" size={26} color={L.textMuted} />
+              )}
             </Pressable>
           );
         })}
-        <View style={{ marginTop: 8 }}>
-          <GoldButton
-            label="Create room & invite"
-            accessibilityLabel="Create room and invite"
-            disabled={picked.length === 0}
-            busy={busy}
-            onPress={() =>
-              void run(async () => {
-                const created = await ludoApi.create(accessToken, count, picked);
-                onOpenGame(created.id);
-                return created;
-              })
-            }
-          />
-        </View>
-      </ScrollView>,
+      </ScrollView>
+      {/* Always on screen, however long the list is. */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14, borderTopWidth: 1, borderTopColor: L.glassBorder, backgroundColor: L.bgMid }}>
+        <GoldButton
+          label={inviteLabel}
+          accessibilityLabel={picked.length === 0 ? "Pick who to invite" : "Create room and invite"}
+          disabled={picked.length === 0}
+          busy={busy}
+          onPress={createAndInvite}
+        />
+      </View>
+      </View>,
     );
   }
 
