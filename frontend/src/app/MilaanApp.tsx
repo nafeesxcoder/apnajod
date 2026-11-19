@@ -532,6 +532,10 @@ function MilaanApp() {
   // The phone app's own back stack (Android's back button).
   const nativeBackRef = useRef<Screen[]>([]);
   const isPoppingScreenRef = useRef(false);
+  // The next screen change takes the place of the current screen in the
+  // back stack instead of going on top (leaving Edit profile after Save, so
+  // back does not reopen it).
+  const replaceScreenRef = useRef(false);
   const hasMountedBackGuardRef = useRef(false);
   useEffect(() => {
     captureInviteFromUrl();
@@ -583,7 +587,10 @@ function MilaanApp() {
   useEffect(() => {
     if (Platform.OS === "web") return;
     const last = nativeBackRef.current[nativeBackRef.current.length - 1];
-    if (isPoppingScreenRef.current) isPoppingScreenRef.current = false;
+    if (replaceScreenRef.current) {
+      replaceScreenRef.current = false;
+      nativeBackRef.current = [...nativeBackRef.current.slice(0, -1), screen];
+    } else if (isPoppingScreenRef.current) isPoppingScreenRef.current = false;
     else if (last !== screen) nativeBackRef.current = [...nativeBackRef.current, screen].slice(-30);
   }, [screen]);
   useEffect(() => {
@@ -617,6 +624,11 @@ function MilaanApp() {
     }
     if (!hasMountedBackGuardRef.current) {
       hasMountedBackGuardRef.current = true;
+      return;
+    }
+    if (replaceScreenRef.current) {
+      replaceScreenRef.current = false;
+      window.history.replaceState({ milaanScreen: screen }, "");
       return;
     }
     window.history.pushState({ milaanScreen: screen }, "");
@@ -3535,15 +3547,23 @@ function MilaanApp() {
                   // Only now, once the server has it, does the app show it.
                   setProfileDraft(draftToSave);
                   setProfilePhotos(photosToSave);
-                  setAppNotice({
-                    title: "Profile updated",
-                    body: "Your changes have been saved.",
-                    icon: "checkmark-circle",
-                    tone: "gold",
-                  });
+                  // Profile takes Edit profile's place, so back does not
+                  // reopen the editor.
+                  replaceScreenRef.current = true;
                   setScreen("profile");
-                  // Auto close popup after 2 seconds
-                  setTimeout(() => setAppNotice(null), 2000);
+                  // The popup opens once Profile is on screen: a popup adds
+                  // its own back-button entry, and opened in the same moment
+                  // it would land under Profile's and bring the editor back.
+                  setTimeout(() => {
+                    setAppNotice({
+                      title: "Profile updated",
+                      body: "Your changes have been saved.",
+                      icon: "checkmark-circle",
+                      tone: "gold",
+                    });
+                    // Auto close popup after 2 seconds
+                    setTimeout(() => setAppNotice(null), 2000);
+                  }, 0);
                 } catch (error) {
                   setAppNotice({
                     title: "Profile not saved",

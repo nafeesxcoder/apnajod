@@ -19,7 +19,7 @@ import { fonts, palette, typeScale } from "../../../theme";
 import { pushApi } from "../../../api/pushApi";
 import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
 import { openKundliEditor } from "../../kundli/kundliStore";
-import { RingtoneSheet, useRingtone } from "../../chat/ringtones/RingtoneSheet";
+import { RingtoneSheet } from "../../chat/ringtones/RingtoneSheet";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -189,7 +189,6 @@ export function SettingsScreen({
   const [notifOn, setNotifOn] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [ringOpen, setRingOpen] = useState(false);
-  const ring = useRingtone();
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifNote, setNotifNote] = useState("");
 
@@ -400,7 +399,7 @@ export function SettingsScreen({
               {/* Optional, for people who follow kundli: here and in Match
                   Filters, never on the profile everyone sees. */}
               <SettingsRow icon="planet-outline" label="Kundli & Gun Milan" onPress={openKundliEditor} />
-              <SettingsRow icon="musical-note-outline" label={`Call ringtone · ${ring.name}`} onPress={() => setRingOpen(true)} />
+              <SettingsRow icon="musical-note-outline" label="Call ringtone" onPress={() => setRingOpen(true)} />
               <SettingsRow
                 icon="options-outline"
                 label="Match Filters & Preferences"

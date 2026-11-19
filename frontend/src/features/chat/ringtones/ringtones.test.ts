@@ -33,7 +33,10 @@ describe("call ringtones", () => {
   });
 
   it("is in Settings, with a play button and your own from the phone", () => {
-    expect(read("src/features/profile/screens/SettingsScreen.tsx")).toContain("label={`Call ringtone · ${ring.name}`}");
+    // Only the row's name in Settings; the chosen tune shows inside the sheet.
+    const settings = read("src/features/profile/screens/SettingsScreen.tsx");
+    expect(settings).toContain('label="Call ringtone"');
+    expect(settings).not.toContain("ring.name");
     const sheet = read("src/features/chat/ringtones/RingtoneSheet.tsx");
     expect(sheet).toContain('accessibilityLabel="Choose a ringtone from my phone"');
     expect(sheet).toContain("asset.size > MAX_CUSTOM_BYTES");
