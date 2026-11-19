@@ -158,7 +158,7 @@ export function PromoCard({
       {!!promo.couponCode && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Coupon ${promo.couponCode}${Platform.OS === "web" ? ", tap to copy" : ""}`}
+          accessibilityLabel={`Pass code ${promo.couponCode}${Platform.OS === "web" ? ", tap to copy" : ""}`}
           onPress={() => void copy()}
           style={{
             marginTop: 16,

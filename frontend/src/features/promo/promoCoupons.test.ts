@@ -38,15 +38,18 @@ describe('coupons', () => {
     expect(takePendingCoupon()).toBeNull();
   });
 
-  it('takes no coupon at checkout: payment is only through Google Play', () => {
+  it('takes no coupon at checkout; a pass code from the popup is filled in on Premium', () => {
     const premium = read('../premium/screens/PremiumScreen.tsx');
     expect(premium).not.toContain('CouponBox');
-    expect(premium).not.toContain('submitUpi');
+    expect(premium).toContain('<PassCodeBox accessToken={accessToken} onRedeemed={setSummary} />');
+    const box = read('../premium/PassCodeBox.tsx');
+    expect(box).toContain('takePendingCoupon()');
+    expect(box).toContain('billingApi.redeemCode(accessToken, value)');
   });
 
-  it('gives the admin Coupons and Offer Popup tabs', () => {
+  it('gives the admin Pass codes and Offer Popup tabs', () => {
     const admin = read('../admin/screens/AdminDashboardScreen.tsx');
-    expect(admin).toContain('{ key: "coupons", label: "Coupons"');
+    expect(admin).toContain('{ key: "coupons", label: "Pass codes"');
     expect(admin).toContain('{ key: "promo", label: "Offer Popup"');
     expect(admin).toContain('adminApi.createCoupon');
     expect(admin).toContain('adminApi.publishPromo');

@@ -55,7 +55,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
   { key: "payments", label: "UPI Payments", icon: "cash-outline" },
   { key: "festivals", label: "Festival Themes", icon: "sparkles-outline" },
-  { key: "coupons", label: "Coupons", icon: "pricetags-outline" },
+  { key: "coupons", label: "Pass codes", icon: "gift-outline" },
   { key: "plans", label: "Plans & Prices", icon: "pricetag-outline" },
   { key: "promo", label: "Offer Popup", icon: "megaphone-outline" },
   { key: "questions", label: "Daily Questions", icon: "help-circle-outline" },
@@ -2403,9 +2403,7 @@ function PaymentsTab({ accessToken }: { accessToken: string }) {
   );
 }
 
-/* ---------------- Coupons ---------------- */
-
-const COUPON_PERCENTS = [10, 20, 30, 50];
+/* ---------------- Pass codes ---------------- */
 
 function Toggle({ label, on, onPress, busy }: { label: string; on: boolean; onPress: () => void; busy?: boolean }) {
   return (
@@ -2440,17 +2438,17 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
-  const [percent, setPercent] = useState("50");
+  const [plan, setPlan] = useState<(typeof PASS_PLAN_CHOICES)[number]["id"]>("plus");
+  const [months, setMonths] = useState<number>(1);
   const [untilDay, setUntilDay] = useState("");
   const [maxUses, setMaxUses] = useState("");
-  const [show, setShow] = useState(true);
 
   const load = useCallback(async () => {
     try {
       const res: any = await adminApi.coupons(accessToken);
       setCoupons(Array.isArray(res?.coupons) ? res.coupons : []);
     } catch (e) {
-      setError(errText(e, "Could not load coupons"));
+      setError(errText(e, "Could not load pass codes"));
       setCoupons([]);
     }
   }, [accessToken]);
@@ -2484,15 +2482,15 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
       async () => {
         await adminApi.createCoupon(accessToken, {
           code: cleanCode,
-          percent: Number(percent),
+          plan,
+          months,
           validUntil,
           maxUses: maxUses.trim() ? Number(maxUses) : null,
-          showAtCheckout: show,
         });
         setCode("");
         setMaxUses("");
       },
-      `${cleanCode} is ready${show ? " and shows at payment" : ""}.`,
+      `${cleanCode} is ready. Anyone with it gets ${PASS_PLAN_CHOICES.find((p) => p.id === plan)?.label} free for ${PASS_LENGTHS.find((l) => l.months === months)?.label}.`,
     );
   };
 
@@ -2501,44 +2499,37 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
   return (
     <View style={{ gap: 18 }}>
       <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: COLORS.textMuted }}>
-        Write your own code. Each member can use a coupon once, on Plus or Pro. A coupon set to show at payment
-        is already applied for everyone who pays; the others only work for people who type the code.
+        Make a code that gives a free pass. A member types it in Premium (app or website) and the pass starts at
+        once - nothing to pay. Each member can use a code once. For money off, use a Google Play offer instead.
       </Text>
       {!!error && <Message tone="error" text={error} />}
       {!!notice && <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.success }}>{notice}</Text>}
 
       <Card style={{ padding: 18, gap: 14 }}>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>New coupon</Text>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: COLORS.textMain }}>New pass code</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
           <View style={{ gap: 6, minWidth: 220, flex: 1 }}>
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Code</Text>
             <TextInput
-              accessibilityLabel="Coupon code"
+              accessibilityLabel="Pass code"
               value={code}
               onChangeText={(text) => setCode(text.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))}
-              placeholder="DIWALI50"
+              placeholder="DIWALIFREE"
               autoCapitalize="characters"
               style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 16, letterSpacing: 1.5, color: COLORS.textMain }}
             />
           </View>
           <View style={{ gap: 6, minWidth: 220, flex: 1 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>% off</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-              {COUPON_PERCENTS.map((value) => (
-                <SmallButton
-                  key={value}
-                  label={`${value}%`}
-                  tone={percent === String(value) ? "navy" : "plain"}
-                  onPress={() => setPercent(String(value))}
-                />
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Free pass</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {PASS_PLAN_CHOICES.map((p) => (
+                <PassChip key={p.id} label={p.label} selected={plan === p.id} onPress={() => setPlan(p.id)} />
               ))}
-              <TextInput
-                accessibilityLabel="Custom percent"
-                value={percent}
-                onChangeText={(text) => setPercent(text.replace(/\D/g, "").slice(0, 2))}
-                keyboardType="number-pad"
-                style={{ width: 64, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 8, fontSize: 15, textAlign: "center", color: COLORS.textMain }}
-              />
+            </View>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {PASS_LENGTHS.map((l) => (
+                <PassChip key={l.months} label={l.label} selected={months === l.months} onPress={() => setMonths(l.months)} />
+              ))}
             </View>
           </View>
         </View>
@@ -2558,15 +2549,14 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
               style={{ width: 140, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 10, fontSize: 15, color: COLORS.textMain }}
             />
           </View>
-          <Toggle label="Show at payment for everyone" on={show} onPress={() => setShow((v) => !v)} />
         </View>
         <View style={{ flexDirection: "row" }}>
-          <SmallButton label="Create coupon" busy={busy} onPress={create} />
+          <SmallButton label="Create pass code" busy={busy} onPress={create} />
         </View>
       </Card>
 
       {coupons.length === 0 ? (
-        <Message text="No coupons yet." />
+        <Message text="No pass codes yet." />
       ) : (
         coupons.map((c) => (
           <Card key={c.id} style={{ padding: 16, gap: 10 }}>
@@ -2574,14 +2564,17 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
               <Text selectable style={{ fontFamily: fonts.bodySemi, fontSize: 18, letterSpacing: 1.5, color: COLORS.textMain }}>
                 🎟️ {c.code}
               </Text>
-              <Badge text={`${c.percent}% off`} />
+              {c.passPlan ? (
+                <Badge text={`${c.passPlanLabel} free · ${PASS_LENGTHS.find((l) => l.months === c.passMonths)?.label ?? `${c.passMonths} months`}`} />
+              ) : (
+                <Badge text={`Old ${c.percent}% coupon · no longer works`} danger />
+              )}
               {!c.active && <Badge text="Off" danger />}
               {c.validUntil && new Date(c.validUntil).getTime() <= Date.now() && <Badge text="Ended" danger />}
             </View>
             <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
               Used {c.uses}
               {c.maxUses ? ` of ${c.maxUses}` : ""} times
-              {c.waiting ? ` · ${c.waiting} payment${c.waiting === 1 ? "" : "s"} waiting` : ""}
               {c.validUntil ? ` · till ${istTime(c.validUntil)}` : " · no end date"}
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
@@ -2591,17 +2584,6 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
                 busy={busy}
                 onPress={() =>
                   void run(() => adminApi.updateCoupon(accessToken, c.id, { active: !c.active }), `${c.code} turned ${c.active ? "off" : "on"}.`)
-                }
-              />
-              <Toggle
-                label="Show at payment"
-                on={!!c.showAtCheckout}
-                busy={busy}
-                onPress={() =>
-                  void run(
-                    () => adminApi.updateCoupon(accessToken, c.id, { showAtCheckout: !c.showAtCheckout }),
-                    c.showAtCheckout ? `${c.code} no longer shows at payment.` : `${c.code} now shows at payment.`,
-                  )
                 }
               />
             </View>
@@ -2633,7 +2615,7 @@ function PromoTab({ accessToken }: { accessToken: string }) {
     try {
       const [promoRes, couponRes]: any[] = await Promise.all([adminApi.promo(accessToken), adminApi.coupons(accessToken)]);
       setActive(promoRes?.active ?? null);
-      setCoupons((couponRes?.coupons ?? []).filter((c: any) => c.active));
+      setCoupons((couponRes?.coupons ?? []).filter((c: any) => c.active && c.passPlan));
     } catch (e) {
       setError(errText(e, "Could not load the offer popup"));
     } finally {
@@ -2694,7 +2676,7 @@ function PromoTab({ accessToken }: { accessToken: string }) {
     <View style={{ gap: 18 }}>
       <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: COLORS.textMuted }}>
         The popup shows each time someone opens the app, until they close it. "Get Premium" opens Premium
-        with the coupon already applied.
+        with the pass code already filled in.
       </Text>
       {!!error && <Message tone="error" text={error} />}
       {!!notice && <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.success }}>{notice}</Text>}
@@ -2728,17 +2710,17 @@ function PromoTab({ accessToken }: { accessToken: string }) {
           {field("Message", message, setMessage, 200, "What they get")}
           {field("Button", buttonLabel, setButtonLabel, 40, "Get Premium")}
           <View style={{ gap: 6 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Coupon on the popup</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.textMuted }}>Pass code on the popup</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               <SmallButton label="None" tone={couponCode === null ? "navy" : "plain"} onPress={() => setCouponCode(null)} />
               {coupons.map((c) => (
                 <SmallButton
                   key={c.id}
-                  label={`${c.code} (${c.percent}%)`}
+                  label={`${c.code} (${c.passPlanLabel} free)`}
                   tone={couponCode === c.code ? "navy" : "plain"}
                   onPress={() => {
                     setCouponCode(c.code);
-                    setHeadline(`${c.percent}% OFF`);
+                    setHeadline(`FREE ${String(c.passPlanLabel).toUpperCase()}`);
                   }}
                 />
               ))}

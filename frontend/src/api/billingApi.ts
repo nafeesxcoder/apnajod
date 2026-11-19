@@ -104,4 +104,16 @@ export const billingApi = {
       manageUrl: String(data.manageUrl || ""),
     };
   },
+
+  /** A pass code from the admin: the free pass starts now. */
+  async redeemCode(
+    accessToken: string,
+    code: string,
+  ): Promise<{ code: string; pass: { planLabel: string; expiresAt: string } | null; billing: BillingSummary }> {
+    const data = await authFetch("/billing/redeem-code", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+    return { code: data.code, pass: data.pass ?? null, billing: data.billing };
+  },
 };

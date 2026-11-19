@@ -20,6 +20,16 @@ const boost = asyncHandler(async (req, res) => {
   });
 });
 
+/** A member types a pass code from the admin: the free pass starts now. */
+const redeemCode = asyncHandler(async (req, res) => {
+  try {
+    const result = await require("../services/couponService").redeemPass(req.user.id, (req.body || {}).code);
+    res.json({ ok: true, ...result, billing: await billingService.summaryFor(req.user.id) });
+  } catch (error) {
+    throw error && error.status ? new ApiError(error.status, error.message) : error;
+  }
+});
+
 /** Android: the purchase token from Google Play, checked with Google before anything is granted. */
 const playVerify = asyncHandler(async (req, res) => {
   try {
@@ -67,5 +77,5 @@ const playStatus = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  plans, me, boost, playVerify, playNotify, playStatus,
+  plans, me, boost, redeemCode, playVerify, playNotify, playStatus,
 };

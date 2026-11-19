@@ -1,24 +1,19 @@
 /**
- * Coupons the admin writes (DIWALI50 and the like).
+ * Pass codes the admin writes (DIWALI-style codes, stored in `coupons`).
  *
- * - The admin picks the code, the percent off, until when and how many
- *   members can use it, and can switch it on and off.
- * - "Show at payment" puts it in front of everyone who pays, already
- *   applied; otherwise only people who know the code can use it.
- * - A member can use a coupon once. It counts as used when the payment is
- *   approved; while a payment with it is waiting, it cannot be used again.
- * - Coupons are for the Premium plans, not Boost or Super Like packs.
- * - With a festival offer on as well, the member gets whichever is cheaper.
+ * Payment is only through Google Play, which takes no coupons, so a code
+ * gives a free pass instead of money off: the admin picks the plan (Plus,
+ * Pro or Everything), how many months, until when and how many members can
+ * use it, and can switch it on and off. A member types the code in Premium
+ * (app or website) and the pass starts at once.
  *
- * The price is always worked out here, on the server - the app only sends
- * the code.
+ * - A member can use a code once (coupon_redemptions, one row per member).
+ * - Old percent-off coupons from before stay listed but no longer work.
  */
 const crypto = require("crypto");
 const { query } = require("../config/db");
-const billingService = require("./billingService");
-
-const MIN_PERCENT = 5;
-const MAX_PERCENT = 90;
+const passService = require("./passService");
+const { PASS_PLANS, PASS_MONTHS } = require("../config/passes");
 
 function fail(status, message) {
   const err = new Error(message);
@@ -43,39 +38,38 @@ function isoUtc(value) {
   return new Date(/Z|[+-]\d\d:?\d\d$/.test(text) ? text : `${text}Z`).toISOString();
 }
 
-function rowToCoupon(row) {
+function rowToCode(row) {
+  const plan = row.pass_plan || null;
   return {
     id: row.id,
     code: row.code,
-    percent: Number(row.percent),
+    passPlan: plan,
+    passPlanLabel: plan ? PASS_PLANS[plan]?.label || plan : null,
+    passMonths: row.pass_months === null || row.pass_months === undefined ? null : Number(row.pass_months),
+    /** Only on old coupons from before pass codes; they no longer work. */
+    percent: plan ? null : Number(row.percent),
     validUntil: isoUtc(row.valid_until),
     maxUses: row.max_uses === null || row.max_uses === undefined ? null : Number(row.max_uses),
     active: !!Number(row.active),
-    showAtCheckout: !!Number(row.show_at_checkout),
     uses: Number(row.uses ?? 0),
-    waiting: Number(row.waiting ?? 0),
   };
 }
 
-const LIVE = `active = 1 AND (valid_until IS NULL OR valid_until > UTC_TIMESTAMP())`;
-
 async function list() {
   const rows = await query(
-    `SELECT c.*,
-            (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id = c.id) AS uses,
-            (SELECT COUNT(*) FROM payments p WHERE p.coupon_code = c.code AND p.status IN ('pending','created')) AS waiting
+    `SELECT c.*, (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id = c.id) AS uses
        FROM coupons c ORDER BY c.created_at DESC LIMIT 200`,
   );
-  return rows.map(rowToCoupon);
+  return rows.map(rowToCode);
 }
 
 async function create(adminId, input) {
   const code = normalizeCode(input?.code);
-  if (!code) throw fail(400, "A coupon code is 3 to 20 letters or numbers, like DIWALI50");
-  const percent = Math.round(Number(input?.percent));
-  if (!Number.isFinite(percent) || percent < MIN_PERCENT || percent > MAX_PERCENT) {
-    throw fail(400, `A coupon can be ${MIN_PERCENT} to ${MAX_PERCENT}% off`);
-  }
+  if (!code) throw fail(400, "A code is 3 to 20 letters or numbers, like DIWALIFREE");
+  const plan = String(input?.plan || "");
+  if (!Object.prototype.hasOwnProperty.call(PASS_PLANS, plan)) throw fail(400, "Choose Plus, Pro or Everything.");
+  const months = Number(input?.months);
+  if (!PASS_MONTHS.includes(months)) throw fail(400, "Choose 1 month, 3 months or 1 year.");
   let validUntil = null;
   if (input?.validUntil) {
     const date = new Date(input.validUntil);
@@ -88,14 +82,12 @@ async function create(adminId, input) {
     maxUses = Math.round(Number(input.maxUses));
     if (!Number.isFinite(maxUses) || maxUses < 1) throw fail(400, "How many members: 1 or more, or leave it empty");
   }
-  const showAtCheckout = input?.showAtCheckout ? 1 : 0;
   const id = crypto.randomUUID();
   try {
-    if (showAtCheckout) await query("UPDATE coupons SET show_at_checkout = 0");
     await query(
-      `INSERT INTO coupons (id, code, percent, valid_until, max_uses, active, show_at_checkout, created_by)
-       VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
-      [id, code, percent, validUntil, maxUses, showAtCheckout, adminId ?? null],
+      `INSERT INTO coupons (id, code, percent, valid_until, max_uses, active, show_at_checkout, created_by, pass_plan, pass_months)
+       VALUES (?, ?, 0, ?, ?, 1, 0, ?, ?, ?)`,
+      [id, code, validUntil, maxUses, adminId ?? null, plan, months],
     );
   } catch (error) {
     if (error && (error.code === "ER_DUP_ENTRY" || error.errno === 1062)) {
@@ -106,79 +98,55 @@ async function create(adminId, input) {
   return { id, code };
 }
 
-/** On/off, and whether it shows at payment (only one coupon does). */
+/** Switch a code on or off. */
 async function update(id, input) {
-  const [row] = await query("SELECT * FROM coupons WHERE id = ?", [id]);
-  if (!row) throw fail(404, "No such coupon");
+  const [row] = await query("SELECT id FROM coupons WHERE id = ?", [id]);
+  if (!row) throw fail(404, "No such code");
   if (input?.active !== undefined) {
     await query("UPDATE coupons SET active = ? WHERE id = ?", [input.active ? 1 : 0, id]);
-  }
-  if (input?.showAtCheckout !== undefined) {
-    if (input.showAtCheckout) await query("UPDATE coupons SET show_at_checkout = 0 WHERE id <> ?", [id]);
-    await query("UPDATE coupons SET show_at_checkout = ? WHERE id = ?", [input.showAtCheckout ? 1 : 0, id]);
   }
   return { updated: true };
 }
 
-/**
- * The coupon if this member can use it now, else a clear reason.
- */
+/** The pass code if this member can use it now, else a clear reason. */
 async function usable(rawCode, userId) {
   const code = normalizeCode(rawCode);
-  if (!code) throw fail(400, "That coupon code is not right.");
-  const [coupon] = await query("SELECT * FROM coupons WHERE code = ?", [code]);
-  if (!coupon || !Number(coupon.active)) throw fail(404, "That coupon code is not right.");
-  if (coupon.valid_until && new Date(isoUtc(coupon.valid_until)) <= new Date()) {
-    throw fail(410, "This coupon has ended.");
-  }
+  if (!code) throw fail(400, "That code is not right.");
+  const [row] = await query("SELECT * FROM coupons WHERE code = ?", [code]);
+  if (!row || !Number(row.active)) throw fail(404, "That code is not right.");
+  if (!row.pass_plan) throw fail(410, "This code no longer works.");
+  if (row.valid_until && new Date(isoUtc(row.valid_until)) <= new Date()) throw fail(410, "This code has ended.");
   const [used] = await query(
     "SELECT COUNT(*) AS total FROM coupon_redemptions WHERE coupon_id = ? AND user_id = ?",
-    [coupon.id, userId],
+    [row.id, userId],
   );
-  if (Number(used?.total ?? 0) > 0) throw fail(409, "You have already used this coupon.");
-  const [waiting] = await query(
-    `SELECT COUNT(*) AS total FROM payments
-      WHERE user_id = ? AND coupon_code = ? AND status IN ('pending')`,
-    [userId, code],
-  );
-  if (Number(waiting?.total ?? 0) > 0) {
-    throw fail(409, "You have a payment with this coupon waiting to be checked.");
+  if (Number(used?.total ?? 0) > 0) throw fail(409, "You have already used this code.");
+  if (row.max_uses !== null && row.max_uses !== undefined) {
+    const [all] = await query("SELECT COUNT(*) AS total FROM coupon_redemptions WHERE coupon_id = ?", [row.id]);
+    if (Number(all?.total ?? 0) >= Number(row.max_uses)) throw fail(410, "This code has been used up.");
   }
-  if (coupon.max_uses !== null && coupon.max_uses !== undefined) {
-    const [all] = await query("SELECT COUNT(*) AS total FROM coupon_redemptions WHERE coupon_id = ?", [coupon.id]);
-    if (Number(all?.total ?? 0) >= Number(coupon.max_uses)) throw fail(410, "This coupon has been used up.");
-  }
-  return rowToCoupon(coupon);
+  return rowToCode(row);
 }
 
 /**
- * What this member pays for a plan, with the festival offer and an
- * optional coupon: whichever is cheaper. couponCode is set only when the
- * coupon is what made the price.
+ * A member types a pass code: the pass starts now. The redemption row is
+ * written first (its key allows one per member, so two taps cannot both
+ * count); if the pass cannot be given, the row is taken back.
  */
-async function priceFor(plan, userId, rawCode) {
-  const original = Number(plan.amount_paise);
-  const festivalPrice = await billingService.chargeFor(plan);
-  if (!rawCode) return { amountPaise: festivalPrice, originalPaise: original, couponCode: null, percent: null };
-  if (plan.kind !== "subscription") throw fail(400, "Coupons are for the Premium plans.");
-  const coupon = await usable(rawCode, userId);
-  const couponPrice = billingService.offerPrice(original, coupon.percent);
-  if (couponPrice < festivalPrice) {
-    return { amountPaise: couponPrice, originalPaise: original, couponCode: coupon.code, percent: coupon.percent };
-  }
-  return { amountPaise: festivalPrice, originalPaise: original, couponCode: null, percent: coupon.percent };
-}
-
-/** The coupon shown at payment, if one is on and this member can use it. */
-async function checkoutCoupon(userId) {
-  const [row] = await query(`SELECT * FROM coupons WHERE show_at_checkout = 1 AND ${LIVE} LIMIT 1`);
-  if (!row) return null;
+async function redeemPass(userId, rawCode) {
+  const code = await usable(rawCode, userId);
+  const claim = await query(
+    "INSERT IGNORE INTO coupon_redemptions (coupon_id, user_id, payment_id) VALUES (?, ?, NULL)",
+    [code.id, userId],
+  );
+  if (!claim?.affectedRows) throw fail(409, "You have already used this code.");
   try {
-    const coupon = await usable(row.code, userId);
-    return { code: coupon.code, percent: coupon.percent, validUntil: coupon.validUntil };
-  } catch {
-    return null;
+    await passService.givePass(null, userId, code.passPlan, code.passMonths);
+  } catch (error) {
+    await query("DELETE FROM coupon_redemptions WHERE coupon_id = ? AND user_id = ?", [code.id, userId]);
+    throw error;
   }
+  return { code: code.code, pass: await passService.getPass(userId) };
 }
 
 /** The payment went through: the member has now used the coupon. */
@@ -194,14 +162,11 @@ async function redeem(payment) {
 }
 
 module.exports = {
-  MIN_PERCENT,
-  MAX_PERCENT,
   normalizeCode,
   list,
   create,
   update,
   usable,
-  priceFor,
-  checkoutCoupon,
+  redeemPass,
   redeem,
 };

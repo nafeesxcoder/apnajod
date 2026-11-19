@@ -26,6 +26,7 @@ import {
   type PlayProduct,
 } from "../playBilling";
 import { useFestival } from "../../festival/festivalStore";
+import { PassCodeBox } from "../PassCodeBox";
 
 // Android: what Google Play says about one of the member's subscriptions.
 type PlayStatusRow = {
@@ -588,6 +589,8 @@ export function PremiumScreen({
                     ))}
                   </View>
                 )}
+
+                {!!accessToken && <PassCodeBox accessToken={accessToken} onRedeemed={setSummary} />}
 
                 {Platform.OS === "web" && (
                   <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
