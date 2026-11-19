@@ -30,22 +30,3 @@ export async function uploadPhoto(
   }
   return data.url as string;
 }
-
-/**
- * The same upload, for profile photos, where a failure is not worth blocking
- * on: the member keeps seeing their picture and the next save tries again.
- * Verification must not use this â€” a selfie nobody can open is worse than no
- * selfie, because it still looks like a submission.
- */
-export async function uploadPhotoOrKeepLocal(
-  uri: string,
-  accessToken?: string,
-): Promise<string> {
-  if (!accessToken) return uri;
-  try {
-    return await uploadPhoto(uri, accessToken);
-  } catch (error) {
-    console.log("Photo upload failed, keeping the local copy", error);
-    return uri;
-  }
-}

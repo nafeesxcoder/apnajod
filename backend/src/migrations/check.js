@@ -20,7 +20,11 @@ let statements = 0;
 const norm = (s) => s.trim().replace(/`/g, '');
 
 for (const file of files) {
-  const raw = fs.readFileSync(path.join(dir, file), 'utf8').replace(/^﻿/, '');
+  // Comments go before the split on ";", exactly as run.js does, so a
+  // semicolon inside a comment does not cut a statement in half.
+  const raw = fs.readFileSync(path.join(dir, file), 'utf8').replace(/^﻿/, '')
+    .replace(/^\s*--.*$/gm, '')
+    .replace(/\s--.*$/gm, '');
   const stmts = raw.split(';').map((s) => s.trim()).filter(Boolean)
     // Drop comment-only chunks, which the runner would send to MySQL as a no-op.
     .filter((s) => s.split('\n').some((l) => l.trim() && !l.trim().startsWith('--')));

@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import { fonts, palette, radius, typeScale } from "../../../theme";
-import { uploadPhotoOrKeepLocal as uploadPhotoAsset } from "../../../api/uploadPhoto";
+import { uploadPhoto } from "../../../api/uploadPhoto";
 import { authApi } from "../../../api/authApi";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { brand, whiteCard } from "../../../components/brand";
@@ -84,6 +84,7 @@ export function ProfileSetupScreen({
   // which part of it goes in the circle.
   const [cropUri, setCropUri] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
 
   // The @username is fixed at sign-up; Edit profile shows it, read-only.
   const [username, setUsername] = useState("");
@@ -140,9 +141,15 @@ export function ProfileSetupScreen({
   /** Uploads the chosen (already cropped) photo and shows it here. */
   const applyPhoto = async (uri: string) => {
     setPhotoBusy(true);
+    setPhotoError("");
     try {
-      const uploadedUrl = await uploadPhotoAsset(uri, accessToken);
+      // Without a sign-in (preview) there is no server to put it on. Signed
+      // in, a failed upload keeps the old photo: a local blob:/file:// link
+      // would be saved and nobody else could ever see the picture.
+      const uploadedUrl = accessToken ? await uploadPhoto(uri, accessToken) : uri;
       onPhotosChange([uploadedUrl]);
+    } catch {
+      setPhotoError("Your photo could not be uploaded. Check your internet and try again.");
     } finally {
       setPhotoBusy(false);
     }
@@ -292,6 +299,14 @@ export function ProfileSetupScreen({
               >
                 {photoBusy ? "Uploading photo..." : `Tap to ${photos[0] ? "change" : "add"} your photo`}
               </Text>
+              {!!photoError && (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={{ fontSize: 13, color: palette.crimson, marginTop: 6, fontFamily: fonts.bodySemi, textAlign: "center" }}
+                >
+                  {photoError}
+                </Text>
+              )}
               {!!username && (
                 <View
                   accessibilityLabel={`Your username is ${username}${verified ? ", verified" : ""}`}

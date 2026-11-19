@@ -3258,11 +3258,19 @@ function MilaanApp() {
       age: quickProfile.age,
       gender: quickProfile.gender,
     };
+    // The picked photo is only a local reference (blob: / file://) that
+    // means nothing on anyone else's device: put it on the server first and
+    // save its public URL. A failed upload stops here, with the error shown
+    // on the form, instead of saving a picture nobody else can see.
+    let uploadedPhoto = quickProfile.photoUri;
+    if (accessToken && quickProfile.photoUri && !/^https?:\/\//.test(quickProfile.photoUri)) {
+      uploadedPhoto = await uploadPhoto(quickProfile.photoUri, accessToken).catch(() => {
+        throw new Error("Your photo could not be uploaded. Check your internet and try again.");
+      });
+    }
     setProfileDraft(next);
-    const photos = quickProfile.photoUri
-      ? [quickProfile.photoUri]
-      : profilePhotos;
-    if (quickProfile.photoUri) setProfilePhotos(photos);
+    const photos = uploadedPhoto ? [uploadedPhoto] : profilePhotos;
+    if (uploadedPhoto) setProfilePhotos(photos);
 
     if (accessToken) {
       await profileApi.updateProfile(accessToken, buildProfilePayload(next));

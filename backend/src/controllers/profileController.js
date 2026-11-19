@@ -69,7 +69,14 @@ const updatePhotos = asyncHandler(async (req, res) => {
   const { photos } = req.body;
   if (!Array.isArray(photos))
     throw new ApiError(400, "photos must be an array of URLs");
-  await profileService.replacePhotos(req.user.id, photos);
+  // Only web addresses are kept. A blob:/file:// link from the member's own
+  // phone or browser opens nowhere else, so saving one gives a profile a
+  // picture nobody can see. Older saves that hold such a link are cleaned
+  // up the next time the member saves.
+  const usable = photos
+    .filter((url) => typeof url === "string" && url.length <= 1000 && /^https?:\/\//i.test(url))
+    .slice(0, 10);
+  await profileService.replacePhotos(req.user.id, usable);
   // A photo may be what completes an invited member's profile.
   const reward = await afterProfileSave(req.user.id);
   res.json({ ok: true, ...(reward ? { reward } : {}) });
