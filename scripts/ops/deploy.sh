@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WEB_ROOT="${WEB_ROOT:-/var/www/milaan}"
-PM2_NAME="${PM2_NAME:-milaan-backend}"
+PM2_NAME="${PM2_NAME:-apnajod-backend}"
 API_URL="${API_URL:-http://127.0.0.1:4000}"
 MIGRATE=0; DO_BACKEND=1; DO_FRONTEND=1
 for arg in "$@"; do
