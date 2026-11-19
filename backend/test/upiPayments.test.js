@@ -3,9 +3,8 @@ const assert = require("node:assert");
 const Module = require("node:module");
 
 /**
- * UPI payments are checked by hand. The UTR is the only proof, so it has
- * to be a real 12 digit reference, one UTR can be used once, and approving
- * twice must not grant the plan twice.
+ * UPI payments members sent earlier are checked by hand: approving twice
+ * must not grant the plan twice. New ones can no longer be sent.
  */
 function load({ onQuery, grants, pushes }) {
   const original = Module.prototype.require;
@@ -30,52 +29,13 @@ function load({ onQuery, grants, pushes }) {
 
 const PLAN = { code: "plus_monthly", title: "Plus", amount_paise: 19900, kind: "subscription" };
 
-test("a UTR is the 12 digit UPI reference", () => {
+test("members can no longer send a UPI payment: Google Play only", () => {
+  const fs = require("node:fs");
+  const routes = fs.readFileSync(require.resolve("../src/routes/billingRoutes.js"), "utf8");
+  assert.ok(!routes.includes('"/upi"'));
+  assert.ok(!routes.includes('"/pay-options"'));
   const service = load({ onQuery: async () => [], grants: [], pushes: [] });
-  assert.strictEqual(service.normalizeUtr("4321 5678 9012"), "432156789012");
-  assert.strictEqual(service.normalizeUtr("432156789012"), "432156789012");
-  assert.strictEqual(service.normalizeUtr("T2311141234567890"), null);
-  assert.strictEqual(service.normalizeUtr("12345"), null);
-  assert.strictEqual(service.normalizeUtr(""), null);
-});
-
-test("sending a UTR makes a pending payment and tells the admins", async () => {
-  const inserted = [];
-  const pushes = [];
-  const service = load({
-    grants: [],
-    pushes,
-    onQuery: async (sql, params) => {
-      if (sql.startsWith("SELECT * FROM billing_plans")) return [PLAN];
-      if (sql.startsWith("SELECT COUNT(*) AS total FROM payments")) return [{ total: 0 }];
-      if (sql.startsWith("INSERT INTO payments")) { inserted.push(params); return { affectedRows: 1 }; }
-      if (sql.includes("role = 'admin'")) return [{ id: "admin-1" }];
-      if (sql.includes("FROM users u LEFT JOIN profiles")) return [{ first_name: "Asha" }];
-      if (sql.includes("WHERE pay.id = ?")) return [{ id: params[0], plan_code: "plus_monthly", plan_title: "Plus", amount_paise: 19900, provider_ref: "432156789012", status: "pending" }];
-      return [];
-    },
-  });
-  const payment = await service.submit("u1", "plus_monthly", "4321 5678 9012");
-  assert.strictEqual(payment.status, "pending");
-  assert.strictEqual(inserted[0][3], "432156789012");
-  assert.strictEqual(inserted[0][4], 19900, "the amount comes from the plan, not the app");
-  await new Promise((r) => setImmediate(r));
-  assert.strictEqual(pushes[0].userId, "admin-1");
-  assert.match(pushes[0].payload.body, /432156789012/);
-});
-
-test("the same UTR cannot be used twice", async () => {
-  const service = load({
-    grants: [],
-    pushes: [],
-    onQuery: async (sql) => {
-      if (sql.startsWith("SELECT * FROM billing_plans")) return [PLAN];
-      if (sql.startsWith("SELECT COUNT(*) AS total FROM payments")) return [{ total: 0 }];
-      if (sql.startsWith("INSERT INTO payments")) { const e = new Error("dup"); e.code = "ER_DUP_ENTRY"; throw e; }
-      return [];
-    },
-  });
-  await assert.rejects(service.submit("u1", "plus_monthly", "432156789012"), (e) => e.status === 409);
+  assert.strictEqual(service.submit, undefined);
 });
 
 test("approving grants the plan once, even if clicked twice", async () => {
@@ -104,5 +64,5 @@ test("a payment rejected by mistake can still be approved later", async () => {
   const service = load({ onQuery: async () => [], grants: [], pushes: [] });
   const src = require("node:fs").readFileSync(require.resolve("../src/services/upiService.js"), "utf8");
   assert.ok(src.includes("status IN ('pending','rejected')"));
-  assert.strictEqual(service.APPROVAL_HOURS, 24);
+  assert.strictEqual(typeof service.approve, "function");
 });

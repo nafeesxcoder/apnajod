@@ -14,8 +14,5 @@ router.get("/me", billingController.me);
 router.post("/boost", billingController.boost);
 router.post("/play/verify", billingController.playVerify);
 router.get("/play/status", billingController.playStatus);
-router.get("/pay-options", billingController.payOptions);
-router.post("/upi", billingController.submitUpi);
-router.post("/coupon", billingController.checkCoupon);
 
 module.exports = router;

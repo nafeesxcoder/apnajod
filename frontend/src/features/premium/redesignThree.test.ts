@@ -32,7 +32,6 @@ describe("Premium, Settings and Help in Navy x Crimson", () => {
     // The Buy button sits right under the plan or pack you picked.
     expect(premium).toContain("{selectedCode === plan.code && buyBlock}");
     expect(premium).toContain("{boostPacks.some((pack) => pack.code === selectedCode) && buyBlock}");
-    expect(premium).toContain("<GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />");
     expect(premium).not.toMatch(/🚀|⭐/);
   });
 

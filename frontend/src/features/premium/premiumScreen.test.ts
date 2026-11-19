@@ -54,8 +54,10 @@ describe('the Premium screen', () => {
   });
 
   it('says plainly that everything is free while payments are closed', () => {
-    // Closed on the web means no UPI and no Play button there.
-    expect(screen).toContain('!upiOpen && Platform.OS === "web"');
+    // The website never takes payment: it sends members to the Android app.
+    expect(screen).toContain('{Platform.OS === "web" && (');
+    expect(screen).toContain('Get it on Google Play');
+    expect(screen).not.toMatch(/UpiPay|payOptions|upiOpen/);
     expect(screen).toMatch(/free for\s*\n?\s*everyone/);
   });
 

@@ -1,50 +1,20 @@
 /**
- * UPI payments checked by hand, while the payment gateway waits on KYC.
+ * UPI payments that members sent earlier, checked by hand by an admin.
  *
- * The member pays our UPI ID from any UPI app and sends the 12 digit UTR
- * (the "UPI Ref No." every app shows). The payment waits as pending until
- * an admin sees the money in the bank app and approves it. Approving grants
- * the plan exactly as a Razorpay payment would.
- *
- * Nothing expires on its own: the admin may not be at the dashboard for a
- * while, so a payment can be approved whenever they get to it - even one
- * rejected by mistake earlier.
+ * Members no longer pay this way: payment is only through Google Play in
+ * the Android app. What is left lets an admin approve or reject the UPI
+ * payments already sent, from the admin Payments tab.
  */
-const crypto = require("crypto");
 const { query } = require("../config/db");
 const { decrypt } = require("./fieldCrypto");
 const billingService = require("./billingService");
 const couponService = require("./couponService");
 const pushService = require("./pushService");
 
-/** How long we tell members it can take. */
-const APPROVAL_HOURS = 24;
-/** Open requests one member can have at once (stops a flood of fake UTRs). */
-const MAX_PENDING = 3;
-
-function config() {
-  return {
-    enabled: String(process.env.UPI_PAYMENTS || "on").toLowerCase() !== "off",
-    upiId: String(process.env.UPI_ID || "nafeesahmadno1@ybl").trim(),
-    payeeName: String(process.env.UPI_NAME || "Nafees Ahmad").trim(),
-    approvalHours: APPROVAL_HOURS,
-  };
-}
-
 function fail(status, message) {
   const err = new Error(message);
   err.status = status;
   return err;
-}
-
-/** A UPI UTR / reference number is 12 digits. Spaces and dashes are dropped. */
-function normalizeUtr(raw) {
-  const digits = String(raw ?? "").replace(/[\s-]/g, "");
-  return /^\d{12}$/.test(digits) ? digits : null;
-}
-
-function isDuplicate(error) {
-  return error && (error.code === "ER_DUP_ENTRY" || error.errno === 1062);
 }
 
 function rowToPayment(row) {
@@ -60,93 +30,6 @@ function rowToPayment(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-async function adminIds() {
-  const rows = await query(
-    "SELECT id FROM users WHERE role = 'admin' AND deleted_at IS NULL",
-  );
-  return rows.map((row) => row.id);
-}
-
-async function memberName(userId) {
-  const [row] = await query(
-    `SELECT u.username, p.first_name FROM users u
-       LEFT JOIN profiles p ON p.user_id = u.id WHERE u.id = ?`,
-    [userId],
-  );
-  return row?.first_name || (row?.username ? `@${row.username}` : "A member");
-}
-
-/** The member's own UPI payments from the last 30 days, newest first. */
-async function mine(userId) {
-  const rows = await query(
-    `SELECT pay.*, bp.title AS plan_title FROM payments pay
-       LEFT JOIN billing_plans bp ON bp.code = pay.plan_code
-      WHERE pay.user_id = ? AND pay.provider = 'upi'
-        AND pay.created_at >= NOW() - INTERVAL 30 DAY
-      ORDER BY pay.created_at DESC LIMIT 5`,
-    [userId],
-  );
-  return rows.map(rowToPayment);
-}
-
-async function submit(userId, planCode, rawUtr, couponCode) {
-  if (!config().enabled) throw fail(503, "UPI payments are closed right now.");
-  const utr = normalizeUtr(rawUtr);
-  if (!utr) {
-    throw fail(400, "Enter the 12 digit UTR / UPI Ref No. from your payment app.");
-  }
-  const [plan] = await query(
-    "SELECT * FROM billing_plans WHERE code = ? AND active = 1",
-    [planCode],
-  );
-  if (!plan) throw fail(400, "Unknown plan");
-
-  const [open] = await query(
-    `SELECT COUNT(*) AS total FROM payments
-      WHERE user_id = ? AND provider = 'upi' AND status = 'pending'`,
-    [userId],
-  );
-  if (Number(open?.total ?? 0) >= MAX_PENDING) {
-    throw fail(429, "You already have payments waiting to be checked. We will get to them soon.");
-  }
-
-  // The festival offer or the coupon, whichever is cheaper, comes off.
-  const price = await couponService.priceFor(plan, userId, couponCode);
-  const amountPaise = price.amountPaise;
-  const id = crypto.randomUUID();
-  try {
-    await query(
-      `INSERT INTO payments
-         (id, user_id, plan_code, provider, provider_ref, status, amount_paise, coupon_code, created_at)
-       VALUES (?, ?, ?, 'upi', ?, 'pending', ?, ?, NOW(6))`,
-      [id, userId, plan.code, utr, amountPaise, price.couponCode],
-    );
-  } catch (error) {
-    if (isDuplicate(error)) throw fail(409, "This UTR has already been sent.");
-    throw error;
-  }
-
-  // Tell every admin, so a payment does not sit unseen.
-  const name = await memberName(userId);
-  const rupees = Math.round(amountPaise / 100);
-  for (const adminId of await adminIds()) {
-    pushService
-      .notifyUser(adminId, {
-        title: `₹${rupees} UPI payment to check`,
-        body: `${name} · ${plan.title}${price.couponCode ? ` · ${price.couponCode}` : ""} · UTR ${utr}`,
-        data: { type: "upi_payment" },
-      })
-      .catch(() => undefined);
-  }
-
-  const [row] = await query(
-    `SELECT pay.*, bp.title AS plan_title FROM payments pay
-       LEFT JOIN billing_plans bp ON bp.code = pay.plan_code WHERE pay.id = ?`,
-    [id],
-  );
-  return rowToPayment(row);
 }
 
 /** Pending first (oldest first, the order they came in), then the last reviewed. */
@@ -234,12 +117,6 @@ async function reject(paymentId, reason) {
 }
 
 module.exports = {
-  APPROVAL_HOURS,
-  MAX_PENDING,
-  config,
-  normalizeUtr,
-  mine,
-  submit,
   listForAdmin,
   pendingCount,
   approve,

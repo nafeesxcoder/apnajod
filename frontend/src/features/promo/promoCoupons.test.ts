@@ -38,14 +38,10 @@ describe('coupons', () => {
     expect(takePendingCoupon()).toBeNull();
   });
 
-  it('asks the server for the price and sends the coupon with the payment', () => {
+  it('takes no coupon at checkout: payment is only through Google Play', () => {
     const premium = read('../premium/screens/PremiumScreen.tsx');
-    expect(premium).toContain('<CouponBox');
-    expect(premium).toContain('onApplied={setCoupon}');
-    expect(premium).toContain('couponCode={coupon?.code ?? null}');
-    const box = read('../premium/CouponBox.tsx');
-    expect(box).toContain('billingApi.checkCoupon(accessToken, plan.code, value)');
-    expect(read('../premium/UpiPay.tsx')).toContain('billingApi.submitUpi(accessToken, plan.code, utr, couponCode)');
+    expect(premium).not.toContain('CouponBox');
+    expect(premium).not.toContain('submitUpi');
   });
 
   it('gives the admin Coupons and Offer Popup tabs', () => {

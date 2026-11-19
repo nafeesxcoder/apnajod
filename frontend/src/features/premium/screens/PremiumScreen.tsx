@@ -13,11 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   type BillingPlan,
   type BillingSummary,
-  type PayOptions,
   billingApi,
   rupees,
 } from "../../../api/billingApi";
-import { UpiPayments, UpiPaySheet } from "../UpiPay";
 import {
   buyPlayProduct,
   connectPlay,
@@ -27,8 +25,6 @@ import {
   onPlayPurchase,
   type PlayProduct,
 } from "../playBilling";
-import { CouponBox } from "../CouponBox";
-import type { AppliedCoupon } from "../couponStore";
 import { useFestival } from "../../festival/festivalStore";
 
 // Android: what Google Play says about one of the member's subscriptions.
@@ -52,7 +48,7 @@ import { fonts, palette, radius, typeScale } from "../../../theme";
 import { BLUE_TICK, TrustBadge } from "../../../components/TrustBadge";
 import { LinearGradient } from "expo-linear-gradient";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
-import { GlowPulse, PressScale, Reveal } from "../../../components/motion";
+import { PressScale, Reveal } from "../../../components/motion";
 import { serverDate } from "../../../domain/serverTime";
 
 const COLUMN = 800;
@@ -119,17 +115,6 @@ export function PremiumScreen({
   const [playProducts, setPlayProducts] = useState<Record<string, PlayProduct>>({});
   const [playStatuses, setPlayStatuses] = useState<PlayStatusRow[]>([]);
   const [notice, setNotice] = useState("");
-  // How a member can pay: our UPI, checked by hand (hidden for now).
-  const [payOptions, setPayOptions] = useState<PayOptions | null>(null);
-  const [upiSheetOpen, setUpiSheetOpen] = useState(false);
-  // A coupon on the selected plan (the server worked out its price).
-  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
-  const loadPayOptions = () => {
-    billingApi
-      .payOptions(accessToken)
-      .then(setPayOptions)
-      .catch(() => setPayOptions(null));
-  };
 
   const reload = () => {
     Promise.all([billingApi.plans(), billingApi.me(accessToken)])
@@ -150,11 +135,6 @@ export function PremiumScreen({
         setLoading(false);
       });
   };
-
-  useEffect(() => {
-    loadPayOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
 
   useEffect(() => {
     let live = true;
@@ -274,12 +254,8 @@ export function PremiumScreen({
   }, [accessToken, plans]);
   const festival = useFestival();
   const offerPlan = plans.find((plan) => !!plan.offer_percent) ?? null;
-  // What the member pays now: the coupon's price when one is on.
-  const payPaise = selectedPlan ? (coupon?.amountPaise ?? selectedPlan.amount_paise) : 0;
-  const payPlan = selectedPlan ? { ...selectedPlan, amount_paise: payPaise } : null;
-  // UPI QR is hidden everywhere (web and phone). Change this back to
-  // `!!payOptions?.upi.enabled` to show the QR again.
-  const upiOpen = false;
+  // Payment is only through Google Play, inside the Android app. The website
+  // sends members to the app; there is no payment checked by hand.
   // Android: on once Google Play has at least one of our products.
   const playOpen = Platform.OS === "android" && Object.keys(playProducts).length > 0;
   const playProduct = selectedPlan?.play_product_id ? playProducts[selectedPlan.play_product_id] : undefined;
@@ -320,72 +296,6 @@ export function PremiumScreen({
         >
           {error}
         </Text>
-      )}
-
-      {/* UPI to our own ID, checked by hand. One Pay button under the plan;
-          the QR, the UPI ID and the UTR box open from it. */}
-      {selectedPlan && payOptions && upiOpen && (
-        <CouponBox
-          plan={selectedPlan}
-          accessToken={accessToken}
-          shown={payOptions.coupon}
-          applied={coupon}
-          onApplied={setCoupon}
-        />
-      )}
-
-      {upiOpen && selectedPlan && payPlan && payOptions && (
-        <>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={`Pay ${rupees(payPaise)}`}
-            onPress={() => {
-              setNotice("");
-              setUpiSheetOpen(true);
-            }}
-            containerStyle={{ marginTop: 20, marginBottom: 16 }}
-            style={{
-              backgroundColor: palette.crimson,
-              paddingVertical: 16,
-              borderRadius: radius.pill,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 8,
-              minHeight: 52,
-            }}
-          >
-            <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.08} />
-            <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 16 }}>
-              Pay {rupees(payPaise)}
-            </Text>
-            {payPaise < selectedPlan.amount_paise && (
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontFamily: fonts.body, fontSize: 14, textDecorationLine: "line-through" }}>
-                {rupees(selectedPlan.amount_paise)}
-              </Text>
-            )}
-          </PressScale>
-          <UpiPaySheet
-            visible={upiSheetOpen}
-            onClose={() => setUpiSheetOpen(false)}
-            plan={payPlan}
-            couponCode={coupon?.code ?? null}
-            upi={payOptions.upi}
-            accessToken={accessToken}
-            onSent={(payment) => {
-              setUpiSheetOpen(false);
-              setCoupon(null);
-              setPayOptions((prev) =>
-                prev ? { ...prev, payments: [payment, ...prev.payments] } : prev,
-              );
-              setError("");
-              setNotice(
-                `Sent! We will check your payment and turn on ${payment.planTitle} within ${payOptions.upi.approvalHours} hours.`,
-              );
-            }}
-          />
-        </>
       )}
 
       {/* Android: Google's own payment sheet (UPI, card, Google Pay). */}
@@ -514,13 +424,6 @@ export function PremiumScreen({
                       </Text>
                     )}
                   </View>
-                )}
-
-                {payOptions && (
-                  <UpiPayments
-                    payments={payOptions.payments}
-                    approvalHours={payOptions.upi.approvalHours}
-                  />
                 )}
 
                 {summary?.premium && (
@@ -686,7 +589,7 @@ export function PremiumScreen({
                   </View>
                 )}
 
-                {!upiOpen && Platform.OS === "web" && (
+                {Platform.OS === "web" && (
                   <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
                     <Text
                       style={{
@@ -724,7 +627,7 @@ export function PremiumScreen({
                   </View>
                 )}
 
-                {!upiOpen && !playOpen && Platform.OS !== "web" && (
+                {!playOpen && Platform.OS !== "web" && (
                   <Text
                     style={{
                       color: palette.slate,

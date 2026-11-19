@@ -18,7 +18,6 @@ describe("the keyboard on Android", () => {
       "features/stories/editor/LiveComposer.tsx",
       "features/stories/StoryReplyBar.tsx",
       "components/forms/FormScaffold.tsx",
-      "features/premium/UpiPay.tsx",
     ]) {
       const source = read(file);
       expect(source, file).toContain("behavior={keyboardBehavior}");
