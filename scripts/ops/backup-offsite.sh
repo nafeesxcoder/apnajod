@@ -17,6 +17,7 @@
 # Optional: BACKUP_PING_URL (a healthchecks.io-style URL) is called when the
 # backup worked, so a missed backup can raise an alert.
 set -euo pipefail
+trap 'echo "backup-offsite.sh failed at line $LINENO" >&2' ERR
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REMOTE="${BACKUP_REMOTE:-}"

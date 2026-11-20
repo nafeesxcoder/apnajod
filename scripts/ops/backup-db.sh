@@ -5,6 +5,8 @@
 # Run once by hand to test:   bash scripts/ops/backup-db.sh
 # Schedule daily at 03:00:    see scripts/ops/README.md
 set -euo pipefail
+# Never stop without saying why (set -e alone exits silently).
+trap 'echo "backup-db.sh failed at line $LINENO" >&2' ERR
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ENV_FILE="$REPO_DIR/backend/.env"
@@ -12,12 +14,14 @@ BACKUP_DIR="${BACKUP_DIR:-$HOME/backups/milaan}"
 KEEP_DAYS="${KEEP_DAYS:-14}"
 
 [ -f "$ENV_FILE" ] || { echo "Missing $ENV_FILE" >&2; exit 1; }
-get() { grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | sed -e 's/^["'\'']//' -e 's/["'\'']$//' -e 's/\r$//'; }
+# A key missing from .env is empty (the backend then uses its own default),
+# not an error: grep finding nothing must not end the script.
+get() { { grep -E "^$1=" "$ENV_FILE" || true; } | head -1 | cut -d= -f2- | sed -e 's/^["'\'']//' -e 's/["'\'']$//' -e 's/\r$//'; }
 
 DB_HOST="$(get DB_HOST)"; DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="$(get DB_PORT)"; DB_PORT="${DB_PORT:-3306}"
-DB_USER="$(get DB_USER)"
-DB_NAME="$(get DB_NAME)"
+DB_USER="$(get DB_USER)"; DB_USER="${DB_USER:-root}"
+DB_NAME="$(get DB_NAME)"; DB_NAME="${DB_NAME:-milaan}"
 export MYSQL_PWD="$(get DB_PASSWORD)"   # keeps the password out of `ps`
 
 mkdir -p "$BACKUP_DIR"
