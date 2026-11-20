@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Frees disk space on the EC2 box without touching the app or its data.
+# Frees disk space on the server without touching the app or its data.
 # Safe to re-run. Shows disk usage before and after.
 set -uo pipefail
 
@@ -21,7 +21,8 @@ npm cache clean --force >/dev/null 2>&1
 pnpm store prune >/dev/null 2>&1 || true
 
 echo "== temp build output =="
-rm -rf "$HOME"/Milaan2/frontend/dist "$HOME"/Milaan2/frontend/.expo 2>/dev/null
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+rm -rf "$REPO_DIR"/frontend/dist "$REPO_DIR"/frontend/.expo 2>/dev/null
 
 echo "== Biggest folders in your home (look for anything old) =="
 du -h --max-depth=2 "$HOME" 2>/dev/null | sort -rh | head -8
