@@ -18,7 +18,11 @@ describe("opening someone's profile, like Instagram", () => {
     expect(app).toContain("onOpenPartnerProfile={");
     expect(app).toContain("() => openPerson(conversationPartner.id)");
     expect(app).toContain("if (screen !== \"person\") setPersonReturn(screen);");
-    expect(app).toContain("onBack={() => setScreen(personReturn)}");
+    // Laid out like your own Profile: no back button; the phone's (or the
+    // browser's) back goes to the chat, and the bottom bar lights where you came from.
+    expect(app).toContain("navActive={personReturn}");
+    expect(person).not.toContain('accessibilityLabel="Go back"');
+    expect(person).toContain("<BottomNav active={navActive} navigate={navigate} />");
   });
 
   it("the name in the chat header opens the profile too", () => {

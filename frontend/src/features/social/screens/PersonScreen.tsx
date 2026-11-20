@@ -17,6 +17,7 @@ import { IntentSection } from "../../../components/IntentBadges";
 import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
+import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
 import { LinearGradient } from "expo-linear-gradient";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../../profile/components/PostsSection";
@@ -49,7 +50,8 @@ const actionText = { fontFamily: fonts.bodySemi, fontSize: 13 };
 
 export function PersonScreen({
   userId,
-  onBack,
+  navigate,
+  navActive = "find",
   onLoad,
   onFollow,
   onMessage,
@@ -59,7 +61,10 @@ export function PersonScreen({
   /** For "show my family" - only offered once you are a match. */
   accessToken?: string;
   userId: string;
-  onBack: () => void;
+  /** For the bar at the bottom, as on your own Profile (there is no back button). */
+  navigate: (screen: any) => void;
+  /** The tab you came from (Search, Home, Chats), lit in the bar. */
+  navActive?: string;
   onLoad: (userId: string) => Promise<PersonPage>;
   onFollow: (userId: string) => Promise<"accepted" | "pending">;
   onMessage: (page: PersonPage) => void;
@@ -128,7 +133,7 @@ export function PersonScreen({
 
   if (error && !page) {
     return (
-      <Shell onBack={onBack}>
+      <Shell navigate={navigate} navActive={navActive}>
         <View
           style={{
             paddingVertical: 60,
@@ -159,7 +164,7 @@ export function PersonScreen({
 
   if (!page) {
     return (
-      <Shell onBack={onBack}>
+      <Shell navigate={navigate} navActive={navActive}>
         <View style={{ paddingVertical: 60, alignItems: "center" }}>
           <ActivityIndicator color={palette.navy} />
         </View>
@@ -190,7 +195,8 @@ export function PersonScreen({
 
   return (
     <Shell
-      onBack={onBack}
+      navigate={navigate}
+      navActive={navActive}
       onBlock={onBlock ? () => onBlock(userId) : undefined}
     >
       <ScrollView
@@ -577,17 +583,20 @@ export function PersonScreen({
 
 function Shell({
   children,
-  onBack,
+  navigate,
+  navActive,
   onBlock,
 }: {
   children: React.ReactNode;
-  onBack: () => void;
+  navigate: (screen: any) => void;
+  navActive: string;
   onBlock?: () => void;
 }) {
+  const navInset = useNavInset();
   return (
     // One full-screen background in the app's cream, the same as your own Profile.
     <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, paddingLeft: navInset.paddingLeft }}>
         <View
           style={{
             width: "100%",
@@ -598,28 +607,10 @@ function Shell({
             gap: 10,
             paddingHorizontal: 12 + SIDE_PADDING,
             // Lined up with your own Profile's logo row.
-            paddingTop: 26,
+            paddingTop: 32,
             paddingBottom: 4,
           }}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            onPress={onBack}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: palette.paper,
-              borderWidth: 1,
-              borderColor: palette.rule,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="arrow-back" size={18} color={palette.ink} />
-          </Pressable>
           {/* The Apnajoda logo, as at the top of your own Profile. */}
           <Image source={brandLogo} style={{ width: 116, height: 32 }} resizeMode="contain" accessibilityLabel="Apnajoda" />
           <View style={{ flex: 1 }} />
@@ -649,6 +640,7 @@ function Shell({
           )}
         </View>
         {children}
+        <BottomNav active={navActive} navigate={navigate} />
       </SafeAreaView>
     </View>
   );

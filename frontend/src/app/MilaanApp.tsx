@@ -3836,7 +3836,8 @@ function MilaanApp() {
         {screen === "person" && accessToken && personId && (
           <PersonScreen
             userId={personId}
-            onBack={() => setScreen(personReturn)}
+            navigate={navigateTo}
+            navActive={personReturn}
             onLoad={(userId) => socialApi.person(accessToken, userId)}
             onFollow={(userId) => likeFromSearch(userId)}
             onMessage={(page) => openConversationWith(page.user)}
