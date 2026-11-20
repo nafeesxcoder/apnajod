@@ -16,7 +16,9 @@ import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
 import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
-import { FamilyShareButton } from "../../../components/FamilyShareButton";
+import { useFamilyShare } from "../../../components/FamilyShareButton";
+import { LinearGradient } from "expo-linear-gradient";
+import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { StoryRing } from "../../stories/StoryRing";
 import { useStoryStatus } from "../../stories/storyStore";
@@ -25,6 +27,24 @@ import { kundliApi } from "../../../api/kundliApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
+
+function hobbyIcon(label: string) {
+  const wanted = String(label).trim().toLowerCase();
+  return MASTER_HOBBIES.find((h) => h.label.toLowerCase() === wanted)?.icon;
+}
+
+/** The two buttons under the details, the same size as on your own Profile. */
+const actionButton = {
+  flex: 1,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  gap: 6,
+  paddingVertical: 10,
+  borderRadius: radius.pill,
+  minHeight: 44,
+};
+const actionText = { fontFamily: fonts.bodySemi, fontSize: 13 };
 
 export function PersonScreen({
   userId,
@@ -48,6 +68,12 @@ export function PersonScreen({
   const storyStatus = useStoryStatus(userId);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // "Show my family" sits beside Message, as "Send to family" does on your own Profile.
+  const family = useFamilyShare({
+    accessToken,
+    targetId: userId,
+    name: page?.profile.firstName || page?.user.username || "them",
+  });
   // Gun Milan with this person, when both have added a Rashi.
   const [gun, setGun] = useState<{ score: number; max: number; full: boolean } | null>(null);
   useEffect(() => {
@@ -143,11 +169,23 @@ export function PersonScreen({
   const { user, profile, state } = page;
   const likeStatus = page.like.status;
   const cover = profile.photos[0] || user.avatarUrl || "";
-  // With a story ring round the photo, its own crimson border would be a second ring.
-  const photoBorder = storyStatus === "none" ? 3 : 0;
   const extraPhotos = profile.photos.slice(1);
   const postCount = page.posts?.count ?? 0;
   const postsLocked = !!page.posts?.locked;
+  const avatar = cover ? (
+    <Image
+      source={{ uri: cover }}
+      style={{ width: "100%", height: "100%", backgroundColor: palette.paperSand }}
+      resizeMode="cover"
+      accessibilityLabel={`${user.name}'s photo`}
+    />
+  ) : (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: palette.paperSand }}>
+      <Text style={{ fontFamily: fonts.display, fontSize: 46, color: palette.crimson }}>
+        {(user.username || "?").slice(0, 1).toUpperCase()}
+      </Text>
+    </View>
+  );
 
   return (
     <Shell
@@ -173,47 +211,35 @@ export function PersonScreen({
             paddingVertical: 20,
           }}
         >
+          {/* Laid out like your own Profile: the same photo ring, name,
+              details, hobbies and a row of two buttons - Message and Show my
+              family here, where yours has Edit profile and Send to family. */}
           <View style={{ alignItems: "center", marginTop: 4 }}>
-            {/* A story up: the ring replaces the plain border, and tapping plays it. */}
-            <StoryRing userId={userId} size={132}>
-            {cover ? (
-              <Image
-                source={{ uri: cover }}
-                style={{
-                  width: 132,
-                  height: 132,
-                  borderRadius: 66,
-                  borderWidth: photoBorder,
-                  borderColor: palette.crimson,
-                  backgroundColor: palette.paperSand,
-                }}
-                resizeMode="cover"
-                accessibilityLabel={`${user.name}'s photo`}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 132,
-                  height: 132,
-                  borderRadius: 66,
-                  borderWidth: photoBorder,
-                  borderColor: palette.crimson,
-                  backgroundColor: palette.paperSand,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: 52,
-                    color: palette.crimson,
-                  }}
+            {/* A story up: the story ring replaces the gradient ring, and tapping plays it. */}
+            <StoryRing userId={userId} size={116}>
+              {storyStatus === "none" ? (
+                <LinearGradient
+                  colors={[palette.crimson, palette.navy]}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ width: 116, height: 116, borderRadius: 58, padding: 3 }}
                 >
-                  {(user.username || "?").slice(0, 1).toUpperCase()}
-                </Text>
-              </View>
-            )}
+                  <View
+                    style={{
+                      flex: 1,
+                      borderRadius: 55,
+                      borderWidth: 3,
+                      borderColor: palette.paper,
+                      overflow: "hidden",
+                      backgroundColor: palette.paper,
+                    }}
+                  >
+                    {avatar}
+                  </View>
+                </LinearGradient>
+              ) : (
+                <View style={{ width: 116, height: 116, borderRadius: 58, overflow: "hidden" }}>{avatar}</View>
+              )}
             </StoryRing>
           </View>
 
@@ -223,15 +249,17 @@ export function PersonScreen({
               alignItems: "center",
               justifyContent: "center",
               gap: 6,
-              marginTop: 14,
+              marginTop: 12,
             }}
           >
             <Text
               style={{
                 fontFamily: fonts.display,
                 fontSize: 28,
+                lineHeight: 34,
                 color: palette.ink,
                 textAlign: "center",
+                flexShrink: 1,
               }}
             >
               {user.name}
@@ -243,7 +271,7 @@ export function PersonScreen({
           <Text
             style={{
               fontFamily: fonts.bodyMedium,
-              fontSize: 14,
+              fontSize: 13,
               color: palette.crimson,
               textAlign: "center",
               marginTop: 2,
@@ -252,23 +280,6 @@ export function PersonScreen({
             @{user.username}
           </Text>
 
-          <View
-            accessibilityLabel={`${postCount} ${postCount === 1 ? "post" : "posts"}${postsLocked ? ", private account" : ""}`}
-            style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 8 }}
-          >
-            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{postCount}</Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate }}>
-              {postCount === 1 ? "post" : "posts"}
-            </Text>
-            {postsLocked && (
-              <>
-                <Text style={{ color: palette.slate }}>·</Text>
-                <Ionicons name="lock-closed" size={13} color={palette.slate} />
-                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate }}>Private</Text>
-              </>
-            )}
-          </View>
-
           {!!(profile.city || profile.profession) && (
             <Text
               style={{
@@ -276,115 +287,103 @@ export function PersonScreen({
                 fontSize: 14,
                 color: palette.slate,
                 textAlign: "center",
-                marginTop: 4,
+                marginTop: 2,
               }}
             >
               {[profile.city, profile.profession].filter(Boolean).join("  ·  ")}
             </Text>
           )}
 
-
-          {likeStatus !== "none" && (
+          {/* Where the two of you stand, and Gun Milan, side by side. */}
+          {(likeStatus !== "none" || (!state.self && !!gun)) && (
             <View
               style={{
-                alignSelf: "center",
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 8,
                 marginTop: 10,
-                paddingHorizontal: 12,
-                paddingVertical: 5,
-                borderRadius: radius.pill,
-                backgroundColor:
-                  likeStatus === "accepted"
-                    ? palette.marigoldTint
-                    : palette.paperSand,
               }}
             >
-              <Text
-                style={{
-                  fontFamily: fonts.bodySemi,
-                  fontSize: 12,
-                  color:
-                    likeStatus === "accepted" ? palette.emerald : palette.navy,
-                }}
-              >
-                {likeStatus === "accepted"
-                  ? "Matched"
-                  : likeStatus === "likes_you"
-                    ? "Likes you"
-                    : "Pending — waiting for them"}
-              </Text>
+              {likeStatus !== "none" && (
+                <View
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                    borderRadius: radius.pill,
+                    backgroundColor: likeStatus === "accepted" ? palette.marigoldTint : palette.paperSand,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 12,
+                      color: likeStatus === "accepted" ? palette.emerald : palette.navy,
+                    }}
+                  >
+                    {likeStatus === "accepted"
+                      ? "Matched"
+                      : likeStatus === "likes_you"
+                        ? "Likes you"
+                        : "Pending — waiting for them"}
+                  </Text>
+                </View>
+              )}
+              {!state.self && !!gun && <GunBadge gun={gun} userId={userId} name={user.name} />}
             </View>
           )}
 
-          {!state.self && !!gun && (
-            <View style={{ marginTop: 10 }}>
-              <GunBadge gun={gun} userId={userId} name={user.name} large />
+          {profile.hobbies.length > 0 && (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: 6,
+                marginTop: 16,
+              }}
+            >
+              {profile.hobbies.map((hobby) => {
+                const icon = hobbyIcon(hobby);
+                return (
+                  <View
+                    key={hobby}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: palette.rule,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: radius.pill,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    {!!icon && <Ionicons name={icon as any} size={12} color={palette.ink} />}
+                    <Text style={{ fontSize: 11, color: palette.ink, fontFamily: fonts.bodySemi }}>{hobby}</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
 
           {!state.self && (
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 8,
-                marginTop: 20,
-              }}
-            >
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
               {likeStatus === "accepted" ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Message ${user.username}`}
                   onPress={() => onMessage(page)}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    backgroundColor: palette.navy,
-                    paddingVertical: 12,
-                    borderRadius: radius.pill,
-                    minHeight: 44,
-                  }}
+                  style={[actionButton, { backgroundColor: palette.navy }]}
                 >
                   <Ionicons name="chatbubble" size={16} color="#FFFFFF" />
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 14,
-                    }}
-                  >
-                    Message
-                  </Text>
+                  <Text style={[actionText, { color: "#FFFFFF" }]}>Message</Text>
                 </Pressable>
               ) : likeStatus === "pending" ? (
-                <View
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    backgroundColor: palette.paperSand,
-                    paddingVertical: 12,
-                    borderRadius: radius.pill,
-                    minHeight: 44,
-                  }}
-                >
-                  <Ionicons
-                    name="time-outline"
-                    size={16}
-                    color={palette.slate}
-                  />
-                  <Text
-                    style={{
-                      color: palette.slate,
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 14,
-                    }}
-                  >
-                    Pending
-                  </Text>
+                <View style={[actionButton, { backgroundColor: palette.paperSand }]}>
+                  <Ionicons name="time-outline" size={16} color={palette.slate} />
+                  <Text style={[actionText, { color: palette.slate }]}>Pending</Text>
                 </View>
               ) : (
                 <PressScale
@@ -397,17 +396,7 @@ export function PersonScreen({
                   disabled={busy}
                   onPress={() => void like()}
                   containerStyle={{ flex: 1 }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    backgroundColor: palette.crimson,
-                    paddingVertical: 12,
-                    borderRadius: radius.pill,
-                    minHeight: 44,
-                    opacity: busy ? 0.6 : 1,
-                  }}
+                  style={[actionButton, { backgroundColor: palette.crimson, opacity: busy ? 0.6 : 1 }]}
                 >
                   {busy ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
@@ -417,33 +406,39 @@ export function PersonScreen({
                       <HeartBeat>
                         <Ionicons name="heart" size={16} color="#FFFFFF" />
                       </HeartBeat>
-                      <Text
-                        style={{
-                          color: "#FFFFFF",
-                          fontFamily: fonts.bodySemi,
-                          fontSize: 14,
-                        }}
-                      >
+                      <Text style={[actionText, { color: "#FFFFFF" }]}>
                         {likeStatus === "likes_you" ? "Accept" : "Like"}
                       </Text>
                     </>
                   )}
                 </PressScale>
               )}
+
+              {likeStatus === "accepted" && family.available && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show ${profile.firstName || user.username}'s profile to my family`}
+                  disabled={family.busy}
+                  onPress={() => void family.share()}
+                  style={[actionButton, { backgroundColor: palette.paper, borderWidth: 1.5, borderColor: palette.navy }]}
+                >
+                  <Ionicons name="people" size={16} color={palette.navy} />
+                  <Text style={[actionText, { color: palette.navy }]}>Show my family</Text>
+                </Pressable>
+              )}
             </View>
           )}
 
-          {likeStatus === "accepted" && (
-            <FamilyShareButton
-              accessToken={accessToken}
-              targetId={userId}
-              name={profile.firstName || user.username}
-              label="Show my family"
-            />
+          {!!family.note && (
+            <Text
+              style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, textAlign: "center", marginTop: 8 }}
+            >
+              {family.note}
+            </Text>
           )}
 
           {!!profile.about && (
-            <Reveal delay={80} style={{ marginTop: 24 }}>
+            <Reveal delay={60} style={{ marginTop: 24 }}>
               <InfoCard title="About">
                 <Text
                   style={{
@@ -460,44 +455,9 @@ export function PersonScreen({
           )}
 
           {!!profile.intent && (
-            <Reveal delay={140}>
+            <Reveal delay={120}>
               <IntentSection input={profile.intent} />
             </Reveal>
-          )}
-
-          {profile.hobbies.length > 0 && (
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 6,
-                marginTop: 20,
-              }}
-            >
-              {profile.hobbies.map((hobby) => (
-                <View
-                  key={hobby}
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: radius.pill,
-                    borderWidth: 1,
-                    borderColor: palette.rule,
-                    backgroundColor: "transparent",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 12,
-                      color: palette.ink,
-                    }}
-                  >
-                    {hobby}
-                  </Text>
-                </View>
-              ))}
-            </View>
           )}
 
           {extraPhotos.length > 0 && (
@@ -539,7 +499,8 @@ export function PersonScreen({
                 marginBottom: 12,
               }}
             >
-              Posts
+              Posts{postCount ? ` · ${postCount}` : ""}
+              {postsLocked ? "  🔒" : ""}
             </Text>
             {/* Locked for a private account until you match - checked on the
                 server too, not just hidden here. */}

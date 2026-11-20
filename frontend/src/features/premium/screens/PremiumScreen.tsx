@@ -304,7 +304,8 @@ export function PremiumScreen({
   // The Buy button sits right under the plan or pack you tapped, not at
   // the bottom of the page. Notes and errors from the payment go with it.
   const buyBlock = (
-    <View>
+    // Room below, so the next plan's card does not touch it.
+    <View style={{ marginBottom: 24 }}>
       {!!notice && (
         <Text
           accessibilityRole="alert"
@@ -378,7 +379,7 @@ export function PremiumScreen({
 
       {/* The website takes no payment: it sends members to the app. */}
       {Platform.OS === "web" && (
-        <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
+        <View style={{ marginTop: 18, alignItems: "center", gap: 12, paddingHorizontal: 8, width: "100%" }}>
           <Text
             style={{
               color: palette.slate,

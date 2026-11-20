@@ -27,7 +27,7 @@ describe("opening someone's profile, like Instagram", () => {
 
   it("shows their posts and how many, but never a match count", () => {
     expect(person).toContain("<PostsSection accessToken={accessToken} userId={userId}");
-    expect(person).toContain('{postCount === 1 ? "post" : "posts"}');
+    expect(person).toContain('Posts{postCount ? ` · ${postCount}` : ""}');
     expect(socialApi).not.toMatch(/followers|following:/);
     expect(person).not.toMatch(/matches\b.*count|matchCount/i);
   });

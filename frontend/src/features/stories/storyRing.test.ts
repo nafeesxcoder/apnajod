@@ -24,7 +24,7 @@ describe("story rings on photos", () => {
 
   it("shows on posts, profiles and the chat header, and plays from anywhere", () => {
     expect(read("../posts/PostCard.tsx")).toContain("<StoryRing userId={author.userId} size={34}>");
-    expect(read("../social/screens/PersonScreen.tsx")).toContain("<StoryRing userId={userId} size={132}>");
+    expect(read("../social/screens/PersonScreen.tsx")).toContain("<StoryRing userId={userId} size={116}>");
     expect(read("../chat/ChatFeature.tsx")).toContain("<StoryRing userId={match.id} size={42}>");
     expect(read("StoryRing.tsx")).toContain("onPress={() => openStoriesOf(userId)}");
     expect(read("../../app/MilaanApp.tsx")).toContain("<StoryHost accessToken={accessToken} />");

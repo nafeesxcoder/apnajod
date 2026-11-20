@@ -7,7 +7,9 @@ const read = (path: string) => readFileSync(resolve(__dirname, '../../..', path)
 describe('show my family', () => {
   it('offers someone else\'s profile only once you are a match', () => {
     const person = read('src/features/social/screens/PersonScreen.tsx');
-    expect(person).toMatch(/likeStatus === "accepted" && \(\s*<FamilyShareButton/);
+    // Beside Message, as "Send to family" sits beside Edit profile on your own Profile.
+    expect(person).toContain('likeStatus === "accepted" && family.available && (');
+    expect(person).toContain('>Show my family</Text>');
   });
 
   it('keeps one Send to family button on your own profile; inviting friends lives on Home', () => {

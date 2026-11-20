@@ -48,7 +48,7 @@ describe('kundli', () => {
     // The profile page (from search, chats and matches) asks for it too.
     const person = read('../social/screens/PersonScreen.tsx');
     expect(person).toContain('kundliApi');
-    expect(person).toContain('<GunBadge gun={gun} userId={userId} name={user.name} large />');
+    expect(person).toContain('<GunBadge gun={gun} userId={userId} name={user.name} />');
     // Optional: in Settings and Match Filters, not on the profile everyone sees.
     expect(read('../profile/screens/ProfileScreen.tsx')).not.toContain('Kundli');
     expect(read('../profile/screens/SettingsScreen.tsx')).toContain('label="Kundli & Gun Milan" onPress={openKundliEditor}');
