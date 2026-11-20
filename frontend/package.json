@@ -11,6 +11,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "e2e:build": "node e2e/build.mjs",
+    "e2e": "playwright test",
     "check": "pnpm typecheck && pnpm test && pnpm build:web",
     "check:all": "pnpm check && pnpm build:ios && pnpm build:android",
     "export:web": "expo export --platform web --output-dir dist/client && node scripts/fix-expo-web-fonts.mjs --output=dist/client && node scripts/prepare-sites-hosting.mjs",
@@ -58,6 +60,7 @@
     "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "@types/react": "~19.2.2",
     "typescript": "~5.9.2",
     "vitest": "^3.2.4"
