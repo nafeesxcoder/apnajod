@@ -169,7 +169,7 @@ export const postApi = {
     return { items: (data.items as ActivityItem[]) || [], unread: Number(data.unread) || 0 };
   },
 
-  /** How many likes and comments are new - the dot on Home's heart. */
+  /** How many likes and comments are new - added to the bell on Home. */
   async activityUnread(accessToken: string): Promise<number> {
     const data = await authFetch("/posts/activity/unread", accessToken);
     return Number(data.unread) || 0;

@@ -27,7 +27,9 @@ describe('Games tab', () => {
 describe('Notifications (the Home bell)', () => {
   it('shows a live count and clears it when opened', () => {
     expect(home).toContain('matchApi\n        .notificationCount(accessToken)');
-    expect(home).toContain('notificationCount > 9 ? "9+" : notificationCount');
+    // One bell: likes on you plus activity on your posts.
+    expect(home).toContain('const bellCount = notificationCount + activityUnread;');
+    expect(home).toContain('bellCount > 9 ? "9+" : bellCount');
     expect(likes).toContain('matchApi.markNotificationsSeen(accessToken)');
   });
 

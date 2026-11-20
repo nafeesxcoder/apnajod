@@ -36,7 +36,7 @@ describe("replies to comments", () => {
   });
 
   it("says 'replied to your comment' in Activity", () => {
-    expect(read("src/features/posts/ActivityModal.tsx")).toContain('return ` replied to your comment: ${item.body ?? ""}`;');
+    expect(read("src/features/posts/ActivityList.tsx")).toContain('return ` replied to your comment: ${item.body ?? ""}`;');
   });
 });
 

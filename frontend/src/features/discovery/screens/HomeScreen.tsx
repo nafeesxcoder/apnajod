@@ -20,7 +20,7 @@ import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import { PostsFeed } from "../../posts/PostsFeed";
 import { StoriesTray } from "../../stories/StoriesTray";
-import { ActivityModal } from "../../posts/ActivityModal";
+import { openNotificationsOn } from "../notificationsTab";
 import { useFestival } from "../../festival/festivalStore";
 import { FestivalBanner } from "../../festival/FestivalBanner";
 import { FestivalParticles } from "../../festival/FestivalParticles";
@@ -106,9 +106,9 @@ export function HomeScreen({
   const [feedMore, setFeedMore] = useState(0);
   const [feedReload, setFeedReload] = useState(0);
   const feedAskedAt = useRef(0);
-  // Activity (likes and comments on your posts): the heart in the header,
-  // with a dot while something is new. Checked on open and every minute.
-  const [activityOpen, setActivityOpen] = useState(false);
+  // Activity (likes, comments and mentions on your posts and stories) is the
+  // Activity tab of Notifications; its count adds to the bell's. Checked on
+  // open and every minute.
   const [activityUnread, setActivityUnread] = useState(0);
   useEffect(() => {
     if (!accessToken) return;
@@ -124,7 +124,7 @@ export function HomeScreen({
       live = false;
       clearInterval(timer);
     };
-  }, [accessToken, activityOpen]);
+  }, [accessToken]);
   // The bell: likes, like-backs, Sparks and Super Likes since Notifications
   // was last opened. Opening it clears the number on the server.
   const [notificationCount, setNotificationCount] = useState(0);
@@ -143,6 +143,8 @@ export function HomeScreen({
       clearInterval(timer);
     };
   }, [accessToken]);
+  // One bell for everything new: likes on you and activity on your posts.
+  const bellCount = notificationCount + activityUnread;
   const { isDesktop: isDesktopHome } = useLayout();
   const name = firstName.trim();
   // A festival theme the admin has put on (Diwali, Eid...), or null.
@@ -257,53 +259,16 @@ export function HomeScreen({
                 />
               </View>
 
-              {!!accessToken && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    activityUnread > 0
-                      ? `Activity, ${activityUnread} new`
-                      : "Activity: likes, comments and mentions"
-                  }
-                  onPress={() => {
-                    setActivityUnread(0);
-                    setActivityOpen(true);
-                  }}
-                  hitSlop={8}
-                  style={{ marginRight: 14 }}
-                >
-                  <Ionicons name="heart-outline" size={26} color={colors.text} />
-                  {activityUnread > 0 && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: -4,
-                        right: -6,
-                        minWidth: 18,
-                        height: 18,
-                        paddingHorizontal: 4,
-                        borderRadius: radius.pill,
-                        backgroundColor: palette.crimson,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 10 }}>
-                        {activityUnread > 9 ? "9+" : activityUnread}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              )}
-
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={
-                  notificationCount > 0
-                    ? `Notifications, ${notificationCount} new`
-                    : "Notifications"
+                  bellCount > 0
+                    ? `Notifications, ${bellCount} new`
+                    : "Notifications: likes and activity"
                 }
                 onPress={() => {
+                  // Likes first; straight to Activity when only that has news.
+                  if (notificationCount === 0 && activityUnread > 0) openNotificationsOn("activity");
                   setNotificationCount(0);
                   navigate("likes");
                 }}
@@ -315,7 +280,7 @@ export function HomeScreen({
                   size={26}
                   color={colors.text}
                 />
-                {notificationCount > 0 && (
+                {bellCount > 0 && (
                   <View
                     style={{
                       position: "absolute",
@@ -337,7 +302,7 @@ export function HomeScreen({
                         fontSize: 10,
                       }}
                     >
-                      {notificationCount > 9 ? "9+" : notificationCount}
+                      {bellCount > 9 ? "9+" : bellCount}
                     </Text>
                   </View>
                 )}
@@ -574,9 +539,6 @@ export function HomeScreen({
         </ScrollView>
 
         <BottomNav active="home" navigate={navigate} />
-        {!!accessToken && (
-          <ActivityModal visible={activityOpen} accessToken={accessToken} onClose={() => setActivityOpen(false)} />
-        )}
         {festival && <FestivalParticles theme={festival} />}
       </SafeAreaView>
     </AppCanvas>

@@ -4,17 +4,16 @@ import { describe, expect, it } from 'vitest';
 import { chatPrimaryAttachments } from '../../domain/featureFocus';
 
 describe('Activity and the back button', () => {
-  it("closes Activity on the phone's back and stays on Home", () => {
-    const modal = readFileSync(join(__dirname, 'ActivityModal.tsx'), 'utf8');
-    expect(modal).toContain('useBackToClose(visible, onClose)');
-    expect(modal).toContain('onRequestClose={close}');
+  it("is a tab of Notifications, a screen of its own, so back returns to Home", () => {
+    const list = readFileSync(join(__dirname, 'ActivityList.tsx'), 'utf8');
+    expect(list).not.toContain('<Modal');
     const hook = readFileSync(join(__dirname, '../../app/navigation/useBackToClose.ts'), 'utf8');
     expect(hook).toContain('event.stopImmediatePropagation()');
   });
 
   it('says your own likes and comments do not show', () => {
-    const modal = readFileSync(join(__dirname, 'ActivityModal.tsx'), 'utf8');
-    expect(modal).toContain("Your own likes and comments don't.");
+    const list = readFileSync(join(__dirname, 'ActivityList.tsx'), 'utf8');
+    expect(list).toContain("Your own likes and comments don't.");
   });
 });
 
@@ -32,7 +31,7 @@ describe('The back button closes every popup', () => {
     };
     walk(root);
     const plain = files.filter((file) => {
-      if (file.endsWith('BackModal.tsx') || file.endsWith('ActivityModal.tsx')) return false;
+      if (file.endsWith('BackModal.tsx')) return false;
       const text = readFileSync(file, 'utf8');
       return /import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*['"]react-native['"]/.test(text);
     });
