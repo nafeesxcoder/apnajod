@@ -25,9 +25,18 @@ function loadCallService() {
 }
 
 test("no TURN server set up: nothing from coturn", () => {
+  // Load first: loading reads backend/.env, which on the server does set
+  // TURN_HOST and TURN_SECRET. Then take them away, and put them back after.
+  const service = loadCallService();
+  const saved = { host: process.env.TURN_HOST, secret: process.env.TURN_SECRET };
   delete process.env.TURN_HOST;
   delete process.env.TURN_SECRET;
-  assert.strictEqual(loadCallService().coturnServers("u1"), null);
+  try {
+    assert.strictEqual(service.coturnServers("u1"), null);
+  } finally {
+    if (saved.host !== undefined) process.env.TURN_HOST = saved.host;
+    if (saved.secret !== undefined) process.env.TURN_SECRET = saved.secret;
+  }
 });
 
 test("coturn credentials are ones coturn will accept, and last a day", async () => {
