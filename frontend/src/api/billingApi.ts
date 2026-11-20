@@ -105,6 +105,16 @@ export const billingApi = {
     };
   },
 
+  /** Is any pass code on right now? Premium shows the code box only then. */
+  async passCodesOpen(accessToken: string): Promise<boolean> {
+    try {
+      const data = await authFetch("/billing/pass-codes", accessToken);
+      return !!data.open;
+    } catch {
+      return false;
+    }
+  },
+
   /** A pass code from the admin: the free pass starts now. */
   async redeemCode(
     accessToken: string,

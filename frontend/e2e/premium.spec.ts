@@ -20,6 +20,7 @@ test("the website sends members to Google Play and takes a pass code", async ({ 
     ...member.handlers,
     "GET /billing/plans": { ok: true, plans: PLANS },
     "GET /billing/me": { ok: true, billing: FREE },
+    "GET /billing/pass-codes": { ok: true, open: true },
     "POST /billing/redeem-code": (body: any, route: any) =>
       body.code === "DIWALIFREE"
         ? { ok: true, code: "DIWALIFREE", pass: { planLabel: "Plus", expiresAt: "2026-12-31T00:00:00Z" }, billing: PLUS }
@@ -39,4 +40,34 @@ test("the website sends members to Google Play and takes a pass code", async ({ 
 
   await expect(page.getByText(/Plus is on, free till/)).toBeVisible();
   expect(calls.find((c) => c.path === "/billing/redeem-code")?.body).toEqual({ code: "DIWALIFREE" });
+});
+
+test("no pass code on: no code box; Google Play sits right under the plan picked", async ({ page }) => {
+  await signedIn(page);
+  await fakePhotos(page);
+  const member = fakeMember();
+  await mockApi(page, {
+    ...member.handlers,
+    "GET /billing/plans": { ok: true, plans: PLANS },
+    "GET /billing/me": { ok: true, billing: FREE },
+    "GET /billing/pass-codes": { ok: true, open: false },
+  });
+
+  await page.goto("/");
+  await page.getByText("Profile", { exact: true }).last().click();
+  await page.getByLabel("See Premium").click();
+
+  // Plus is picked first: the Play link is between the Plus and Pro cards.
+  const play = page.getByText("Get it on Google Play");
+  await expect(play).toBeVisible();
+  const below = async (a: import("@playwright/test").Locator, b: import("@playwright/test").Locator) =>
+    ((await a.boundingBox())!.y) > ((await b.boundingBox())!.y);
+  expect(await below(play, page.getByLabel(/^Plus, /))).toBe(true);
+  expect(await below(page.getByLabel(/^Pro, /), play)).toBe(true);
+  await expect(page.getByLabel("Have a pass code?")).toHaveCount(0);
+
+  // Picking Pro moves it under Pro.
+  await page.getByLabel(/^Pro, /).click();
+  await expect(play).toBeVisible();
+  expect(await below(play, page.getByLabel(/^Pro, /))).toBe(true);
 });

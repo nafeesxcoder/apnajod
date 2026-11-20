@@ -20,6 +20,11 @@ const boost = asyncHandler(async (req, res) => {
   });
 });
 
+/** Whether any pass code is on right now: Premium shows the code box only then. */
+const passCodes = asyncHandler(async (_req, res) => {
+  res.json({ ok: true, open: await require("../services/couponService").anyOpen() });
+});
+
 /** A member types a pass code from the admin: the free pass starts now. */
 const redeemCode = asyncHandler(async (req, res) => {
   try {
@@ -77,5 +82,5 @@ const playStatus = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  plans, me, boost, redeemCode, playVerify, playNotify, playStatus,
+  plans, me, boost, passCodes, redeemCode, playVerify, playNotify, playStatus,
 };

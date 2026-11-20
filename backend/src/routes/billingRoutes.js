@@ -13,6 +13,7 @@ router.post("/play/notify", billingController.playNotify);
 router.use(requireAuth);
 router.get("/me", billingController.me);
 router.post("/boost", billingController.boost);
+router.get("/pass-codes", billingController.passCodes);
 // Pass codes: a few tries per member, so codes cannot be guessed.
 router.post(
   "/redeem-code",

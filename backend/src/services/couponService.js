@@ -129,6 +129,21 @@ async function usable(rawCode, userId) {
 }
 
 /**
+ * Is any pass code usable right now (on, not ended, not used up)? Premium
+ * shows "Have a pass code?" only then, so members do not look for codes
+ * that do not exist.
+ */
+async function anyOpen() {
+  const [row] = await query(
+    `SELECT COUNT(*) AS total FROM coupons c
+      WHERE c.pass_plan IS NOT NULL AND c.active = 1
+        AND (c.valid_until IS NULL OR c.valid_until > UTC_TIMESTAMP())
+        AND (c.max_uses IS NULL OR c.max_uses > (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id = c.id))`,
+  );
+  return Number(row?.total ?? 0) > 0;
+}
+
+/**
  * A member types a pass code: the pass starts now. The redemption row is
  * written first (its key allows one per member, so two taps cannot both
  * count); if the pass cannot be given, the row is taken back.
@@ -156,4 +171,5 @@ module.exports = {
   update,
   usable,
   redeemPass,
+  anyOpen,
 };

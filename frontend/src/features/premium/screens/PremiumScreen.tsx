@@ -27,6 +27,7 @@ import {
 } from "../playBilling";
 import { useFestival } from "../../festival/festivalStore";
 import { PassCodeBox } from "../PassCodeBox";
+import { hasPendingCoupon } from "../couponStore";
 import { festivalOffer } from "../festivalOffer";
 
 // Android: what Google Play says about one of the member's subscriptions.
@@ -117,6 +118,19 @@ export function PremiumScreen({
   const [playProducts, setPlayProducts] = useState<Record<string, PlayProduct>>({});
   const [playStatuses, setPlayStatuses] = useState<PlayStatusRow[]>([]);
   const [notice, setNotice] = useState("");
+  // "Have a pass code?" shows only while the admin has a pass code on (or
+  // the offer popup handed one over).
+  const [passCodesOpen, setPassCodesOpen] = useState(() => hasPendingCoupon());
+  useEffect(() => {
+    if (!accessToken) return;
+    let live = true;
+    void billingApi.passCodesOpen(accessToken).then((open) => {
+      if (live && open) setPassCodesOpen(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [accessToken]);
 
   const reload = () => {
     Promise.all([billingApi.plans(), billingApi.me(accessToken)])
@@ -360,6 +374,66 @@ export function PremiumScreen({
               : `Buy with Google Play · ${playProduct.displayPrice}`}
           </Text>
         </PressScale>
+      )}
+
+      {/* The website takes no payment: it sends members to the app. */}
+      {Platform.OS === "web" && (
+        <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
+          <Text
+            style={{
+              color: palette.slate,
+              fontSize: 14,
+              textAlign: "center",
+              lineHeight: 20,
+              fontFamily: fonts.body,
+            }}
+          >
+            Buy Premium inside the Apnajoda Android app. Payment is done
+            through Google Play.
+          </Text>
+          <PressScale
+            accessibilityRole="link"
+            accessibilityLabel="Get Apnajoda on Google Play"
+            onPress={() => void Linking.openURL(PLAY_STORE_URL)}
+            style={{
+              backgroundColor: palette.crimson,
+              paddingVertical: 14,
+              paddingHorizontal: 28,
+              borderRadius: radius.pill,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              minHeight: 48,
+            }}
+          >
+            <Ionicons name="logo-google-playstore" size={18} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}>
+              Get it on Google Play
+            </Text>
+          </PressScale>
+        </View>
+      )}
+
+      {!playOpen && Platform.OS !== "web" && (
+        <Text
+          style={{
+            color: palette.slate,
+            fontSize: 13,
+            textAlign: "center",
+            marginTop: 18,
+            lineHeight: 19,
+            fontFamily: fonts.body,
+          }}
+        >
+          Payments are not open yet. Everything is free for everyone in
+          the meantime.
+        </Text>
+      )}
+
+      {/* A free pass from an admin's code - only while one is on. */}
+      {passCodesOpen && !!accessToken && selectedPlan?.kind === "subscription" && (
+        <PassCodeBox accessToken={accessToken} onRedeemed={setSummary} />
       )}
     </View>
   );
@@ -612,61 +686,6 @@ export function PremiumScreen({
                   </View>
                 )}
 
-                {!!accessToken && <PassCodeBox accessToken={accessToken} onRedeemed={setSummary} />}
-
-                {Platform.OS === "web" && (
-                  <View style={{ marginTop: 18, alignItems: "center", gap: 12 }}>
-                    <Text
-                      style={{
-                        color: palette.slate,
-                        fontSize: 14,
-                        textAlign: "center",
-                        lineHeight: 20,
-                        fontFamily: fonts.body,
-                      }}
-                    >
-                      Buy Premium inside the Apnajoda Android app. Payment is done
-                      through Google Play.
-                    </Text>
-                    <PressScale
-                      accessibilityRole="link"
-                      accessibilityLabel="Get Apnajoda on Google Play"
-                      onPress={() => void Linking.openURL(PLAY_STORE_URL)}
-                      style={{
-                        backgroundColor: palette.crimson,
-                        paddingVertical: 14,
-                        paddingHorizontal: 28,
-                        borderRadius: radius.pill,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexDirection: "row",
-                        gap: 8,
-                        minHeight: 48,
-                      }}
-                    >
-                      <Ionicons name="logo-google-playstore" size={18} color="#FFFFFF" />
-                      <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}>
-                        Get it on Google Play
-                      </Text>
-                    </PressScale>
-                  </View>
-                )}
-
-                {!playOpen && Platform.OS !== "web" && (
-                  <Text
-                    style={{
-                      color: palette.slate,
-                      fontSize: 13,
-                      textAlign: "center",
-                      marginTop: 18,
-                      lineHeight: 19,
-                      fontFamily: fonts.body,
-                    }}
-                  >
-                    Payments are not open yet. Everything above is free for
-                    everyone in the meantime.
-                  </Text>
-                )}
               </>
             )}
           </View>

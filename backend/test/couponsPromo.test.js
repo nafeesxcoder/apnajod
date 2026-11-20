@@ -87,6 +87,19 @@ test("ended, off, used up, wrong, or an old percent coupon: refused", async () =
   await assert.rejects(old.redeemPass("u1", "FREEPLUS"), (e) => e.status === 410 && /no longer works/.test(e.message));
 });
 
+test("the code box shows only while a pass code is on, not ended and not used up", async () => {
+  const on = coupons((sql) => (sql.startsWith("SELECT COUNT(*) AS total FROM coupons") ? [{ total: 1 }] : [])).service;
+  assert.strictEqual(await on.anyOpen(), true);
+  const none = coupons((sql) => (sql.startsWith("SELECT COUNT(*) AS total FROM coupons") ? [{ total: 0 }] : [])).service;
+  assert.strictEqual(await none.anyOpen(), false);
+  const { service, sqls } = coupons(() => [{ total: 0 }]);
+  await service.anyOpen();
+  const sql = sqls[0].sql;
+  for (const part of ["pass_plan IS NOT NULL", "active = 1", "valid_until > UTC_TIMESTAMP()", "max_uses > (SELECT COUNT(*) FROM coupon_redemptions"]) {
+    assert.ok(sql.includes(part), part);
+  }
+});
+
 test("the admin makes a code with a plan and a length; bad ones are refused", async () => {
   const { service, sqls } = coupons(() => ({ affectedRows: 1 }));
   await service.create("admin", { code: "eid free", plan: "pro", months: 3, maxUses: 50 });
