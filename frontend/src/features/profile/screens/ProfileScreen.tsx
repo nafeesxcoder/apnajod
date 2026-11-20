@@ -77,7 +77,9 @@ export function ProfileScreen({
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: palette.paperBase,
+          // One full-screen background: the page is the card's colour, so
+          // no second background shows round the content.
+          backgroundColor: palette.paper,
           paddingLeft: navInset.paddingLeft,
         }}
       >
@@ -94,8 +96,6 @@ export function ProfileScreen({
               width: "100%",
               maxWidth: MAX_WIDTH,
               alignSelf: "center",
-              backgroundColor: palette.paper,
-              borderRadius: radius.xl,
               paddingHorizontal: SIDE_PADDING,
               paddingVertical: 16,
             }}

@@ -205,8 +205,6 @@ export function PersonScreen({
             width: "100%",
             maxWidth: MAX_WIDTH,
             alignSelf: "center",
-            backgroundColor: palette.paper,
-            borderRadius: radius.xl,
             paddingHorizontal: SIDE_PADDING,
             paddingVertical: 20,
           }}
@@ -586,7 +584,8 @@ function Shell({
   onBlock?: () => void;
 }) {
   return (
-    <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
+    // One full-screen background, the same as your own Profile.
+    <View style={{ flex: 1, backgroundColor: palette.paper }}>
       <SafeAreaView style={{ flex: 1 }}>
         <View
           style={{
