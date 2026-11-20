@@ -584,8 +584,8 @@ function Shell({
   onBlock?: () => void;
 }) {
   return (
-    // One full-screen background, the same as your own Profile.
-    <View style={{ flex: 1, backgroundColor: palette.paper }}>
+    // One full-screen background in the app's cream, the same as your own Profile.
+    <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
       <SafeAreaView style={{ flex: 1 }}>
         <View
           style={{

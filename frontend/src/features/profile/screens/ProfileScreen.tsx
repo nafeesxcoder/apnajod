@@ -77,9 +77,9 @@ export function ProfileScreen({
       <SafeAreaView
         style={{
           flex: 1,
-          // One full-screen background: the page is the card's colour, so
-          // no second background shows round the content.
-          backgroundColor: palette.paper,
+          // One full-screen background in the app's cream, like every other
+          // page; no card behind the content.
+          backgroundColor: palette.paperBase,
           paddingLeft: navInset.paddingLeft,
         }}
       >
