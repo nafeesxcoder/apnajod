@@ -72,9 +72,4 @@ router.post("/promo/off", adminController.stopPromo);
 router.get("/plans", adminController.getPlans);
 router.post("/plans/:code", adminController.updatePlan);
 
-// UPI payments checked by hand.
-router.get("/payments", adminController.getPayments);
-router.post("/payments/:id/approve", adminController.approvePayment);
-router.post("/payments/:id/reject", adminController.rejectPayment);
-
 module.exports = router;

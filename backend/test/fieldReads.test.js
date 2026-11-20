@@ -5,7 +5,6 @@ const { readFileSync } = require("node:fs");
 const read = (p) => readFileSync(require.resolve(p), "utf8");
 const profile = read("../src/services/profileService.js");
 const appeal = read("../src/services/appealService.js");
-const upi = read("../src/services/upiService.js");
 const admin = read("../src/services/adminService.js");
 const exportSvc = read("../src/services/dataExportService.js");
 
@@ -15,10 +14,6 @@ test("admin verification queue shows decrypted phones", () => {
 
 test("open appeals show decrypted phones", () => {
   assert.ok(appeal.includes("phone: decrypt(row.phone)"));
-});
-
-test("UPI payments list shows decrypted phones", () => {
-  assert.ok(upi.includes("phone: decrypt(row.phone)"));
 });
 
 test("admin user list decrypts phones and searches a full number by its blind index", () => {

@@ -96,16 +96,6 @@ test("the admin makes a code with a plan and a length; bad ones are refused", as
   await assert.rejects(service.create("admin", { code: "X1X", plan: "plus", months: 2 }), (e) => e.status === 400);
 });
 
-test("a coupon counts as used when the payment is approved", async () => {
-  const { service, sqls } = coupons((sql) => (sql.startsWith("SELECT id FROM coupons") ? [{ id: "c1" }] : { affectedRows: 1 }));
-  await service.redeem({ id: "p1", user_id: "u1", coupon_code: "DIWALI50" });
-  const insert = sqls.find((q) => q.sql.startsWith("INSERT IGNORE INTO coupon_redemptions"));
-  assert.deepStrictEqual(insert.params, ["c1", "u1", "p1"]);
-  const before = sqls.length;
-  await service.redeem({ id: "p2", user_id: "u1", coupon_code: null });
-  assert.strictEqual(sqls.length, before, "no coupon, nothing to do");
-});
-
 test("the offer popup: one on at a time, everyone online hears", async () => {
   const sqls = [];
   const emitted = [];

@@ -33,7 +33,6 @@ type Tab =
   | "verifications"
   | "reports"
   | "appeals"
-  | "payments"
   | "festivals"
   | "coupons"
   | "plans"
@@ -53,7 +52,6 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   },
   { key: "reports", label: "Reports", icon: "flag-outline" },
   { key: "appeals", label: "Appeals", icon: "chatbox-ellipses-outline" },
-  { key: "payments", label: "UPI Payments", icon: "cash-outline" },
   { key: "festivals", label: "Festival Themes", icon: "sparkles-outline" },
   { key: "coupons", label: "Pass codes", icon: "gift-outline" },
   { key: "plans", label: "Plans & Prices", icon: "pricetag-outline" },
@@ -445,7 +443,6 @@ export function AdminDashboardScreen({
           )}
           {tab === "reports" && <ReportsTab accessToken={accessToken} />}
           {tab === "appeals" && <AppealsTab accessToken={accessToken} />}
-          {tab === "payments" && <PaymentsTab accessToken={accessToken} />}
           {tab === "festivals" && <FestivalsTab accessToken={accessToken} />}
           {tab === "coupons" && <CouponsTab accessToken={accessToken} />}
           {tab === "plans" && <PlansTab accessToken={accessToken} />}
@@ -660,7 +657,6 @@ function OverviewTab({
   const blueTickUsers = Number(stats?.blueTickUsers ?? 0);
   const openReports = Number(stats?.openReports ?? 0);
   const openAppeals = Number(stats?.openAppeals ?? 0);
-  const pendingPayments = Number(stats?.pendingPayments ?? 0);
   const revenue = Number(stats?.revenuePaise ?? 0) / 100;
 
   return (
@@ -746,13 +742,6 @@ function OverviewTab({
           icon="chatbox-ellipses"
           trend={openAppeals > 0 ? "Needs review" : undefined}
           onPress={() => onNavigate("appeals")}
-        />
-        <StatCard
-          title="UPI to verify"
-          value={String(pendingPayments)}
-          icon="qr-code"
-          trend={pendingPayments > 0 ? "Check bank app" : undefined}
-          onPress={() => onNavigate("payments")}
         />
         <StatCard
           title="Total Revenue"
@@ -2252,153 +2241,6 @@ function AppealsTab({ accessToken }: { accessToken: string }) {
           </Card>
         );
       })}
-    </View>
-  );
-}
-
-/* ---------------- UPI payments ---------------- */
-
-const REJECT_REASONS = [
-  "We could not find this payment.",
-  "The amount paid was different.",
-  "This UTR belongs to another payment.",
-];
-
-function PaymentsTab({ accessToken }: { accessToken: string }) {
-  const [pending, setPending] = useState<any[]>([]);
-  const [reviewed, setReviewed] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [rejecting, setRejecting] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setError("");
-    try {
-      const res: any = await adminApi.payments(accessToken);
-      setPending(Array.isArray(res?.pending) ? res.pending : []);
-      setReviewed(Array.isArray(res?.reviewed) ? res.reviewed : []);
-    } catch (e) {
-      setError(errText(e, "Failed to load payments"));
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const act = async (id: string, action: "approve" | "reject", reason = "") => {
-    setBusyId(id);
-    setError("");
-    try {
-      if (action === "approve") await adminApi.approvePayment(accessToken, id);
-      else await adminApi.rejectPayment(accessToken, id, reason);
-      setRejecting(null);
-      await load();
-    } catch (e) {
-      setError(errText(e, "Action failed"));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  if (loading) return <Loading />;
-
-  const when = (value: unknown) => {
-    const date = serverDate(String(value ?? ""));
-    return Number.isNaN(date.getTime())
-      ? ""
-      : date.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
-  };
-
-  const row = (p: any, isPending: boolean) => {
-    const id = String(p?.id);
-    const amount = `₹${(Number(p?.amountPaise ?? 0) / 100).toLocaleString("en-IN")}`;
-    const meta = [p?.username ? `@${p.username}` : "", p?.phone ?? "", p?.city ?? "", when(p?.createdAt)]
-      .filter(Boolean)
-      .join(" · ");
-    return (
-      <Card key={id} style={{ padding: 18, gap: 8 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 18, color: COLORS.textMain }}>{amount}</Text>
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: COLORS.textMain }}>
-            {String(p?.planTitle ?? p?.planCode ?? "")}
-          </Text>
-          {!isPending && (
-            <Badge text={p?.status === "approved" ? "Approved" : "Rejected"} danger={p?.status !== "approved"} />
-          )}
-          {!!p?.couponCode && <Badge text={`🎟️ ${p.couponCode}`} />}
-        </View>
-        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: COLORS.textMain }}>
-          {displayName({ first_name: p?.firstName, username: p?.username })}
-        </Text>
-        {!!meta && (
-          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>{meta}</Text>
-        )}
-        <View style={{ backgroundColor: COLORS.bg, borderRadius: 8, padding: 10, flexDirection: "row", gap: 8 }}>
-          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>UTR</Text>
-          <Text selectable style={{ fontFamily: fonts.bodySemi, fontSize: 15, letterSpacing: 1, color: COLORS.textMain }}>
-            {String(p?.utr ?? "")}
-          </Text>
-        </View>
-        {!isPending && !!p?.note && (
-          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>{String(p.note)}</Text>
-        )}
-        {p?.status !== "approved" && (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 4 }}>
-            <SmallButton
-              label={isPending ? "Approve - money received" : "Approve anyway"}
-              busy={busyId === id}
-              onPress={() => void act(id, "approve")}
-            />
-            {isPending && (
-              <SmallButton
-                label="Reject"
-                tone="plain"
-                busy={busyId === id}
-                onPress={() => setRejecting(rejecting === id ? null : id)}
-              />
-            )}
-          </View>
-        )}
-        {rejecting === id && (
-          <View style={{ gap: 8, marginTop: 4 }}>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: COLORS.textMuted }}>
-              Why? The member sees this.
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {REJECT_REASONS.map((reason) => (
-                <SmallButton
-                  key={reason}
-                  label={reason}
-                  tone="danger"
-                  busy={busyId === id}
-                  onPress={() => void act(id, "reject", reason)}
-                />
-              ))}
-            </View>
-          </View>
-        )}
-      </Card>
-    );
-  };
-
-  return (
-    <View style={{ gap: 16 }}>
-      <Text style={{ fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: COLORS.textMuted }}>
-        Open your bank or UPI app, find the payment by its UTR and amount, then approve. The plan turns on for the member right away.
-      </Text>
-      {!!error && <Message tone="error" text={error} />}
-      {pending.length === 0 && !error && <Message text="No UPI payments waiting." />}
-      {pending.map((p) => row(p, true))}
-      {reviewed.length > 0 && (
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: COLORS.textMain, marginTop: 8 }}>
-          Recently checked
-        </Text>
-      )}
-      {reviewed.map((p) => row(p, false))}
     </View>
   );
 }

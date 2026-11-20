@@ -22,7 +22,7 @@ async function getDashboardStats() {
   // Destructuring it again read rows[0][0], which is always undefined, and
   // every card on the dashboard showed 0.
   const live = "SELECT id FROM users WHERE deleted_at IS NULL";
-  const [users, newThisWeek, pendingVerifications, verifiedUsers, openReports, suspendedUsers, revenuePaise, openAppeals, blueTickUsers, pendingPayments] =
+  const [users, newThisWeek, pendingVerifications, verifiedUsers, openReports, suspendedUsers, revenuePaise, openAppeals, blueTickUsers] =
     await Promise.all([
       scalar("SELECT COUNT(*) AS total FROM users WHERE deleted_at IS NULL"),
       scalar(
@@ -47,7 +47,6 @@ async function getDashboardStats() {
           WHERE p.user_id IN (${live})
             AND ${billingService.blueTickSql("p.user_id", "p.verified")}`,
       ),
-      scalar("SELECT COUNT(*) AS total FROM payments WHERE provider = 'upi' AND status = 'pending'"),
     ]);
 
   return {
@@ -60,7 +59,6 @@ async function getDashboardStats() {
     revenuePaise,
     openAppeals,
     blueTickUsers,
-    pendingPayments,
   };
 }
 

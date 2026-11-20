@@ -149,18 +149,6 @@ async function redeemPass(userId, rawCode) {
   return { code: code.code, pass: await passService.getPass(userId) };
 }
 
-/** The payment went through: the member has now used the coupon. */
-async function redeem(payment) {
-  const code = payment?.coupon_code;
-  if (!code) return;
-  const [coupon] = await query("SELECT id FROM coupons WHERE code = ?", [code]);
-  if (!coupon) return;
-  await query(
-    "INSERT IGNORE INTO coupon_redemptions (coupon_id, user_id, payment_id) VALUES (?, ?, ?)",
-    [coupon.id, payment.user_id, payment.id ?? null],
-  );
-}
-
 module.exports = {
   normalizeCode,
   list,
@@ -168,5 +156,4 @@ module.exports = {
   update,
   usable,
   redeemPass,
-  redeem,
 };

@@ -181,12 +181,6 @@ export const adminApi = {
     authFetch("/admin/festivals/push", token, { method: "POST", body: JSON.stringify({ message }) }),
   cancelFestival: (token: string, id: string) =>
     authFetch(`/admin/festivals/${id}/cancel`, token, { method: "POST" }),
-  // UPI payments waiting to be checked against the bank app.
-  payments: (token: string) => authFetch("/admin/payments", token),
-  approvePayment: (token: string, id: string) =>
-    authFetch(`/admin/payments/${id}/approve`, token, { method: "POST" }),
-  rejectPayment: (token: string, id: string, reason: string) =>
-    authFetch(`/admin/payments/${id}/reject`, token, { method: "POST", body: JSON.stringify({ reason }) }),
   resolveAppeal: (token: string, id: string, action: "restore" | "reject") => authFetch(`/admin/appeals/${id}/resolve`, token, { method: "POST", body: JSON.stringify({ action }) }),
   // A reported post: remove it (its owner is told why), or keep it.
   removePost: (token: string, postId: string) => authFetch(`/admin/posts/${postId}/remove`, token, { method: "POST" }),
