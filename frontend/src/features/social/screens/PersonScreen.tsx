@@ -26,6 +26,7 @@ import { GunBadge } from "../../kundli/KundliSheet";
 import { kundliApi } from "../../../api/kundliApi";
 
 const MAX_WIDTH = 720;
+const brandLogo = require("../../../../assets/apnajoda-logo.png");
 const SIDE_PADDING = 16;
 
 function hobbyIcon(label: string) {
@@ -194,7 +195,6 @@ export function PersonScreen({
     >
       <ScrollView
         contentContainerStyle={{
-          paddingTop: 12,
           paddingBottom: 100,
           paddingHorizontal: 12,
         }}
@@ -206,7 +206,8 @@ export function PersonScreen({
             maxWidth: MAX_WIDTH,
             alignSelf: "center",
             paddingHorizontal: SIDE_PADDING,
-            paddingVertical: 20,
+            // The photo starts just under the header, as on your own Profile.
+            paddingBottom: 20,
           }}
         >
           {/* Laid out like your own Profile: the same photo ring, name,
@@ -596,7 +597,9 @@ function Shell({
             alignItems: "center",
             gap: 10,
             paddingHorizontal: 12 + SIDE_PADDING,
-            paddingVertical: 12,
+            // Lined up with your own Profile's logo row.
+            paddingTop: 26,
+            paddingBottom: 4,
           }}
         >
           <Pressable
@@ -617,6 +620,8 @@ function Shell({
           >
             <Ionicons name="arrow-back" size={18} color={palette.ink} />
           </Pressable>
+          {/* The Apnajoda logo, as at the top of your own Profile. */}
+          <Image source={brandLogo} style={{ width: 116, height: 32 }} resizeMode="contain" accessibilityLabel="Apnajoda" />
           <View style={{ flex: 1 }} />
           {onBlock && (
             <Pressable
