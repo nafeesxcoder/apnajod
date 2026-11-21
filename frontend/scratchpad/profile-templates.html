@@ -1,0 +1,579 @@
+<title>Apnajoda Profile Templates</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #666666;
+  --border: #dddddd;
+  --accent: #e85d75;
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0a0a;
+    --fg: #ffffff;
+    --muted: #888888;
+    --border: #333333;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --fg: #ffffff;
+  --muted: #888888;
+  --border: #333333;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 24px 0 32px 0;
+  text-align: center;
+}
+
+.templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.template-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.template-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+  padding: 8px 12px;
+  background: var(--border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Profile Phone Frame */
+.phone-frame {
+  aspect-ratio: 9/16;
+  border: 12px solid #000;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  position: relative;
+}
+
+.phone-notch {
+  height: 28px;
+  background: #000;
+  position: relative;
+  z-index: 10;
+}
+
+.profile-screen {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Template 1: Classic Swipe */
+.template1 .photo-area {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
+
+.template1 .info-section {
+  padding: 20px 16px;
+  gap: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.template1 .header-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.template1 .name-age {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.template1 .verified-badge {
+  background: #4da6ff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.template1 .location {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.template1 .about {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+
+.template1 .tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.template1 .tag {
+  background: var(--border);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.template1 .actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: var(--border);
+}
+
+.template1 .action-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.template1 .like-btn {
+  background: #e85d75;
+  color: white;
+}
+
+.template1 .message-btn {
+  background: #0066cc;
+  color: white;
+}
+
+/* Template 2: Card Gallery */
+.template2 .carousel {
+  width: 100%;
+  height: 60%;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.template2 .carousel-info {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.template2 .carousel-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 12px;
+}
+
+.template2 .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 50%;
+}
+
+.template2 .dot.active {
+  background: var(--accent);
+}
+
+.template2 .details {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.template2 .detail-row {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.template2 .detail-label {
+  width: 100px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.template2 .detail-value {
+  flex: 1;
+  font-size: 14px;
+}
+
+.template2 .cta-button {
+  margin: 12px;
+  padding: 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Template 3: Modern Profile */
+.template3 .header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.template3 .profile-pic {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  margin: 0 auto 12px;
+  border: 3px solid white;
+}
+
+.template3 .name {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.template3 .meta {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.template3 .stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 16px;
+  background: var(--border);
+}
+
+.template3 .stat-item {
+  text-align: center;
+}
+
+.template3 .stat-number {
+  font-size: 18px;
+  font-weight: 700;
+  display: block;
+}
+
+.template3 .stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.template3 .sections {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.template3 .section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.template3 .section-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.template3 .section-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Template 4: Minimal Clean */
+.template4 .hero {
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.template4 .info {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.template4 .name-block {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.template4 .subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.template4 .info-item {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.template4 .info-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.template4 .info-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.select-btn {
+  background: #2a2a2a;
+  color: white;
+}
+
+.select-btn:hover {
+  opacity: 0.9;
+}
+
+.info-text {
+  text-align: center;
+  margin: 24px auto;
+  font-size: 14px;
+  color: var(--muted);
+}
+</style>
+
+<h1>🎨 Profile Templates</h1>
+
+<div class="info-text">
+  4 different profile layouts - kaunsa best lagta hai?
+</div>
+
+<div class="templates">
+  <!-- Template 1: Classic Swipe Card -->
+  <div class="template-container">
+    <div class="template-name">1️⃣ Classic Swipe</div>
+    <div class="phone-frame template1">
+      <div class="phone-notch"></div>
+      <div class="profile-screen">
+        <div class="photo-area">📸 Photo</div>
+        <div class="info-section">
+          <div class="header-info">
+            <div class="name-age">Priya, 26</div>
+            <div class="verified-badge">✓ Verified</div>
+          </div>
+          <div class="location">📍 Mumbai, 2km away</div>
+          <div class="about">
+            "लाइफ lover हूँ 💕"
+          </div>
+          <div class="tags">
+            <div class="tag">#FamilyFirst</div>
+            <div class="tag">#Traveler</div>
+            <div class="tag">#Foodie</div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="action-btn like-btn">❤️</button>
+        <button class="action-btn message-btn">💬</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template 2: Card Gallery -->
+  <div class="template-container">
+    <div class="template-name">2️⃣ Card Gallery</div>
+    <div class="phone-frame template2">
+      <div class="phone-notch"></div>
+      <div class="profile-screen">
+        <div class="carousel">
+          <div class="carousel-info">1 / 4</div>
+        </div>
+        <div class="carousel-dots">
+          <div class="dot active"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+        <div class="details">
+          <div class="detail-row">
+            <div class="detail-label">Name</div>
+            <div class="detail-value">Priya Sharma</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">Age</div>
+            <div class="detail-value">26</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">City</div>
+            <div class="detail-value">Mumbai</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">About</div>
+            <div class="detail-value">लाइफ lover, traveler</div>
+          </div>
+        </div>
+        <button class="cta-button">❤️ Like करो</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template 3: Modern Profile -->
+  <div class="template-container">
+    <div class="template-name">3️⃣ Modern Profile</div>
+    <div class="phone-frame template3">
+      <div class="phone-notch"></div>
+      <div class="profile-screen">
+        <div class="header">
+          <div class="profile-pic">👩</div>
+          <div class="name">Priya Sharma</div>
+          <div class="meta">26 • Mumbai</div>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-number">36/36</span>
+            <span class="stat-label">Gun (Kundli)</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">98%</span>
+            <span class="stat-label">Profile</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">42</span>
+            <span class="stat-label">Likes</span>
+          </div>
+        </div>
+        <div class="sections">
+          <div class="section">
+            <div class="section-title">👋 About Me</div>
+            <div class="section-content">
+              लाइफ lover हूँ, travel करना पसंद है 🌍
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">🎯 Looking For</div>
+            <div class="section-content">
+              Serious relationship, marriage के लिए सोच रहे हैं
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template 4: Minimal Clean -->
+  <div class="template-container">
+    <div class="template-name">4️⃣ Minimal Clean</div>
+    <div class="phone-frame template4">
+      <div class="phone-notch"></div>
+      <div class="profile-screen">
+        <div class="hero">
+          <div>📸 Photos</div>
+        </div>
+        <div class="info">
+          <div class="name-block">Priya Sharma</div>
+          <div class="subtitle">26 • Mumbai • 2km</div>
+
+          <div class="info-item">
+            <div class="info-label">About</div>
+            <div class="info-value">लाइफ lover 💕</div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-label">Looking for</div>
+            <div class="info-value">Marriage</div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-label">Interests</div>
+            <div class="info-value">Travel, Food, Family</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="button-group">
+  <button class="select-btn" onclick="choose(1)">Template 1 पसंद है</button>
+  <button class="select-btn" onclick="choose(2)">Template 2 पसंद है</button>
+  <button class="select-btn" onclick="choose(3)">Template 3 पसंद है</button>
+  <button class="select-btn" onclick="choose(4)">Template 4 पसंद है</button>
+</div>
+
+<script>
+function choose(num) {
+  alert(`✅ Template ${num} को select किया गया! Backend में add करेंगे।`);
+  console.log("Selected template:", num);
+}
+</script>
