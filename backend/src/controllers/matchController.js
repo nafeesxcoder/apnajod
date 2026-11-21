@@ -57,6 +57,32 @@ const sendSpark = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const search = asyncHandler(async (req, res) => {
+  const filters = {
+    minAge: req.query.minAge ? Number(req.query.minAge) : 21,
+    maxAge: req.query.maxAge ? Number(req.query.maxAge) : 45,
+    city: req.query.city,
+    gender: req.query.gender,
+    verified: req.query.verified === "true",
+    minKundliScore: req.query.minKundliScore ? Number(req.query.minKundliScore) : null,
+    limit: req.query.limit ? Number(req.query.limit) : 20
+  };
+  const results = await matchService.searchProfiles(req.user.id, filters);
+  res.json({ ok: true, results, count: results.length });
+});
+
+const getEnhancedNotifications = asyncHandler(async (req, res) => {
+  const type = req.query.type || "all";
+  const count = await matchService.getEnhancedNotifications(req.user.id, type);
+  res.json({ ok: true, count, type });
+});
+
+const getRecommendations = asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? Number(req.query.limit) : 10;
+  const recommendations = await matchService.getRecommendations(req.user.id, limit);
+  res.json({ ok: true, recommendations, count: recommendations.length });
+});
+
 module.exports = {
   decide,
   getSparkWallet,
@@ -65,4 +91,7 @@ module.exports = {
   getIncomingLikes,
   getNotifications,
   markNotificationsSeen,
+  search,
+  getEnhancedNotifications,
+  getRecommendations,
 };

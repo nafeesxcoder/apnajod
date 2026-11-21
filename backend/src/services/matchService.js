@@ -325,10 +325,260 @@ async function getIncomingLikes(userId, limit = 100) {
   });
 }
 
+async function searchProfiles(userId, filters = {}) {
+  const {
+    minAge = 21,
+    maxAge = 45,
+    city,
+    gender,
+    verified,
+    minKundliScore,
+    limit = 20
+  } = filters;
+
+  const [myPrefs] = await query(
+    "SELECT * FROM matching_preferences WHERE user_id = ?",
+    [userId]
+  );
+
+  const [me] = await query(
+    "SELECT rashi, nakshatra, gender FROM profiles WHERE user_id = ?",
+    [userId]
+  );
+
+  let genderFilter = "";
+  if (gender && ["man", "woman"].includes(gender)) {
+    genderFilter = "AND p.gender = ?";
+  }
+
+  let cityFilter = "";
+  if (city) {
+    cityFilter = "AND LOWER(p.city) LIKE LOWER(?)";
+  }
+
+  let verifiedFilter = "";
+  if (verified === true) {
+    verifiedFilter = "AND p.verified = 1";
+  }
+
+  const candidates = await query(
+    `SELECT
+       u.id AS user_id, u.username,
+       p.first_name, p.gender, p.age, p.height, p.city, p.profession,
+       p.religion, p.community, p.about, p.verified, p.hobbies,
+       p.rashi, p.nakshatra, p.manglik,
+       EXISTS (
+         SELECT 1 FROM boosts b
+          WHERE b.user_id = u.id AND b.ends_at > UTC_TIMESTAMP(6)
+       ) AS boosted
+     FROM users u
+     LEFT JOIN profiles p ON p.user_id = u.id
+     WHERE u.id != ?
+       AND u.deleted_at IS NULL
+       AND u.deactivated_at IS NULL
+       AND (p.age IS NULL OR (p.age BETWEEN ? AND ?))
+       AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
+       AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
+       AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ? AND decision = 'interested')
+       ${genderFilter}
+       ${cityFilter}
+       ${verifiedFilter}
+     ORDER BY
+       boosted DESC,
+       p.verified DESC,
+       p.updated_at DESC
+     LIMIT ?`,
+    [userId, minAge, maxAge, userId, userId, userId, ...(gender ? [gender] : []), ...(city ? [`%${city}%`] : []), limit]
+  );
+
+  if (!candidates.length) return [];
+
+  const kundliService = require("./kundliService");
+  for (const candidate of candidates) {
+    candidate.gun = kundliService.gunBadge(me, candidate);
+  }
+
+  if (minKundliScore) {
+    const fits = candidates.filter(c => c.gun && c.gun.full && c.gun.score >= minKundliScore);
+    candidates.splice(0, candidates.length, ...fits.slice(0, Number(limit)));
+  }
+
+  if (!candidates.length) return [];
+
+  const candidateIds = candidates.map(c => c.user_id);
+  const placeholders = candidateIds.map(() => "?").join(",");
+
+  const allPhotos = await query(
+    `SELECT user_id, photo_url FROM profile_photos
+     WHERE user_id IN (${placeholders})
+     ORDER BY user_id, position ASC`,
+    candidateIds
+  );
+  const photosByUser = {};
+  for (const row of allPhotos) {
+    if (!photosByUser[row.user_id]) photosByUser[row.user_id] = [];
+    photosByUser[row.user_id].push(row.photo_url);
+  }
+
+  const allVibes = await query(
+    `SELECT user_id, vibe FROM profile_vibes WHERE user_id IN (${placeholders})`,
+    candidateIds
+  );
+  const vibesByUser = {};
+  for (const row of allVibes) {
+    if (!vibesByUser[row.user_id]) vibesByUser[row.user_id] = [];
+    vibesByUser[row.user_id].push(row.vibe);
+  }
+
+  return candidates.map(candidate => ({
+    id: candidate.user_id,
+    profileId: candidate.user_id,
+    matchId: candidate.user_id,
+    name: candidate.first_name || candidate.username || "Member",
+    age: candidate.age || 0,
+    city: candidate.city || "",
+    profession: candidate.profession || "",
+    gender: candidate.gender || "nonbinary",
+    about: candidate.about || "",
+    verified: candidate.verified === 1,
+    photos: photosByUser[candidate.user_id] || [],
+    vibes: vibesByUser[candidate.user_id] || [],
+    kundli: candidate.gun ? { score: candidate.gun.score, full: candidate.gun.full } : null,
+    rashi: candidate.rashi,
+    nakshatra: candidate.nakshatra
+  }));
+}
+
+async function getEnhancedNotifications(userId, type = "all") {
+  const types = {
+    all: "d.decision = 'interested'",
+    likes: "d.decision = 'interested'",
+    matches: "EXISTS (SELECT 1 FROM mutual_matches m WHERE (m.user_a_id = ? AND m.user_b_id = d.actor_id) OR (m.user_a_id = d.actor_id AND m.user_b_id = ?))"
+  };
+
+  const typeFilter = types[type] || types.all;
+  const extraParams = type === "matches" ? [userId, userId] : [];
+
+  const [row] = await query(
+    `SELECT COUNT(*) AS count
+       FROM match_decisions d
+       JOIN users u ON u.id = d.actor_id AND u.deleted_at IS NULL
+      WHERE d.target_id = ?
+        AND ${typeFilter}
+        AND d.updated_at >= NOW() - INTERVAL ${NOTIFICATION_DAYS} DAY
+        AND NOT EXISTS (
+          SELECT 1 FROM blocks b
+           WHERE (b.blocker_id = ? AND b.blocked_id = d.actor_id)
+              OR (b.blocker_id = d.actor_id AND b.blocked_id = ?)
+        )`,
+    [userId, ...extraParams, userId, userId]
+  );
+
+  return Number(row?.count || 0);
+}
+
+async function getRecommendations(userId, limit = 10) {
+  const [me] = await query(
+    "SELECT rashi, nakshatra, gender FROM profiles WHERE user_id = ?",
+    [userId]
+  );
+
+  const [myPrefs] = await query(
+    "SELECT * FROM matching_preferences WHERE user_id = ?",
+    [userId]
+  );
+
+  const lookingFor = myPrefs?.looking_for || "everyone";
+  const wantGender = lookingFor === "women" ? "woman" : lookingFor === "men" ? "man" : null;
+  const minAge = myPrefs?.min_age ?? 21;
+  const maxAge = myPrefs?.max_age ?? 45;
+
+  const candidates = await query(
+    `SELECT
+       u.id AS user_id, u.username,
+       p.first_name, p.gender, p.age, p.city, p.profession, p.about,
+       p.verified, p.rashi, p.nakshatra, p.manglik,
+       EXISTS (
+         SELECT 1 FROM boosts b
+          WHERE b.user_id = u.id AND b.ends_at > UTC_TIMESTAMP(6)
+       ) AS boosted,
+       (SELECT COUNT(*) FROM profile_intent pi WHERE pi.user_id = u.id LIMIT 1) AS has_intent
+     FROM users u
+     LEFT JOIN profiles p ON p.user_id = u.id
+     WHERE u.id != ?
+       AND u.deleted_at IS NULL
+       AND u.deactivated_at IS NULL
+       AND (p.age IS NULL OR (p.age BETWEEN ? AND ?))
+       ${wantGender ? "AND (p.gender = ? OR p.gender IS NULL)" : ""}
+       AND p.verified = 1
+       AND u.id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
+       AND u.id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
+       AND u.id NOT IN (SELECT target_id FROM match_decisions WHERE actor_id = ? AND decision = 'interested')
+     ORDER BY
+       boosted DESC,
+       has_intent DESC,
+       p.verified DESC,
+       p.updated_at DESC
+     LIMIT ?`,
+    [userId, minAge, maxAge, ...(wantGender ? [wantGender] : []), userId, userId, userId, limit]
+  );
+
+  const kundliService = require("./kundliService");
+  for (const candidate of candidates) {
+    candidate.gun = kundliService.gunBadge(me, candidate);
+  }
+
+  if (!candidates.length) return [];
+
+  const candidateIds = candidates.map(c => c.user_id);
+  const placeholders = candidateIds.map(() => "?").join(",");
+
+  const allPhotos = await query(
+    `SELECT user_id, photo_url FROM profile_photos
+     WHERE user_id IN (${placeholders})
+     ORDER BY user_id, position ASC`,
+    candidateIds
+  );
+  const photosByUser = {};
+  for (const row of allPhotos) {
+    if (!photosByUser[row.user_id]) photosByUser[row.user_id] = [];
+    photosByUser[row.user_id].push(row.photo_url);
+  }
+
+  const allIntents = await query(
+    `SELECT user_id, intent FROM profile_intent
+     WHERE user_id IN (${placeholders})`,
+    candidateIds
+  );
+  const intentByUser = {};
+  for (const row of allIntents) {
+    intentByUser[row.user_id] = row.intent;
+  }
+
+  return candidates.map(candidate => ({
+    id: candidate.user_id,
+    profileId: candidate.user_id,
+    name: candidate.first_name || candidate.username || "Member",
+    age: candidate.age || 0,
+    city: candidate.city || "",
+    profession: candidate.profession || "",
+    gender: candidate.gender || "nonbinary",
+    about: candidate.about || "",
+    verified: candidate.verified === 1,
+    photos: photosByUser[candidate.user_id] || [],
+    kundli: candidate.gun ? { score: candidate.gun.score, full: candidate.gun.full } : null,
+    intent: intentByUser[candidate.user_id] || null,
+    boosted: candidate.boosted === 1
+  }));
+}
+
 module.exports = {
   recordDecision,
   getMutualMatches,
   getIncomingLikes,
   notificationCount,
   markNotificationsSeen,
+  searchProfiles,
+  getEnhancedNotifications,
+  getRecommendations,
 };
