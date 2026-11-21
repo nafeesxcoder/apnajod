@@ -79,4 +79,27 @@ export const matchApi = {
   async markNotificationsSeen(accessToken: string): Promise<void> {
     await authFetch("/matches/notifications/seen", accessToken, { method: "POST" });
   },
+
+  /** Search profiles with filters (kundli, age, location, verified) */
+  async search(accessToken: string, filters: { minAge?: number; maxAge?: number; city?: string; gender?: string; verified?: boolean; minKundliScore?: number; limit?: number }) {
+    const params = new URLSearchParams();
+    if (filters.minAge) params.set("minAge", String(filters.minAge));
+    if (filters.maxAge) params.set("maxAge", String(filters.maxAge));
+    if (filters.city) params.set("city", filters.city);
+    if (filters.gender) params.set("gender", filters.gender);
+    if (filters.verified) params.set("verified", "true");
+    if (filters.minKundliScore) params.set("minKundliScore", String(filters.minKundliScore));
+    if (filters.limit) params.set("limit", String(filters.limit));
+    return authFetch(`/matches/search?${params}`, accessToken);
+  },
+
+  /** Get smart recommendations: verified, with kundli matching */
+  async getRecommendations(accessToken: string, limit: number = 10) {
+    return authFetch(`/matches/recommendations?limit=${limit}`, accessToken);
+  },
+
+  /** Get enhanced notification count with filtering */
+  async getEnhancedNotifications(accessToken: string, type: "all" | "likes" | "matches" = "all") {
+    return authFetch(`/matches/notifications/enhanced?type=${type}`, accessToken);
+  },
 };
