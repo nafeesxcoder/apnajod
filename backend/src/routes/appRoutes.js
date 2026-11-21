@@ -1,6 +1,7 @@
 const express = require("express");
 const festivalService = require("../services/festivalService");
 const promoService = require("../services/promoService");
+const appController = require("../controllers/appController");
 
 const router = express.Router();
 
@@ -15,5 +16,14 @@ router.get("/theme", async (req, res, next) => {
     next(error);
   }
 });
+
+// OTA Update check
+router.get("/check-update", appController.checkUpdate);
+
+// App config (feature flags, maintenance mode)
+router.get("/config", appController.getConfig);
+
+// Report app crashes
+router.post("/crash", appController.reportCrash);
 
 module.exports = router;
