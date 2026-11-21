@@ -1,10 +1,8 @@
-import { useState } from 'react';
-import { View, ScrollView, Text, Pressable, StyleSheet, Image, SafeAreaView } from 'react-native';
+import { View, ScrollView, Text, Pressable, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radius } from '../theme';
 
 export function LandingPage() {
-  const [scrollPos, setScrollPos] = useState(0);
 
   const Feature = ({ icon, title, desc }: any) => (
     <View style={styles.featureCard}>
@@ -16,7 +14,7 @@ export function LandingPage() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <ScrollView style={{ flex: 1 }} onScroll={(e) => setScrollPos(e.nativeEvent.contentOffset.y)}>
+      <ScrollView style={{ flex: 1 }}>
         {/* Hero */}
         <View style={styles.hero}>
           <Text style={[styles.heroTitle, { fontFamily: fonts.bodyBold }]}>Apnajoda</Text>
@@ -61,7 +59,7 @@ export function LandingPage() {
             Ready to Find Your Match?
           </Text>
           <Pressable style={styles.downloadBtn}>
-            <Ionicons name="logo-google-play" size={20} color={colors.textInverse} />
+            <Ionicons name="logo-google" size={20} color={colors.textInverse} />
             <Text style={[{ fontFamily: fonts.bodySemi, color: colors.textInverse, marginLeft: 8 }]}>
               Get on Google Play
             </Text>

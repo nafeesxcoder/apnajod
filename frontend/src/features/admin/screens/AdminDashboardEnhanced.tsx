@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, Text, StyleSheet, SafeAreaView, Pressable, FlatList } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, SafeAreaView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radius } from '../../../theme';
 
@@ -66,7 +66,7 @@ export const AdminDashboardEnhanced = ({ accessToken }: { accessToken: string })
     </View>
   );
 
-  const ActionItem = ({ icon, label, count, action, color }: any) => (
+  const ActionItem = ({ label, count, action, color }: any) => (
     <Pressable style={[styles.actionItem, { borderLeftColor: color }]} onPress={action}>
       <View style={{ flex: 1 }}>
         <Text style={[{ fontFamily: fonts.bodySemi, color: colors.text }]}>{label}</Text>
