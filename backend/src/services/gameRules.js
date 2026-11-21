@@ -20,6 +20,9 @@ const KINDS = {
   would_you_rather: { title: "Would you rather", emoji: "🤔" },
   know_me: { title: "How well do you know me", emoji: "🧠" },
   tic_tac_toe: { title: "Tic-tac-toe", emoji: "⭕" },
+  never_have_i_ever: { title: "Never Have I Ever", emoji: "🙅" },
+  two_truths_lie: { title: "Two Truths & A Lie", emoji: "🤥" },
+  quick_fire: { title: "Quick Fire Questions", emoji: "⚡" },
 };
 
 const THIS_OR_THAT = [
@@ -73,7 +76,51 @@ const KNOW_ME = [
   { q: "My favourite season?", options: ["Summer", "Monsoon", "Winter", "Spring"] },
 ];
 
-const SIZES = { this_or_that: 5, would_you_rather: 3, know_me: 5 };
+const NEVER_HAVE_I_EVER = [
+  "Never have I ever cooked a full meal for someone special",
+  "Never have I ever traveled to another country",
+  "Never have I ever danced in the rain",
+  "Never have I ever watched the same movie more than 5 times",
+  "Never have I ever called in sick when I wasn't",
+  "Never have I ever sung karaoke in public",
+  "Never have I ever had a crush on a friend",
+  "Never have I ever skipped school/work",
+  "Never have I ever gotten tattoo or piercing",
+  "Never have I ever gossiped about someone",
+  "Never have I ever learned a new language",
+  "Never have I ever been on a blind date",
+];
+
+const TWO_TRUTHS_LIE = [
+  "I've met a celebrity | I can speak 3 languages | I've never been on a flight",
+  "I hate spicy food | I love horror movies | I'm afraid of heights",
+  "I've written poetry | I can cook biryani | I've never used social media",
+  "I'm an early bird | I love thunderstorms | I can play guitar",
+  "I've performed on stage | I'm afraid of dogs | I love winter more than summer",
+  "I can juggle | I speak my mind always | I've never had a crush",
+  "I love gardening | I'm an introvert | I've skydived",
+  "I write in a diary | I love cooking | I've never broken anything",
+];
+
+const QUICK_FIRE = [
+  "What's your go-to coffee order?",
+  "Cats or dogs?",
+  "What's your biggest guilty pleasure?",
+  "Coffee or tea?",
+  "What's your hidden talent?",
+  "Gym person or yoga person?",
+  "What movie can you watch on repeat?",
+  "What's your comfort food?",
+  "What's one thing on your bucket list?",
+  "What's your biggest pet peeve?",
+  "What would you do with a free weekend?",
+  "What's your favorite childhood memory?",
+  "What's your biggest achievement?",
+  "If you could have dinner with anyone?",
+  "What's one thing you want to learn?",
+];
+
+const SIZES = { this_or_that: 5, would_you_rather: 3, know_me: 5, never_have_i_ever: 5, two_truths_lie: 3, quick_fire: 5 };
 const LINES = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8],
   [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -115,6 +162,10 @@ function create(kind, starterId, partnerId, setup = {}, random = Math.random) {
   if (kind === "this_or_that" || kind === "would_you_rather") {
     const bank = kind === "this_or_that" ? THIS_OR_THAT : WOULD_YOU_RATHER;
     return { pairs: sample(bank, SIZES[kind], random), picks: {} };
+  }
+  if (kind === "never_have_i_ever" || kind === "two_truths_lie" || kind === "quick_fire") {
+    const bank = kind === "never_have_i_ever" ? NEVER_HAVE_I_EVER : kind === "two_truths_lie" ? TWO_TRUTHS_LIE : QUICK_FIRE;
+    return { items: sample(bank, SIZES[kind], random), picks: {} };
   }
   if (kind === "know_me") {
     const n = SIZES.know_me;
@@ -189,6 +240,15 @@ function move(kind, state, players, playerId, input = {}) {
     return { state: next, done: !!picks[other] };
   }
 
+  if (kind === "never_have_i_ever" || kind === "two_truths_lie" || kind === "quick_fire") {
+    const n = state.items.length;
+    if (state.picks[playerId]) throw new GameError(409, "You have already answered");
+    if (!isChoiceList(input.picks, n, 2)) throw new GameError(400, "Answer every question");
+    const picks = { ...state.picks, [playerId]: input.picks.slice() };
+    const next = { ...state, picks };
+    return { state: next, done: !!picks[other] };
+  }
+
   if (kind === "know_me") {
     if (playerId === state.subject) {
       throw new GameError(409, "These questions are about you - your partner guesses");
@@ -232,6 +292,18 @@ function view(kind, state, players, viewerId, done) {
     };
   }
 
+  if (kind === "never_have_i_ever" || kind === "two_truths_lie" || kind === "quick_fire") {
+    const mine = state.picks[viewerId] || null;
+    const theirs = state.picks[partnerId] || null;
+    return {
+      items: state.items,
+      myPicks: mine,
+      partnerDone: !!theirs,
+      partnerPicks: done ? theirs : null,
+      matches: done ? matchesOf(state, viewerId, partnerId) : null,
+    };
+  }
+
   if (kind === "know_me") {
     const isSubject = viewerId === state.subject;
     const showTruth = isSubject || done;
@@ -268,6 +340,12 @@ function resultText(kind, state, players, finisherName) {
     const mood = m === n ? "Perfect match! 🎉" : m >= Math.ceil(n / 2) ? "Pretty similar 🙂" : "Opposites attract 😄";
     return `${m}/${n} the same. ${mood}`;
   }
+  if (kind === "never_have_i_ever" || kind === "two_truths_lie" || kind === "quick_fire") {
+    const n = state.items.length;
+    const m = matchesOf(state, starter, other);
+    const mood = m === n ? "Perfect match! 🎉" : m >= Math.ceil(n / 2) ? "Great match 🙂" : "Interesting differences 😄";
+    return `${m}/${n} the same. ${mood}`;
+  }
   if (kind === "know_me") {
     const score = state.truth.reduce((n, t, i) => n + (state.guesses[i] === t ? 1 : 0), 0);
     return `${finisherName} got ${score}/${state.truth.length} right ${score >= 4 ? "🎉" : score >= 2 ? "🙂" : "😅"}`;
@@ -282,6 +360,9 @@ module.exports = {
   THIS_OR_THAT,
   WOULD_YOU_RATHER,
   KNOW_ME,
+  NEVER_HAVE_I_EVER,
+  TWO_TRUTHS_LIE,
+  QUICK_FIRE,
   GameError,
   create,
   knowMeQuestions,
