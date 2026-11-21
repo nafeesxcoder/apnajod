@@ -106,6 +106,7 @@ export function HomeScreen({
   const [feedMore, setFeedMore] = useState(0);
   const [feedReload, setFeedReload] = useState(0);
   const feedAskedAt = useRef(0);
+  const feedScrollRef = useRef<ScrollView>(null);
   // Activity (likes, comments and mentions on your posts and stories) is the
   // Activity tab of Notifications; its count adds to the bell's. Checked on
   // open and every minute.
@@ -143,6 +144,14 @@ export function HomeScreen({
       clearInterval(timer);
     };
   }, [accessToken]);
+
+  // Scroll to top when feed reloads (pull-to-refresh or new post posted)
+  useEffect(() => {
+    if (feedReload > 0 && feedScrollRef.current) {
+      feedScrollRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, [feedReload]);
+
   // One bell for everything new: likes on you and activity on your posts.
   const bellCount = notificationCount + activityUnread;
   const { isDesktop: isDesktopHome } = useLayout();
@@ -171,6 +180,7 @@ export function HomeScreen({
         }}
       >
         <ScrollView
+          ref={feedScrollRef}
           onScroll={(event) => {
             handleBottomNavScroll(event);
             // Near the end of Home: load the next page of posts.
