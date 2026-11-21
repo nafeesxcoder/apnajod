@@ -57,32 +57,22 @@ export const pageLayout = {
 
   // Card/Panel
   card: {
-    paddingHorizontal: 8,  // Reduced from 16
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    marginBottom: 12,
-    marginHorizontal: 0,   // No side margin
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-
-  // Profile card (tighter sides)
-  profileCard: {
-    paddingHorizontal: 4,  // Minimal side padding
+    paddingHorizontal: 8,
     paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: '#ffffff',
     marginBottom: 12,
     marginHorizontal: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+  },
+
+  // Profile card (tighter sides)
+  profileCard: {
+    paddingHorizontal: 4,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    marginBottom: 12,
+    marginHorizontal: 0,
   },
 
   // List item
