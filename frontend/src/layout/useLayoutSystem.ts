@@ -22,19 +22,19 @@ export const useLayout = () => {
 export const pageLayout = {
   // Main page container
   container: {
-    paddingLeft: `max(16px, env(safe-area-inset-left, 0px))`,
-    paddingRight: `max(16px, env(safe-area-inset-right, 0px))`,
+    paddingLeft: `max(8px, env(safe-area-inset-left, 0px))`,
+    paddingRight: `max(8px, env(safe-area-inset-right, 0px))`,
     maxWidth: '100%',
     marginHorizontal: 'auto',
   },
 
-  // Screen with safe area insets
+  // Screen with safe area insets (reduced horizontal padding)
   screen: {
     flex: 1,
     paddingTop: `max(16px, env(safe-area-inset-top, 0px))`,
     paddingBottom: `max(16px, env(safe-area-inset-bottom, 0px))`,
-    paddingLeft: `max(16px, env(safe-area-inset-left, 0px))`,
-    paddingRight: `max(16px, env(safe-area-inset-right, 0px))`,
+    paddingLeft: `max(8px, env(safe-area-inset-left, 0px))`,
+    paddingRight: `max(8px, env(safe-area-inset-right, 0px))`,
   },
 
   // Header bar (sticky)
@@ -57,10 +57,27 @@ export const pageLayout = {
 
   // Card/Panel
   card: {
-    padding: 16,
+    paddingHorizontal: 8,  // Reduced from 16
+    paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: '#ffffff',
     marginBottom: 12,
+    marginHorizontal: 0,   // No side margin
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  // Profile card (tighter sides)
+  profileCard: {
+    paddingHorizontal: 4,  // Minimal side padding
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    marginBottom: 12,
+    marginHorizontal: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
