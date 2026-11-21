@@ -67,7 +67,7 @@ const FAQS: FaqItem[] = [
     icon: "document-text-outline",
     question: "How do I raise a complaint with the Grievance Officer?",
     answer:
-      "Email our Grievance Officer, Nafees Ahmad, at nafeesahadbly@gmail.com with your username, who or what you are reporting, and what happened. We acknowledge within 24 hours and resolve within 15 days. Photos showing someone in a sexual or intimate way, or someone pretending to be you, are acted on within 24 hours.",
+      "Email our Grievance Officer, Nafees Ahmad, at info@apnajoda.com with your username, who or what you are reporting, and what happened. We acknowledge within 24 hours and resolve within 15 days. Photos showing someone in a sexual or intimate way, or someone pretending to be you, are acted on within 24 hours.",
   },
   {
     id: "other",
@@ -86,7 +86,7 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
   };
 
   const openEmail = () => {
-    const to = "nafeesahadbly@gmail.com";
+    const to = "contact@apnajoda.com";
     const subject = encodeURIComponent("Apnajoda Support");
     const body = encodeURIComponent(
       "Hi Apnajoda team,\n\nI need help with:\n\n[Describe your issue here]\n\nApp version: 1.0.0\nMy username: [your username]\nMy mobile number: [your mobile number]",
@@ -355,7 +355,7 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>Still need help?</Text>
                 <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, marginTop: 2 }}>
-                  nafeesahadbly@gmail.com · We reply within 24 hours
+                  contact@apnajoda.com · We reply within 24 hours
                 </Text>
               </View>
               <PressScale

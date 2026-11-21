@@ -21,7 +21,9 @@ describe("the pages the store and payment reviews look for", () => {
   it("say who runs the site and how to reach them", () => {
     const contact = pub("contact.html");
     expect(contact).toContain("Nafees Ahmad (Proprietor)");
-    expect(contact).toContain("mailto:nafeesahadbly@gmail.com");
+    expect(contact).toContain("mailto:contact@apnajoda.com");
+    expect(contact).toContain("mailto:info@apnajoda.com");
+    expect(contact).not.toContain("gmail.com");
     expect(contact).toContain("Bareilly, Uttar Pradesh, India");
   });
 

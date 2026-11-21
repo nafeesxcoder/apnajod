@@ -48,7 +48,7 @@ module.exports = {
     apiKey: required("RESEND_API_KEY"),
     fromEmail: required(
       "RESEND_FROM_EMAIL",
-      "Milaan <onboarding@milaan.in>",
+      "Apnajoda <info@apnajoda.com>",
     ),
   },
 
@@ -75,7 +75,7 @@ module.exports = {
   push: {
     publicKey: required("VAPID_PUBLIC_KEY", ""),
     privateKey: required("VAPID_PRIVATE_KEY", ""),
-    subject: required("VAPID_SUBJECT", "mailto:support@milaan.in"),
+    subject: required("VAPID_SUBJECT", "mailto:info@apnajoda.com"),
   },
 
   // 32 random bytes, base64. Generate: openssl rand -base64 32
