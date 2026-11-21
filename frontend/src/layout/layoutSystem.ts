@@ -39,13 +39,13 @@ export const typeScale = {
 } as const;
 
 export const layouts = {
-  // Screen insets (reduced horizontal padding)
-  screenPaddingX: spacing.sm, // 8px sides (reduced)
-  screenPaddingY: spacing.lg, // 16px top/bottom
+  // Screen insets (full screen coverage - no side padding)
+  screenPaddingX: 0, // 0px sides - full width coverage
+  screenPaddingY: spacing.lg, // 16px top/bottom only
 
-  // Content width on desktop
-  maxContentWidth: 720,
-  maxWideWidth: 1000,
+  // Content width on desktop (full screen)
+  maxContentWidth: 9999,
+  maxWideWidth: 9999,
 
   // Cards (reduced padding on sides)
   cardRadius: radius.medium,

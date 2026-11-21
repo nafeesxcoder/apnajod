@@ -20,21 +20,21 @@ export const useLayout = () => {
  * Common layout patterns as React components would use them
  */
 export const pageLayout = {
-  // Main page container
+  // Main page container (full width)
   container: {
-    paddingLeft: `max(8px, env(safe-area-inset-left, 0px))`,
-    paddingRight: `max(8px, env(safe-area-inset-right, 0px))`,
+    paddingLeft: `env(safe-area-inset-left, 0px)`,
+    paddingRight: `env(safe-area-inset-right, 0px)`,
     maxWidth: '100%',
     marginHorizontal: 'auto',
   },
 
-  // Screen with safe area insets (reduced horizontal padding)
+  // Screen with safe area insets (full screen width)
   screen: {
     flex: 1,
     paddingTop: `max(16px, env(safe-area-inset-top, 0px))`,
     paddingBottom: `max(16px, env(safe-area-inset-bottom, 0px))`,
-    paddingLeft: `max(8px, env(safe-area-inset-left, 0px))`,
-    paddingRight: `max(8px, env(safe-area-inset-right, 0px))`,
+    paddingLeft: `env(safe-area-inset-left, 0px)`,
+    paddingRight: `env(safe-area-inset-right, 0px)`,
   },
 
   // Header bar (sticky)
