@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, ScrollView, Text, StyleSheet, SafeAreaView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radius } from '../../../theme';
@@ -23,7 +23,6 @@ export const AnalyticsDashboard = ({ accessToken }: { accessToken: string }) => 
     pendingVerifications: 0,
     pendingReports: 0,
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadMetrics = async () => {
@@ -45,8 +44,6 @@ export const AnalyticsDashboard = ({ accessToken }: { accessToken: string }) => 
         }
       } catch (error) {
         console.error('Failed to load metrics:', error);
-      } finally {
-        setLoading(false);
       }
     };
     loadMetrics();
@@ -62,7 +59,7 @@ export const AnalyticsDashboard = ({ accessToken }: { accessToken: string }) => 
     </View>
   );
 
-  const ActionCard = ({ icon, label, count, color }: any) => (
+  const ActionCard = ({ label, count, color }: any) => (
     <Pressable style={[styles.actionCard, { borderColor: color }]}>
       <View style={{ flex: 1 }}>
         <Text style={[styles.actionLabel, { fontFamily: fonts.bodySemi }]}>{label}</Text>

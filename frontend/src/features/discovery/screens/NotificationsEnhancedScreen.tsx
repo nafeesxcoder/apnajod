@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, ScrollView, Text, Pressable, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, radius } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 import { matchApi } from '../../../api/matchApi';
 
 type NotificationType = 'all' | 'likes' | 'matches';
