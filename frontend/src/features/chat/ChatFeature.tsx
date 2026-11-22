@@ -3346,6 +3346,8 @@ export function ChatScreen({
                         color: colors.text,
                         maxHeight: 110,
                         paddingVertical: 0,
+                        textAlign: "center",
+                        textAlignVertical: "center",
                       },
                       Platform.OS === "web"
                         ? ({ outlineStyle: "none" } as never)
