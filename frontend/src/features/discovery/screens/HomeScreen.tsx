@@ -20,7 +20,6 @@ import { useLayout } from "../../../layout/useLayout";
 import { AddPostButton } from "../../profile/components/AddPostButton";
 import { PostsFeed } from "../../posts/PostsFeed";
 import { StoriesTray } from "../../stories/StoriesTray";
-import { openNotificationsOn } from "../notificationsTab";
 import { useFestival } from "../../festival/festivalStore";
 import { FestivalBanner } from "../../festival/FestivalBanner";
 import { FestivalParticles } from "../../festival/FestivalParticles";
@@ -277,8 +276,6 @@ export function HomeScreen({
                     : "Notifications: likes and activity"
                 }
                 onPress={() => {
-                  // Likes first; straight to Activity when only that has news.
-                  if (notificationCount === 0 && activityUnread > 0) openNotificationsOn("activity");
                   setNotificationCount(0);
                   navigate("likes");
                 }}

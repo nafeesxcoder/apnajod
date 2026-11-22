@@ -10,14 +10,15 @@ const sw = read("../../../public/sw.js");
 const app = read("../../app/MilaanApp.tsx");
 
 describe("Activity", () => {
-  it("is the Activity tab of Notifications; its count adds to the bell on Home", () => {
+  it("is one list on Notifications, below the likes; its count adds to the bell on Home", () => {
     // No second inbox icon on Home: the heart is gone, the bell has both.
     expect(home).not.toContain('<Ionicons name="heart-outline" size={26} color={colors.text} />');
     expect(home).toContain("const bellCount = notificationCount + activityUnread;");
-    expect(home).toContain('if (notificationCount === 0 && activityUnread > 0) openNotificationsOn("activity");');
     expect(home).toContain("const timer = setInterval(check, 60_000);");
-    expect(likes).toContain('["activity", "Activity", "chatbubbles", activityNew]');
-    expect(likes).toContain('{tab === "activity" && !!accessToken && <ActivityList accessToken={accessToken} />}');
+    // No tabs: likes, matches and activity share one scroll.
+    expect(likes).not.toContain('accessibilityRole="tablist"');
+    expect(likes).toContain('<SectionLabel>ACTIVITY</SectionLabel>');
+    expect(likes).toContain('{!!accessToken && <ActivityList accessToken={accessToken} />}');
   });
 
   it("lists post likes and comments, story likes, answers and mentions, and clears the count when opened", () => {

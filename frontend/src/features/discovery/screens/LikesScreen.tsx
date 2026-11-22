@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -29,8 +29,6 @@ import { TrustBadge } from "../../../components/TrustBadge";
 import { serverMs } from "../../../domain/serverTime";
 import { type CardWidth, likeCardWidth, likeColumnCount } from "../likesLayout";
 import { ActivityList } from "../../posts/ActivityList";
-import { postApi } from "../../../api/postApi";
-import { type NotificationsTab, takeNotificationsTab } from "../notificationsTab";
 
 type IncomingLike = {
   id: string;
@@ -336,28 +334,6 @@ export function LikesScreen({
   const isWideLikes = layout.isWide;
   const cardWidth = likeCardWidth(likeColumnCount(layout));
   const [likes, setLikes] = useState<IncomingLike[]>([]);
-  // Notifications has two tabs: Likes (who liked you, matches) and Activity
-  // (likes, comments and mentions on your posts and stories). The bell on
-  // Home picks the one to open on.
-  const [tab, setTab] = useState<NotificationsTab>(() => takeNotificationsTab());
-  const [activityNew, setActivityNew] = useState(0);
-  // Opening Activity is seeing it: no count on the tab you are on.
-  const tabRef = useRef(tab);
-  tabRef.current = tab;
-  useEffect(() => {
-    if (!accessToken) return;
-    let live = true;
-    postApi
-      .activityUnread(accessToken)
-      .then((n) => live && setActivityNew(tabRef.current === "activity" ? 0 : n))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [accessToken]);
-  useEffect(() => {
-    if (tab === "activity") setActivityNew(0);
-  }, [tab]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deciding, setDeciding] = useState<string | null>(null);
@@ -522,70 +498,7 @@ export function LikesScreen({
             )}
           </View>
 
-          <View
-            accessibilityRole="tablist"
-            style={{
-              flexDirection: "row",
-              marginHorizontal: 20,
-              marginBottom: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: palette.rule,
-            }}
-          >
-            {(
-              [
-                ["likes", "Likes", "heart", likes.length],
-                ["activity", "Activity", "chatbubbles", activityNew],
-              ] as const
-            ).map(([key, label, icon, count]) => {
-              const on = tab === key;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={count > 0 ? `${label}, ${count} new` : label}
-                  onPress={() => setTab(key)}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    paddingVertical: 12,
-                    borderBottomWidth: 2,
-                    borderBottomColor: on ? palette.crimson : "transparent",
-                    marginBottom: -1,
-                  }}
-                >
-                  <Ionicons name={on ? icon : (`${icon}-outline` as const)} size={18} color={on ? palette.crimson : colors.muted} />
-                  <Text style={{ fontFamily: on ? fonts.bodyBold : fonts.bodySemi, fontSize: 15, color: on ? palette.ink : colors.muted }}>
-                    {label}
-                  </Text>
-                  {key === "activity" && count > 0 && (
-                    <View
-                      style={{
-                        minWidth: 18,
-                        height: 18,
-                        paddingHorizontal: 4,
-                        borderRadius: radius.pill,
-                        backgroundColor: palette.crimson,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 10 }}>{count > 9 ? "9+" : count}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {tab === "activity" && !!accessToken && <ActivityList accessToken={accessToken} />}
-
-          {tab === "likes" && (
-            <>
+          <>
           {newMatches.length > 0 && (
             <NewMatchesRow
               matches={newMatches}
@@ -1050,8 +963,9 @@ export function LikesScreen({
               </Text>
             </View>
           )}
-            </>
-          )}
+          <SectionLabel>ACTIVITY</SectionLabel>
+          {!!accessToken && <ActivityList accessToken={accessToken} />}
+          </>
         </ScrollView>
 
         <BottomNav active="home" navigate={navigate} />
