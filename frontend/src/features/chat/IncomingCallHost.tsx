@@ -22,9 +22,10 @@ type Incoming = {
 };
 
 const REPLIES = [
-  "Abhi busy hoon, baad mein call karta hoon",
-  "Thodi der mein call karti hoon",
-  "Abhi call nahi, message karo",
+  "I'm busy right now, I'll call you back.",
+  "I'll call you in a little while.",
+  "I can't talk now. Please message me.",
+  "Call me later, please.",
 ];
 
 /**
@@ -177,23 +178,48 @@ export function IncomingCallHost({ accessToken }: { accessToken: string }) {
         </Pressable>
       </View>
       {replyOpen && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingTop: 8 }}>
-          {REPLIES.map((line) => (
+        <View
+          style={{
+            marginTop: 8,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.line,
+            backgroundColor: colors.surface,
+            overflow: "hidden",
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: fonts.bodyBold,
+              fontSize: 14,
+              color: colors.text,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.line,
+            }}
+          >
+            Reply with a message
+          </Text>
+          {REPLIES.map((line, index) => (
             <Pressable
               key={line}
               accessibilityRole="button"
-              accessibilityLabel={`Reply: ${line}`}
+              accessibilityLabel={`Send reply: ${line}`}
               onPress={() => decline(line)}
               style={{
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.line,
-                backgroundColor: colors.surface,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingHorizontal: 14,
+                paddingVertical: 13,
+                borderBottomWidth: index < REPLIES.length - 1 ? 1 : 0,
+                borderBottomColor: colors.lineSoft,
               }}
             >
-              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: colors.text }}>{line}</Text>
+              <Ionicons name="chatbubble-outline" size={16} color={colors.accent} />
+              <Text style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: colors.text }}>{line}</Text>
+              <Ionicons name="send" size={16} color={colors.primary} />
             </Pressable>
           ))}
         </View>

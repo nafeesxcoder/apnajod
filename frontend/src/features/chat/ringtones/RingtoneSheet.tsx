@@ -112,14 +112,7 @@ export function RingtoneSheet({ visible, onClose }: { visible: boolean; onClose:
         {RINGTONES.map((r) => row(r.key, r.name))}
 
         <View style={{ height: 1, backgroundColor: palette.rule, marginVertical: 8, marginHorizontal: 16 }} />
-        {customName &&
-          row(
-            "custom",
-            ringtoneName("custom", customName),
-            <Pressable accessibilityRole="button" accessibilityLabel="Remove my ringtone" onPress={() => void ringtone.removeCustom()} hitSlop={8} style={{ padding: 6 }}>
-              <Ionicons name="trash-outline" size={18} color={palette.slate} />
-            </Pressable>,
-          )}
+        {customName && row("custom", ringtoneName("custom", customName))}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Choose a ringtone from my phone"

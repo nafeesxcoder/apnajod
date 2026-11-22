@@ -57,12 +57,6 @@ export const ringtone = {
     await AsyncStorage.setItem(CUSTOM_KEY, JSON.stringify(custom));
     this.choose("custom");
   },
-  async removeCustom() {
-    custom = null;
-    await AsyncStorage.removeItem(CUSTOM_KEY).catch(() => undefined);
-    if (selected === "custom") this.choose(DEFAULT_RINGTONE);
-    else emit();
-  },
   subscribe(listener: () => void) {
     listeners.add(listener);
     return () => {
@@ -74,6 +68,7 @@ export const ringtone = {
     this.stopPreview();
     try {
       const player = createAudioPlayer(sourceOf(key));
+      player.setActiveForLockScreen(false);
       player.volume = 1;
       player.play();
       preview = { player, timer: setTimeout(() => this.stopPreview(), seconds * 1000) };
@@ -98,6 +93,7 @@ export const ringtone = {
     let player: AudioPlayer | null = null;
     try {
       player = createAudioPlayer(sourceOf(selected));
+      player.setActiveForLockScreen(false);
       player.loop = true;
       player.volume = 1;
       player.play();
