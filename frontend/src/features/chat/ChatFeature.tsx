@@ -1966,10 +1966,14 @@ export function ChatScreen({
     sticker: string,
     viewOnce: boolean,
   ) => {
-    void dispatchMessage(
-      createMessage({
+    setSnapOpen(false);
+    setShowAttachments(false);
+    void sendMediaWithLoader({
+      localUri: uri,
+      fileName: `snap-${Date.now()}.jpg`,
+      build: (uploadedUri) => ({
         type: "snap",
-        uri,
+        uri: uploadedUri,
         snap: {
           filter,
           sticker,
@@ -1977,9 +1981,7 @@ export function ChatScreen({
           expiresAt: Date.now() + 24 * 60 * 60 * 1000,
         },
       }),
-    );
-    setSnapOpen(false);
-    setShowAttachments(false);
+    });
   };
   const sendFaceEmoji = (faceUri: string, emoji: string, filter: string) => {
     void dispatchMessage(
@@ -3221,6 +3223,20 @@ export function ChatScreen({
                   >
                     <Ionicons name="attach" size={22} color={palette.crimson} />
                   </Pressable>
+                  {!text.trim() && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Send a snap"
+                      hitSlop={accessibilityHitSlop}
+                      onPress={() => {
+                        setShowEmoji(false);
+                        setShowAttachments(false);
+                        setSnapOpen(true);
+                      }}
+                    >
+                      <Ionicons name="aperture" size={22} color={palette.navy} />
+                    </Pressable>
+                  )}
                 </View>
 
                 <Pressable
@@ -8451,24 +8467,39 @@ function SnapStudio({
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
+              contentContainerStyle={{ gap: 12 }}
             >
               {snapFilters.map((item) => (
                 <Pressable
                   key={item.name}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter: ${item.name}`}
                   onPress={() => setFilter(item.name)}
-                  style={[
-                    snapStyles.filterChip,
-                    filter === item.name && snapStyles.filterChipOn,
-                  ]}
+                  style={snapStyles.filterItem}
                 >
                   <View
                     style={[
-                      snapStyles.filterDot,
-                      { backgroundColor: item.color },
+                      snapStyles.filterThumb,
+                      filter === item.name && snapStyles.filterThumbOn,
                     ]}
-                  />
-                  <Text style={snapStyles.filterText}>{item.name}</Text>
+                  >
+                    <Image source={{ uri }} style={styles.fill} />
+                    <View
+                      style={[
+                        StyleSheet.absoluteFill,
+                        { backgroundColor: item.color },
+                      ]}
+                    />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      snapStyles.filterText,
+                      filter === item.name && snapStyles.filterTextOn,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
                 </Pressable>
               ))}
             </ScrollView>
