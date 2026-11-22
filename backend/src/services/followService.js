@@ -71,9 +71,9 @@ async function canMessage(viewerId, otherId) {
       LIMIT 1`,
     [viewerId, otherId, otherId, viewerId],
   );
-  return rows.length
-    ? { allowed: true, reason: "mutual_match" }
-    : { allowed: false, reason: "no_match" };
+  if (rows.length) return { allowed: true, reason: "mutual_match" };
+  if (!other.is_private) return { allowed: true, reason: "public" };
+  return { allowed: false, reason: "no_match" };
 }
 
 async function searchByUsername(viewerId, term, limit = 20) {

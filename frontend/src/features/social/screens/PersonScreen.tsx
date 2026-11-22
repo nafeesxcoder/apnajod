@@ -176,7 +176,6 @@ export function PersonScreen({
   const likeStatus = page.like.status;
   const cover = profile.photos[0] || user.avatarUrl || "";
   const extraPhotos = profile.photos.slice(1);
-  const postCount = page.posts?.count ?? 0;
   const postsLocked = !!page.posts?.locked;
   const avatar = cover ? (
     <Image
@@ -419,6 +418,18 @@ export function PersonScreen({
                 </PressScale>
               )}
 
+              {likeStatus !== "accepted" && page.canMessage && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Message ${user.username}`}
+                  onPress={() => onMessage(page)}
+                  style={[actionButton, { backgroundColor: palette.navy }]}
+                >
+                  <Ionicons name="chatbubble" size={16} color="#FFFFFF" />
+                  <Text style={[actionText, { color: "#FFFFFF" }]}>Message</Text>
+                </Pressable>
+              )}
+
               {likeStatus === "accepted" && family.available && (
                 <Pressable
                   accessibilityRole="button"
@@ -504,7 +515,7 @@ export function PersonScreen({
                 marginBottom: 12,
               }}
             >
-              Posts{postCount ? ` · ${postCount}` : ""}
+              Posts
               {postsLocked ? "  🔒" : ""}
             </Text>
             {/* Locked for a private account until you match - checked on the
@@ -512,7 +523,7 @@ export function PersonScreen({
             <PostsSection accessToken={accessToken} userId={userId} isOwner={state.self} />
           </View>
 
-          {!state.self && likeStatus !== "accepted" && (
+          {!state.self && likeStatus !== "accepted" && !page.canMessage && (
             <View
               style={{
                 marginTop: 24,

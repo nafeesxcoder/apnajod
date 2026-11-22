@@ -154,22 +154,45 @@ ${like.spark.kind === "superlike" ? "⭐ Super Like" : "Spark"}${like.spark.note
         </Text>
       </TouchableOpacity>
       {!locked && !matched && (
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View
+          accessibilityRole="radiogroup"
+          style={{
+            flexDirection: "row",
+            padding: 3,
+            borderRadius: radius.pill,
+            backgroundColor: palette.paperSand,
+            borderWidth: 1,
+            borderColor: palette.rule,
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={`Pass on ${like.name}`}
             disabled={busy}
             onPress={onPass}
-            style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.rule }}
+            style={{ width: 40, height: 34, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" }}
           >
-            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: typeScale.label, color: colors.muted }}>Pass</Text>
+            <Ionicons name="close" size={18} color={palette.slate} />
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={`Accept ${like.name}`}
             disabled={busy}
             onPress={onAccept}
-            style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: palette.crimson, opacity: busy ? 0.6 : 1 }}
+            style={{
+              height: 34,
+              paddingHorizontal: 14,
+              borderRadius: radius.pill,
+              backgroundColor: palette.crimson,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 5,
+              shadowColor: palette.crimson,
+              shadowOpacity: 0.25,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+            }}
           >
             {busy ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -178,7 +201,7 @@ ${like.spark.kind === "superlike" ? "⭐ Super Like" : "Spark"}${like.spark.note
                 <HeartBeat>
                   <Ionicons name="heart" size={13} color="#FFFFFF" />
                 </HeartBeat>
-                <Text style={{ fontFamily: fonts.bodySemi, fontSize: typeScale.label, color: "#FFFFFF" }}>Accept</Text>
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: typeScale.label, color: "#FFFFFF" }}>Accept</Text>
               </>
             )}
           </TouchableOpacity>

@@ -149,11 +149,17 @@ t("a mutual match lets both people message each other", async () => {
   assert.equal(thread[0].text, "hello");
 });
 
-t("no match refuses the message, and no error text leaks why", async () => {
+t("a private account refuses a message without a match, and no error text leaks why", async () => {
   const a = await member("asha");
   const b = await member("bina");
+  await query("UPDATE users SET is_private = 1 WHERE id = ?", [b]);
   await assert.rejects(() => say(a, b, "hello"), /not available/i);
-  await assert.rejects(() => say(b, a, "hello back"), /not available/i);
+});
+
+t("a public account takes a message from anyone, without a match", async () => {
+  const a = await member("asha");
+  const b = await member("bina");
+  await say(a, b, "hello");
 });
 
 t("a block stops the conversation even when a match exists", async () => {

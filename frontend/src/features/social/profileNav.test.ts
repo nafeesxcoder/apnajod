@@ -29,9 +29,9 @@ describe("opening someone's profile, like Instagram", () => {
     expect(chat).toContain("onOpenPartnerProfile ? onOpenPartnerProfile() : setSettingsOpen(true)");
   });
 
-  it("shows their posts and how many, but never a match count", () => {
+  it("shows their posts, but no counts of posts, likes or matches", () => {
     expect(person).toContain("<PostsSection accessToken={accessToken} userId={userId}");
-    expect(person).toContain('Posts{postCount ? ` · ${postCount}` : ""}');
+    expect(person).not.toContain("postCount");
     expect(socialApi).not.toMatch(/followers|following:/);
     expect(person).not.toMatch(/matches\b.*count|matchCount/i);
   });
