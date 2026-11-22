@@ -1203,11 +1203,15 @@ export function ChatScreen({
         // the callee was sitting in the right thread.
         // Same call on the next poll keeps the same object, so the ringing
         // effect below is not restarted every few seconds.
-        setIncomingCall((current) => {
-          if (!call || call.callerId !== conversationIdFor(match)) return null;
-          if (current?.id === call.id) return current;
-          return { id: call.id, callerName: call.callerName, mode: call.mode };
-        });
+        if (call && call.callerId === conversationIdFor(match)) {
+          setIncomingCall((current) =>
+            current?.id === call.id
+              ? current
+              : { id: call.id, callerName: call.callerName, mode: call.mode },
+          );
+        } else {
+          setIncomingCall(null);
+        }
       } catch {
         // ignore transient errors; next poll retries
       }
