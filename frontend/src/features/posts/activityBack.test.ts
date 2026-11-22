@@ -12,8 +12,8 @@ describe('Activity and the back button', () => {
   });
 
   it('says your own likes and comments do not show', () => {
-    const list = readFileSync(join(__dirname, 'ActivityList.tsx'), 'utf8');
-    expect(list).toContain("Your own likes and comments don't.");
+    const screen = readFileSync(join(__dirname, '../discovery/screens/LikesScreen.tsx'), 'utf8');
+    expect(screen).toContain("Your own likes and comments don't.");
   });
 });
 

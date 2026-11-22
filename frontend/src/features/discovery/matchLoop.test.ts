@@ -26,8 +26,8 @@ describe('accepting someone who liked you', () => {
   it('gives every incoming like a way to say yes and no', () => {
     expect(likes).toContain('Accept');
     expect(likes).toContain('Pass');
-    expect(compact(likes)).toContain("decide(like,'interested')");
-    expect(compact(likes)).toContain("decide(like,'pass')");
+    expect(compact(likes)).toContain("decide(row.like!,'interested')");
+    expect(compact(likes)).toContain("decide(row.like!,'pass')");
   });
 
   it('accepting is liking them back, not a separate idea', () => {

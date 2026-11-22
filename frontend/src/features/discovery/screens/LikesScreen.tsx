@@ -11,24 +11,21 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { whiteCard } from "../../../components/brand";
-import { HeartBeat, Reveal } from "../../../components/motion";
+import { HeartBeat } from "../../../components/motion";
 
 import { AppCanvas } from "../../../components/AppCanvas";
 import {
   BottomNav,
   useNavInset,
 } from "../../../components/navigation/BottomNav";
-import { useLayout } from "../../../layout/useLayout";
 import type { Screen } from "../../../app/navigation/types";
 import type { Match } from "../../../data";
 import { matchApi, type MutualMatchSummary } from "../../../api/matchApi";
 import { matchFromSocialUser } from "../../../domain/socialMatch";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
-import { TrustBadge } from "../../../components/TrustBadge";
 import { serverMs } from "../../../domain/serverTime";
-import { type CardWidth, likeCardWidth, likeColumnCount } from "../likesLayout";
-import { ActivityList } from "../../posts/ActivityList";
+import { ActivityRow, loadActivity } from "../../posts/ActivityList";
+import type { ActivityItem } from "../../../api/postApi";
 
 type IncomingLike = {
   id: string;
@@ -51,9 +48,6 @@ type IncomingLike = {
   /** They sent a Spark or a Super Like with this like. */
   spark?: { kind: "spark" | "superlike"; note: string } | null;
 };
-
-/** The most a card grows to, so a very wide window does not stretch it. */
-const LIKE_CARD_MAX_WIDTH = 420;
 
 /**
  * A photo that shows the placeholder when there is no picture, or when the
@@ -83,90 +77,112 @@ function PhotoOrFallback({
   );
 }
 
-function LockedLikeCard({
-  likedAt,
-  width,
-  onUnlock,
+function LikeRow({
+  like,
+  busy,
+  onAccept,
+  onPass,
+  onOpen,
 }: {
-  likedAt: string | null;
-  width?: CardWidth;
-  onUnlock?: () => void;
+  like: IncomingLike;
+  busy: boolean;
+  onAccept: () => void;
+  onPass: () => void;
+  onOpen: () => void;
 }) {
+  const locked = !!like.locked;
+  const matched = like.status === "accepted";
   return (
     <View
-      style={[
-        {
-          ...whiteCard,
-          overflow: "hidden",
-        },
-        width && { width, maxWidth: LIKE_CARD_MAX_WIDTH },
-      ]}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: palette.ruleSoft,
+      }}
     >
-      <View
-        style={{
-          flexDirection: "row",
-          padding: 14,
-          gap: 14,
-          alignItems: "center",
-        }}
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={locked ? "Someone liked your profile" : `Open ${like.name}'s profile`}
+        disabled={locked}
+        onPress={onOpen}
+        style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
       >
-        <View
-          style={{
-            width: 92,
-            height: 112,
-            borderRadius: radius.md,
-            backgroundColor: palette.paper,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons name="lock-closed" size={26} color={palette.slate} />
+        {locked ? (
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: palette.paperSand,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="lock-closed" size={18} color={palette.slate} />
+          </View>
+        ) : (
+          <PhotoOrFallback
+            uri={like.photo}
+            style={{ width: 44, height: 44, borderRadius: 22 }}
+            fallback={<View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: palette.paperSand }} />}
+          />
+        )}
+        <Text numberOfLines={2} style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: palette.ink, lineHeight: 20 }}>
+          {locked ? (
+            "Someone liked your profile"
+          ) : (
+            <>
+              <Text style={{ fontFamily: fonts.bodyBold }}>{like.username || like.name}</Text>
+              <Text>{" liked your profile"}</Text>
+            </>
+          )}
+          <Text style={{ color: palette.slate }}>{`  ${sinceLabel(like.likedAt)}`}</Text>
+          <Text style={{ color: matched ? palette.navy : palette.slate, fontFamily: fonts.bodySemi }}>
+            {`
+${matched ? "Accepted" : "Pending"}`}
+          </Text>
+          {!!like.spark && (
+            <Text style={{ color: palette.crimson, fontFamily: fonts.bodySemi }}>
+              {`
+${like.spark.kind === "superlike" ? "⭐ Super Like" : "Spark"}${like.spark.note ? ` · ${like.spark.note}` : ""}`}
+            </Text>
+          )}
+        </Text>
+      </TouchableOpacity>
+      {!locked && !matched && (
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Pass on ${like.name}`}
+            disabled={busy}
+            onPress={onPass}
+            style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.rule }}
+          >
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: typeScale.label, color: colors.muted }}>Pass</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Accept ${like.name}`}
+            disabled={busy}
+            onPress={onAccept}
+            style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: palette.crimson, opacity: busy ? 0.6 : 1 }}
+          >
+            {busy ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <HeartBeat>
+                  <Ionicons name="heart" size={13} color="#FFFFFF" />
+                </HeartBeat>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: typeScale.label, color: "#FFFFFF" }}>Accept</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
-        <View style={{ flex: 1, gap: 6 }}>
-          <Text
-            style={{
-              fontFamily: fonts.display,
-              fontSize: typeScale.section,
-              color: colors.text,
-            }}
-          >
-            Someone liked you
-          </Text>
-          <Text
-            style={{
-              fontFamily: fonts.body,
-              fontSize: typeScale.label,
-              color: colors.muted,
-            }}
-          >
-            {sinceLabel(likedAt)}
-          </Text>
-        </View>
-      </View>
-      {onUnlock && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="See who liked you with Premium"
-          onPress={onUnlock}
-          style={{
-            margin: 14,
-            marginTop: 0,
-            paddingVertical: 13,
-            borderRadius: radius.pill,
-            backgroundColor: palette.navy,
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontFamily: fonts.bodySemi,
-              fontSize: typeScale.body,
-            }}
-          >
-            See who it is
-          </Text>
-        </TouchableOpacity>
       )}
     </View>
   );
@@ -330,14 +346,16 @@ export function LikesScreen({
   }) => void;
 }) {
   const navInset = useNavInset();
-  const layout = useLayout();
-  const isWideLikes = layout.isWide;
-  const cardWidth = likeCardWidth(likeColumnCount(layout));
   const [likes, setLikes] = useState<IncomingLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [newMatches, setNewMatches] = useState<MutualMatchSummary[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const feed = [
+    ...likes.map((like) => ({ key: `like-${like.id}`, at: serverMs(like.likedAt ?? "") || 0, like, item: null as ActivityItem | null })),
+    ...activity.map((item, index) => ({ key: `act-${index}`, at: serverMs(item.at) || 0, like: null, item })),
+  ].sort((x, y) => y.at - x.at);
 
   // Opening this page is reading the notifications: the bell goes back to 0.
   // New matches load on their own so a slow list never holds up the likes.
@@ -350,6 +368,17 @@ export function LikesScreen({
       .then((result) => {
         if (live) setNewMatches(recentMatches((result.matches as MutualMatchSummary[]) || []));
       })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let live = true;
+    loadActivity(accessToken)
+      .then((items) => live && setActivity(items))
       .catch(() => undefined);
     return () => {
       live = false;
@@ -391,13 +420,6 @@ export function LikesScreen({
     }
   };
 
-  const openChat = (like: IncomingLike) =>
-    onMatched({
-      userId: like.userId,
-      username: like.username || "",
-      name: like.name,
-      photo: like.photo,
-    });
 
   useEffect(() => {
     let isMounted = true;
@@ -513,9 +535,6 @@ export function LikesScreen({
             />
           )}
 
-          {!loading && !error && likes.length > 0 && newMatches.length > 0 && (
-            <SectionLabel>WHO LIKED YOU</SectionLabel>
-          )}
 
           {/* Loading */}
           {loading && (
@@ -573,7 +592,7 @@ export function LikesScreen({
           )}
 
           {/* Empty — unboxed */}
-          {!loading && !error && likes.length === 0 && (
+          {!loading && !error && feed.length === 0 && (
             <View
               style={{
                 alignItems: "center",
@@ -595,7 +614,7 @@ export function LikesScreen({
                   textAlign: "center",
                 }}
               >
-                No new likes yet
+                Nothing new yet
               </Text>
               <Text
                 style={{
@@ -608,363 +627,29 @@ export function LikesScreen({
                   lineHeight: 22,
                 }}
               >
-                When someone likes you, they will appear here securely.
+                When someone likes you, or likes or comments on your posts, it shows up here. Your own likes and comments don't.
               </Text>
             </View>
           )}
 
-          {/* Likes list */}
-          {!loading && !error && likes.length > 0 && (
-            <View
-              style={[
-                { paddingHorizontal: 20, gap: 14 },
-                isWideLikes && {
-                  flexDirection: "row" as const,
-                  flexWrap: "wrap" as const,
-                  justifyContent: "center" as const,
-                },
-              ]}
-            >
-              {likes.map((like, index) => {
-                const accepted = like.status === "accepted";
-                const busy = deciding === like.userId;
-                if (like.locked) {
-                  return (
-                    <LockedLikeCard
-                      key={like.id}
-                      likedAt={like.likedAt}
-                      width={cardWidth}
-                    />
-                  );
-                }
-                return (
-                  <Reveal
-                    key={like.id}
-                    // One after another, but never a long wait for the tenth.
-                    delay={Math.min(index, 6) * 70}
-                    style={[
-                      {
-                        ...whiteCard,
-                        overflow: "hidden",
-                      },
-                      isWideLikes && { width: cardWidth, maxWidth: LIKE_CARD_MAX_WIDTH },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open ${like.name}'s profile`}
-                      onPress={() => openDetail(matchFromLike(like))}
-                      style={{ flexDirection: "row", padding: 14, gap: 14 }}
-                    >
-                      <PhotoOrFallback
-                        uri={like.photo}
-                        style={{
-                          width: 92,
-                          height: 112,
-                          borderRadius: radius.md,
-                        }}
-                        fallback={
-                          <View
-                            style={{
-                              width: 92,
-                              height: 112,
-                              borderRadius: radius.md,
-                              backgroundColor: palette.paper,
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <Ionicons
-                              name="person"
-                              size={34}
-                              color={palette.navySoft}
-                            />
-                          </View>
-                        }
-                      />
-
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              flexShrink: 1,
-                              fontFamily: fonts.display,
-                              fontSize: typeScale.section,
-                              color: colors.text,
-                            }}
-                          >
-                            {like.name}
-                            {like.age ? `, ${like.age}` : ""}
-                          </Text>
-                          {like.verified && <TrustBadge blueTick={like.blueTick} size={17} />}
-                        </View>
-
-                        {!!like.spark && (
-                          <View
-                            accessibilityLabel={
-                              like.spark.kind === "superlike"
-                                ? "They sent you a Super Like"
-                                : "They sent you a Spark"
-                            }
-                            style={{
-                              alignSelf: "flex-start",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 4,
-                              marginTop: 4,
-                              borderRadius: radius.pill,
-                              paddingHorizontal: 10,
-                              paddingVertical: 3,
-                              backgroundColor:
-                                like.spark.kind === "superlike"
-                                  ? palette.navy
-                                  : palette.marigoldTint,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontFamily: fonts.bodySemi,
-                                fontSize: 12,
-                                color:
-                                  like.spark.kind === "superlike"
-                                    ? "#FFFFFF"
-                                    : palette.ink,
-                              }}
-                            >
-                              {like.spark.kind === "superlike"
-                                ? "⭐ Super Like"
-                                : "✨ Spark"}
-                            </Text>
-                          </View>
-                        )}
-                        {!!like.spark?.note && (
-                          <Text
-                            numberOfLines={3}
-                            style={{
-                              fontFamily: fonts.body,
-                              fontStyle: "italic",
-                              fontSize: typeScale.caption,
-                              lineHeight: 17,
-                              color: colors.text,
-                              marginTop: 6,
-                            }}
-                          >
-                            "{like.spark.note}"
-                          </Text>
-                        )}
-
-                        {!!(like.city || like.profession) && (
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              fontFamily: fonts.body,
-                              fontSize: typeScale.caption,
-                              color: colors.muted,
-                              marginTop: 2,
-                            }}
-                          >
-                            {[like.city.split(",")[0], like.profession]
-                              .filter(Boolean)
-                              .join("  ·  ")}
-                          </Text>
-                        )}
-
-                        {!!like.about && (
-                          <Text
-                            numberOfLines={2}
-                            style={{
-                              fontFamily: fonts.body,
-                              fontSize: typeScale.caption,
-                              lineHeight: 17,
-                              color: colors.muted,
-                              marginTop: 6,
-                            }}
-                          >
-                            {like.about}
-                          </Text>
-                        )}
-
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 8,
-                            marginTop: 8,
-                          }}
-                        >
-                          <View
-                            style={{
-                              paddingHorizontal: 9,
-                              paddingVertical: 3,
-                              borderRadius: radius.pill,
-                              backgroundColor: accepted
-                                ? palette.marigoldTint
-                                : palette.navySoft,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontFamily: fonts.bodySemi,
-                                fontSize: typeScale.caption,
-                                color: accepted
-                                  ? palette.emerald
-                                  : palette.navyDeep,
-                              }}
-                            >
-                              {accepted ? "Accepted" : "Pending"}
-                            </Text>
-                          </View>
-                          {!!sinceLabel(like.likedAt) && (
-                            <Text
-                              style={{
-                                fontFamily: fonts.body,
-                                fontSize: 11.5,
-                                color: colors.muted,
-                              }}
-                            >
-                              {sinceLabel(like.likedAt)}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 10,
-                        paddingHorizontal: 14,
-                        paddingBottom: 14,
-                      }}
-                    >
-                      {accepted ? (
-                        <TouchableOpacity
-                          accessibilityRole="button"
-                          accessibilityLabel={`Message ${like.name}`}
-                          onPress={() => openChat(like)}
-                          style={{
-                            flex: 1,
-                            paddingVertical: 11,
-                            borderRadius: radius.pill,
-                            backgroundColor: palette.navy,
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Ionicons
-                            name="chatbubble"
-                            size={14}
-                            color="#FFFFFF"
-                          />
-                          <Text
-                            style={{
-                              fontFamily: fonts.bodySemi,
-                              fontSize: typeScale.label,
-                              color: "#FFFFFF",
-                            }}
-                          >
-                            Message
-                          </Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <>
-                          <TouchableOpacity
-                            accessibilityRole="button"
-                            accessibilityLabel={`Pass on ${like.name}`}
-                            disabled={busy}
-                            onPress={() => decide(like, "pass")}
-                            style={{
-                              flex: 1,
-                              paddingVertical: 11,
-                              borderRadius: radius.pill,
-                              borderWidth: 1,
-                              borderColor: palette.rule,
-                              alignItems: "center",
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontFamily: fonts.bodyMedium,
-                                fontSize: typeScale.label,
-                                color: colors.muted,
-                              }}
-                            >
-                              Pass
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            accessibilityRole="button"
-                            accessibilityLabel={`Accept ${like.name} and open a chat`}
-                            disabled={busy}
-                            onPress={() => decide(like, "interested")}
-                            style={{
-                              flex: 1,
-                              paddingVertical: 11,
-                              borderRadius: radius.pill,
-                              backgroundColor: palette.crimson,
-                              flexDirection: "row",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 6,
-                              opacity: busy ? 0.6 : 1,
-                            }}
-                          >
-                            {busy ? (
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                              <>
-                                <HeartBeat>
-                                  <Ionicons
-                                    name="heart"
-                                    size={14}
-                                    color="#FFFFFF"
-                                  />
-                                </HeartBeat>
-                                <Text
-                                  style={{
-                                    fontFamily: fonts.bodySemi,
-                                    fontSize: typeScale.label,
-                                    color: "#FFFFFF",
-                                  }}
-                                >
-                                  Accept
-                                </Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        </>
-                      )}
-                    </View>
-                  </Reveal>
-                );
-              })}
-
-              <Text
-                style={{
-                  fontFamily: fonts.body,
-                  fontSize: typeScale.label,
-                  color: colors.muted,
-                  textAlign: "center",
-                  marginTop: 6,
-                  marginBottom: 24,
-                  width: "100%",
-                }}
-              >
-                Accepting opens the chat for both of you.
-              </Text>
+          {!loading && !error && feed.length > 0 && (
+            <View style={{ paddingHorizontal: 16 }}>
+              {feed.map((row) =>
+                row.like ? (
+                  <LikeRow
+                    key={row.key}
+                    like={row.like}
+                    busy={deciding === row.like.userId}
+                    onAccept={() => void decide(row.like!, "interested")}
+                    onPass={() => void decide(row.like!, "pass")}
+                    onOpen={() => openDetail(matchFromLike(row.like!))}
+                  />
+                ) : (
+                  <ActivityRow key={row.key} item={row.item!} />
+                ),
+              )}
             </View>
           )}
-          <SectionLabel>ACTIVITY</SectionLabel>
-          {!!accessToken && <ActivityList accessToken={accessToken} />}
           </>
         </ScrollView>
 

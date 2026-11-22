@@ -40,9 +40,9 @@ describe('the likes list', () => {
     expect(screen).toContain('onMatched(');
   });
 
-  it('offers Message, not Accept, to someone already accepted', () => {
-    expect(compact(screen)).toContain('accepted?(');
-    expect(screen).toContain('openChat(like)');
+  it('offers no Accept or Pass to someone already accepted; the row opens their profile', () => {
+    expect(compact(screen)).toContain('!locked&&!matched&&(');
+    expect(screen).not.toContain('openChat(like)');
   });
 
   it('shows enough of the person to decide on', () => {
