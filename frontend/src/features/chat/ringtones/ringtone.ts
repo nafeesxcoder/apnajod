@@ -11,6 +11,7 @@ import { cleanRingtone, DEFAULT_RINGTONE } from "./ringtoneList";
 
 const KEY = "apnajoda.ringtone";
 const CUSTOM_KEY = "apnajoda.ringtone.custom";
+const RING_MAX_MS = 15_000;
 
 type Custom = { name: string; dataUrl: string };
 let selected = DEFAULT_RINGTONE;
@@ -91,7 +92,7 @@ export const ringtone = {
     }
     preview = null;
   },
-  /** A call is coming in: ring until stop() is called. */
+  /** A call is coming in: ring until stop() is called, for at most 15 seconds. */
   startRinging(): { stop: () => void } {
     this.stopPreview();
     let player: AudioPlayer | null = null;
@@ -103,16 +104,17 @@ export const ringtone = {
     } catch {
       player = null;
     }
-    return {
-      stop: () => {
-        try {
-          player?.pause();
-          player?.remove();
-        } catch {
-          // Already gone.
-        }
-        player = null;
-      },
-    };
+    const cap = setTimeout(() => stopRing(), RING_MAX_MS);
+    function stopRing() {
+      clearTimeout(cap);
+      try {
+        player?.pause();
+        player?.remove();
+      } catch {
+        // Already gone.
+      }
+      player = null;
+    }
+    return { stop: stopRing };
   },
 };

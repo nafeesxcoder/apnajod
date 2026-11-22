@@ -1160,6 +1160,15 @@ export function ChatScreen({
     callerName: string;
     mode: "audio" | "video";
   } | null>(null);
+  const [callReplyOpen, setCallReplyOpen] = useState(false);
+  const declineWithReply = (reply?: string) => {
+    if (!incomingCall) return;
+    void callApi.respond(accessToken, incomingCall.id, false).catch(() => undefined);
+    if (reply) void dispatchMessage(createMessage({ type: "text", text: reply }));
+    setIncomingCall(null);
+    setIncomingCallId(null);
+    setCallReplyOpen(false);
+  };
   const startRealCall = async (kind: "audio" | "video") => {
     if (!accessToken || callSession.get().mode) return;
     try {
@@ -1192,15 +1201,13 @@ export function ChatScreen({
         // conversationIdFor(match), the caller's id, compared two different
         // people and was never true. The banner could not appear even when
         // the callee was sitting in the right thread.
-        if (call && call.callerId === conversationIdFor(match)) {
-          setIncomingCall({
-            id: call.id,
-            callerName: call.callerName,
-            mode: call.mode,
-          });
-        } else {
-          setIncomingCall(null);
-        }
+        // Same call on the next poll keeps the same object, so the ringing
+        // effect below is not restarted every few seconds.
+        setIncomingCall((current) => {
+          if (!call || call.callerId !== conversationIdFor(match)) return null;
+          if (current?.id === call.id) return current;
+          return { id: call.id, callerName: call.callerName, mode: call.mode };
+        });
       } catch {
         // ignore transient errors; next poll retries
       }
@@ -2567,6 +2574,7 @@ export function ChatScreen({
             </View>
           )}
           {!!incomingCall && !callMode && (
+            <>
             <View accessibilityRole="alert" style={chatStyles.incomingCall}>
               <PremiumIcon
                 name={incomingCall?.mode === "video" ? "videocam" : "call"}
@@ -2584,16 +2592,18 @@ export function ChatScreen({
               </View>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Reply with a message"
+                hitSlop={accessibilityHitSlop}
+                onPress={() => setCallReplyOpen((open) => !open)}
+                style={chatStyles.callDecline}
+              >
+                <Ionicons name="chatbubble-ellipses" size={17} color={colors.text} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Decline call"
                 hitSlop={accessibilityHitSlop}
-                onPress={() => {
-                  if (incomingCall)
-                    void callApi
-                      .respond(accessToken, incomingCall.id, false)
-                      .catch(() => undefined);
-                  setIncomingCall(null);
-                  setIncomingCallId(null);
-                }}
+                onPress={() => declineWithReply()}
                 style={chatStyles.callDecline}
               >
                 <Ionicons name="call" size={17} color={colors.danger} />
@@ -2621,6 +2631,26 @@ export function ChatScreen({
                 <Ionicons name="call" size={17} color={colors.textInverse} />
               </Pressable>
             </View>
+            {callReplyOpen && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 12, paddingBottom: 10 }}>
+                {[
+                  "Abhi busy hoon, baad mein call karta hoon",
+                  "Thodi der mein call karti hoon",
+                  "Abhi call nahi, message karo",
+                ].map((line) => (
+                  <Pressable
+                    key={line}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Reply: ${line}`}
+                    onPress={() => declineWithReply(line)}
+                    style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface }}
+                  >
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: colors.text }}>{line}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            </>
           )}
           <View style={chatStyles.contextBar}>
             <View style={shared.spacer} />
