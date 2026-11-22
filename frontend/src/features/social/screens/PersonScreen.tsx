@@ -118,12 +118,9 @@ export function PersonScreen({
     setBusy(true);
     setError("");
     try {
-      const outcome = await onFollow(userId);
+      await onFollow(userId);
       const fresh = await onLoad(userId).catch(() => null);
       if (fresh) setPage(fresh);
-      if (outcome === "accepted" || fresh?.like.matched) {
-        onMessage(fresh ?? page);
-      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "That did not work.");
     } finally {

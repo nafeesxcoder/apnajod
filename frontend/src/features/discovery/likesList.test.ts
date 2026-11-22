@@ -93,9 +93,9 @@ describe('a person page', () => {
     expect(matchedBranch).not.toContain('"Like"');
   });
 
-  it('opens the chat the moment accepting makes it mutual', () => {
+  it('a Like never opens the chat; a match shows Message on the profile instead', () => {
     const like = person.slice(person.indexOf('const like = async'), person.indexOf('if (error && !page)'));
-    expect(like).toContain('onMessage(');
-    expect(like).toContain('matched');
+    expect(like).not.toContain('onMessage(');
+    expect(like).toContain('onLoad(userId)');
   });
 });
