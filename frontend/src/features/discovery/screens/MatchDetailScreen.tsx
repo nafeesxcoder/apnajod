@@ -15,7 +15,7 @@ import { fonts, palette, radius, typeScale } from "../../../theme";
 import { AppCanvas } from "../../../components/AppCanvas";
 import type { Match } from "../../../data";
 import type { Screen } from "../../../app/navigation/types";
-import { socialApi } from "../../../api/socialApi";
+import { socialApi, type LikeState } from "../../../api/socialApi";
 import { matchApi } from "../../../api/matchApi";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
@@ -49,12 +49,17 @@ export function MatchDetailScreen({
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
   const [canMessage, setCanMessage] = useState(false);
+  const [status, setStatus] = useState<LikeState["status"]>("none");
 
   useEffect(() => {
     if (!accessToken) return;
     socialApi
       .person(accessToken, match.id)
-      .then((data) => setCanMessage(!!data.canMessage))
+      .then((data) => {
+        setCanMessage(!!data.canMessage);
+        setStatus(data.like?.status ?? "none");
+        setLiked(data.like?.status === "pending");
+      })
       .catch(() => {});
   }, [accessToken, match.id]);
 
@@ -63,10 +68,13 @@ export function MatchDetailScreen({
     setLoading(true);
     try {
       const result = await matchApi.decide(accessToken, match.id, "interested");
-      setLiked(true);
       if (result?.mutual) {
+        setStatus("accepted");
         setCanMessage(true);
-        onStartChat();
+        setLiked(false);
+      } else {
+        setStatus("pending");
+        setLiked(true);
       }
     } catch (err: any) {
       Alert.alert("Error", err.message || "Could not send that.");
@@ -311,10 +319,11 @@ export function MatchDetailScreen({
               </View>
 
               <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
+                {status !== "accepted" && (
                 <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={
-                    liked ? `You liked ${match.name}` : `Like ${match.name}`
+                    liked ? `You liked ${match.name}` : status === "likes_you" ? `Accept ${match.name}` : `Like ${match.name}`
                   }
                   onPress={handleLike}
                   disabled={loading || liked}
@@ -348,9 +357,10 @@ export function MatchDetailScreen({
                       fontSize: 13,
                     }}
                   >
-                    {liked ? "Liked" : "Like"}
+                    {liked ? "Liked" : status === "likes_you" ? "Accept" : "Like"}
                   </Text>
                 </PressScale>
+                )}
 
                 <TouchableOpacity
                   onPress={handleMessage}
