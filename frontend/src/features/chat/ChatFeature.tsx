@@ -3170,8 +3170,9 @@ export function ChatScreen({
                     borderWidth: 1,
                     borderColor: palette.rule,
                     borderRadius: radius.pill,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
+                    paddingHorizontal: 18,
+                    paddingVertical: 4,
+                    minHeight: 46,
                     gap: 8,
                   }}
                 >
@@ -3198,7 +3199,9 @@ export function ChatScreen({
                         fontSize: 15,
                         color: colors.text,
                         maxHeight: 110,
-                        paddingVertical: 0,
+                        minHeight: 38,
+                        paddingVertical: 10,
+                        paddingHorizontal: 4,
                         textAlignVertical: "center",
                       },
                       Platform.OS === "web"
