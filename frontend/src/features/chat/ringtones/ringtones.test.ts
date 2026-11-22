@@ -24,7 +24,7 @@ describe("call ringtones", () => {
   });
 
   it("rings with your choice on repeat while a call comes in, and stops after", () => {
-    const chat = read("src/features/chat/ChatFeature.tsx");
+    const chat = read("src/features/chat/IncomingCallHost.tsx");
     expect(chat).toContain("const ring = ringtone.startRinging();");
     expect(chat).toContain("ring.stop();");
     const player = read("src/features/chat/ringtones/ringtone.ts");

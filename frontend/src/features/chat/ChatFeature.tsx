@@ -27,7 +27,6 @@ import {
   TextInput,
   useWindowDimensions,
   View,
-  Vibration,
 } from "react-native";
 import { Modal } from "../../components/BackModal";
 import { Pressable } from "../../components/Pressable";
@@ -79,7 +78,6 @@ import {
 import { useFestival } from "../festival/festivalStore";
 import { alreadyWished, FestivalWishCard, FestivalWishChip } from "../festival/FestivalWish";
 import { LudoInviteCard } from "../ludo/LudoInviteCard";
-import { ringtone } from "./ringtones/ringtone";
 import { userIdFromToken } from "../posts/profileLink";
 import {
   chatApi,
@@ -1155,20 +1153,6 @@ export function ChatScreen({
   }, [messages]);
   const [, setLastCallEvent] = useState<RealtimeCallEvent | null>(null);
   const [, setIncomingCallId] = useState<string | null>(null);
-  const [incomingCall, setIncomingCall] = useState<{
-    id: string;
-    callerName: string;
-    mode: "audio" | "video";
-  } | null>(null);
-  const [callReplyOpen, setCallReplyOpen] = useState(false);
-  const declineWithReply = (reply?: string) => {
-    if (!incomingCall) return;
-    void callApi.respond(accessToken, incomingCall.id, false).catch(() => undefined);
-    if (reply) void dispatchMessage(createMessage({ type: "text", text: reply }));
-    setIncomingCall(null);
-    setIncomingCallId(null);
-    setCallReplyOpen(false);
-  };
   const startRealCall = async (kind: "audio" | "video") => {
     if (!accessToken || callSession.get().mode) return;
     try {
@@ -1188,58 +1172,6 @@ export function ChatScreen({
       // silent: person can retry the call button
     }
   };
-  useEffect(() => {
-    if (!accessToken || callMode) return;
-    let active = true;
-    const poll = async () => {
-      try {
-        const call = await callApi.getIncoming(accessToken);
-        if (!active) return;
-        // Compare the CALLER's id, not the stored conversation id. A call
-        // records its conversation as the id the caller addressed it by,
-        // which is the callee's own user id - so matching it against
-        // conversationIdFor(match), the caller's id, compared two different
-        // people and was never true. The banner could not appear even when
-        // the callee was sitting in the right thread.
-        // Same call on the next poll keeps the same object, so the ringing
-        // effect below is not restarted every few seconds.
-        if (call && call.callerId === conversationIdFor(match)) {
-          setIncomingCall((current) =>
-            current?.id === call.id
-              ? current
-              : { id: call.id, callerName: call.callerName, mode: call.mode },
-          );
-        } else {
-          setIncomingCall(null);
-        }
-      } catch {
-        // ignore transient errors; next poll retries
-      }
-    };
-    const timer = setInterval(() => void poll(), 3000);
-    void poll();
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [accessToken, callMode, match]);
-  // Ring (your chosen ringtone, on repeat) and vibrate while a call is
-  // coming in, until it is answered, declined or otherwise clears.
-  // Settings > Call ringtone picks the sound.
-  useEffect(() => {
-    if (!incomingCall) return;
-    const ring = ringtone.startRinging();
-    if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate([400, 200, 400, 200, 400]);
-    } else if (Platform.OS !== "web") {
-      Vibration.vibrate([0, 400, 200, 400], true);
-    }
-    return () => {
-      ring.stop();
-      if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(0);
-      else if (Platform.OS !== "web") Vibration.cancel();
-    };
-  }, [incomingCall]);
   const [connectionOnline, setConnectionOnline] = useState(() =>
     Platform.OS !== "web" || typeof navigator === "undefined"
       ? true
@@ -2577,85 +2509,6 @@ export function ChatScreen({
               </Pressable>
             </View>
           )}
-          {!!incomingCall && !callMode && (
-            <>
-            <View accessibilityRole="alert" style={chatStyles.incomingCall}>
-              <PremiumIcon
-                name={incomingCall?.mode === "video" ? "videocam" : "call"}
-                tone="ruby"
-                size={40}
-                iconSize={19}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={chatStyles.incomingCallTitle}>
-                  Incoming {incomingCall?.mode ?? "audio"} call
-                </Text>
-                <Text style={chatStyles.incomingCallBody}>
-                  {match.name} · Verified mutual match
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Reply with a message"
-                hitSlop={accessibilityHitSlop}
-                onPress={() => setCallReplyOpen((open) => !open)}
-                style={chatStyles.callDecline}
-              >
-                <Ionicons name="chatbubble-ellipses" size={17} color={colors.text} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Decline call"
-                hitSlop={accessibilityHitSlop}
-                onPress={() => declineWithReply()}
-                style={chatStyles.callDecline}
-              >
-                <Ionicons name="call" size={17} color={colors.danger} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Accept call"
-                hitSlop={accessibilityHitSlop}
-                onPress={() => {
-                  if (!incomingCall) return;
-                  void callApi
-                    .respond(accessToken, incomingCall.id, true)
-                    .catch(() => undefined);
-                  callSession.begin({
-                    mode: incomingCall.mode,
-                    callId: incomingCall.id,
-                    isCaller: false,
-                    match,
-                    isCoupleMode,
-                  });
-                  setIncomingCall(null);
-                }}
-                style={chatStyles.callAccept}
-              >
-                <Ionicons name="call" size={17} color={colors.textInverse} />
-              </Pressable>
-            </View>
-            {callReplyOpen && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 12, paddingBottom: 10 }}>
-                {[
-                  "Abhi busy hoon, baad mein call karta hoon",
-                  "Thodi der mein call karti hoon",
-                  "Abhi call nahi, message karo",
-                ].map((line) => (
-                  <Pressable
-                    key={line}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Reply: ${line}`}
-                    onPress={() => declineWithReply(line)}
-                    style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface }}
-                  >
-                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: colors.text }}>{line}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-            </>
-          )}
           <View style={chatStyles.contextBar}>
             <View style={shared.spacer} />
             {false && (
@@ -3346,7 +3199,6 @@ export function ChatScreen({
                         color: colors.text,
                         maxHeight: 110,
                         paddingVertical: 0,
-                        textAlign: "center",
                         textAlignVertical: "center",
                       },
                       Platform.OS === "web"

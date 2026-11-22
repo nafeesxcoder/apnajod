@@ -40,8 +40,6 @@ describe('type checking is on', () => {
   it('keeps the app shell checked in particular', () => {
     const shell = readFileSync('src/app/MilaanApp.tsx', 'utf8');
     expect(shell).not.toContain(pragma);
-    // The two names whose absence crashed the signed-in app.
-    expect(shell).toContain('isChatSocketConnected,');
-    expect(shell).toContain('import { callApi } from "../api/callApi";');
+    expect(shell).toContain('<IncomingCallHost accessToken={accessToken} />');
   });
 });

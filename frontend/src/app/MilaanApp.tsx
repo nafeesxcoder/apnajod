@@ -68,6 +68,7 @@ import { useLayout } from "../layout/useLayout";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { configureAnalyticsConsent, track } from "../lib/telemetry";
 import { CallHost } from "../features/chat/CallHost";
+import { IncomingCallHost } from "../features/chat/IncomingCallHost";
 import {
   fetchPersistedChatMessages as fetchPersistedChatMessagesPreview,
   fetchPersistedRelationshipJourney,
@@ -91,14 +92,12 @@ import {
   subscribePersistedChatMessages as subscribePersistedChatMessagesPreview,
 } from "./adapters/previewPersistence";
 import { chatApi } from "../api/chatApi";
-import { callApi } from "../api/callApi";
 import {
   connectChatSocket,
   disconnectChatSocket,
   emitChatRead,
   emitChatTyping,
   getChatSocket,
-  isChatSocketConnected,
 } from "../api/chatSocket";
 import { minimizeActiveCallIfAny } from "../features/chat/activeCallBackGuard";
 import { forgetNativePush, startNativePush } from "./push/nativePush";
@@ -1973,57 +1972,6 @@ function MilaanApp() {
    * it is only a safety net. Either way the thread is opened, and the chat
    * screen's own banner and ringtone take it from there.
    */
-  const handledCallRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!hydrated || !accessToken) return;
-    let active = true;
-
-    const open = (call: {
-      id: string;
-      callerId: string;
-      callerName: string;
-    }) => {
-      if (!active || handledCallRef.current === call.id) return;
-      handledCallRef.current = call.id;
-      if (screen === "chat" && conversationPartner.id === call.callerId) return;
-      openConversationWith({
-        userId: call.callerId,
-        username: "",
-        name: call.callerName || "Someone",
-        avatarUrl: null,
-        isPrivate: false,
-      });
-    };
-
-    const socket = getChatSocket();
-    const onIncoming = (data: {
-      callId: string;
-      callerId: string;
-      callerName: string;
-    }) =>
-      open({
-        id: data.callId,
-        callerId: data.callerId,
-        callerName: data.callerName,
-      });
-    socket?.on("call:incoming", onIncoming);
-
-    const poll = () => {
-      if (isChatSocketConnected()) return;
-      void callApi
-        .getIncoming(accessToken)
-        .then((call) => call && open(call))
-        .catch(() => undefined);
-    };
-    poll();
-    const timer = setInterval(poll, 5000);
-
-    return () => {
-      active = false;
-      socket?.off("call:incoming", onIncoming);
-      clearInterval(timer);
-    };
-  }, [hydrated, accessToken, screen, conversationPartner.id]);
 
   useEffect(() => {
     if (!hydrated || screen !== "chat" || !accessToken) return;
@@ -4260,6 +4208,7 @@ function MilaanApp() {
             navigateTo(nextScreen);
           }}
         />
+        <IncomingCallHost accessToken={accessToken} />
         <CallHost accessToken={accessToken} />
       </AppCanvas>
     </SafeAreaProvider>
