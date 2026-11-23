@@ -3171,7 +3171,7 @@ export function ChatScreen({
                     borderColor: palette.rule,
                     borderRadius: radius.pill,
                     paddingHorizontal: 14,
-                    paddingVertical: 4,
+                    paddingVertical: 2,
                     gap: 6,
                   }}
                 >
@@ -3198,8 +3198,8 @@ export function ChatScreen({
                         fontSize: 15,
                         color: colors.text,
                         maxHeight: 110,
-                        minHeight: 36,
-                        paddingVertical: 8,
+                        minHeight: 30,
+                        paddingVertical: 6,
                         paddingHorizontal: 6,
                         textAlignVertical: "center",
                       },
@@ -7024,6 +7024,20 @@ function MessageActionSheet({
       icon: "happy-outline" as const,
       onPress: () => setReactionHint(true),
     },
+    ...(message?.uri && ["image", "gif", "video", "document"].includes(message?.type ?? "")
+      ? [
+          {
+            label: "Download",
+            body: "Save to your phone",
+            icon: "download-outline" as const,
+            onPress: () =>
+              void downloadMedia(
+                message.uri as string,
+                message.type === "document" ? message.document?.name ?? "document" : `apnajoda-${Date.now()}`,
+              ),
+          },
+        ]
+      : []),
     {
       label: "Forward",
       body: "Share with another conversation",
@@ -8326,6 +8340,20 @@ function CoupleSettingsSheet({
       </SafeAreaView>
     </Modal>
   );
+}
+
+/** Saves a photo, GIF, video or document: a download on the web, the system's share and save sheet in the app. */
+async function downloadMedia(uri: string, name: string) {
+  if (Platform.OS === "web" && typeof document !== "undefined") {
+    const link = document.createElement("a");
+    link.href = uri;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return;
+  }
+  await Linking.openURL(uri);
 }
 
 /** Three dots that rise and fall one after another, as while someone types. */
