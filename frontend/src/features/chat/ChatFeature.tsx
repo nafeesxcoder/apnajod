@@ -3234,7 +3234,7 @@ export function ChatScreen({
                         setSnapOpen(true);
                       }}
                     >
-                      <Ionicons name="aperture" size={22} color={palette.navy} />
+                      <Ionicons name="camera-outline" size={22} color={palette.crimson} />
                     </Pressable>
                   )}
                 </View>

@@ -154,16 +154,13 @@ function init(httpServer) {
 
     socket.on("typing", async (data) => {
       try {
-        const conversationId = String(data && data.conversationId);
+        // The client addresses the chat by the other person's user id.
+        const partnerId = String(data && data.conversationId);
         const typing = !!(data && data.typing);
-        const participants = await chat().assertParticipant(
-          conversationId,
-          userId,
-        );
-        await chat().setTyping(conversationId, userId, typing);
+        const { storageKey } = chat();
+        await chat().setTyping(partnerId, userId, typing);
         // setTyping drops the flag when the user hides their typing status.
-        if (typing && !chat().isTypingFresh(conversationId, userId)) return;
-        const partnerId = partnerOf(participants, userId);
+        if (typing && !chat().isTypingFresh(storageKey(userId, partnerId), userId)) return;
         // The partner addresses this chat by the sender's user id.
         emitToUser(partnerId, "typing", {
           conversationId: userId,
