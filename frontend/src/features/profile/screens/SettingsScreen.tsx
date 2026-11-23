@@ -8,6 +8,7 @@ import {
   Image,
   Platform,
   Linking,
+  Share,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,8 @@ import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
 import { openKundliEditor } from "../../kundli/kundliStore";
 import { RingtoneSheet } from "../../chat/ringtones/RingtoneSheet";
 import { Sheet } from "../../posts/PostSheets";
+import { SHARE_TEXT } from "../components/InviteCard";
+import { referralApi } from "../../../api/referralApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -192,6 +195,15 @@ export function SettingsScreen({
   const [closeOpen, setCloseOpen] = useState(false);
   const [ringOpen, setRingOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const inviteFriends = async () => {
+    if (!accessToken) return;
+    try {
+      const { link } = await referralApi.getInviteLink(accessToken);
+      await Share.share({ message: `${SHARE_TEXT} ${link}` });
+    } catch {
+      // The share sheet was closed or is unavailable here.
+    }
+  };
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifNote, setNotifNote] = useState("");
 
@@ -423,6 +435,11 @@ export function SettingsScreen({
                 icon="search-outline"
                 label="Find Someone"
                 onPress={() => navigate("find")}
+              />
+              <SettingsRow
+                icon="person-add-outline"
+                label="Invite friends"
+                onPress={() => void inviteFriends()}
                 isLast
               />
             </SettingsCard>
@@ -516,6 +533,9 @@ export function SettingsScreen({
                 label="Your activity"
                 onPress={() => navigate("yourActivity")}
               />
+              <SettingsRow icon="bookmark-outline" label="Saved" onPress={() => navigate("profile")} />
+              <SettingsRow icon="ban-outline" label="Blocked accounts" onPress={() => navigate("safety")} />
+              <SettingsRow icon="download-outline" label="Download your data" onPress={() => navigate("safety")} />
               <SettingsRow
                 icon="shield-outline"
                 label="Safety & Privacy"
