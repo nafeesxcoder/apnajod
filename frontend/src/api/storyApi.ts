@@ -72,6 +72,16 @@ export const storyApi = {
     return (data.stories as ArchivedStory[]) || [];
   },
 
+  /** Your deleted stories, kept 30 days in Recently deleted. */
+  async deleted(accessToken: string): Promise<ArchivedStory[]> {
+    const data = await authFetch("/stories/deleted", accessToken);
+    return (data.stories as ArchivedStory[]) || [];
+  },
+
+  async restoreDeleted(accessToken: string, storyId: string): Promise<void> {
+    await authFetch(`/stories/deleted/${storyId}/restore`, accessToken, { method: "POST" });
+  },
+
   async repostArchived(accessToken: string, storyId: string): Promise<void> {
     await authFetch(`/stories/archive/${storyId}/repost`, accessToken, { method: "POST" });
   },

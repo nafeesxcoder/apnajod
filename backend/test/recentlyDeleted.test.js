@@ -59,3 +59,18 @@ test("the migration adds the two columns and the purge job runs at start", () =>
   assert.match(migration, /ALTER TABLE stories ADD COLUMN archived_at DATETIME\(6\) NULL;/);
   assert.match(read("src/server.js"), /require\('\.\/jobs\/cleanupDeletedPosts'\)\.start\(\);/);
 });
+
+test("a story you delete waits 30 days in Recently deleted, then goes for good", () => {
+  const rm = stories.slice(stories.indexOf("async function remove("), stories.indexOf("/** Your deleted stories"));
+  assert.match(rm, /UPDATE stories SET deleted_at = NOW\(6\), expires_at = NOW\(6\)/);
+  assert.doesNotMatch(rm, /DELETE FROM stories/);
+  assert.match(stories, /OR \(deleted_at IS NOT NULL AND deleted_at < NOW\(6\) - INTERVAL \? DAY\)/);
+  assert.match(storyRoutes, /router\.get\('\/deleted'/);
+  assert.match(storyRoutes, /router\.post\('\/deleted\/:id\/restore'/);
+});
+
+test("restoring a deleted story puts it in your archive", () => {
+  const restore = stories.slice(stories.indexOf("async function restoreDeleted("), stories.indexOf("/** Your archived stories"));
+  assert.match(restore, /SET deleted_at = NULL, archived_at = NOW\(6\)/);
+});
+

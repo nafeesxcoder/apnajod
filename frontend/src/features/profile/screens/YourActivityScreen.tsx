@@ -106,22 +106,26 @@ function Button({
   );
 }
 
-/** Recently deleted posts: restore one, or leave it to go after 30 days. */
-function DeletedPosts({ accessToken }: { accessToken: string }) {
+/** Recently deleted posts and stories: restore one, or leave it to go after 30 days. */
+function DeletedContent({ accessToken }: { accessToken: string }) {
   const [posts, setPosts] = useState<DeletedPost[] | null>(null);
+  const [stories, setStories] = useState<ArchivedStory[] | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     let live = true;
-    postApi
-      .deleted(accessToken)
-      .then((list) => live && setPosts(list))
+    Promise.all([postApi.deleted(accessToken), storyApi.deleted(accessToken)])
+      .then(([postList, storyList]) => {
+        if (!live) return;
+        setPosts(postList);
+        setStories(storyList);
+      })
       .catch((e) => live && setError(e?.message || "Could not load."));
     return () => {
       live = false;
     };
   }, [accessToken]);
 
-  const restore = async (id: string) => {
+  const restorePost = async (id: string) => {
     try {
       await postApi.restore(accessToken, id);
       setPosts((current) => (current ?? []).filter((post) => post.id !== id));
@@ -130,10 +134,19 @@ function DeletedPosts({ accessToken }: { accessToken: string }) {
     }
   };
 
+  const restoreStory = async (id: string) => {
+    try {
+      await storyApi.restoreDeleted(accessToken, id);
+      setStories((current) => (current ?? []).filter((story) => story.id !== id));
+    } catch (e: any) {
+      Alert.alert("Could not restore", e?.message || "Try again.");
+    }
+  };
+
   if (error) return <Text style={{ padding: 16, color: palette.crimson, fontFamily: fonts.body }}>{error}</Text>;
-  if (!posts) return <ActivityIndicator style={{ margin: 16 }} color={palette.crimson} />;
-  if (posts.length === 0)
-    return <Text style={{ padding: 16, color: palette.slate, fontFamily: fonts.body }}>Nothing here. Deleted posts show for 30 days.</Text>;
+  if (!posts || !stories) return <ActivityIndicator style={{ margin: 16 }} color={palette.crimson} />;
+  if (posts.length === 0 && stories.length === 0)
+    return <Text style={{ padding: 16, color: palette.slate, fontFamily: fonts.body }}>Nothing here. Deleted posts and stories show for 30 days.</Text>;
   return (
     <View>
       {posts.map((post) => (
@@ -148,11 +161,24 @@ function DeletedPosts({ accessToken }: { accessToken: string }) {
             </Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{daysLeft(post.deleted_at)}</Text>
           </View>
-          <Button label="Restore" onPress={() => void restore(post.id)} />
+          <Button label="Restore" onPress={() => void restorePost(post.id)} />
+        </View>
+      ))}
+      {stories.map((story) => (
+        <View key={story.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}>
+          <Image
+            source={{ uri: story.media_url }}
+            style={{ width: 56, height: 56, borderRadius: 8, backgroundColor: palette.paperSand }}
+          />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>Story</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{daysLeft(story.created_at)}</Text>
+          </View>
+          <Button label="Restore" onPress={() => void restoreStory(story.id)} />
         </View>
       ))}
       <Text style={{ paddingHorizontal: 16, paddingBottom: 8, fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
-        Posts here are removed for good after 30 days.
+        Restored stories go to your archive. Everything here is removed for good after 30 days.
       </Text>
     </View>
   );
@@ -258,7 +284,7 @@ export function YourActivityScreen({
 
         <Heading>Removed and archived content</Heading>
         <Row icon="trash-outline" label="Recently deleted" open={open === "deleted"} onPress={() => toggle("deleted")} />
-        {open === "deleted" && <DeletedPosts accessToken={accessToken} />}
+        {open === "deleted" && <DeletedContent accessToken={accessToken} />}
         <Row icon="time-outline" label="Archived stories" open={open === "archived"} onPress={() => toggle("archived")} />
         {open === "archived" && <ArchivedStories accessToken={accessToken} />}
 

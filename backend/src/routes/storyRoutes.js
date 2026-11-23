@@ -31,6 +31,8 @@ const answerLimiter = rateLimit({
 router.get('/', storyController.getTray);
 router.post('/', uploadLimiter, storyUpload.single('photo'), storyController.createStory);
 router.get('/archive', storyController.getArchive);
+router.get('/deleted', storyController.getDeleted);
+router.post('/deleted/:id/restore', storyController.restoreDeleted);
 router.post('/archive/:id/repost', storyController.repostArchive);
 router.delete('/archive/:id', storyController.deleteArchive);
 router.delete('/:id', storyController.deleteStory);

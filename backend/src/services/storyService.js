@@ -206,17 +206,44 @@ async function tray(viewerId) {
   return [...people.values()].sort((a, b) => (a.mine ? -1 : b.mine ? 1 : latest(b) - latest(a)));
 }
 
-/** Take down your own story now: the row and the file. */
+/**
+ * Take down your own story now. It ends at once and waits 30 days in
+ * Recently deleted, where it can be restored (into your archive).
+ */
 async function remove(userId, storyId) {
-  const { STORY_DIR } = require('../middleware/storyUpload');
-  const [row] = await query('SELECT media_url FROM stories WHERE id = ? AND user_id = ?', [storyId, userId]);
-  if (!row) {
+  const result = await query(
+    'UPDATE stories SET deleted_at = NOW(6), expires_at = NOW(6) WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [storyId, userId],
+  );
+  if (!result.affectedRows) {
     const error = new Error('That story is not yours, or it has already gone.');
     error.status = 404;
     throw error;
   }
-  await query('DELETE FROM stories WHERE id = ?', [storyId]);
-  await removeFile(storyFilePath(row.media_url, STORY_DIR));
+  return { ok: true };
+}
+
+/** Your deleted stories, newest first. */
+async function listDeleted(userId) {
+  return query(
+    `SELECT id, media_url, created_at, deleted_at FROM stories
+      WHERE user_id = ? AND deleted_at IS NOT NULL
+      ORDER BY deleted_at DESC`,
+    [userId],
+  );
+}
+
+/** Brings a deleted story back into your archive, where it stays 30 days from now. */
+async function restoreDeleted(userId, storyId) {
+  const result = await query(
+    'UPDATE stories SET deleted_at = NULL, archived_at = NOW(6) WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [storyId, userId],
+  );
+  if (!result.affectedRows) {
+    const error = new Error('That story is not in Recently deleted.');
+    error.status = 404;
+    throw error;
+  }
   return { ok: true };
 }
 
@@ -230,12 +257,15 @@ async function purgeExpired(storyDir) {
   const dir = storyDir || STORY_DIR;
   // A story past its 24 hours is archived, not removed: its owner can see it
   // and share it again for 30 days.
-  await query('UPDATE stories SET archived_at = NOW(6) WHERE expires_at <= NOW(6) AND archived_at IS NULL');
+  await query('UPDATE stories SET archived_at = NOW(6) WHERE expires_at <= NOW(6) AND archived_at IS NULL AND deleted_at IS NULL');
   let rows = 0;
   for (;;) {
     const old = await query(
-      'SELECT id, media_url FROM stories WHERE archived_at IS NOT NULL AND archived_at < NOW(6) - INTERVAL ? DAY LIMIT 500',
-      [ARCHIVE_DAYS],
+      `SELECT id, media_url FROM stories
+        WHERE (archived_at IS NOT NULL AND archived_at < NOW(6) - INTERVAL ? DAY)
+           OR (deleted_at IS NOT NULL AND deleted_at < NOW(6) - INTERVAL ? DAY)
+        LIMIT 500`,
+      [ARCHIVE_DAYS, ARCHIVE_DAYS],
     );
     if (!old.length) break;
     for (const story of old) await removeFile(storyFilePath(story.media_url, dir));
@@ -321,6 +351,8 @@ module.exports = {
   remove,
   purgeExpired,
   listArchived,
+  listDeleted,
+  restoreDeleted,
   repostArchived,
   deleteArchived,
   storyFilePath,

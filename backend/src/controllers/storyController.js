@@ -100,7 +100,21 @@ const deleteArchive = asyncHandler(async (req, res) => {
   }
 });
 
+const getDeleted = asyncHandler(async (req, res) => {
+  res.json({ ok: true, stories: await storyService.listDeleted(req.user.id) });
+});
+
+const restoreDeleted = asyncHandler(async (req, res) => {
+  try {
+    res.json(await storyService.restoreDeleted(req.user.id, req.params.id));
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
 module.exports = {
+  getDeleted,
+  restoreDeleted,
   getArchive,
   repostArchive,
   deleteArchive, createStory, getTray, deleteStory, voteStory, answerStory, likeStory, viewStory, storyResponses };
