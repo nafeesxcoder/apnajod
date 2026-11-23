@@ -3172,10 +3172,9 @@ export function ChatScreen({
                     borderWidth: 1,
                     borderColor: palette.rule,
                     borderRadius: radius.pill,
-                    paddingHorizontal: 18,
-                    paddingTop: 12,
-                    paddingBottom: 4,
-                    gap: 8,
+                    paddingHorizontal: 14,
+                    paddingVertical: 4,
+                    gap: 6,
                   }}
                 >
                   <TextInput
@@ -3201,8 +3200,9 @@ export function ChatScreen({
                         fontSize: 15,
                         color: colors.text,
                         maxHeight: 110,
-                        paddingVertical: 0,
-                        paddingHorizontal: 4,
+                        minHeight: 36,
+                        paddingVertical: 8,
+                        paddingHorizontal: 6,
                         textAlignVertical: "center",
                       },
                       Platform.OS === "web"
@@ -3220,6 +3220,7 @@ export function ChatScreen({
                       setAttachmentPage("main");
                       setShowAttachments((value) => !value);
                     }}
+                    style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
                   >
                     <Ionicons name="attach" size={22} color={palette.crimson} />
                   </Pressable>
@@ -3233,6 +3234,7 @@ export function ChatScreen({
                         setShowAttachments(false);
                         setSnapOpen(true);
                       }}
+                      style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
                     >
                       <Ionicons name="camera-outline" size={22} color={palette.crimson} />
                     </Pressable>
