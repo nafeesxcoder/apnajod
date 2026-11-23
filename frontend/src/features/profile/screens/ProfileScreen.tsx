@@ -17,6 +17,7 @@ import {
   useNavInset,
 } from "../../../components/navigation/BottomNav";
 import { HobbyRow } from "../../../components/HobbyRow";
+import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
@@ -52,6 +53,13 @@ export function ProfileScreen({
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
+
+  // Share sends the profile to family. Inviting friends and Profile
+  // strength live on Home - one place each, not two.
+  const family = useFamilyShare({
+    accessToken,
+    name: profile?.firstName || "me",
+  });
 
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
@@ -270,7 +278,57 @@ export function ProfileScreen({
                     Edit profile
                   </Text>
                 </TouchableOpacity>
+                {family.available && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Share my profile"
+                  disabled={family.busy}
+                  onPress={() => void family.share()}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: palette.paper,
+                    borderWidth: 1.5,
+                    borderColor: palette.navy,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    gap: 6,
+                    minHeight: 44,
+                  }}
+                >
+                  <Ionicons
+                    name="people"
+                    size={16}
+                    color={palette.navy}
+                  />
+                  <Text
+                    style={{
+                      color: palette.navy,
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 13,
+                    }}
+                  >
+                    Share profile
+                  </Text>
+                </TouchableOpacity>
+                )}
               </View>
+
+              {!!family.note && (
+                <Text
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    color: palette.slate,
+                    textAlign: "center",
+                    marginTop: 8,
+                  }}
+                >
+                  {family.note}
+                </Text>
+              )}
 
               <Reveal delay={60} style={{ marginTop: 24 }}>
                 <InfoCard title="About">

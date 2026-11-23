@@ -19,6 +19,7 @@ import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/mo
 import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
 import { LinearGradient } from "expo-linear-gradient";
 import { HobbyRow } from "../../../components/HobbyRow";
+import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { StoryRing } from "../../stories/StoryRing";
 import { useStoryStatus } from "../../stories/storyStore";
@@ -68,6 +69,12 @@ export function PersonScreen({
   const storyStatus = useStoryStatus(userId);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // "Show my family" sits beside Message, as "Send to family" does on your own Profile.
+  const family = useFamilyShare({
+    accessToken,
+    targetId: userId,
+    name: page?.profile.firstName || page?.user.username || "them",
+  });
   // Gun Milan with this person, when both have added a Rashi.
   const [gun, setGun] = useState<{ score: number; max: number; full: boolean } | null>(null);
   useEffect(() => {
@@ -383,9 +390,28 @@ export function PersonScreen({
                 </Pressable>
               )}
 
+              {likeStatus === "accepted" && family.available && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share this profile"
+                  disabled={family.busy}
+                  onPress={() => void family.share()}
+                  style={[actionButton, { backgroundColor: palette.paper, borderWidth: 1.5, borderColor: palette.navy }]}
+                >
+                  <Ionicons name="people" size={16} color={palette.navy} />
+                  <Text style={[actionText, { color: palette.navy }]}>Share profile</Text>
+                </Pressable>
+              )}
             </View>
           )}
 
+          {!!family.note && (
+            <Text
+              style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, textAlign: "center", marginTop: 8 }}
+            >
+              {family.note}
+            </Text>
+          )}
 
           {!!profile.about && (
             <Reveal delay={60} style={{ marginTop: 24 }}>
