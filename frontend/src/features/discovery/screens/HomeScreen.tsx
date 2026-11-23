@@ -220,8 +220,8 @@ export function HomeScreen({
                   // A new post shows at the top of the feed straight away.
                   onPosted={() => setFeedReload((n) => n + 1)}
                   withStory
-                  size={34}
-                  iconSize={22}
+                  size={42}
+                  iconSize={30}
                   color={colors.text}
                   background="transparent"
                 />
@@ -250,7 +250,7 @@ export function HomeScreen({
               >
                 <Ionicons
                   name="notifications-outline"
-                  size={26}
+                  size={32}
                   color={colors.text}
                 />
                 {bellCount > 0 && (

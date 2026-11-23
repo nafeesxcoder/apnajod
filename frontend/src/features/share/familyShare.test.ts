@@ -5,19 +5,12 @@ import { describe, expect, it } from 'vitest';
 const read = (path: string) => readFileSync(resolve(__dirname, '../../..', path), 'utf8');
 
 describe('show my family', () => {
-  it('offers someone else\'s profile only once you are a match', () => {
+  it("shows no family button on anyone's profile, own or someone else's", () => {
     const person = read('src/features/social/screens/PersonScreen.tsx');
-    // Beside Message, as "Send to family" sits beside Edit profile on your own Profile.
-    expect(person).toContain('likeStatus === "accepted" && family.available && (');
-    expect(person).toContain('>Show my family</Text>');
-  });
-
-  it('keeps one Send to family button on your own profile; inviting friends lives on Home', () => {
     const profile = read('src/features/profile/screens/ProfileScreen.tsx');
-    expect(profile).toContain('onPress={() => void family.share()}');
-    expect(profile).toContain('Send to family');
-    expect(profile).not.toContain('Invite friends');
-    expect(profile).not.toContain('<FamilyShareButton');
+    expect(person).not.toContain('Show my family');
+    expect(profile).not.toContain('Send to family');
+    expect(profile).not.toContain('family.share()');
   });
 
   it('shows intent badges in their own section under About, not in the profile header', () => {

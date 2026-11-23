@@ -16,10 +16,9 @@ import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
 import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
-import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
 import { LinearGradient } from "expo-linear-gradient";
-import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
+import { HobbyRow } from "../../../components/HobbyRow";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { StoryRing } from "../../stories/StoryRing";
 import { useStoryStatus } from "../../stories/storyStore";
@@ -29,11 +28,6 @@ import { kundliApi } from "../../../api/kundliApi";
 const MAX_WIDTH = 720;
 const brandLogo = require("../../../../assets/apnajoda-logo.png");
 const SIDE_PADDING = 16;
-
-function hobbyIcon(label: string) {
-  const wanted = String(label).trim().toLowerCase();
-  return MASTER_HOBBIES.find((h) => h.label.toLowerCase() === wanted)?.icon;
-}
 
 /** The two buttons under the details, the same size as on your own Profile. */
 const actionButton = {
@@ -74,12 +68,6 @@ export function PersonScreen({
   const storyStatus = useStoryStatus(userId);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  // "Show my family" sits beside Message, as "Send to family" does on your own Profile.
-  const family = useFamilyShare({
-    accessToken,
-    targetId: userId,
-    name: page?.profile.firstName || page?.user.username || "them",
-  });
   // Gun Milan with this person, when both have added a Rashi.
   const [gun, setGun] = useState<{ score: number; max: number; full: boolean } | null>(null);
   useEffect(() => {
@@ -335,39 +323,7 @@ export function PersonScreen({
             </View>
           )}
 
-          {profile.hobbies.length > 0 && (
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                justifyContent: "center",
-                gap: 6,
-                marginTop: 16,
-              }}
-            >
-              {profile.hobbies.map((hobby) => {
-                const icon = hobbyIcon(hobby);
-                return (
-                  <View
-                    key={hobby}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: palette.rule,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: radius.pill,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    {!!icon && <Ionicons name={icon as any} size={12} color={palette.ink} />}
-                    <Text style={{ fontSize: 11, color: palette.ink, fontFamily: fonts.bodySemi }}>{hobby}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+          {profile.hobbies.length > 0 && <HobbyRow hobbies={profile.hobbies} />}
 
           {!state.self && (
             <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
@@ -427,28 +383,9 @@ export function PersonScreen({
                 </Pressable>
               )}
 
-              {likeStatus === "accepted" && family.available && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Show ${profile.firstName || user.username}'s profile to my family`}
-                  disabled={family.busy}
-                  onPress={() => void family.share()}
-                  style={[actionButton, { backgroundColor: palette.paper, borderWidth: 1.5, borderColor: palette.navy }]}
-                >
-                  <Ionicons name="people" size={16} color={palette.navy} />
-                  <Text style={[actionText, { color: palette.navy }]}>Show my family</Text>
-                </Pressable>
-              )}
             </View>
           )}
 
-          {!!family.note && (
-            <Text
-              style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, textAlign: "center", marginTop: 8 }}
-            >
-              {family.note}
-            </Text>
-          )}
 
           {!!profile.about && (
             <Reveal delay={60} style={{ marginTop: 24 }}>

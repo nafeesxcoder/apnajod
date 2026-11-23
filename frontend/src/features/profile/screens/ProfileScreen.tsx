@@ -16,7 +16,7 @@ import {
   BottomNav,
   useNavInset,
 } from "../../../components/navigation/BottomNav";
-import { MASTER_HOBBIES } from "../../onboarding/screens/ProfileSetupScreen";
+import { HobbyRow } from "../../../components/HobbyRow";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
@@ -24,18 +24,12 @@ import { IntentSection } from "../../../components/IntentBadges";
 import { InfoCard } from "../../../components/InfoCard";
 import { brand, cardShadow } from "../../../components/brand";
 import { PressScale, Reveal } from "../../../components/motion";
-import { useFamilyShare } from "../../../components/FamilyShareButton";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
 const brandLogo = require("../../../../assets/apnajoda-logo.png");
 
-
-function hobbyIcon(label: string) {
-  const wanted = String(label).trim().toLowerCase();
-  return MASTER_HOBBIES.find((h) => h.label.toLowerCase() === wanted)?.icon;
-}
 
 export function ProfileScreen({
   profile,
@@ -58,12 +52,6 @@ export function ProfileScreen({
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
-  // Share sends the profile to family. Inviting friends and Profile
-  // strength live on Home - one place each, not two.
-  const family = useFamilyShare({
-    accessToken,
-    name: profile?.firstName || "me",
-  });
 
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
@@ -240,42 +228,7 @@ export function ProfileScreen({
                 }}
               >
                 {hobbies.length > 0 ? (
-                  hobbies.map((hobby) => {
-                    const icon = hobbyIcon(hobby);
-                    return (
-                      <View
-                        key={hobby}
-                        style={{
-                          backgroundColor: "transparent",
-                          borderWidth: 1,
-                          borderColor: palette.rule,
-                          paddingHorizontal: 10,
-                          paddingVertical: 6,
-                          borderRadius: radius.pill,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        {!!icon && (
-                          <Ionicons
-                            name={icon as any}
-                            size={12}
-                            color={palette.ink}
-                          />
-                        )}
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: palette.ink,
-                            fontFamily: fonts.bodySemi,
-                          }}
-                        >
-                          {hobby}
-                        </Text>
-                      </View>
-                    );
-                  })
+                  <HobbyRow hobbies={hobbies} />
                 ) : (
                   <TouchableOpacity onPress={() => navigate("profileSetup")}>
                     <Text
@@ -317,59 +270,7 @@ export function ProfileScreen({
                     Edit profile
                   </Text>
                 </TouchableOpacity>
-
-                {family.available && (
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Send my profile to family"
-                  disabled={family.busy}
-                  onPress={() => void family.share()}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: palette.paper,
-                    borderWidth: 1.5,
-                    borderColor: palette.navy,
-                    paddingVertical: 10,
-                    borderRadius: radius.pill,
-                    gap: 6,
-                    minHeight: 44,
-                  }}
-                >
-                  <Ionicons
-                    name="people"
-                    size={16}
-                    color={palette.navy}
-                  />
-                  <Text
-                    style={{
-                      color: palette.navy,
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 13,
-                    }}
-                  >
-                    Send to family
-                  </Text>
-                </TouchableOpacity>
-                )}
               </View>
-
-
-              {!!family.note && (
-                <Text
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 12,
-                    color: palette.slate,
-                    textAlign: "center",
-                    marginTop: 8,
-                  }}
-                >
-                  {family.note}
-                </Text>
-              )}
 
               <Reveal delay={60} style={{ marginTop: 24 }}>
                 <InfoCard title="About">
