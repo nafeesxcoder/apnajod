@@ -79,7 +79,7 @@ export function ProfileSetupScreen({
   // another tab) throws them away, so the profile is never half-changed.
   const [profile, setProfile] = useState<any>(savedProfile);
   const [photos, setPhotos] = useState<string[]>(savedPhotos);
-  const [account, setAccount] = useState({ username: "", link: "" });
+  const [account, setAccount] = useState({ username: "", link: "", linkTitle: "" });
   const [editingUsername, setEditingUsername] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
   const [accountError, setAccountError] = useState("");
@@ -89,7 +89,9 @@ export function ProfileSetupScreen({
     if (!accessToken) return;
     void profileApi
       .getMyProfile(accessToken)
-      .then((data: any) => setAccount({ username: data?.username ?? "", link: data?.profile?.link ?? "" }))
+      .then((data: any) =>
+        setAccount({ username: data?.username ?? "", link: data?.profile?.link ?? "", linkTitle: data?.profile?.link_title ?? "" }),
+      )
       .catch(() => undefined);
   }, [accessToken]);
   const saveUsername = async () => {
@@ -105,13 +107,16 @@ export function ProfileSetupScreen({
       setAccountBusy(false);
     }
   };
-  const saveLink = async () => {
+  const saveLink = async (remove = false) => {
     setAccountBusy(true);
     setAccountError("");
     setAccountNote("");
     try {
-      await profileApi.setLink(accessToken, account.link);
-      setAccountNote("Link saved.");
+      const link = remove ? "" : account.link;
+      const title = remove ? "" : account.linkTitle;
+      await profileApi.setLink(accessToken, link, title);
+      setAccount((current) => ({ ...current, link: remove ? "" : current.link, linkTitle: remove ? "" : current.linkTitle }));
+      setAccountNote(remove ? "Link removed." : "Link saved.");
     } catch (e: any) {
       setAccountError(e?.message || "Could not save the link.");
     } finally {
@@ -415,84 +420,6 @@ export function ProfileSetupScreen({
               </View>
             )}
 
-            <View style={{ gap: 10, marginBottom: 16 }}>
-              <Text style={styles.label}>Username</Text>
-              {editingUsername ? (
-                <View style={{ gap: 8 }}>
-                  <TextInput
-                    value={usernameDraft}
-                    onChangeText={setUsernameDraft}
-                    placeholder="new username"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    style={styles.input}
-                    placeholderTextColor={palette.navySoft}
-                  />
-                  <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
-                    Letters, numbers, dots and underscores. After one change, the next is allowed 15 days later.
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      accessibilityLabel="Save username"
-                      disabled={accountBusy}
-                      onPress={() => void saveUsername()}
-                      style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: palette.crimson }}
-                    >
-                      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#FFFFFF" }}>Save username</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      onPress={() => setEditingUsername(false)}
-                      style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.rule }}
-                    >
-                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.slate }}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>@{account.username || "-"}</Text>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setUsernameDraft("");
-                      setAccountError("");
-                      setEditingUsername(true);
-                    }}
-                  >
-                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.navy }}>Change</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              <Text style={styles.label}>Website link</Text>
-              <TextInput
-                value={account.link}
-                onChangeText={(v) => {
-                  setAccountNote("");
-                  setAccount((current) => ({ ...current, link: v }));
-                }}
-                placeholder="example.com"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                style={styles.input}
-                placeholderTextColor={palette.navySoft}
-              />
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  disabled={accountBusy}
-                  onPress={() => void saveLink()}
-                  style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.navy }}
-                >
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>Save link</Text>
-                </TouchableOpacity>
-                {!!accountNote && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.emerald }}>{accountNote}</Text>}
-              </View>
-              {!!accountError && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.crimson }}>{accountError}</Text>}
-            </View>
-
             <View style={{ gap: 16 }}>
               <View>
                 <Text style={styles.label}>First Name</Text>
@@ -505,6 +432,109 @@ export function ProfileSetupScreen({
                   style={styles.input}
                   placeholderTextColor={palette.navySoft}
                 />
+              </View>
+
+              <View style={{ gap: 10 }}>
+                <Text style={styles.label}>Username</Text>
+                {editingUsername ? (
+                  <View style={{ gap: 8 }}>
+                    <TextInput
+                      value={usernameDraft}
+                      onChangeText={setUsernameDraft}
+                      placeholder="new username"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      style={styles.input}
+                      placeholderTextColor={palette.navySoft}
+                    />
+                    <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+                      Letters, numbers, dots and underscores. After one change, the next is allowed 15 days later.
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Save username"
+                        disabled={accountBusy}
+                        onPress={() => void saveUsername()}
+                        style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: palette.crimson }}
+                      >
+                        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#FFFFFF" }}>Save username</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        onPress={() => setEditingUsername(false)}
+                        style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.rule }}
+                      >
+                        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.slate }}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>@{account.username || "-"}</Text>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      onPress={() => {
+                        setUsernameDraft("");
+                        setAccountError("");
+                        setEditingUsername(true);
+                      }}
+                    >
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.navy }}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              <View style={{ gap: 10 }}>
+                <Text style={styles.label}>Link</Text>
+                <TextInput
+                  value={account.linkTitle}
+                  onChangeText={(v) => {
+                    setAccountNote("");
+                    setAccount((current) => ({ ...current, linkTitle: v }));
+                  }}
+                  placeholder="Title, e.g. My Instagram"
+                  maxLength={60}
+                  style={styles.input}
+                  placeholderTextColor={palette.navySoft}
+                />
+                <TextInput
+                  value={account.link}
+                  onChangeText={(v) => {
+                    setAccountNote("");
+                    setAccount((current) => ({ ...current, link: v }));
+                  }}
+                  placeholder="example.com"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  style={styles.input}
+                  placeholderTextColor={palette.navySoft}
+                />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    disabled={accountBusy}
+                    onPress={() => void saveLink(false)}
+                    style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.navy }}
+                  >
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>Save link</Text>
+                  </TouchableOpacity>
+                  {!!account.link && (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove link"
+                      disabled={accountBusy}
+                      onPress={() => void saveLink(true)}
+                      style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.crimson }}
+                    >
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.crimson }}>Remove link</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!!accountNote && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.emerald }}>{accountNote}</Text>}
+                </View>
+                {!!accountError && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.crimson }}>{accountError}</Text>}
               </View>
 
               <View style={{ flexDirection: "row", gap: 12 }}>

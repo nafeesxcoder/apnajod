@@ -657,14 +657,15 @@ async function kundliWith(userId, otherId) {
   };
 }
 
-/** Saves only your profile link; the rest of the profile is left as it is. */
-async function setLink(userId, raw) {
+/** Saves only your profile link and its title; the rest of the profile is left as it is. Empty removes both. */
+async function setLink(userId, raw, rawTitle) {
   const link = cleanLink(raw);
+  const title = link ? String(rawTitle ?? "").trim().slice(0, 60) || null : null;
   await query(
-    "INSERT INTO profiles (user_id, link) VALUES (?, ?) ON DUPLICATE KEY UPDATE link = VALUES(link)",
-    [userId, link],
+    "INSERT INTO profiles (user_id, link, link_title) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE link = VALUES(link), link_title = VALUES(link_title)",
+    [userId, link, title],
   );
-  return { link };
+  return { link, linkTitle: title };
 }
 
 /**

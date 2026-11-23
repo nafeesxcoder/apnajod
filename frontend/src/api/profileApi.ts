@@ -121,8 +121,8 @@ export const profileApi = {
   },
   /** A fresh random pose. Each call replaces the last one. */
   /** Your website link, under About. Empty removes it. */
-  async setLink(accessToken: string, link: string) {
-    return authFetch("/profile/link", accessToken, { method: "PUT", body: JSON.stringify({ link }) });
+  async setLink(accessToken: string, link: string, title: string) {
+    return authFetch("/profile/link", accessToken, { method: "PUT", body: JSON.stringify({ link, title }) });
   },
 
   /** Changes your username. The first change is free; then once every 15 days. */

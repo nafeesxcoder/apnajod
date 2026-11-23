@@ -417,6 +417,9 @@ export function PersonScreen({
                     {profile.about}
                   </Text>
                 )}
+                {!!profile.link && !!profile.linkTitle && (
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: palette.ink }}>{profile.linkTitle}</Text>
+                )}
                 {!!profile.link && (
                   <Text
                     accessibilityRole="link"

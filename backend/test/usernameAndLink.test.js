@@ -22,7 +22,7 @@ test("a username change is allowed once freely, then after 15 days", () => {
 
 test("the link is checked and saved on its own, so other profile fields are not touched", () => {
   const link = profile.slice(profile.indexOf("async function setLink("), profile.indexOf("/**\n * Change your username."));
-  assert.match(link, /INSERT INTO profiles \(user_id, link\) VALUES \(\?, \?\) ON DUPLICATE KEY UPDATE link = VALUES\(link\)/);
+  assert.match(link, /INSERT INTO profiles \(user_id, link, link_title\) VALUES \(\?, \?, \?\) ON DUPLICATE KEY UPDATE link = VALUES\(link\), link_title = VALUES\(link_title\)/);
   assert.doesNotMatch(link, /first_name/);
   assert.match(profile, /new URL\(withScheme\)/);
 });
@@ -32,4 +32,5 @@ test("both are routes for the signed-in member, and the columns exist", () => {
   assert.match(routes, /router\.put\("\/link", profileController\.setLink\);/);
   assert.match(migration, /ALTER TABLE profiles ADD COLUMN link VARCHAR\(255\) NULL;/);
   assert.match(migration, /ALTER TABLE users ADD COLUMN username_changed_at DATETIME\(6\) NULL;/);
+  assert.match(read('src/migrations/080_link_title.sql'), /ALTER TABLE profiles ADD COLUMN link_title VARCHAR\(60\) NULL;/);
 });

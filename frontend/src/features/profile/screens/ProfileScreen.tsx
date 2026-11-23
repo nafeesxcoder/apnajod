@@ -329,6 +329,9 @@ export function ProfileScreen({
                 >
                   {bio || "Add a short bio so people know the real you."}
                 </Text>
+                {!!profile?.link && !!profile?.linkTitle && (
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: palette.ink }}>{profile.linkTitle}</Text>
+                )}
                 {!!profile?.link && (
                   <Text
                     accessibilityRole="link"

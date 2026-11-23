@@ -159,7 +159,7 @@ const getKundli = asyncHandler(async (req, res) => {
 });
 
 const setLink = asyncHandler(async (req, res) => {
-  res.json({ ok: true, ...(await profileService.setLink(req.user.id, req.body?.link)) });
+  res.json({ ok: true, ...(await profileService.setLink(req.user.id, req.body?.link, req.body?.title)) });
 });
 
 const changeUsername = asyncHandler(async (req, res) => {
