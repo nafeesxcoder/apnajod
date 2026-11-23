@@ -15,9 +15,9 @@ describe('show my family', () => {
     expect(person).not.toContain('>Show my family<');
   });
 
-  it('shows intent badges in their own section under About, not in the profile header', () => {
+  it("shows Looking for on other people's profiles only, never on your own", () => {
+    expect(read('src/features/profile/screens/ProfileScreen.tsx')).not.toContain('<IntentSection');
     for (const file of [
-      'src/features/profile/screens/ProfileScreen.tsx',
       'src/features/social/screens/PersonScreen.tsx',
       'src/features/discovery/screens/MatchDetailScreen.tsx',
     ]) {

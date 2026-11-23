@@ -27,9 +27,9 @@ describe('Edit profile: username and selfie verification', () => {
 });
 
 describe('Navy x Crimson on the profile screens', () => {
-  it('About and Looking for are info cards everywhere', () => {
+  it('About is a plain section on your own profile; others keep it as a card with Looking for', () => {
+    expect(read('src/features/profile/screens/ProfileScreen.tsx')).not.toContain('<InfoCard title="About');
     for (const file of [
-      'src/features/profile/screens/ProfileScreen.tsx',
       'src/features/discovery/screens/MatchDetailScreen.tsx',
       'src/features/social/screens/PersonScreen.tsx',
     ]) {

@@ -21,8 +21,6 @@ import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
-import { IntentSection } from "../../../components/IntentBadges";
-import { InfoCard } from "../../../components/InfoCard";
 import { brand, cardShadow } from "../../../components/brand";
 import { PressScale, Reveal } from "../../../components/motion";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
@@ -36,7 +34,6 @@ export function ProfileScreen({
   profile,
   verified,
   blueTick = false,
-  intentInput,
   profilePhoto,
   navigate,
   accessToken,
@@ -316,40 +313,19 @@ export function ProfileScreen({
                 )}
               </View>
 
-              {!!family.note && (
+              <View style={{ marginTop: 24, paddingHorizontal: 4, gap: 8 }}>
+                <Text style={{ fontFamily: fonts.display, fontSize: typeScale.section, color: palette.ink }}>About</Text>
                 <Text
                   style={{
+                    fontSize: 15,
                     fontFamily: fonts.body,
-                    fontSize: 12,
-                    color: palette.slate,
-                    textAlign: "center",
-                    marginTop: 8,
+                    color: bio ? palette.inkSoft : palette.slate,
+                    lineHeight: 22,
                   }}
                 >
-                  {family.note}
+                  {bio || "Add a short bio so people know the real you."}
                 </Text>
-              )}
-
-              <Reveal delay={60} style={{ marginTop: 24 }}>
-                <InfoCard title="About">
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontFamily: fonts.body,
-                      color: bio ? palette.inkSoft : palette.slate,
-                      lineHeight: 22,
-                    }}
-                  >
-                    {bio || "Add a short bio so people know the real you."}
-                  </Text>
-                </InfoCard>
-              </Reveal>
-
-              {!!intentInput && (
-                <Reveal delay={120}>
-                  <IntentSection input={intentInput} />
-                </Reveal>
-              )}
+              </View>
 
               {/* Premium is this screen's one navy "hero" card. */}
               <Reveal delay={180} style={{ marginTop: 16 }}>

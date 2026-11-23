@@ -405,14 +405,6 @@ export function PersonScreen({
             </View>
           )}
 
-          {!!family.note && (
-            <Text
-              style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate, textAlign: "center", marginTop: 8 }}
-            >
-              {family.note}
-            </Text>
-          )}
-
           {!!profile.about && (
             <Reveal delay={60} style={{ marginTop: 24 }}>
               <InfoCard title="About">

@@ -56,7 +56,7 @@ export function HobbyRow({ hobbies }: { hobbies: string[] }) {
           alignItems: "center",
           justifyContent: "center",
           gap: 6,
-          marginTop: 16,
+          marginTop: 8,
           overflow: "hidden",
         }}
       >
