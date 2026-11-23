@@ -128,7 +128,7 @@ export function ProfileScreen({
                   }}
                 >
                   <Ionicons
-                    name="ellipsis-vertical"
+                    name="settings-outline"
                     size={18}
                     color={palette.ink}
                   />

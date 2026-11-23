@@ -213,7 +213,7 @@ export function HomeScreen({
                 paddingBottom: 16,
               }}
             >
-              <View style={{ width: 44, alignItems: "flex-start" }}>
+              <View style={{ width: 44, alignItems: "flex-start", marginTop: -8 }}>
                 <View>
                 <AddPostButton
                   accessToken={accessToken}
@@ -229,11 +229,12 @@ export function HomeScreen({
               </View>
               <Text
                 numberOfLines={1}
-                style={{ flex: 1, textAlign: "center", fontFamily: fonts.display, fontSize: typeScale.title, color: colors.text }}
+                style={{ flex: 1, textAlign: "center", fontFamily: fonts.display, fontSize: 28, letterSpacing: 0.5 }}
               >
-                Apnajoda
+                <Text style={{ color: palette.navy }}>Apna</Text>
+                <Text style={{ color: palette.crimson }}>joda</Text>
               </Text>
-              <View style={{ width: 44, alignItems: "flex-end" }}>
+              <View style={{ width: 44, alignItems: "flex-end", marginTop: -8 }}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={
