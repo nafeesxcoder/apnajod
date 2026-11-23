@@ -9,7 +9,6 @@ import {
   Platform,
   Linking,
   Share,
-  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { PressScale, Reveal } from "../../../components/motion";
-import { fonts, palette, radius, typeScale } from "../../../theme";
+import { fonts, palette, typeScale } from "../../../theme";
 import { pushApi } from "../../../api/pushApi";
 import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
 import { openKundliEditor } from "../../kundli/kundliStore";
@@ -26,7 +25,6 @@ import { RingtoneSheet } from "../../chat/ringtones/RingtoneSheet";
 import { Sheet } from "../../posts/PostSheets";
 import { SHARE_TEXT } from "../components/InviteCard";
 import { referralApi } from "../../../api/referralApi";
-import { profileApi } from "../../../api/profileApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -197,52 +195,6 @@ export function SettingsScreen({
   const [closeOpen, setCloseOpen] = useState(false);
   const [ringOpen, setRingOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
-  const [usernameOpen, setUsernameOpen] = useState(false);
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [draftText, setDraftText] = useState("");
-  const [sheetError, setSheetError] = useState("");
-  const [sheetBusy, setSheetBusy] = useState(false);
-  const openUsername = () => {
-    setDraftText("");
-    setSheetError("");
-    setUsernameOpen(true);
-  };
-  const openLink = () => {
-    setDraftText("");
-    setSheetError("");
-    setLinkOpen(true);
-    if (accessToken)
-      void profileApi
-        .getMyProfile(accessToken)
-        .then((data: any) => setDraftText(data?.profile?.link ?? ""))
-        .catch(() => undefined);
-  };
-  const saveUsername = async () => {
-    if (!accessToken) return;
-    setSheetBusy(true);
-    setSheetError("");
-    try {
-      await profileApi.changeUsername(accessToken, draftText);
-      setUsernameOpen(false);
-    } catch (e: any) {
-      setSheetError(e?.message || "Could not change your username.");
-    } finally {
-      setSheetBusy(false);
-    }
-  };
-  const saveLink = async () => {
-    if (!accessToken) return;
-    setSheetBusy(true);
-    setSheetError("");
-    try {
-      await profileApi.setLink(accessToken, draftText);
-      setLinkOpen(false);
-    } catch (e: any) {
-      setSheetError(e?.message || "Could not save the link.");
-    } finally {
-      setSheetBusy(false);
-    }
-  };
   const inviteFriends = async () => {
     if (!accessToken) return;
     try {
@@ -444,8 +396,6 @@ export function SettingsScreen({
                 label="Edit Profile"
                 onPress={() => navigate("profileSetup")}
               />
-              <SettingsRow icon="at-outline" label="Username" onPress={openUsername} />
-              <SettingsRow icon="link-outline" label="Website link" onPress={openLink} />
               {/* Intent and the future questions: on the Profile as badges, edited here (not on Home). */}
               <SettingsRow
                 icon="compass-outline"
@@ -645,56 +595,6 @@ export function SettingsScreen({
           </View>
         </ScrollView>
         <RingtoneSheet visible={ringOpen} onClose={() => setRingOpen(false)} />
-        <Sheet visible={usernameOpen} title="Username" onClose={() => setUsernameOpen(false)}>
-          <View style={{ padding: 16, gap: 12 }}>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>Your username is how people find you. You can change it once freely; after that you wait 15 days between changes.</Text>
-            <TextInput
-              accessibilityLabel="Username"
-              value={draftText}
-              onChangeText={setDraftText}
-              placeholder="your.name"
-              placeholderTextColor={palette.slate}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={{ borderWidth: 1, borderColor: palette.rule, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontFamily: fonts.body, fontSize: 15, color: palette.ink }}
-            />
-            {!!sheetError && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.crimson }}>{sheetError}</Text>}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Save"
-              disabled={sheetBusy}
-              onPress={() => void saveUsername()}
-              style={{ paddingVertical: 13, borderRadius: radius.pill, backgroundColor: palette.crimson, alignItems: "center", opacity: sheetBusy ? 0.6 : 1 }}
-            >
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>{sheetBusy ? "Saving…" : "Save"}</Text>
-            </Pressable>
-          </View>
-        </Sheet>
-        <Sheet visible={linkOpen} title="Website link" onClose={() => setLinkOpen(false)}>
-          <View style={{ padding: 16, gap: 12 }}>
-            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>Shown under About on your profile. Leave it empty to remove it.</Text>
-            <TextInput
-              accessibilityLabel="Website link"
-              value={draftText}
-              onChangeText={setDraftText}
-              placeholder="example.com"
-              placeholderTextColor={palette.slate}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={{ borderWidth: 1, borderColor: palette.rule, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontFamily: fonts.body, fontSize: 15, color: palette.ink }}
-            />
-            {!!sheetError && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.crimson }}>{sheetError}</Text>}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Save"
-              disabled={sheetBusy}
-              onPress={() => void saveLink()}
-              style={{ paddingVertical: 13, borderRadius: radius.pill, backgroundColor: palette.crimson, alignItems: "center", opacity: sheetBusy ? 0.6 : 1 }}
-            >
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>{sheetBusy ? "Saving…" : "Save"}</Text>
-            </Pressable>
-          </View>
-        </Sheet>
         <Sheet visible={privacyOpen} title="Account privacy" onClose={() => setPrivacyOpen(false)}>
           <View style={{ padding: 16, gap: 10 }}>
             {[

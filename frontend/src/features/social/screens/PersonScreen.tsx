@@ -25,6 +25,7 @@ import { StoryRing } from "../../stories/StoryRing";
 import { useStoryStatus } from "../../stories/storyStore";
 import { GunBadge } from "../../kundli/KundliSheet";
 import { kundliApi } from "../../../api/kundliApi";
+import { ZoomPhoto } from "../../../components/ZoomPhoto";
 
 const MAX_WIDTH = 720;
 const brandLogo = require("../../../../assets/apnajoda-logo.png");
@@ -170,12 +171,14 @@ export function PersonScreen({
   const extraPhotos = profile.photos.slice(1);
   const postsLocked = !!page.posts?.locked;
   const avatar = cover ? (
-    <Image
-      source={{ uri: cover }}
-      style={{ width: "100%", height: "100%", backgroundColor: palette.paperSand }}
-      resizeMode="cover"
-      accessibilityLabel={`${user.name}'s photo`}
-    />
+    <ZoomPhoto uri={cover} label={`${user.name}'s photo`}>
+      <Image
+        source={{ uri: cover }}
+        style={{ width: "100%", height: "100%", backgroundColor: palette.paperSand }}
+        resizeMode="cover"
+        accessibilityLabel={`${user.name}'s photo`}
+      />
+    </ZoomPhoto>
   ) : (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: palette.paperSand }}>
       <Text style={{ fontFamily: fonts.display, fontSize: 46, color: palette.crimson }}>

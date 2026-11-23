@@ -23,6 +23,7 @@ import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { brand, cardShadow } from "../../../components/brand";
+import { ZoomPhoto } from "../../../components/ZoomPhoto";
 import { PressScale, Reveal } from "../../../components/motion";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 
@@ -161,10 +162,12 @@ export function ProfileScreen({
                     }}
                   >
                     {profilePhoto ? (
-                      <Image
-                        source={{ uri: profilePhoto }}
-                        style={{ width: "100%", height: "100%" }}
-                      />
+                      <ZoomPhoto uri={profilePhoto} label="Your profile photo">
+                        <Image
+                          source={{ uri: profilePhoto }}
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      </ZoomPhoto>
                     ) : (
                       <View
                         style={{

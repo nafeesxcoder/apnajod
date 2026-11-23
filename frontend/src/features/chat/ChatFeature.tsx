@@ -3005,9 +3005,7 @@ export function ChatScreen({
                   </View>
                 )}
                 <View style={chatStyles.typingBubble}>
-                  <View style={chatStyles.typingDot} />
-                  <View style={chatStyles.typingDot} />
-                  <View style={chatStyles.typingDot} />
+                  <TypingDots />
                 </View>
                 <Text style={chatStyles.typingLabel}>
                   {match.name} is typing
@@ -8327,6 +8325,38 @@ function CoupleSettingsSheet({
         </ScrollView>
       </SafeAreaView>
     </Modal>
+  );
+}
+
+/** Three dots that rise and fall one after another, as while someone types. */
+function TypingDots() {
+  const values = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    const loops = values.map((value, index) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(index * 160),
+          Animated.timing(value, { toValue: 1, duration: 320, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(value, { toValue: 0, duration: 320, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.delay(480 - index * 160),
+        ]),
+      ),
+    );
+    loops.forEach((loop) => loop.start());
+    return () => loops.forEach((loop) => loop.stop());
+  }, [values]);
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+      {values.map((value, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            chatStyles.typingDot,
+            { transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] },
+          ]}
+        />
+      ))}
+    </View>
   );
 }
 

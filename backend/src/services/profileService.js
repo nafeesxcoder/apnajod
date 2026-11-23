@@ -71,8 +71,10 @@ async function getFullProfile(userId) {
 
   const hobbies = profile?.hobbies ? safeParseJson(profile.hobbies, []) : [];
   const trust = await billingService.trustStatus(userId);
+  const [account] = await query("SELECT username FROM users WHERE id = ?", [userId]);
 
   return {
+    username: account?.username || "",
     profile: profile
       ? {
           ...profile,
