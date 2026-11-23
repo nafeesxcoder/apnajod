@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,7 +22,6 @@ import { StoriesTray } from "../../stories/StoriesTray";
 import { useFestival } from "../../festival/festivalStore";
 import { FestivalBanner } from "../../festival/FestivalBanner";
 import { FestivalParticles } from "../../festival/FestivalParticles";
-import { FestivalEmoji } from "../../festival/FestivalScene";
 import { openStoryChooser } from "../../stories/storyStore";
 import { postApi } from "../../../api/postApi";
 import { matchApi } from "../../../api/matchApi";
@@ -49,14 +47,6 @@ type MatchingPoolStatusView = { status: string; suggestions: string[] };
 
 const MAX_WIDTH = 720;
 const DESKTOP_MAX_WIDTH = 1000;
-
-function greetingForNow() {
-  const hour = new Date().getHours();
-  if (hour < 5) return "Good night";
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
 
 export function HomeScreen({
   preview,
@@ -223,39 +213,8 @@ export function HomeScreen({
                 paddingBottom: 16,
               }}
             >
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                {festival ? (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <FestivalEmoji theme={festival} />
-                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: typeScale.label, color: festival.accent }}>
-                      {festival.greeting}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: typeScale.label,
-                      color: colors.muted,
-                    }}
-                  >
-                    {greetingForNow()}
-                  </Text>
-                )}
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.title,
-                    color: colors.text,
-                    marginTop: 2,
-                  }}
-                >
-                  {name || "Welcome"}
-                </Text>
-              </View>
-
-              <View style={{ marginRight: 12 }}>
+              <View style={{ width: 44, alignItems: "flex-start" }}>
+                <View>
                 <AddPostButton
                   accessToken={accessToken}
                   // A new post shows at the top of the feed straight away.
@@ -266,8 +225,15 @@ export function HomeScreen({
                   color={colors.text}
                   background="transparent"
                 />
+                </View>
               </View>
-
+              <Text
+                numberOfLines={1}
+                style={{ flex: 1, textAlign: "center", fontFamily: fonts.display, fontSize: typeScale.title, color: colors.text }}
+              >
+                Apnajoda
+              </Text>
+              <View style={{ width: 44, alignItems: "flex-end" }}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={
@@ -280,7 +246,7 @@ export function HomeScreen({
                   navigate("likes");
                 }}
                 hitSlop={8}
-                style={{ marginRight: 14 }}
+                style={{ marginRight: 0 }}
               >
                 <Ionicons
                   name="notifications-outline"
@@ -315,52 +281,7 @@ export function HomeScreen({
                 )}
               </Pressable>
 
-              <Pressable onPress={() => navigate("profile")} hitSlop={8}>
-                {profilePhoto ? (
-                  <Image
-                    source={{ uri: profilePhoto }}
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: radius.pill,
-                      borderWidth: 2,
-                      borderColor: palette.crimson,
-                      backgroundColor: palette.rule,
-                    }}
-                  />
-                ) : (
-                  <View
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: radius.pill,
-                      borderWidth: 2,
-                      borderColor: palette.crimson,
-                      backgroundColor: palette.paperSand,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    {initial ? (
-                      <Text
-                        style={{
-                          fontFamily: fonts.display,
-                          fontSize: 17,
-                          color: palette.crimson,
-                        }}
-                      >
-                        {initial}
-                      </Text>
-                    ) : (
-                      <Ionicons
-                        name="person"
-                        size={20}
-                        color={palette.crimson}
-                      />
-                    )}
-                  </View>
-                )}
-              </Pressable>
+              </View>
             </View>
 
             {/* The festival the admin has on: greeting and a festive story. */}
