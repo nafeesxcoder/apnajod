@@ -2221,6 +2221,23 @@ export function ChatScreen({
     await onMessageState(messageId, { reaction: next });
     setSelectedMessageId(null);
   };
+  // Two taps on the same message within a moment react with a heart; one tap
+  // waits that moment before it selects, so the two never clash.
+  const lastTapRef = useRef<{ id: string; at: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const handleBubbleTap = (message: ChatMessage) => {
+    const last = lastTapRef.current;
+    if (last && last.id === message.id && Date.now() - last.at < 300) {
+      clearTimeout(last.timer);
+      lastTapRef.current = null;
+      void reactToMessage(message.id, "❤️");
+      return;
+    }
+    const timer = setTimeout(() => {
+      lastTapRef.current = null;
+      selectMessage(message);
+    }, 300);
+    lastTapRef.current = { id: message.id, at: Date.now(), timer };
+  };
   const toggleStar = async (messageId: string) => {
     const current = previewMessages.find((item) => item.id === messageId);
     await onMessageState(messageId, { starred: !current?.starredByMe });
@@ -2748,7 +2765,7 @@ export function ChatScreen({
                   onPollVote={accessToken ? (choice) => void votePoll(message, choice) : undefined}
                   accessToken={accessToken}
                   onOpenLudo={onOpenLudo}
-                  onPress={() => selectMessage(message)}
+                  onPress={() => handleBubbleTap(message)}
                   onSwipeReply={() => setReplyTarget(message)}
                   onSwipeEdit={
                     message.mine !== false && message.type === "text"
