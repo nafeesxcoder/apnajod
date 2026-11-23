@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  Pressable,
   Switch,
   Image,
   Platform,
@@ -20,6 +21,7 @@ import { pushApi } from "../../../api/pushApi";
 import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
 import { openKundliEditor } from "../../kundli/kundliStore";
 import { RingtoneSheet } from "../../chat/ringtones/RingtoneSheet";
+import { Sheet } from "../../posts/PostSheets";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -189,6 +191,7 @@ export function SettingsScreen({
   const [notifOn, setNotifOn] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [ringOpen, setRingOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifNote, setNotifNote] = useState("");
 
@@ -480,7 +483,11 @@ export function SettingsScreen({
             {/* Privacy & Safety */}
             <SectionLabel title="Privacy & Safety" />
             <SettingsCard delay={300}>
-              <View
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Account privacy, ${isPrivate ? "Private" : "Public"}`}
+                disabled={savingPrivacy}
+                onPress={() => setPrivacyOpen(true)}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -493,45 +500,12 @@ export function SettingsScreen({
                 <View style={{ marginRight: 14 }}>
                   <IconDot icon={isPrivate ? "lock-closed-outline" : "lock-open-outline"} />
                 </View>
-                <View style={{ flex: 1, paddingRight: 12 }}>
-                  <Text
-                    style={{
-                      fontFamily: fonts.bodyMedium,
-                      fontSize: 15,
-                      color: palette.ink,
-                    }}
-                  >
-                    Private account
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: fonts.body,
-                      fontSize: 12,
-                      color: palette.slate,
-                      marginTop: 3,
-                    }}
-                  >
-                    {isPrivate
-                      ? "Only your matches see your posts, and nobody can find you by username. You still appear to people browsing."
-                      : "Anyone can see your posts and find you by your username, like Instagram."}
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel="Private account"
-                  value={isPrivate}
-                  disabled={savingPrivacy}
-                  onValueChange={async (next) => {
-                    setSavingPrivacy(true);
-                    try {
-                      await onPrivacyChange(next);
-                    } finally {
-                      setSavingPrivacy(false);
-                    }
-                  }}
-                  trackColor={{ false: palette.rule, true: palette.crimson }}
-                  thumbColor="#FFFFFF"
-                />
-              </View>
+                <Text style={{ flex: 1, fontFamily: fonts.bodyMedium, fontSize: 15, color: palette.ink }}>Account privacy</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate, marginRight: 6 }}>
+                  {isPrivate ? "Private" : "Public"}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={palette.slate} />
+              </Pressable>
               <SettingsRow
                 icon="lock-closed-outline"
                 label="Two-step verification"
@@ -601,6 +575,62 @@ export function SettingsScreen({
           </View>
         </ScrollView>
         <RingtoneSheet visible={ringOpen} onClose={() => setRingOpen(false)} />
+        <Sheet visible={privacyOpen} title="Account privacy" onClose={() => setPrivacyOpen(false)}>
+          <View style={{ padding: 16, gap: 10 }}>
+            {[
+              {
+                key: false,
+                title: "Public",
+                body: "Anyone can see your posts, find you by username, and message you.",
+              },
+              {
+                key: true,
+                title: "Private",
+                body: "Only people you match with see your posts. Nobody finds you by username. Messages open after a match.",
+              },
+            ].map((option) => {
+              const selected = isPrivate === option.key;
+              return (
+                <Pressable
+                  key={option.title}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={option.title}
+                  disabled={savingPrivacy}
+                  onPress={async () => {
+                    setPrivacyOpen(false);
+                    if (selected) return;
+                    setSavingPrivacy(true);
+                    try {
+                      await onPrivacyChange(option.key);
+                    } finally {
+                      setSavingPrivacy(false);
+                    }
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: 14,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: selected ? palette.crimson : palette.rule,
+                  }}
+                >
+                  <Ionicons
+                    name={selected ? "radio-button-on" : "radio-button-off"}
+                    size={22}
+                    color={selected ? palette.crimson : palette.slate}
+                  />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{option.title}</Text>
+                    <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>{option.body}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Sheet>
         {!!accessToken && (
           <CloseFriendsSheet visible={closeOpen} accessToken={accessToken} onClose={() => setCloseOpen(false)} />
         )}
