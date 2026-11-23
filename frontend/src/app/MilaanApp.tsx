@@ -68,6 +68,7 @@ import { useLayout } from "../layout/useLayout";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { configureAnalyticsConsent, track } from "../lib/telemetry";
 import { CallHost } from "../features/chat/CallHost";
+import { YourActivityScreen } from "../features/profile/screens/YourActivityScreen";
 import { IncomingCallHost } from "../features/chat/IncomingCallHost";
 import {
   fetchPersistedChatMessages as fetchPersistedChatMessagesPreview,
@@ -4088,6 +4089,13 @@ function MilaanApp() {
 
         {screen === "two-step" && accessToken && (
           <TwoStepScreen accessToken={accessToken} onBack={() => setScreen("settings")} />
+        )}
+        {screen === "yourActivity" && accessToken && (
+          <YourActivityScreen
+            accessToken={accessToken}
+            navigate={navigateTo}
+            onBack={() => setScreen("settings")}
+          />
         )}
         {screen === "settings" && (
           <SettingsScreen accessToken={accessToken}

@@ -30,6 +30,9 @@ const answerLimiter = rateLimit({
 
 router.get('/', storyController.getTray);
 router.post('/', uploadLimiter, storyUpload.single('photo'), storyController.createStory);
+router.get('/archive', storyController.getArchive);
+router.post('/archive/:id/repost', storyController.repostArchive);
+router.delete('/archive/:id', storyController.deleteArchive);
 router.delete('/:id', storyController.deleteStory);
 router.post('/:id/vote', storyController.voteStory);
 router.post('/:id/like', storyController.likeStory);

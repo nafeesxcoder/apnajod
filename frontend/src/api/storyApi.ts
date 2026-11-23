@@ -57,7 +57,29 @@ async function authFetch(path: string, accessToken: string, options: RequestInit
  * when the time is up, with everything on it - likes, votes, answers and
  * who saw it (only the owner sees that list).
  */
+export type ArchivedStory = {
+  id: string;
+  media_url: string;
+  created_at: string;
+  expires_at: string;
+  archived_at: string;
+};
+
 export const storyApi = {
+  /** Your stories after their 24 hours, kept 30 days. Only you see these. */
+  async archived(accessToken: string): Promise<ArchivedStory[]> {
+    const data = await authFetch("/stories/archive", accessToken);
+    return (data.stories as ArchivedStory[]) || [];
+  },
+
+  async repostArchived(accessToken: string, storyId: string): Promise<void> {
+    await authFetch(`/stories/archive/${storyId}/repost`, accessToken, { method: "POST" });
+  },
+
+  async deleteArchived(accessToken: string, storyId: string): Promise<void> {
+    await authFetch(`/stories/archive/${storyId}`, accessToken, { method: "DELETE" });
+  },
+
   async tray(accessToken: string): Promise<StoryPerson[]> {
     const data = await authFetch("/stories", accessToken);
     return (data.people as StoryPerson[]) || [];

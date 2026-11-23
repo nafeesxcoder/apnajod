@@ -108,21 +108,21 @@ const ACTIVITY_DAYS = 30;
 const EVENTS = `
        SELECT 'like' AS kind, l.created_at AS at, NULL AS body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
          FROM post_likes l
-         JOIN posts p ON p.id = l.post_id AND p.user_id = ?
+         JOIN posts p ON p.id = l.post_id AND p.user_id = ? AND p.deleted_at IS NULL
          JOIN users u ON u.id = l.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
         WHERE ${VISIBLE_ACTOR} AND l.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY
        UNION ALL
        SELECT 'comment' AS kind, c.created_at AS at, c.body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
          FROM post_comments c
-         JOIN posts p ON p.id = c.post_id AND p.user_id = ?
+         JOIN posts p ON p.id = c.post_id AND p.user_id = ? AND p.deleted_at IS NULL
          JOIN users u ON u.id = c.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
         WHERE ${VISIBLE_ACTOR} AND c.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY
        UNION ALL
        SELECT 'reply' AS kind, c.created_at AS at, c.body, p.id AS post_id, NULL AS story_id, p.media_url, ${ACTOR}
          FROM post_comments c
-         JOIN posts p ON p.id = c.post_id AND p.user_id <> ?
+         JOIN posts p ON p.id = c.post_id AND p.user_id <> ? AND p.deleted_at IS NULL
          JOIN users u ON u.id = c.user_id
          LEFT JOIN profiles pr ON pr.user_id = u.id
         WHERE c.reply_to_user_id = ? AND ${VISIBLE_ACTOR} AND c.created_at >= NOW() - INTERVAL ${ACTIVITY_DAYS} DAY

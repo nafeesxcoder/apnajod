@@ -80,4 +80,27 @@ const storyResponses = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { createStory, getTray, deleteStory, voteStory, answerStory, likeStory, viewStory, storyResponses };
+const getArchive = asyncHandler(async (req, res) => {
+  res.json({ ok: true, stories: await storyService.listArchived(req.user.id) });
+});
+
+const repostArchive = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, story: await storyService.repostArchived(req.user.id, req.params.id) });
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+const deleteArchive = asyncHandler(async (req, res) => {
+  try {
+    res.json(await storyService.deleteArchived(req.user.id, req.params.id));
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+module.exports = {
+  getArchive,
+  repostArchive,
+  deleteArchive, createStory, getTray, deleteStory, voteStory, answerStory, likeStory, viewStory, storyResponses };

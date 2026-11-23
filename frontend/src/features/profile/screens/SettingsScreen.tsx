@@ -538,6 +538,11 @@ export function SettingsScreen({
                 onPress={() => navigate("two-step")}
               />
               <SettingsRow
+                icon="time-outline"
+                label="Your activity"
+                onPress={() => navigate("yourActivity")}
+              />
+              <SettingsRow
                 icon="shield-outline"
                 label="Safety & Privacy"
                 onPress={() => navigate("safety")}

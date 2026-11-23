@@ -28,6 +28,9 @@ router.get("/activity", postController.getActivity);
 router.get("/activity/unread", postController.getActivityUnread);
 router.post("/activity/seen", postController.markActivitySeen);
 router.get("/saved", postController.getSaved);
+// Recently deleted posts: kept 30 days, restorable. Before /:id.
+router.get("/deleted", postController.getDeletedPosts);
+router.post("/deleted/:id/restore", postController.restorePost);
 // Someone else's posts, so a post is worth writing.
 router.get("/user/:userId", postController.getUserPosts);
 

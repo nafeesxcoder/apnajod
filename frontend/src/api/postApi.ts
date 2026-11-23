@@ -184,4 +184,22 @@ export const postApi = {
     const data = await authFetch("/posts/saved", accessToken);
     return (data.posts as Post[]) || [];
   },
+
+  /** Your deleted posts, kept for 30 days in Recently deleted. */
+  async deleted(accessToken: string): Promise<DeletedPost[]> {
+    const data = await authFetch("/posts/deleted", accessToken);
+    return (data.posts as DeletedPost[]) || [];
+  },
+
+  async restore(accessToken: string, postId: string): Promise<void> {
+    await authFetch(`/posts/deleted/${postId}/restore`, accessToken, { method: "POST" });
+  },
+};
+
+export type DeletedPost = {
+  id: string;
+  media_url: string;
+  caption: string;
+  created_at: string;
+  deleted_at: string;
 };

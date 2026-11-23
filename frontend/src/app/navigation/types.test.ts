@@ -8,7 +8,7 @@ const completeRouteInventory = [
   'home','discovery','detail','mutual','icebreaker','likes','games',
   // The follow graph alongside it.
   'chats','find','person','chat',
-  'profile','settings','safety','verifyHub',
+  'profile','settings','yourActivity','safety','verifyHub',
   // Back so a suspended member can appeal from inside the app.
   'support',
 ] as const;

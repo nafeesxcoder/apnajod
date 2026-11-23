@@ -41,6 +41,16 @@ const createPost = asyncHandler(async (req, res) => {
   res.json({ ok: true, post });
 });
 
+const getDeletedPosts = asyncHandler(async (req, res) => {
+  const posts = await postService.listDeletedPosts(req.user.id);
+  res.json({ ok: true, posts });
+});
+
+const restorePost = asyncHandler(async (req, res) => {
+  await postService.restorePost(req.user.id, req.params.id);
+  res.json({ ok: true });
+});
+
 const getMyPosts = asyncHandler(async (req, res) => {
   const posts = await postService.getUserPosts(req.user.id);
   res.json({ ok: true, posts });
@@ -108,6 +118,8 @@ const markActivitySeen = social((req) => require("../services/postActivityServic
 
 module.exports = {
   createPost,
+  getDeletedPosts,
+  restorePost,
   getMyPosts,
   getUserPosts,
   updatePost,

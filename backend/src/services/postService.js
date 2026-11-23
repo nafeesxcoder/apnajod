@@ -58,7 +58,7 @@ const POST_COLUMNS = `
     u.avatar_url
   ) AS author_avatar`;
 const POST_FROM = `
-  FROM posts p
+  FROM (SELECT * FROM posts WHERE deleted_at IS NULL) p
   JOIN users u ON u.id = p.user_id
   LEFT JOIN profiles pr ON pr.user_id = p.user_id`;
 
@@ -173,7 +173,7 @@ async function getPost(viewerId, postId) {
 }
 
 async function countPosts(userId) {
-  const [row] = await query("SELECT COUNT(*) AS n FROM posts WHERE user_id = ?", [userId]);
+  const [row] = await query("SELECT COUNT(*) AS n FROM posts WHERE user_id = ? AND deleted_at IS NULL", [userId]);
   return Number(row?.n || 0);
 }
 
@@ -246,20 +246,58 @@ async function removeMediaFile(mediaUrl) {
 }
 
 async function deletePost(userId, postId) {
-  const [post] = await query("SELECT media_url FROM posts WHERE id = ? AND user_id = ?", [postId, userId]);
-  const files = post ? await mediaUrlsOf([postId]) : [];
-  const result = await query("DELETE FROM posts WHERE id = ? AND user_id = ?", [
-    postId,
-    userId,
-  ]);
+  // Kept for 30 days in Recently deleted, then removed for good (purgeDeletedPosts).
+  const result = await query(
+    "UPDATE posts SET deleted_at = NOW(6) WHERE id = ? AND user_id = ? AND deleted_at IS NULL",
+    [postId, userId],
+  );
   if (!result.affectedRows) {
     const error = new Error("That post is not yours, or no longer exists.");
     error.status = 404;
     throw error;
   }
-  // The photos go with the post: they used to stay on disk for good.
-  for (const url of files) await removeMediaFile(url);
   return { ok: true };
+}
+
+async function listDeletedPosts(userId) {
+  return query(
+    `SELECT id, media_url, caption, created_at, deleted_at FROM posts
+      WHERE user_id = ? AND deleted_at IS NOT NULL
+      ORDER BY deleted_at DESC`,
+    [userId],
+  );
+}
+
+async function restorePost(userId, postId) {
+  const result = await query(
+    "UPDATE posts SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL",
+    [postId, userId],
+  );
+  if (!result.affectedRows) {
+    const error = new Error("That post is not in Recently deleted.");
+    error.status = 404;
+    throw error;
+  }
+  return { ok: true };
+}
+
+/** Removes posts deleted more than `days` ago: rows, likes, comments, and photos. */
+async function purgeDeletedPosts(days = 30, batch = 200) {
+  let removed = 0;
+  for (;;) {
+    const old = await query(
+      "SELECT id FROM posts WHERE deleted_at IS NOT NULL AND deleted_at < NOW(6) - INTERVAL ? DAY LIMIT ?",
+      [days, batch],
+    );
+    if (!old.length) break;
+    const ids = old.map((row) => row.id);
+    const files = await mediaUrlsOf(ids);
+    await query(`DELETE FROM posts WHERE id IN (${ids.map(() => "?").join(", ")})`, ids);
+    for (const url of files) await removeMediaFile(url);
+    removed += ids.length;
+    if (old.length < batch) break;
+  }
+  return { removed };
 }
 
 /**
@@ -312,6 +350,9 @@ module.exports = {
   countPosts,
   updatePost,
   deletePost,
+  listDeletedPosts,
+  restorePost,
+  purgeDeletedPosts,
   removePostByAdmin,
   MAX_POST_PHOTOS,
   keepPostByAdmin,

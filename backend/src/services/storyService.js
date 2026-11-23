@@ -17,6 +17,7 @@ const { VISIBLE_TO_VIEWER, visibleParams } = require('./storyVisibility');
 const STORY_HOURS = 24;
 /** Most stories one member can put up in 24 hours. */
 const MAX_STORIES_PER_DAY = 10;
+const ARCHIVE_DAYS = 30;
 
 function storyFilePath(mediaUrl, storyDir) {
   const match = /\/uploads\/stories\/([A-Za-z0-9._-]+)$/.exec(String(mediaUrl || '').split(/[?#]/)[0]);
@@ -227,19 +228,30 @@ async function remove(userId, storyId) {
 async function purgeExpired(storyDir) {
   const { STORY_DIR } = require('../middleware/storyUpload');
   const dir = storyDir || STORY_DIR;
+  // A story past its 24 hours is archived, not removed: its owner can see it
+  // and share it again for 30 days.
+  await query('UPDATE stories SET archived_at = NOW(6) WHERE expires_at <= NOW(6) AND archived_at IS NULL');
   let rows = 0;
   for (;;) {
-    const expired = await query('SELECT id, media_url FROM stories WHERE expires_at <= NOW(6) LIMIT 500');
-    if (!expired.length) break;
-    for (const story of expired) await removeFile(storyFilePath(story.media_url, dir));
-    await query(`DELETE FROM stories WHERE id IN (${expired.map(() => '?').join(', ')})`, expired.map((s) => s.id));
-    rows += expired.length;
-    if (expired.length < 500) break;
+    const old = await query(
+      'SELECT id, media_url FROM stories WHERE archived_at IS NOT NULL AND archived_at < NOW(6) - INTERVAL ? DAY LIMIT 500',
+      [ARCHIVE_DAYS],
+    );
+    if (!old.length) break;
+    for (const story of old) await removeFile(storyFilePath(story.media_url, dir));
+    await query(`DELETE FROM stories WHERE id IN (${old.map(() => '?').join(', ')})`, old.map((s) => s.id));
+    rows += old.length;
+    if (old.length < 500) break;
   }
   let files = 0;
+  // Photos of stories still in the archive stay; only leftovers with no row go.
+  const kept = new Set(
+    (await query('SELECT media_url FROM stories')).map((r) => path.basename(storyFilePath(r.media_url, dir))),
+  );
   const cutoff = Date.now() - STORY_HOURS * 60 * 60 * 1000;
   const names = await fs.promises.readdir(dir).catch(() => []);
   for (const name of names) {
+    if (kept.has(name)) continue;
     const file = path.join(dir, name);
     const stat = await fs.promises.stat(file).catch(() => null);
     if (stat && stat.isFile() && stat.mtimeMs < cutoff) {
@@ -250,6 +262,56 @@ async function purgeExpired(storyDir) {
   return { rows, files };
 }
 
+/** Your archived stories, newest first. Only you see these. */
+async function listArchived(userId) {
+  return query(
+    `SELECT id, media_url, created_at, expires_at, archived_at FROM stories
+      WHERE user_id = ? AND archived_at IS NOT NULL
+      ORDER BY archived_at DESC`,
+    [userId],
+  );
+}
+
+/** Shares an archived story again for another 24 hours, with its own copy of the photo. */
+async function repostArchived(userId, storyId) {
+  const { STORY_DIR } = require('../middleware/storyUpload');
+  const [row] = await query(
+    'SELECT * FROM stories WHERE id = ? AND user_id = ? AND archived_at IS NOT NULL',
+    [storyId, userId],
+  );
+  if (!row) {
+    const error = new Error('That story is not in your archive.');
+    error.status = 404;
+    throw error;
+  }
+  const id = crypto.randomUUID();
+  const mediaUrl = row.media_url.replace(/[^/]+$/, `${id}${path.extname(row.media_url) || '.jpg'}`);
+  await fs.promises.copyFile(storyFilePath(row.media_url, STORY_DIR), storyFilePath(mediaUrl, STORY_DIR));
+  await query(
+    `INSERT INTO stories (id, user_id, media_url, created_at, expires_at, music_track_id, music_start, music_length, stickers, audience)
+     VALUES (?, ?, ?, NOW(6), NOW(6) + INTERVAL ? HOUR, ?, ?, ?, ?, ?)`,
+    [id, userId, mediaUrl, STORY_HOURS, row.music_track_id, row.music_start, row.music_length, row.stickers, row.audience],
+  );
+  return { id, mediaUrl };
+}
+
+/** Removes one archived story now, its photo included. */
+async function deleteArchived(userId, storyId) {
+  const { STORY_DIR } = require('../middleware/storyUpload');
+  const [row] = await query(
+    'SELECT media_url FROM stories WHERE id = ? AND user_id = ? AND archived_at IS NOT NULL',
+    [storyId, userId],
+  );
+  if (!row) {
+    const error = new Error('That story is not in your archive.');
+    error.status = 404;
+    throw error;
+  }
+  await removeFile(storyFilePath(row.media_url, STORY_DIR));
+  await query('DELETE FROM stories WHERE id = ?', [storyId]);
+  return { ok: true };
+}
+
 module.exports = {
   clipLyrics,
   STORY_HOURS,
@@ -258,5 +320,8 @@ module.exports = {
   tray,
   remove,
   purgeExpired,
+  listArchived,
+  repostArchived,
+  deleteArchived,
   storyFilePath,
 };
