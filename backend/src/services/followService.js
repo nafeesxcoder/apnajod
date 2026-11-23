@@ -208,7 +208,7 @@ async function decorate(viewerId, rows) {
 async function getProfileCard(userId) {
   const [profile] = await query(
     `SELECT first_name, age, city, profession, religion, community,
-            about, verified, hobbies,
+            about, link, verified, hobbies,
             ${billingService.blueTickSql("user_id", "verified")} AS blue_tick
        FROM profiles
       WHERE user_id = ?`,
@@ -243,6 +243,7 @@ async function getProfileCard(userId) {
     religion: profile?.religion || "",
     community: profile?.community || "",
     about: profile?.about || "",
+    link: profile?.link || "",
     verified: profile?.verified === 1,
     blueTick: Number(profile?.blue_tick) === 1,
     hobbies: Array.isArray(hobbies) ? hobbies : [],

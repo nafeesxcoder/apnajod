@@ -1181,6 +1181,7 @@ function MilaanApp() {
                 religion: profileData.profile.religion ?? current.religion,
                 community: profileData.profile.community ?? current.community,
                 bio: readBio(profileData.profile, (current as any).bio ?? ""),
+...({ link: profileData.profile.link ?? "" } as any),
                 hobbies: readHobbies(profileData.profile),
               }));
               applyVerificationFrom(profileData.profile);
@@ -3275,6 +3276,7 @@ function MilaanApp() {
           religion: profileData.profile.religion ?? current.religion,
           community: profileData.profile.community ?? current.community,
           bio: readBio(profileData.profile, (current as any).bio ?? ""),
+...({ link: profileData.profile.link ?? "" } as any),
           hobbies: readHobbies(profileData.profile), // <-- YEH ADD KARO
         }));
         applyVerificationFrom(profileData.profile);

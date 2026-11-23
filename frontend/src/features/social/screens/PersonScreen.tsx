@@ -14,11 +14,11 @@ import type { PersonPage } from "../../../api/socialApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
-import { InfoCard } from "../../../components/InfoCard";
 import { GlowPulse, HeartBeat, PressScale, Reveal } from "../../../components/motion";
 import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
 import { LinearGradient } from "expo-linear-gradient";
 import { HobbyRow } from "../../../components/HobbyRow";
+import { Linking } from "react-native";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../../profile/components/PostsSection";
 import { StoryRing } from "../../stories/StoryRing";
@@ -405,20 +405,25 @@ export function PersonScreen({
             </View>
           )}
 
-          {!!profile.about && (
+          {(!!profile.about || !!profile.link) && (
             <Reveal delay={60} style={{ marginTop: 24 }}>
-              <InfoCard title="About">
-                <Text
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 15,
-                    color: palette.inkSoft,
-                    lineHeight: 22,
-                  }}
-                >
-                  {profile.about}
-                </Text>
-              </InfoCard>
+              <View style={{ paddingHorizontal: 4, gap: 8 }}>
+                <Text style={{ fontFamily: fonts.display, fontSize: typeScale.section, color: palette.ink }}>About</Text>
+                {!!profile.about && (
+                  <Text style={{ fontFamily: fonts.body, fontSize: 15, color: palette.inkSoft, lineHeight: 22 }}>
+                    {profile.about}
+                  </Text>
+                )}
+                {!!profile.link && (
+                  <Text
+                    accessibilityRole="link"
+                    onPress={() => void Linking.openURL(String(profile.link))}
+                    style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.navy }}
+                  >
+                    {String(profile.link).replace(/^https?:\/\//, "")}
+                  </Text>
+                )}
+              </View>
             </Reveal>
           )}
 

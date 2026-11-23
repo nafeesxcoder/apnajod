@@ -27,6 +27,23 @@ function cleanAge(value) {
   return age;
 }
 
+/** A link for your profile: https is added when left out; empty removes it. */
+function cleanLink(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  let url;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    throw new ApiError(400, "Enter a valid link, like https://example.com.");
+  }
+  if (!url.hostname.includes(".") || withScheme.length > 255) {
+    throw new ApiError(400, "Enter a valid link, like https://example.com.");
+  }
+  return url.toString();
+}
+
 async function getFullProfile(userId) {
   const [profile] = await query("SELECT * FROM profiles WHERE user_id = ?", [
     userId,
@@ -145,6 +162,9 @@ async function upsertProfile(userId, input) {
       profileHobbies,
     ],
   );
+  if (input.link !== undefined) {
+    await query("UPDATE profiles SET link = ? WHERE user_id = ?", [cleanLink(input.link), userId]);
+  }
 }
 
 /**
@@ -635,7 +655,43 @@ async function kundliWith(userId, otherId) {
   };
 }
 
+/** Saves only your profile link; the rest of the profile is left as it is. */
+async function setLink(userId, raw) {
+  const link = cleanLink(raw);
+  await query(
+    "INSERT INTO profiles (user_id, link) VALUES (?, ?) ON DUPLICATE KEY UPDATE link = VALUES(link)",
+    [userId, link],
+  );
+  return { link };
+}
+
+/**
+ * Change your username. The first change is free; after that, a new one is
+ * allowed 15 days after the last change, like Instagram.
+ */
+async function changeUsername(userId, raw) {
+  const users = require("./userService");
+  const problem = users.validateUsername(raw);
+  if (problem) throw new ApiError(400, problem);
+  const name = users.normalizeUsername(raw);
+  const [user] = await query("SELECT username, username_changed_at FROM users WHERE id = ?", [userId]);
+  if (!user) throw new ApiError(404, "That account is not available.");
+  if (user.username === name) return { username: name };
+  if (user.username_changed_at) {
+    const daysSince = (Date.now() - new Date(user.username_changed_at).getTime()) / (24 * 60 * 60 * 1000);
+    if (daysSince < 15) {
+      const left = Math.ceil(15 - daysSince);
+      throw new ApiError(429, `You can change your username again in ${left} ${left === 1 ? "day" : "days"}.`);
+    }
+  }
+  if (!(await users.isUsernameAvailable(name))) throw new ApiError(409, "That username is taken.");
+  await query("UPDATE users SET username = ?, username_changed_at = NOW(6) WHERE id = ?", [name, userId]);
+  return { username: name };
+}
+
 module.exports = {
+  changeUsername,
+  setLink,
   getFullProfile,
   upsertProfile,
   cleanAge,

@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Image, Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
 import type { StoryPerson } from "../../api/storyApi";
-import { brand } from "../../components/brand";
 import { fonts, palette } from "../../theme";
 import { Avatar } from "../posts/PostSheets";
 import { Sheet } from "../posts/PostSheets";
@@ -213,16 +211,14 @@ function Ring({ active, grey, close = false, children }: { active: boolean; grey
   if (active && close) {
     return <View style={{ padding: 2.5, borderRadius: (SIZE + 9) / 2, backgroundColor: CLOSE_GREEN }}>{inner}</View>;
   }
+  // A story not yet watched: a double ring, navy outside and crimson inside.
   if (active) {
     return (
-      <LinearGradient
-        colors={[brand.barGradient[1], brand.barGradient[0]]}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 1, y: 0 }}
-        style={{ padding: 2.5, borderRadius: (SIZE + 9) / 2 }}
-      >
-        {inner}
-      </LinearGradient>
+      <View style={{ padding: 2.5, borderRadius: (SIZE + 9) / 2, backgroundColor: palette.navy }}>
+        <View style={{ padding: 1.5, borderRadius: (SIZE + 9) / 2, backgroundColor: "#FFFFFF" }}>
+          <View style={{ padding: 2, borderRadius: (SIZE + 4) / 2, backgroundColor: palette.crimson }}>{inner}</View>
+        </View>
+      </View>
     );
   }
   return (

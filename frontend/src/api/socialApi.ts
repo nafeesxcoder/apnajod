@@ -31,6 +31,7 @@ export type ProfileCard = {
   religion: string;
   community: string;
   about: string;
+  link?: string;
   verified: boolean;
   /** Approved selfie AND Pro, worked out on the server. */
   blueTick?: boolean;

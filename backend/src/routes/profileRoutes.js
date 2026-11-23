@@ -11,6 +11,8 @@ router.get("/referrals", profileController.getReferrals);
 router.get("/me/export", profileController.exportMyData);
 router.put("/profile", profileController.updateProfile);
 router.put("/photos", profileController.updatePhotos);
+router.put("/username", profileController.changeUsername);
+router.put("/link", profileController.setLink);
 router.post("/verify/pose", profileController.getVerificationPose);
 router.post("/verify", profileController.submitVerification);
 router.post(

@@ -17,6 +17,7 @@ import {
   useNavInset,
 } from "../../../components/navigation/BottomNav";
 import { HobbyRow } from "../../../components/HobbyRow";
+import { Linking } from "react-native";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
@@ -325,6 +326,15 @@ export function ProfileScreen({
                 >
                   {bio || "Add a short bio so people know the real you."}
                 </Text>
+                {!!profile?.link && (
+                  <Text
+                    accessibilityRole="link"
+                    onPress={() => void Linking.openURL(String(profile.link))}
+                    style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.navy }}
+                  >
+                    {String(profile.link).replace(/^https?:\/\//, "")}
+                  </Text>
+                )}
               </View>
 
               {/* Premium is this screen's one navy "hero" card. */}

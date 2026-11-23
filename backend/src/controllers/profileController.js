@@ -36,8 +36,10 @@ const updateProfile = asyncHandler(async (req, res) => {
     about,
     bio,
     hobbies,
+    link,
   } = req.body;
   await profileService.upsertProfile(req.user.id, {
+    link,
     firstName,
     gender,
     age,
@@ -156,7 +158,17 @@ const getKundli = asyncHandler(async (req, res) => {
   res.json({ ok: true, ...(await profileService.kundliWith(req.user.id, String(req.params.userId))) });
 });
 
+const setLink = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await profileService.setLink(req.user.id, req.body?.link)) });
+});
+
+const changeUsername = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await profileService.changeUsername(req.user.id, req.body?.username)) });
+});
+
 module.exports = {
+  setLink,
+  changeUsername,
   updateKundli,
   getKundli,
   exportMyData,
