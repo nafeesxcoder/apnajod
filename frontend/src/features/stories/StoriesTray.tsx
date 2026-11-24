@@ -102,7 +102,7 @@ export function StoriesTray({
     <View style={{ marginBottom: 14 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
         {/* You: tap to watch yours (or add one if there is none), + always adds. */}
-        <View style={{ width: SIZE + 8, alignItems: "center" }}>
+        <View style={{ width: SIZE + 14, alignItems: "center" }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={mine ? "Watch your story" : "Add to your story"}
@@ -150,7 +150,7 @@ export function StoriesTray({
             accessibilityRole="button"
             accessibilityLabel={`${person.user.username}'s story${unseen(person) ? ", new" : ""}`}
             onPress={() => openStoriesAt(people.indexOf(person))}
-            style={{ width: SIZE + 8, alignItems: "center" }}
+            style={{ width: SIZE + 14, alignItems: "center" }}
           >
             <Ring active={unseen(person)} grey={!unseen(person)} close={closeUnseen(people, seen, person.user.userId)}>
               <Avatar person={person.user} size={SIZE} />
@@ -214,9 +214,9 @@ function Ring({ active, grey, close = false, children }: { active: boolean; grey
   // A story not yet watched: a double ring, navy outside and crimson inside.
   if (active) {
     return (
-      <View style={{ padding: 2.5, borderRadius: (SIZE + 9) / 2, backgroundColor: palette.navy }}>
-        <View style={{ padding: 1.5, borderRadius: (SIZE + 9) / 2, backgroundColor: "#FFFFFF" }}>
-          <View style={{ padding: 2, borderRadius: (SIZE + 4) / 2, backgroundColor: palette.crimson }}>{inner}</View>
+      <View style={{ padding: 2.5, borderRadius: 999, backgroundColor: palette.navy }}>
+        <View style={{ padding: 1.5, borderRadius: 999, backgroundColor: "#FFFFFF" }}>
+          <View style={{ padding: 2, borderRadius: 999, backgroundColor: palette.crimson }}>{inner}</View>
         </View>
       </View>
     );

@@ -1586,7 +1586,7 @@ export const chatStyles=StyleSheet.create({
   messageActions:{alignSelf:'flex-end',minHeight:40,marginTop:4,paddingHorizontal:6,flexDirection:'row',alignItems:'center',gap:3,backgroundColor:'rgba(15,17,19,.98)',borderWidth:1,borderColor:'#D3D6DA',borderRadius:8},
   reactionButton:{width:33,height:33,alignItems:'center',justifyContent:'center'},
   reactionText:{fontSize:18},
-  reactionPill:{position:'absolute',left:-7,bottom:-12,minWidth:30,height:25,paddingHorizontal:5,borderRadius:13,backgroundColor:'#FDFDFD',borderWidth:1,borderColor:'#D3D6DA',alignItems:'center',justifyContent:'center'},
+  reactionPill:{position:'absolute',left:-6,bottom:-11,alignItems:'center',justifyContent:'center'},
   reactionPillMine:{left:undefined,right:-7},
   swipeReplyWrap:{width:'100%',justifyContent:'center'},
   swipeReplyIcon:{position:'absolute',top:0,bottom:0,justifyContent:'center',alignItems:'center',width:28,zIndex:-1},
