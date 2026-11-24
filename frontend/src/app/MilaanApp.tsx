@@ -496,6 +496,8 @@ function MilaanApp() {
   });
   const appLayout = useLayout();
   const [adminToken, setAdminToken] = useState<string | null>(null);
+  // When that admin sign-in happened: a short while later the panel asks for the password (and code) again.
+  const [adminTokenAt, setAdminTokenAt] = useState(0);
   // Set from the signed-in account; only admins see the Admin Panel entry in
   // Settings. The server still checks the role on every /admin call.
   const [isAdmin, setIsAdmin] = useState(false);
@@ -3737,6 +3739,7 @@ function MilaanApp() {
             onBack={isAdminMode ? undefined : () => setScreen("settings")}
             onLogin={(token: string) => {
               setAdminToken(token);
+              setAdminTokenAt(Date.now());
               setScreen("adminDashboard");
             }}
             />
@@ -3745,8 +3748,9 @@ function MilaanApp() {
         {screen === "adminDashboard" && adminToken && (
           <AdminDashboardScreen
             accessToken={adminToken}
-            // Logout ends the admin session here; the app stays signed in when opened from Settings.
+            // Back to app keeps the admin session for a while; Logout ends it. The app stays signed in.
             exitLabel="Logout"
+            onExit={isAdminMode ? undefined : () => setScreen("settings")}
             onLogout={() => {
               setAdminToken(null);
               setScreen(isAdminMode ? "adminLogin" : "settings");
@@ -4127,9 +4131,13 @@ function MilaanApp() {
             onOpenAdmin={
               isAdmin && accessToken
                 ? () => {
-                    // The admin panel asks for the admin's password (and code) every time it opens.
-                    setAdminToken(null);
-                    setScreen("adminLogin");
+                    // Back to app keeps the admin signed in for a little while; after that, or after Logout, sign in again.
+                    if (adminToken && Date.now() - adminTokenAt < 10 * 60 * 1000) {
+                      setScreen("adminDashboard");
+                    } else {
+                      setAdminToken(null);
+                      setScreen("adminLogin");
+                    }
                   }
                 : undefined
             }

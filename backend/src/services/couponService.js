@@ -58,7 +58,7 @@ function rowToCode(row) {
 async function list() {
   const rows = await query(
     `SELECT c.*, (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id = c.id) AS uses
-       FROM coupons c ORDER BY c.created_at DESC LIMIT 200`,
+       FROM coupons c WHERE c.deleted_at IS NULL ORDER BY c.created_at DESC LIMIT 200`,
   );
   return rows.map(rowToCode);
 }
@@ -100,7 +100,7 @@ async function create(adminId, input) {
 
 /** Switch a code on or off. */
 async function update(id, input) {
-  const [row] = await query("SELECT id FROM coupons WHERE id = ?", [id]);
+  const [row] = await query("SELECT id FROM coupons WHERE id = ? AND deleted_at IS NULL", [id]);
   if (!row) throw fail(404, "No such code");
   if (input?.active !== undefined) {
     await query("UPDATE coupons SET active = ? WHERE id = ?", [input.active ? 1 : 0, id]);
@@ -108,11 +108,25 @@ async function update(id, input) {
   return { updated: true };
 }
 
+/**
+ * Delete a pass code: it stops working and leaves the list. Its name is freed
+ * for a new code (the old row is renamed), and members who used it keep their pass.
+ */
+async function remove(id) {
+  const [row] = await query("SELECT id, code FROM coupons WHERE id = ? AND deleted_at IS NULL", [id]);
+  if (!row) throw fail(404, "No such code");
+  await query("UPDATE coupons SET deleted_at = NOW(), active = 0, code = ? WHERE id = ?", [
+    `${row.code}-DEL-${String(row.id).slice(0, 8)}`,
+    id,
+  ]);
+  return { deleted: true };
+}
+
 /** The pass code if this member can use it now, else a clear reason. */
 async function usable(rawCode, userId) {
   const code = normalizeCode(rawCode);
   if (!code) throw fail(400, "That code is not right.");
-  const [row] = await query("SELECT * FROM coupons WHERE code = ?", [code]);
+  const [row] = await query("SELECT * FROM coupons WHERE code = ? AND deleted_at IS NULL", [code]);
   if (!row || !Number(row.active)) throw fail(404, "That code is not right.");
   if (!row.pass_plan) throw fail(410, "This code no longer works.");
   if (row.valid_until && new Date(isoUtc(row.valid_until)) <= new Date()) throw fail(410, "This code has ended.");
@@ -136,7 +150,7 @@ async function usable(rawCode, userId) {
 async function anyOpen() {
   const [row] = await query(
     `SELECT COUNT(*) AS total FROM coupons c
-      WHERE c.pass_plan IS NOT NULL AND c.active = 1
+      WHERE c.pass_plan IS NOT NULL AND c.active = 1 AND c.deleted_at IS NULL
         AND (c.valid_until IS NULL OR c.valid_until > UTC_TIMESTAMP())
         AND (c.max_uses IS NULL OR c.max_uses > (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id = c.id))`,
   );
@@ -169,6 +183,7 @@ module.exports = {
   list,
   create,
   update,
+  remove,
   usable,
   redeemPass,
   anyOpen,

@@ -64,6 +64,7 @@ router.post("/festivals/:id/cancel", adminController.cancelFestival);
 router.get("/coupons", adminController.getCoupons);
 router.post("/coupons", adminController.createCoupon);
 router.post("/coupons/:id", adminController.updateCoupon);
+router.delete("/coupons/:id", adminController.deleteCoupon);
 router.get("/promo", adminController.getPromo);
 router.post("/promo", adminController.publishPromo);
 router.post("/promo/off", adminController.stopPromo);

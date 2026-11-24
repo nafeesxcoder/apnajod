@@ -100,12 +100,17 @@ const webHoverStyle: any =
 export function AdminDashboardScreen({
   accessToken,
   onLogout,
+  onExit,
   exitLabel = "Logout",
 }: {
   accessToken: string;
   onLogout: () => void;
+  /** Leave the admin panel but stay signed in as admin (Back to app, or the back button on Overview). */
+  onExit?: () => void;
   exitLabel?: string;
 }) {
+  const exitRef = useRef(onExit);
+  exitRef.current = onExit;
   const [tab, setTabState] = useState<Tab>("overview");
   const [usersFilter, setUsersFilter] = useState<UserFilter>("all");
   const placeRef = useRef<AdminPlace>({ tab: "overview", filter: "all" });
@@ -140,7 +145,11 @@ export function AdminDashboardScreen({
           show({ tab: state.adminTab, filter: state.adminFilter ?? "all" });
           return;
         }
-        // Past the first admin page: stay in the admin, on Overview.
+        // Past the first admin page: on Overview, back leaves the admin when the app can take it back.
+        if (exitRef.current) {
+          exitRef.current();
+          return;
+        }
         window.history.pushState({ milaanScreen: "adminDashboard", adminTab: "overview", adminFilter: "all" }, "");
         show({ tab: "overview", filter: "all" });
       };
@@ -151,7 +160,8 @@ export function AdminDashboardScreen({
       const previous = backStack.current.pop();
       if (previous) show(previous);
       else if (placeRef.current.tab !== "overview") show({ tab: "overview", filter: "all" });
-      // On Overview, back stays here; Logout / Exit leaves the admin.
+      // On Overview, back leaves the admin when the app can take it back; otherwise it stays here.
+      else exitRef.current?.();
       return true;
     });
     return () => sub.remove();
@@ -194,6 +204,19 @@ export function AdminDashboardScreen({
               style={{ width: 120, height: 40 }}
               resizeMode="contain"
             />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 18 }}>
+            {onExit && (
+              <Pressable
+                onPress={onExit}
+                accessibilityRole="button"
+                accessibilityLabel="Back to app"
+                hitSlop={8}
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: COLORS.primary }}>Back to app</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={onLogout}
               accessibilityRole="button"
@@ -216,6 +239,7 @@ export function AdminDashboardScreen({
                 {exitLabel}
               </Text>
             </Pressable>
+            </View>
           </View>
           <ScrollView
             horizontal
@@ -337,6 +361,17 @@ export function AdminDashboardScreen({
           </ScrollView>
 
           <View style={{ marginTop: 12, gap: 16, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 }}>
+            {onExit && (
+              <Pressable
+                onPress={onExit}
+                accessibilityRole="button"
+                accessibilityLabel="Back to app"
+                style={[{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8 }, webHoverStyle]}
+              >
+                <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: COLORS.primary }}>Back to app</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={onLogout}
               style={[
@@ -2294,6 +2329,7 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
   const [months, setMonths] = useState<number>(1);
   const [untilDay, setUntilDay] = useState("");
   const [maxUses, setMaxUses] = useState("");
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -2439,6 +2475,27 @@ function CouponsTab({ accessToken }: { accessToken: string }) {
                 }
               />
             </View>
+            {confirmId === c.id ? (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: COLORS.danger }}>
+                  Delete this code? It stops working and leaves this list.
+                </Text>
+                <SmallButton
+                  label="Yes, delete"
+                  tone="danger"
+                  busy={busy}
+                  onPress={() => {
+                    setConfirmId(null);
+                    void run(() => adminApi.deleteCoupon(accessToken, c.id), `${c.code} deleted.`);
+                  }}
+                />
+                <SmallButton label="Cancel" tone="plain" onPress={() => setConfirmId(null)} />
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row" }}>
+                <SmallButton label="Delete code" tone="danger" busy={busy} onPress={() => setConfirmId(c.id)} />
+              </View>
+            )}
           </Card>
         ))
       )}

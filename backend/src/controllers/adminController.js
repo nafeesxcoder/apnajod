@@ -219,6 +219,14 @@ const createCoupon = asyncHandler(async (req, res) => {
   }
 });
 
+const deleteCoupon = asyncHandler(async (req, res) => {
+  try {
+    res.json({ ok: true, ...(await require("../services/couponService").remove(req.params.id)) });
+  } catch (error) {
+    throw serviceError(error);
+  }
+});
+
 const updateCoupon = asyncHandler(async (req, res) => {
   try {
     res.json({ ok: true, ...(await require("../services/couponService").update(req.params.id, req.body || {})) });
@@ -328,6 +336,7 @@ const deleteDemoUser = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  deleteCoupon,
   authenticatorStatus,
   startAuthenticatorSetup,
   confirmAuthenticatorSetup,
