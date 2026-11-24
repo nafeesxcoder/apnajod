@@ -35,6 +35,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { ChatBackdrop } from "./ChatBackdrop";
+import { CHAT_BACKGROUNDS } from "./chatBackgrounds";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -2342,6 +2344,7 @@ export function ChatScreen({
               : null,
           ]}
         >
+          <ChatBackdrop background={settings.background} />
           <View
             style={{
               flexDirection: "row",
@@ -2720,7 +2723,10 @@ export function ChatScreen({
               messagesRef.current?.scrollToEnd({ animated: true });
             }}
             // A light wash of the chat theme's colour behind the messages.
-            style={{ backgroundColor: activeTheme.wash }}
+            style={{
+              backgroundColor:
+                settings.background && settings.background !== "classic" ? "transparent" : activeTheme.wash,
+            }}
             contentContainerStyle={[
               styles.messages,
               chatPremiumStyles.messages,
@@ -8335,6 +8341,33 @@ function CoupleSettingsSheet({
                   )}
                 </Pressable>
               ))}
+            </View>
+          </View>
+          <View style={coupleStyles.section}>
+            <Text style={styles.sectionLabel}>BACKGROUND</Text>
+            <View style={coupleStyles.themeGrid}>
+              {CHAT_BACKGROUNDS.map((background) => {
+                const chosen = (settings.background ?? "classic") === background.id;
+                return (
+                  <Pressable
+                    key={background.id}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Background ${background.name}`}
+                    accessibilityState={{ checked: chosen }}
+                    onPress={() => {
+                      onChange({ ...settings, background: background.id });
+                      setStatus(`${background.name} background applied.`);
+                    }}
+                    style={[
+                      coupleStyles.themeCard,
+                      chosen && { borderColor: palette.navy, backgroundColor: "rgba(31,77,122,0.08)" },
+                    ]}
+                  >
+                    <LinearGradient colors={background.colors} style={coupleStyles.themeDot} />
+                    <Text style={coupleStyles.themeName}>{background.name}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
           {!!status && (

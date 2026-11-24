@@ -92,6 +92,8 @@ export type RoseLedger = {
 export type CoupleChatSettings = {
   nickname: string;
   theme: string;
+  /** The chat's background (an id from chatBackgrounds.ts). Missing means the classic cream. */
+  background?: string;
   retentionMode: 'keep' | 'after_seen' | '24_hours' | '7_days';
   screenshotAlerts: boolean;
   conversationPinned: boolean;

@@ -21,7 +21,8 @@ describe("chat settings that work", () => {
   it("colours your bubbles, the send button and the background with the chat theme", () => {
     expect(chat).toContain("? { backgroundColor: accent || palette.navy, borderBottomRightRadius: 4 }");
     expect(chat).toContain("backgroundColor: activeTheme.accent,");
-    expect(chat).toContain("style={{ backgroundColor: activeTheme.wash }}");
+    // A chosen background shows through the message list; the accent wash is the default.
+    expect(chat).toContain('settings.background && settings.background !== "classic" ? "transparent" : activeTheme.wash');
   });
 
   it("has sound on or silent instead of ringtones a phone cannot play per chat", () => {

@@ -744,9 +744,18 @@ async function getSettings(peerId, userId) {
   return parseJsonColumn(rows[0].settings, null);
 }
 
+/** The chat background: a short id from the app's list (letters, digits, dashes). Anything else is dropped. */
+function cleanBackground(value) {
+  return typeof value === 'string' && /^[a-z0-9-]{1,32}$/.test(value) ? value : undefined;
+}
+
 async function saveSettings(peerId, userId, settings) {
   const conversationId = storageKey(userId, peerId);
   await assertParticipant(peerId, userId);
+  if (settings && typeof settings === 'object') {
+    settings = { ...settings, background: cleanBackground(settings.background) };
+    if (settings.background === undefined) delete settings.background;
+  }
   await query(
     `INSERT INTO chat_conversation_settings (conversation_id, user_id, settings)
      VALUES (?, ?, ?)
@@ -875,6 +884,7 @@ async function listConversations(userId, limit = 100) {
 }
 
 module.exports = {
+  cleanBackground,
   storageKey,
   listConversations,
   listFlags,
