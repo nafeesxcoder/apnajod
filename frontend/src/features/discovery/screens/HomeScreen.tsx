@@ -5,11 +5,14 @@ import {
   ScrollView,
   Text,
   View,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "../../../components";
+
+const brandLogo = require("../../../../assets/apnajoda-logo.png");
 import {
   BottomNav,
   handleBottomNavScroll,
@@ -227,13 +230,14 @@ export function HomeScreen({
                 />
                 </View>
               </View>
-              <Text
-                numberOfLines={1}
-                style={{ flex: 1, textAlign: "center", fontFamily: fonts.display, fontSize: 28, letterSpacing: 0.5 }}
-              >
-                <Text style={{ color: palette.navy }}>Apna</Text>
-                <Text style={{ color: palette.crimson }}>joda</Text>
-              </Text>
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <Image
+                  source={brandLogo}
+                  style={{ width: 116, height: 32 }}
+                  resizeMode="contain"
+                  accessibilityLabel="Apnajoda"
+                />
+              </View>
               <View style={{ width: 44, alignItems: "flex-end", marginTop: -8 }}>
               <Pressable
                 accessibilityRole="button"
