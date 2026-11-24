@@ -295,7 +295,25 @@ const updatePlan = asyncHandler(async (req, res) => {
   }
 });
 
+const createDemoUser = asyncHandler(async (req, res) => {
+  const userService = require("../services/userService");
+  res.json({ ok: true, user: await userService.createDemoUser(req.body || {}) });
+});
+
+const listDemoUsers = asyncHandler(async (req, res) => {
+  const userService = require("../services/userService");
+  res.json({ ok: true, users: await userService.listDemoUsers() });
+});
+
+const deleteDemoUser = asyncHandler(async (req, res) => {
+  const userService = require("../services/userService");
+  res.json(await userService.deleteDemoUser(req.params.id));
+});
+
 module.exports = {
+  createDemoUser,
+  listDemoUsers,
+  deleteDemoUser,
   getPlans,
   updatePlan,
   getQuestions,

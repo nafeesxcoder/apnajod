@@ -68,6 +68,11 @@ router.get("/promo", adminController.getPromo);
 router.post("/promo", adminController.publishPromo);
 router.post("/promo/off", adminController.stopPromo);
 
+// Demo accounts for store and partner reviews: real accounts, flagged, deletable.
+router.get("/demo-users", adminController.listDemoUsers);
+router.post("/demo-users", adminController.createDemoUser);
+router.delete("/demo-users/:id", adminController.deleteDemoUser);
+
 // Plans and boost packs: price, title, on sale, Play product id.
 router.get("/plans", adminController.getPlans);
 router.post("/plans/:code", adminController.updatePlan);

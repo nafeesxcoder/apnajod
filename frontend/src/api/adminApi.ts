@@ -136,6 +136,11 @@ export const adminApi = {
   setDailyQuestionActive: (token: string, id: number, active: boolean) => authFetch(`/admin/questions/${id}/active`, token, { method: "POST", body: JSON.stringify({ active }) }),
   // Coupons the admin writes, and the offer popup.
   coupons: (token: string) => authFetch("/admin/coupons", token),
+  /** Demo accounts for store and partner reviews: real accounts, flagged, deletable. */
+  demoUsers: (token: string) => authFetch("/admin/demo-users", token),
+  createDemoUser: (token: string, body: { username: string; password: string; fullName?: string }) =>
+    authFetch("/admin/demo-users", token, { method: "POST", body: JSON.stringify(body) }),
+  deleteDemoUser: (token: string, id: string) => authFetch(`/admin/demo-users/${id}`, token, { method: "DELETE" }),
   createCoupon: (
     token: string,
     body: { code: string; plan: string; months: number; validUntil?: string | null; maxUses?: number | null },

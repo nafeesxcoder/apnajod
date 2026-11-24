@@ -251,6 +251,51 @@ async function mediaOf(userIds) {
  * tax records (042_keep_payment_records.sql). Their photo, selfie and post
  * files are removed from disk too. Runs in batches; returns how many went.
  */
+/**
+ * Admin: a demo account for store and partner reviews. It is a real account
+ * (username and password, no phone) marked is_demo, so the admin can find
+ * and delete it later. Nothing else about it is special.
+ */
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function createDemoUser({ username, password, fullName }) {
+  const name = normalizeUsername(username);
+  const nameError = validateUsername(name);
+  if (nameError) throw httpError(400, nameError);
+  const passwordError = validatePassword(password);
+  if (passwordError) throw httpError(400, passwordError);
+  if (!(await isUsernameAvailable(name))) throw httpError(409, 'That username is taken.');
+  const user = await createUser({
+    username: name,
+    passwordHash: await hashPassword(password),
+    fullName: String(fullName || '').trim() || name,
+  });
+  await query('UPDATE users SET is_demo = 1 WHERE id = ?', [user.id]);
+  return { id: user.id, username: name };
+}
+
+async function listDemoUsers() {
+  return query(
+    `SELECT id, username, full_name AS fullName, created_at AS createdAt
+       FROM users WHERE is_demo = 1 AND deleted_at IS NULL
+      ORDER BY created_at DESC`,
+  );
+}
+
+/** Deletes a demo account for good, with its photos. Refuses any other account. */
+async function deleteDemoUser(userId) {
+  const [user] = await query('SELECT id FROM users WHERE id = ? AND is_demo = 1', [userId]);
+  if (!user) throw httpError(404, 'Demo account not found.');
+  const files = await mediaOf([userId]);
+  await query('DELETE FROM users WHERE id = ? AND is_demo = 1', [userId]);
+  await Promise.all(files.map((file) => fs.promises.unlink(file).catch(() => undefined)));
+  return { ok: true };
+}
+
 async function purgeExpiredDeletedUsers({ batch = 200 } = {}) {
   const expired = await query(
     `SELECT id FROM users
@@ -312,6 +357,9 @@ module.exports = {
   restoreUser,
   isWithinGracePeriod,
   purgeExpiredDeletedUsers,
+  createDemoUser,
+  listDemoUsers,
+  deleteDemoUser,
   uploadedFilePath,
   deactivateUser,
   reactivateUser,
