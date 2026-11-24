@@ -23,6 +23,8 @@ describe("chat settings that work", () => {
     expect(chat).toContain("backgroundColor: activeTheme.accent,");
     // A chosen background shows through the message list; the accent wash is the default.
     expect(chat).toContain('settings.background && settings.background !== "classic" ? "transparent" : activeTheme.wash');
+    // The messages' own background is cleared too, or it would cover the chosen picture.
+    expect(chat).toContain('{ backgroundColor: "transparent" } : null,');
   });
 
   it("has sound on or silent instead of ringtones a phone cannot play per chat", () => {

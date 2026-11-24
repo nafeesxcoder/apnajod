@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_BACKGROUNDS, backgroundFor } from "./chatBackgrounds";
+import { BACKGROUND_CHOICES, CHAT_BACKGROUNDS, backgroundFor } from "./chatBackgrounds";
 
 describe("chat backgrounds", () => {
   it("has twenty backgrounds with unique ids the server accepts", () => {
@@ -16,9 +16,15 @@ describe("chat backgrounds", () => {
     }
   });
 
-  it("falls back to the classic cream for a missing or unknown id", () => {
-    expect(backgroundFor(undefined).id).toBe("classic");
-    expect(backgroundFor("not-a-background").id).toBe("classic");
-    expect(backgroundFor("night-sky").id).toBe("night-sky");
+  it("shows no picture for the plain option, a missing id, or an unknown one", () => {
+    expect(backgroundFor(undefined)).toBeNull();
+    expect(backgroundFor("classic")).toBeNull();
+    expect(backgroundFor("not-a-background")).toBeNull();
+    expect(backgroundFor("red-hearts")?.id).toBe("red-hearts");
+  });
+
+  it("offers the plain option first, then the twenty", () => {
+    expect(BACKGROUND_CHOICES).toHaveLength(21);
+    expect(BACKGROUND_CHOICES[0]!.id).toBe("classic");
   });
 });

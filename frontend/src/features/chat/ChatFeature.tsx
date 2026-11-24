@@ -36,7 +36,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChatBackdrop } from "./ChatBackdrop";
-import { CHAT_BACKGROUNDS } from "./chatBackgrounds";
+import { BACKGROUND_CHOICES } from "./chatBackgrounds";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -2730,6 +2730,8 @@ export function ChatScreen({
             contentContainerStyle={[
               styles.messages,
               chatPremiumStyles.messages,
+              // The messages sit on the chosen background, not on a white film over it.
+              settings.background && settings.background !== "classic" ? { backgroundColor: "transparent" } : null,
             ]}
           >
             {visibleMessages.map((message) => (
@@ -8346,7 +8348,7 @@ function CoupleSettingsSheet({
           <View style={coupleStyles.section}>
             <Text style={styles.sectionLabel}>BACKGROUND</Text>
             <View style={coupleStyles.themeGrid}>
-              {CHAT_BACKGROUNDS.map((background) => {
+              {BACKGROUND_CHOICES.map((background) => {
                 const chosen = (settings.background ?? "classic") === background.id;
                 return (
                   <Pressable
