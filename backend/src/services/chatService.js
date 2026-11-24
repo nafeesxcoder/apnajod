@@ -372,7 +372,9 @@ async function sendMessage(peerId, userId, message, options = {}) {
   const conversationId = storageKey(userId, peerId);
   const participants = await assertParticipant(peerId, userId);
   const id = String(message.id || crypto.randomUUID());
-  const createdAtMs = Number(message.createdAt) || Date.now();
+  // The time a message arrives is the server's, never the sender's phone clock:
+  // a phone that is set wrong would otherwise file its messages under the wrong time.
+  const createdAtMs = Date.now();
   const {
     id: _id,
     senderId: _senderId,
