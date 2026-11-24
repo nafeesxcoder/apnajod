@@ -125,7 +125,12 @@ async function getUserPosts(userId, viewerId = userId) {
 }
 
 const FEED_PAGE = 10;
-const CURSOR = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?$/;
+const CURSOR = /^o:\d{1,6}$/;
+/** How many recent visible posts the feed ranks before it pages through them. */
+const FEED_WINDOW = 300;
+/** A daily poster (this many posts in a week) gets their posts a little higher. */
+const DAILY_POSTS = 3;
+const DAILY_BOOST_MS = 12 * 60 * 60 * 1000;
 
 /**
  * The Home feed, newest first, like Instagram's: your own posts, every post
@@ -135,12 +140,40 @@ const CURSOR = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?$/;
  *
  * Paged by time: `before` is the `next` cursor from the previous page.
  */
+/**
+ * The Home feed, like Instagram's: the newest posts you may see, ranked so one
+ * person's posts do not come one after another, and so people who post every
+ * day are seen a little higher. Pages are offsets into that ranking.
+ */
+function rankFeed(rows) {
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const perWeek = new Map();
+  for (const row of rows) {
+    if (new Date(row.created_at).getTime() >= weekAgo) {
+      perWeek.set(row.user_id, (perWeek.get(row.user_id) || 0) + 1);
+    }
+  }
+  const score = (row) =>
+    new Date(row.created_at).getTime() +
+    ((perWeek.get(row.user_id) || 0) >= DAILY_POSTS ? DAILY_BOOST_MS : 0);
+  const queue = [...rows].sort((a, b) => score(b) - score(a));
+  const ranked = [];
+  let last = null;
+  while (queue.length) {
+    // The best post whose author did not just post, or the best of what is left.
+    const index = Math.max(0, queue.findIndex((row) => row.user_id !== last));
+    const [row] = queue.splice(index, 1);
+    ranked.push(row);
+    last = row.user_id;
+  }
+  return ranked;
+}
+
 async function getFeed(viewerId, before = null, limit = FEED_PAGE) {
   const size = Math.min(30, Math.max(1, Number(limit) || FEED_PAGE));
-  const cursor = typeof before === "string" && CURSOR.test(before) ? before : null;
+  const offset = typeof before === "string" && CURSOR.test(before) ? Number(before.slice(2)) : 0;
   const rows = await query(
-    `SELECT ${POST_COLUMNS},
-            DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s.%f') AS cursor_at
+    `SELECT ${POST_COLUMNS}
        ${POST_FROM}
       WHERE u.deleted_at IS NULL AND u.deactivated_at IS NULL
         AND (pr.age IS NULL OR pr.age >= 18)
@@ -153,14 +186,14 @@ async function getFeed(viewerId, before = null, limit = FEED_PAGE) {
                          WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                             OR (b.blocker_id = u.id AND b.blocked_id = ?))
         AND NOT EXISTS (SELECT 1 FROM muted_accounts ma WHERE ma.user_id = ? AND ma.muted_id = p.user_id)
-        AND (? IS NULL OR p.created_at < ?)
       ORDER BY p.created_at DESC, p.id DESC
-      LIMIT ${size + 1}`,
-    [viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, cursor, cursor],
+      LIMIT ${FEED_WINDOW}`,
+    [viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, viewerId],
   );
-  const page = rows.slice(0, size);
+  const ranked = rankFeed(rows);
+  const page = ranked.slice(offset, offset + size);
   const posts = await decoratePosts(viewerId, page);
-  const next = rows.length > size ? page[page.length - 1].cursor_at : null;
+  const next = offset + size < ranked.length ? `o:${offset + size}` : null;
   return { posts, next };
 }
 

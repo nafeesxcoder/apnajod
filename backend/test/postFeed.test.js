@@ -30,10 +30,12 @@ test("leaves out blocks both ways, gone accounts and under-18s", () => {
   assert.match(feed, /pr\.age IS NULL OR pr\.age >= 18/);
 });
 
-test("pages newest first by time, ignoring a cursor that is not a timestamp", () => {
-  assert.match(feed, /ORDER BY p\.created_at DESC, p\.id DESC/);
-  assert.match(feed, /CURSOR\.test\(before\) \? before : null/);
-  assert.match(feed, /Math\.min\(30,/);
+test("ranks the newest visible posts, spreads authors out, and pages by offset", () => {
+  assert.match(feed, /ORDER BY p\.created_at DESC, p\.id DESC\s+LIMIT \$\{FEED_WINDOW\}/);
+  assert.ok(service.includes(String.raw`const CURSOR = /^o:\d{1,6}$/;`));
+  assert.match(service, /Math\.min\(30,/);
+  assert.match(service, /function rankFeed\(rows\)/);
+  assert.match(service, /row\.user_id !== last/);
 });
 
 test("the feed route comes before /:id", () => {
