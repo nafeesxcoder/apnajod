@@ -144,12 +144,13 @@ async function tray(viewerId) {
       WHERE s.expires_at > NOW(6)
         AND u.deleted_at IS NULL AND u.deactivated_at IS NULL
         AND ${VISIBLE_TO_VIEWER}
+        AND NOT EXISTS (SELECT 1 FROM muted_accounts ma WHERE ma.user_id = ? AND ma.muted_id = u.id)
         AND NOT EXISTS (SELECT 1 FROM blocks b
                          WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                             OR (b.blocker_id = u.id AND b.blocked_id = ?))
       ORDER BY s.created_at ASC
       LIMIT 500`,
-    [...visibleParams(viewerId), viewerId, viewerId],
+    [...visibleParams(viewerId), viewerId, viewerId, viewerId],
   );
   const stickerService = require('./storyStickerService');
   const people = new Map();
@@ -342,7 +343,37 @@ async function deleteArchived(userId, storyId) {
   return { ok: true };
 }
 
+/** Hide your story from one person: they stop seeing it, the others do not change. */
+async function hideFrom(userId, viewerId) {
+  if (!viewerId || viewerId === userId) {
+    const error = new Error('Choose someone else.');
+    error.status = 400;
+    throw error;
+  }
+  await query('INSERT IGNORE INTO story_hidden (owner_id, viewer_id) VALUES (?, ?)', [userId, viewerId]);
+  return { ok: true };
+}
+
+async function unhideFrom(userId, viewerId) {
+  await query('DELETE FROM story_hidden WHERE owner_id = ? AND viewer_id = ?', [userId, viewerId]);
+  return { ok: true };
+}
+
+async function hiddenList(userId) {
+  return query(
+    `SELECT u.id AS userId, u.username, COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name
+       FROM story_hidden h
+       JOIN users u ON u.id = h.viewer_id
+       LEFT JOIN profiles pr ON pr.user_id = u.id
+      WHERE h.owner_id = ?`,
+    [userId],
+  );
+}
+
 module.exports = {
+  hideFrom,
+  unhideFrom,
+  hiddenList,
   clipLyrics,
   STORY_HOURS,
   MAX_STORIES_PER_DAY,

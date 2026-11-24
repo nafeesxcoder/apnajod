@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AppCanvas } from "../../../components/AppCanvas";
 import { brand, cardShadow, whiteCard } from "../../../components/brand";
 import { PressScale, Reveal } from "../../../components/motion";
-import { fonts, palette, typeScale } from "../../../theme";
+import { fonts, palette, radius, typeScale } from "../../../theme";
 import { pushApi } from "../../../api/pushApi";
 import { CloseFriendsSheet } from "../../stories/CloseFriendsSheet";
 import { openKundliEditor } from "../../kundli/kundliStore";
@@ -25,6 +25,10 @@ import { RingtoneSheet } from "../../chat/ringtones/RingtoneSheet";
 import { Sheet } from "../../posts/PostSheets";
 import { SHARE_TEXT } from "../components/InviteCard";
 import { referralApi } from "../../../api/referralApi";
+import { profileApi } from "../../../api/profileApi";
+import { socialApi, type MutedPerson } from "../../../api/socialApi";
+import { storyApi } from "../../../api/storyApi";
+import { matchApi } from "../../../api/matchApi";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -195,6 +199,63 @@ export function SettingsScreen({
   const [closeOpen, setCloseOpen] = useState(false);
   const [ringOpen, setRingOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [mutedOpen, setMutedOpen] = useState(false);
+  const [hideOpen, setHideOpen] = useState(false);
+  const [messageFrom, setMessageFrom] = useState<"everyone" | "matches">("everyone");
+  const [mutedPeople, setMutedPeople] = useState<MutedPerson[]>([]);
+  const [matchList, setMatchList] = useState<{ id: string; name: string }[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [listBusy, setListBusy] = useState(false);
+  const openMessages = () => {
+    setMessagesOpen(true);
+    if (accessToken)
+      void profileApi
+        .getMyProfile(accessToken)
+        .then((data: any) => setMessageFrom(data?.messageFrom === "matches" ? "matches" : "everyone"))
+        .catch(() => undefined);
+  };
+  const chooseMessageFrom = async (value: "everyone" | "matches") => {
+    setMessageFrom(value);
+    if (!accessToken) return;
+    try {
+      await profileApi.setMessageFrom(accessToken, value);
+    } catch {
+      // Shown as it was saved; the next open shows the real value.
+    }
+  };
+  const openMuted = () => {
+    setMutedOpen(true);
+    if (accessToken) void socialApi.muted(accessToken).then(setMutedPeople).catch(() => undefined);
+  };
+  const unmute = async (userId: string) => {
+    if (!accessToken) return;
+    await socialApi.unmute(accessToken, userId).catch(() => undefined);
+    setMutedPeople((current) => current.filter((person) => person.userId !== userId));
+  };
+  const openHide = () => {
+    setHideOpen(true);
+    if (!accessToken) return;
+    setListBusy(true);
+    Promise.all([matchApi.getMatches(accessToken), storyApi.hidden(accessToken)])
+      .then(([matches, hidden]: any[]) => {
+        setMatchList(((matches?.matches as any[]) || []).map((m) => ({ id: m.id, name: m.name })));
+        setHiddenIds(hidden.map((person: { userId: string }) => person.userId));
+      })
+      .catch(() => undefined)
+      .finally(() => setListBusy(false));
+  };
+  const toggleHide = async (userId: string) => {
+    if (!accessToken) return;
+    const isHidden = hiddenIds.includes(userId);
+    setHiddenIds((current) => (isHidden ? current.filter((id) => id !== userId) : [...current, userId]));
+    try {
+      if (isHidden) await storyApi.unhideFrom(accessToken, userId);
+      else await storyApi.hideFrom(accessToken, userId);
+    } catch {
+      setHiddenIds((current) => (isHidden ? [...current, userId] : current.filter((id) => id !== userId)));
+    }
+  };
   const inviteFriends = async () => {
     if (!accessToken) return;
     try {
@@ -533,6 +594,9 @@ export function SettingsScreen({
                 label="Your activity"
                 onPress={() => navigate("yourActivity")}
               />
+              <SettingsRow icon="chatbubble-ellipses-outline" label="Messages" onPress={openMessages} />
+              <SettingsRow icon="volume-mute-outline" label="Muted accounts" onPress={openMuted} />
+              <SettingsRow icon="eye-off-outline" label="Hide story from" onPress={openHide} />
               <SettingsRow icon="bookmark-outline" label="Saved" onPress={() => navigate("profile")} />
               <SettingsRow icon="ban-outline" label="Blocked accounts" onPress={() => navigate("safety")} />
               <SettingsRow icon="download-outline" label="Download your data" onPress={() => navigate("safety")} />
@@ -595,6 +659,68 @@ export function SettingsScreen({
           </View>
         </ScrollView>
         <RingtoneSheet visible={ringOpen} onClose={() => setRingOpen(false)} />
+        <Sheet visible={messagesOpen} title="Who can message you" onClose={() => setMessagesOpen(false)}>
+          <View style={{ padding: 16, gap: 10 }}>
+            {(
+              [
+                ["everyone", "Everyone", "Anyone can message you. Private accounts still need a match first."],
+                ["matches", "Only matches", "Only people you have matched with can message you."],
+              ] as const
+            ).map(([value, title, body]) => (
+                <Pressable
+                  key={value}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: messageFrom === value }}
+                  onPress={() => void chooseMessageFrom(value)}
+                  style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: messageFrom === value ? palette.crimson : palette.rule }}
+                >
+                  <Ionicons name={messageFrom === value ? "radio-button-on" : "radio-button-off"} size={22} color={messageFrom === value ? palette.crimson : palette.slate} />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{title}</Text>
+                    <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>{body}</Text>
+                  </View>
+                </Pressable>
+            ))}
+          </View>
+        </Sheet>
+        <Sheet visible={mutedOpen} title="Muted accounts" onClose={() => setMutedOpen(false)}>
+          <View style={{ padding: 16, gap: 10 }}>
+            {mutedPeople.length === 0 ? (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
+                Nobody is muted. Muted accounts' posts and stories leave your feed, and they are not told.
+              </Text>
+            ) : (
+              mutedPeople.map((person) => (
+                <View key={person.userId} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>@{person.username}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`Unmute ${person.username}`} onPress={() => void unmute(person.userId)} style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.navy }}>
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>Unmute</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </View>
+        </Sheet>
+        <Sheet visible={hideOpen} title="Hide story from" onClose={() => setHideOpen(false)}>
+          <View style={{ padding: 16, gap: 10 }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>
+              People you tap here stop seeing your stories. Nobody is told.
+            </Text>
+            {listBusy && <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Loading...</Text>}
+            {!listBusy && matchList.length === 0 && (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>You have no matches yet.</Text>
+            )}
+            {matchList.map((person) => {
+              const hidden = hiddenIds.includes(person.id);
+              return (
+                <Pressable key={person.id} accessibilityRole="checkbox" accessibilityState={{ checked: hidden }} onPress={() => void toggleHide(person.id)} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 }}>
+                  <Ionicons name={hidden ? "checkbox" : "square-outline"} size={22} color={hidden ? palette.crimson : palette.slate} />
+                  <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{person.name}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Sheet>
         <Sheet visible={privacyOpen} title="Account privacy" onClose={() => setPrivacyOpen(false)}>
           <View style={{ padding: 16, gap: 10 }}>
             {[

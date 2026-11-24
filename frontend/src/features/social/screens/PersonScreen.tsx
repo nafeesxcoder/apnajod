@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import type { PersonPage } from "../../../api/socialApi";
+import { socialApi, type PersonPage } from "../../../api/socialApi";
 import { fonts, palette, radius, typeScale } from "../../../theme";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { IntentSection } from "../../../components/IntentBadges";
@@ -69,6 +69,20 @@ export function PersonScreen({
   const [page, setPage] = useState<PersonPage | null>(null);
   const storyStatus = useStoryStatus(userId);
   const [error, setError] = useState("");
+  const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    if (!accessToken) return;
+    void socialApi
+      .muted(accessToken)
+      .then((list) => setMuted(list.some((person) => person.userId === userId)))
+      .catch(() => undefined);
+  }, [accessToken, userId]);
+  const toggleMute = async () => {
+    if (!accessToken) return;
+    if (muted) await socialApi.unmute(accessToken, userId).catch(() => undefined);
+    else await socialApi.mute(accessToken, userId).catch(() => undefined);
+    setMuted(!muted);
+  };
   const [busy, setBusy] = useState(false);
   // "Show my family" sits beside Message, as "Send to family" does on your own Profile.
   const family = useFamilyShare({
@@ -550,6 +564,16 @@ export function PersonScreen({
             </Text>
           )}
         </View>
+        {!state.self && (
+          <Text
+            accessibilityRole="button"
+            accessibilityLabel={muted ? "Unmute this account" : "Mute this account"}
+            onPress={() => void toggleMute()}
+            style={{ alignSelf: "center", marginTop: 24, marginBottom: 12, fontFamily: fonts.bodySemi, fontSize: 13, color: palette.slate }}
+          >
+            {muted ? "Unmute" : "Mute"} {user.username}
+          </Text>
+        )}
       </ScrollView>
     </Shell>
   );

@@ -152,10 +152,11 @@ async function getFeed(viewerId, before = null, limit = FEED_PAGE) {
         AND NOT EXISTS (SELECT 1 FROM blocks b
                          WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
                             OR (b.blocker_id = u.id AND b.blocked_id = ?))
+        AND NOT EXISTS (SELECT 1 FROM muted_accounts ma WHERE ma.user_id = ? AND ma.muted_id = p.user_id)
         AND (? IS NULL OR p.created_at < ?)
       ORDER BY p.created_at DESC, p.id DESC
       LIMIT ${size + 1}`,
-    [viewerId, viewerId, viewerId, viewerId, viewerId, cursor, cursor],
+    [viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, cursor, cursor],
   );
   const page = rows.slice(0, size);
   const posts = await decoratePosts(viewerId, page);

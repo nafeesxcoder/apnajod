@@ -27,6 +27,9 @@ const contactsLimiter = rateLimit({
 
 // ---- find people ----
 router.get("/search", lookupLimiter, followController.search);
+router.get("/muted", followController.mutedList);
+router.post("/mute", followController.mute);
+router.delete("/mute/:userId", followController.unmute);
 router.post("/contacts", contactsLimiter, followController.contacts);
 
 // ---- my own lists ----

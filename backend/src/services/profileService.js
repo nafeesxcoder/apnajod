@@ -71,10 +71,11 @@ async function getFullProfile(userId) {
 
   const hobbies = profile?.hobbies ? safeParseJson(profile.hobbies, []) : [];
   const trust = await billingService.trustStatus(userId);
-  const [account] = await query("SELECT username FROM users WHERE id = ?", [userId]);
+  const [account] = await query("SELECT username, message_from FROM users WHERE id = ?", [userId]);
 
   return {
     username: account?.username || "",
+    messageFrom: account?.message_from || "everyone",
     profile: profile
       ? {
           ...profile,
@@ -692,7 +693,17 @@ async function changeUsername(userId, raw) {
   return { username: name };
 }
 
+/** Who may message you: everyone, or only people you have matched with. */
+async function setMessageFrom(userId, value) {
+  if (value !== "everyone" && value !== "matches") {
+    throw new ApiError(400, "Choose everyone or matches.");
+  }
+  await query("UPDATE users SET message_from = ? WHERE id = ?", [value, userId]);
+  return { messageFrom: value };
+}
+
 module.exports = {
+  setMessageFrom,
   changeUsername,
   setLink,
   getFullProfile,

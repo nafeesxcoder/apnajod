@@ -20,7 +20,7 @@ async function getUser(userId) {
     // The member's first profile photo (most never set users.avatar_url).
     `SELECT u.id, u.username, u.full_name,
             COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatar_url,
-            u.is_private
+            u.is_private, u.message_from
        FROM users u WHERE u.id = ? AND u.deleted_at IS NULL`,
     [userId],
   );
@@ -72,7 +72,7 @@ async function canMessage(viewerId, otherId) {
     [viewerId, otherId, otherId, viewerId],
   );
   if (rows.length) return { allowed: true, reason: "mutual_match" };
-  if (!other.is_private) return { allowed: true, reason: "public" };
+  if (!other.is_private && other.message_from !== "matches") return { allowed: true, reason: "public" };
   return { allowed: false, reason: "no_match" };
 }
 
@@ -299,7 +299,38 @@ async function likeState(viewerId, otherId) {
   };
 }
 
+/** Mute: their posts and stories leave your feed and tray. They are not told. */
+async function mute(userId, targetId) {
+  if (!targetId || targetId === userId) {
+    const error = new Error('Choose someone else.');
+    error.status = 400;
+    throw error;
+  }
+  await query('INSERT IGNORE INTO muted_accounts (user_id, muted_id) VALUES (?, ?)', [userId, targetId]);
+  return { ok: true };
+}
+
+async function unmute(userId, targetId) {
+  await query('DELETE FROM muted_accounts WHERE user_id = ? AND muted_id = ?', [userId, targetId]);
+  return { ok: true };
+}
+
+async function mutedList(userId) {
+  return query(
+    `SELECT u.id AS userId, u.username, COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
+            COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatarUrl
+       FROM muted_accounts m
+       JOIN users u ON u.id = m.muted_id
+       LEFT JOIN profiles pr ON pr.user_id = u.id
+      WHERE m.user_id = ?`,
+    [userId],
+  );
+}
+
 module.exports = {
+  mute,
+  unmute,
+  mutedList,
   getUser,
   getProfileCard,
   likeState,

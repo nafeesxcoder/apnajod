@@ -82,7 +82,22 @@ function shape(r) {
   };
 }
 
+const mute = asyncHandler(async (req, res) => {
+  res.json(await followService.mute(req.user.id, req.body?.userId));
+});
+
+const unmute = asyncHandler(async (req, res) => {
+  res.json(await followService.unmute(req.user.id, req.params.userId));
+});
+
+const mutedList = asyncHandler(async (req, res) => {
+  res.json({ ok: true, people: await followService.mutedList(req.user.id) });
+});
+
 module.exports = {
+  mute,
+  unmute,
+  mutedList,
   search,
   contacts,
   userProfile,

@@ -66,6 +66,20 @@ export type ArchivedStory = {
 };
 
 export const storyApi = {
+  /** The people your story is hidden from. */
+  async hidden(accessToken: string): Promise<{ userId: string; username: string; name: string }[]> {
+    const data = await authFetch("/stories/hidden", accessToken);
+    return (data.people as { userId: string; username: string; name: string }[]) || [];
+  },
+
+  async hideFrom(accessToken: string, viewerId: string): Promise<void> {
+    await authFetch(`/stories/hidden/${viewerId}`, accessToken, { method: "POST" });
+  },
+
+  async unhideFrom(accessToken: string, viewerId: string): Promise<void> {
+    await authFetch(`/stories/hidden/${viewerId}`, accessToken, { method: "DELETE" });
+  },
+
   /** Your stories after their 24 hours, kept 30 days. Only you see these. */
   async archived(accessToken: string): Promise<ArchivedStory[]> {
     const data = await authFetch("/stories/archive", accessToken);

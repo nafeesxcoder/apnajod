@@ -13,6 +13,7 @@ router.put("/profile", profileController.updateProfile);
 router.put("/photos", profileController.updatePhotos);
 router.put("/username", profileController.changeUsername);
 router.put("/link", profileController.setLink);
+router.put("/message-from", profileController.setMessageFrom);
 router.post("/verify/pose", profileController.getVerificationPose);
 router.post("/verify", profileController.submitVerification);
 router.post(

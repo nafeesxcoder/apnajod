@@ -125,6 +125,11 @@ export const profileApi = {
     return authFetch("/profile/link", accessToken, { method: "PUT", body: JSON.stringify({ link, title }) });
   },
 
+  /** Who may message you: "everyone", or only your matches. */
+  async setMessageFrom(accessToken: string, messageFrom: "everyone" | "matches") {
+    return authFetch("/profile/message-from", accessToken, { method: "PUT", body: JSON.stringify({ messageFrom }) });
+  },
+
   /** Changes your username. The first change is free; then once every 15 days. */
   async changeUsername(accessToken: string, username: string) {
     return authFetch("/profile/username", accessToken, { method: "PUT", body: JSON.stringify({ username }) });

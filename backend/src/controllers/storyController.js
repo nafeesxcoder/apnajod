@@ -112,7 +112,26 @@ const restoreDeleted = asyncHandler(async (req, res) => {
   }
 });
 
+const hiddenList = asyncHandler(async (req, res) => {
+  res.json({ ok: true, people: await storyService.hiddenList(req.user.id) });
+});
+
+const hideFrom = asyncHandler(async (req, res) => {
+  try {
+    res.json(await storyService.hideFrom(req.user.id, req.params.viewerId));
+  } catch (error) {
+    rethrow(error);
+  }
+});
+
+const unhideFrom = asyncHandler(async (req, res) => {
+  res.json(await storyService.unhideFrom(req.user.id, req.params.viewerId));
+});
+
 module.exports = {
+  hiddenList,
+  hideFrom,
+  unhideFrom,
   getDeleted,
   restoreDeleted,
   getArchive,

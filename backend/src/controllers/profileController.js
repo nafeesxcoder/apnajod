@@ -162,11 +162,16 @@ const setLink = asyncHandler(async (req, res) => {
   res.json({ ok: true, ...(await profileService.setLink(req.user.id, req.body?.link, req.body?.title)) });
 });
 
+const setMessageFrom = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await profileService.setMessageFrom(req.user.id, req.body?.messageFrom)) });
+});
+
 const changeUsername = asyncHandler(async (req, res) => {
   res.json({ ok: true, ...(await profileService.changeUsername(req.user.id, req.body?.username)) });
 });
 
 module.exports = {
+  setMessageFrom,
   setLink,
   changeUsername,
   updateKundli,

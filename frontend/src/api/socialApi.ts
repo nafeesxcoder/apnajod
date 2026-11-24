@@ -83,7 +83,23 @@ export type ContactsMatchResult = {
   invites?: { name: string; phone: string }[];
 };
 
+export type MutedPerson = { userId: string; username: string; name: string; avatarUrl: string | null };
+
 export const socialApi = {
+  /** Mute: their posts and stories leave your feed and tray. They are not told. */
+  async mute(accessToken: string, userId: string) {
+    return authFetch("/social/mute", accessToken, { method: "POST", body: JSON.stringify({ userId }) });
+  },
+
+  async unmute(accessToken: string, userId: string) {
+    return authFetch(`/social/mute/${userId}`, accessToken, { method: "DELETE" });
+  },
+
+  async muted(accessToken: string): Promise<MutedPerson[]> {
+    const data = await authFetch("/social/muted", accessToken);
+    return (data.people as MutedPerson[]) || [];
+  },
+
   async search(accessToken: string, term: string): Promise<SocialUser[]> {
     const data = await authFetch(
       `/social/search?q=${encodeURIComponent(term)}`,
