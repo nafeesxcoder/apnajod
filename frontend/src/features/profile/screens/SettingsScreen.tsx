@@ -204,7 +204,7 @@ export function SettingsScreen({
   const [hideOpen, setHideOpen] = useState(false);
   const [messageFrom, setMessageFrom] = useState<"everyone" | "matches">("everyone");
   const [mutedPeople, setMutedPeople] = useState<MutedPerson[]>([]);
-  const [matchList, setMatchList] = useState<{ id: string; name: string }[]>([]);
+  const [matchList, setMatchList] = useState<{ id: string; name: string; photo: string | null }[]>([]);
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [listBusy, setListBusy] = useState(false);
   const openMessages = () => {
@@ -239,7 +239,7 @@ export function SettingsScreen({
     setListBusy(true);
     Promise.all([matchApi.getMatches(accessToken), storyApi.hidden(accessToken)])
       .then(([matches, hidden]: any[]) => {
-        setMatchList(((matches?.matches as any[]) || []).map((m) => ({ id: m.id, name: m.name })));
+        setMatchList(((matches?.matches as any[]) || []).map((m) => ({ id: m.id, name: m.name, photo: m.photo || null })));
         setHiddenIds(hidden.map((person: { userId: string }) => person.userId));
       })
       .catch(() => undefined)
@@ -715,6 +715,13 @@ export function SettingsScreen({
               return (
                 <Pressable key={person.id} accessibilityRole="checkbox" accessibilityState={{ checked: hidden }} onPress={() => void toggleHide(person.id)} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 }}>
                   <Ionicons name={hidden ? "checkbox" : "square-outline"} size={22} color={hidden ? palette.crimson : palette.slate} />
+                  {person.photo ? (
+                    <Image source={{ uri: person.photo }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: palette.paperSand }} />
+                  ) : (
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: palette.navy, alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: palette.cream }}>{(person.name || "?").charAt(0).toUpperCase()}</Text>
+                    </View>
+                  )}
                   <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{person.name}</Text>
                 </Pressable>
               );

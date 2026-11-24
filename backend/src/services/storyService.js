@@ -361,7 +361,8 @@ async function unhideFrom(userId, viewerId) {
 
 async function hiddenList(userId) {
   return query(
-    `SELECT u.id AS userId, u.username, COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name
+    `SELECT u.id AS userId, u.username, COALESCE(NULLIF(pr.first_name, ''), u.full_name, u.username) AS name,
+            COALESCE((SELECT ph.photo_url FROM profile_photos ph WHERE ph.user_id = u.id ORDER BY ph.position ASC LIMIT 1), u.avatar_url) AS avatarUrl
        FROM story_hidden h
        JOIN users u ON u.id = h.viewer_id
        LEFT JOIN profiles pr ON pr.user_id = u.id

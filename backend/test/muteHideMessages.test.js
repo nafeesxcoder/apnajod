@@ -22,6 +22,10 @@ test("a story hidden from someone is not visible to them", () => {
   assert.match(visibility, /const visibleParams = \(viewerId\) => \[viewerId, viewerId, viewerId, viewerId, viewerId, viewerId\];/);
 });
 
+test("the hide-story list shows each person's photo", () => {
+  assert.match(storyService, /async function hiddenList[\s\S]*profile_photos[\s\S]*AS avatarUrl/);
+});
+
 test("who may message you: matches only, or everyone (private accounts still need a match)", () => {
   assert.match(follow, /if \(!other\.is_private && other\.message_from !== "matches"\) return \{ allowed: true, reason: "public" \};/);
   assert.match(follow, /u\.is_private, u\.message_from/);

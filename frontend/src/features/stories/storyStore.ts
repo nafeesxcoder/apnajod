@@ -38,6 +38,29 @@ export function onStoryChooser(listener: () => void): () => void {
   };
 }
 
+/**
+ * A photo to open in the story editor (Your activity → Share again). Kept until
+ * the Home tray mounts and takes it, so it works when the user comes from elsewhere.
+ */
+export type SharePhoto = { uri: string; width: number; height: number };
+let pendingSharePhoto: SharePhoto | null = null;
+const sharePhotoListeners = new Set<(photo: SharePhoto) => void>();
+export function openStoryEditorWith(photo: SharePhoto) {
+  pendingSharePhoto = photo;
+  sharePhotoListeners.forEach((listener) => listener(photo));
+}
+export function takeSharePhoto(): SharePhoto | null {
+  const photo = pendingSharePhoto;
+  pendingSharePhoto = null;
+  return photo;
+}
+export function onStoryEditorWith(listener: (photo: SharePhoto) => void): () => void {
+  sharePhotoListeners.add(listener);
+  return () => {
+    sharePhotoListeners.delete(listener);
+  };
+}
+
 export function useStories(): State {
   return useSyncExternalStore(storyStore.subscribe, storyStore.get, storyStore.get);
 }

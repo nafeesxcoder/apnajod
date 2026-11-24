@@ -10,7 +10,7 @@ import { Sheet } from "../posts/PostSheets";
 import { StoryEditor, type PickedStoryPhoto } from "./editor/StoryEditor";
 import { TEXT_STORY } from "./editor/themes";
 import { WebCamera, needsWebCamera } from "./WebCamera";
-import { closeUnseen, loadStories, onStoryChooser, openStoriesAt, useStories } from "./storyStore";
+import { closeUnseen, loadStories, onStoryChooser, onStoryEditorWith, openStoriesAt, takeSharePhoto, useStories } from "./storyStore";
 import { CLOSE_GREEN } from "./CloseFriendsSheet";
 
 const SIZE = 64;
@@ -49,6 +49,13 @@ export function StoriesTray({
 
   // The + on Home → Story opens the same chooser as "Your story".
   useEffect(() => onStoryChooser(() => setChoosing(true)), []);
+
+  // Share again from Your activity: the archived photo opens in the editor, to edit and share.
+  useEffect(() => {
+    const pending = takeSharePhoto();
+    if (pending) setPicked({ ...pending });
+    return onStoryEditorWith((photo) => setPicked({ ...photo }));
+  }, []);
 
   if (!accessToken) return null;
 

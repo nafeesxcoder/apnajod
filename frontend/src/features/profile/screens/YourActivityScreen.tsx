@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,6 +7,7 @@ import { postApi, type DeletedPost } from "../../../api/postApi";
 import { storyApi, type ArchivedStory } from "../../../api/storyApi";
 import { serverMs } from "../../../domain/serverTime";
 import { colors, fonts, palette, radius, typeScale } from "../../../theme";
+import { openStoryEditorWith } from "../../stories/storyStore";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KEEP_DAYS = 30;
@@ -17,6 +18,16 @@ function daysLeft(iso: string | null | undefined): string {
   if (Number.isNaN(at)) return "";
   const left = Math.max(0, KEEP_DAYS - Math.floor((Date.now() - at) / DAY_MS));
   return left === 0 ? "Removed today" : `${left} ${left === 1 ? "day" : "days"} left`;
+}
+
+/** "Posted 3 days ago", from when the story was shared. */
+function postedAgo(iso: string | null | undefined): string {
+  const at = serverMs(iso ?? "");
+  if (Number.isNaN(at)) return "";
+  const days = Math.max(0, Math.floor((Date.now() - at) / DAY_MS));
+  if (days === 0) return "Posted today";
+  if (days === 1) return "Posted yesterday";
+  return `Posted ${days} days ago`;
 }
 
 function Row({
@@ -111,6 +122,7 @@ function DeletedContent({ accessToken }: { accessToken: string }) {
   const [posts, setPosts] = useState<DeletedPost[] | null>(null);
   const [stories, setStories] = useState<ArchivedStory[] | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   useEffect(() => {
     let live = true;
     Promise.all([postApi.deleted(accessToken), storyApi.deleted(accessToken)])
@@ -126,20 +138,22 @@ function DeletedContent({ accessToken }: { accessToken: string }) {
   }, [accessToken]);
 
   const restorePost = async (id: string) => {
+    setNotice("");
     try {
       await postApi.restore(accessToken, id);
       setPosts((current) => (current ?? []).filter((post) => post.id !== id));
     } catch (e: any) {
-      Alert.alert("Could not restore", e?.message || "Try again.");
+      setNotice(e?.message || "Could not restore. Try again.");
     }
   };
 
   const restoreStory = async (id: string) => {
+    setNotice("");
     try {
       await storyApi.restoreDeleted(accessToken, id);
       setStories((current) => (current ?? []).filter((story) => story.id !== id));
     } catch (e: any) {
-      Alert.alert("Could not restore", e?.message || "Try again.");
+      setNotice(e?.message || "Could not restore. Try again.");
     }
   };
 
@@ -149,6 +163,7 @@ function DeletedContent({ accessToken }: { accessToken: string }) {
     return <Text style={{ padding: 16, color: palette.slate, fontFamily: fonts.body }}>Nothing here. Deleted posts and stories show for 30 days.</Text>;
   return (
     <View>
+      {!!notice && <Text style={{ paddingHorizontal: 16, paddingTop: 12, color: palette.crimson, fontFamily: fonts.body, fontSize: 13 }}>{notice}</Text>}
       {posts.map((post) => (
         <View key={post.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}>
           <Image
@@ -185,9 +200,12 @@ function DeletedContent({ accessToken }: { accessToken: string }) {
 }
 
 /** Your archived stories: share one again for 24 hours, or delete it now. */
-function ArchivedStories({ accessToken }: { accessToken: string }) {
+function ArchivedStories({ accessToken, navigate }: { accessToken: string; navigate: (screen: any) => void }) {
   const [stories, setStories] = useState<ArchivedStory[] | null>(null);
   const [error, setError] = useState("");
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
   useEffect(() => {
     let live = true;
     storyApi
@@ -199,31 +217,26 @@ function ArchivedStories({ accessToken }: { accessToken: string }) {
     };
   }, [accessToken]);
 
-  const shareAgain = async (id: string) => {
-    try {
-      await storyApi.repostArchived(accessToken, id);
-      Alert.alert("Shared again", "Your story is up for 24 hours.");
-    } catch (e: any) {
-      Alert.alert("Could not share", e?.message || "Try again.");
-    }
+  // Share again opens the story editor with this photo: edit it, then press Share.
+  const shareAgain = (story: ArchivedStory) => {
+    openStoryEditorWith({ uri: story.media_url, width: 1080, height: 1920 });
+    navigate("home");
   };
 
-  const remove = (id: string) =>
-    Alert.alert("Delete this story?", "It will be gone for good.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await storyApi.deleteArchived(accessToken, id);
-            setStories((current) => (current ?? []).filter((story) => story.id !== id));
-          } catch (e: any) {
-            Alert.alert("Could not delete", e?.message || "Try again.");
-          }
-        },
-      },
-    ]);
+  // Delete for good: the server removes the photo and the row at once.
+  const remove = async (id: string) => {
+    setBusyId(id);
+    setNotice("");
+    try {
+      await storyApi.deleteArchived(accessToken, id);
+      setStories((current) => (current ?? []).filter((story) => story.id !== id));
+      setConfirmId(null);
+    } catch (e: any) {
+      setNotice(e?.message || "Could not delete. Try again.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   if (error) return <Text style={{ padding: 16, color: palette.crimson, fontFamily: fonts.body }}>{error}</Text>;
   if (!stories) return <ActivityIndicator style={{ margin: 16 }} color={palette.crimson} />;
@@ -231,18 +244,37 @@ function ArchivedStories({ accessToken }: { accessToken: string }) {
     return <Text style={{ padding: 16, color: palette.slate, fontFamily: fonts.body }}>No archived stories. Your stories land here after 24 hours.</Text>;
   return (
     <View>
+      {!!notice && <Text style={{ paddingHorizontal: 16, paddingTop: 12, color: palette.crimson, fontFamily: fonts.body, fontSize: 13 }}>{notice}</Text>}
       {stories.map((story) => (
         <View key={story.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }}>
           <Image
             source={{ uri: story.media_url }}
             style={{ width: 56, height: 56, borderRadius: 8, backgroundColor: palette.paperSand }}
           />
-          <View style={{ flex: 1, gap: 6 }}>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>{postedAgo(story.created_at)}</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{daysLeft(story.archived_at)}</Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <Button label="Share again" onPress={() => void shareAgain(story.id)} />
-              <Button label="Delete" danger onPress={() => remove(story.id)} />
-            </View>
+            {confirmId === story.id ? (
+              <View style={{ gap: 8, marginTop: 4 }}>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: colors.danger }}>Delete for good? This cannot be undone.</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Button label="Yes, delete" danger disabled={busyId === story.id} onPress={() => void remove(story.id)} />
+                  <Button label="Cancel" onPress={() => setConfirmId(null)} />
+                </View>
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+                <Button label="Share again" onPress={() => shareAgain(story)} />
+                <Button
+                  label="Delete"
+                  danger
+                  onPress={() => {
+                    setNotice("");
+                    setConfirmId(story.id);
+                  }}
+                />
+              </View>
+            )}
           </View>
         </View>
       ))}
@@ -286,7 +318,7 @@ export function YourActivityScreen({
         <Row icon="trash-outline" label="Recently deleted" open={open === "deleted"} onPress={() => toggle("deleted")} />
         {open === "deleted" && <DeletedContent accessToken={accessToken} />}
         <Row icon="time-outline" label="Archived stories" open={open === "archived"} onPress={() => toggle("archived")} />
-        {open === "archived" && <ArchivedStories accessToken={accessToken} />}
+        {open === "archived" && <ArchivedStories accessToken={accessToken} navigate={navigate} />}
 
         <Heading>Content you shared</Heading>
         <Row icon="grid-outline" label="Posts" onPress={() => navigate("profile")} />
