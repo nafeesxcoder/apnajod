@@ -55,4 +55,29 @@ describe("search engines", () => {
     expect(home).toContain("(share|post|story|chat|ludo|invite|screen)=");
     expect(home).toContain('m.content = "noindex, nofollow"');
   });
+  it("ties the brand to its social accounts for search engines", () => {
+    const json = /<script type="application\/ld\+json">(.*?)<\/script>/s.exec(home)?.[1] ?? "";
+    const data = JSON.parse(json);
+    const org = data["@graph"].find((item: { "@type": string }) => item["@type"] === "Organization");
+    expect(org.sameAs).toEqual([
+      "https://www.instagram.com/apnajoda",
+      "https://www.facebook.com/apnajoda",
+      "https://www.linkedin.com/company/apnajoda",
+    ]);
+    for (const url of org.sameAs) expect(home).toContain(`<link rel="me" href="${url}" />`);
+  });
+
+  it("shows the social accounts and the site's pages on every static page", () => {
+    for (const page of ["pricing.html", "privacy.html", "terms.html", "refund.html", "shipping.html", "contact.html"]) {
+      const html = read(page);
+      expect(html, page).toContain("Follow us:");
+      expect(html, page).toContain('href="https://www.instagram.com/apnajoda"');
+      expect(html, page).toContain('href="/privacy.html"');
+      expect(html, page).toContain('rel="me noopener"');
+    }
+  });
+
+  it("dates the sitemap today", () => {
+    expect(read("sitemap.xml")).not.toMatch(/<lastmod>(?!2026-11-25<)/);
+  });
 });
