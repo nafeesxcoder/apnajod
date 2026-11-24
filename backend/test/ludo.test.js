@@ -9,6 +9,8 @@ const dice = (...values) => {
 };
 
 const two = () => L.newGame([{ userId: "a", seat: 0 }, { userId: "b", seat: 2 }]);
+// A roll that left one token to move has already moved it; a tap is only needed when there was a choice.
+const tapMove = (s, userId, token) => { if (s.rolled) L.move(s, userId, token); };
 
 test("seats: two players sit across, three and four fill round", () => {
   assert.deepStrictEqual(L.seatsFor(2), [0, 2]);
@@ -41,7 +43,7 @@ test("landing on someone on an unsafe square sends them home and gives another r
   // a (red, starts at 0) on progress 27 -> square 27; a 3 takes it to 30.
   s.players[0].tokens[0] = 27;
   L.roll(s, "a", dice(3));
-  L.move(s, "a", 0);
+  tapMove(s, "a", 0);
   assert.strictEqual(s.players[1].tokens[0], -1);
   assert.deepStrictEqual(s.last.cut, [{ userId: "b", token: 0 }]);
   assert.strictEqual(L.current(s).userId, "a");
@@ -52,7 +54,7 @@ test("safe squares: no cutting on a star or a start square", () => {
   s.players[1].tokens[0] = 8; // yellow progress 8 -> square 34, a star
   s.players[0].tokens[0] = 31;
   L.roll(s, "a", dice(3));
-  L.move(s, "a", 0);
+  tapMove(s, "a", 0);
   assert.strictEqual(s.players[1].tokens[0], 8, "still there");
 });
 
@@ -63,7 +65,7 @@ test("home needs the exact number, and getting home gives another roll", () => {
   assert.strictEqual(s.last.type, "no_move", "53 + 5 overshoots 56");
   L.roll(s, "b", dice(2));
   L.roll(s, "a", dice(3));
-  L.move(s, "a", 0);
+  tapMove(s, "a", 0);
   assert.strictEqual(s.players[0].tokens[0], 56);
   assert.strictEqual(L.current(s).userId, "a");
 });
@@ -83,13 +85,13 @@ test("finish all four and win; in a three-player game the rest play on", () => {
   const s = L.newGame([{ userId: "a", seat: 0 }, { userId: "b", seat: 1 }, { userId: "c", seat: 2 }]);
   s.players[0].tokens = [56, 56, 56, 55];
   L.roll(s, "a", dice(1));
-  L.move(s, "a", 3);
+  tapMove(s, "a", 3);
   assert.strictEqual(s.players[0].place, 1);
   assert.strictEqual(s.finished, false);
   assert.strictEqual(L.current(s).userId, "b");
   s.players[1].tokens = [56, 56, 56, 54];
   L.roll(s, "b", dice(2));
-  L.move(s, "b", 3);
+  tapMove(s, "b", 3);
   assert.strictEqual(s.finished, true);
   assert.deepStrictEqual(s.places, ["a", "b", "c"]);
   assert.strictEqual(s.winner, "a");

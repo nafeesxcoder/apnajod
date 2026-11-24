@@ -144,6 +144,8 @@ function roll(state, userId, rng = Math.random) {
   }
   state.rolled = true;
   state.movable = movable;
+  // Only one token can move: it moves by itself, so nobody has to tap it.
+  if (movable.length === 1) return move(state, userId, movable[0]);
   return state;
 }
 

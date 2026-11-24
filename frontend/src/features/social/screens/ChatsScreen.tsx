@@ -4,7 +4,7 @@
  * There is no deck and no curation here. People arrive by being found and
  * followed, so this screen is a list of threads and a way to start one.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { chatApi } from '../../../api/chatApi';
 import {
@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ConversationSummary } from '../../../api/chatApi';
 import { parseStickerPayload } from '../../../domain/chatMediaCatalog';
+import { getChatSocket } from '../../../api/chatSocket';
 import { archivedCount, listOrder } from "../chatListOrder";
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
@@ -186,6 +187,25 @@ export function ChatsScreen({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // A new message from someone moves their chat to the top at once, not on the next refresh.
+  // The list is reloaded (the server sorts it by the latest message), shortly after the message arrives.
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    const socket = getChatSocket();
+    if (!socket) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onNew = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void loadRef.current(), 400);
+    };
+    socket.on('message:new', onNew);
+    return () => {
+      socket.off('message:new', onNew);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   const refresh = async () => {
     setRefreshing(true);

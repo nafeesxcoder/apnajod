@@ -40,8 +40,8 @@ function Chip({ label }: { label: string }) {
 }
 
 /**
- * Hobbies on one line. Extra ones sit behind "+N"; tapping it lists them all
- * in a small sheet, so the line never wraps.
+ * Hobbies in a centred row that wraps on a wide screen instead of stretching
+ * across it. Extra ones sit behind "+N"; tapping it lists them all in a small sheet.
  */
 export function HobbyRow({ hobbies }: { hobbies: string[] }) {
   const [open, setOpen] = useState(false);
@@ -52,12 +52,14 @@ export function HobbyRow({ hobbies }: { hobbies: string[] }) {
       <View
         style={{
           flexDirection: "row",
-          flexWrap: "nowrap",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "center",
           gap: 6,
           marginTop: 8,
-          overflow: "hidden",
+          width: "100%",
+          maxWidth: 520,
+          alignSelf: "center",
         }}
       >
         {shown.map((hobby) => (
