@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ConversationSummary } from '../../../api/chatApi';
 import { parseStickerPayload } from '../../../domain/chatMediaCatalog';
 import { getChatSocket } from '../../../api/chatSocket';
+import { onChatListChanged } from '../chatListBus';
 import { archivedCount, listOrder } from "../chatListOrder";
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
@@ -188,21 +189,29 @@ export function ChatsScreen({
     void load();
   }, [load]);
 
-  // A new message from someone moves their chat to the top at once, not on the next refresh.
-  // The list is reloaded (the server sorts it by the latest message), shortly after the message arrives.
+  // A chat with a new message (sent or received) moves to the top at once. The list
+  // reloads when a message is sent or arrives, and every 10 seconds as a fallback
+  // when the realtime connection is down. The server sorts it by the latest message.
   const loadRef = useRef(load);
   loadRef.current = load;
   useEffect(() => {
-    const socket = getChatSocket();
-    if (!socket) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const onNew = () => {
+    const soon = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => void loadRef.current(), 400);
+      timer = setTimeout(() => void loadRef.current(), 300);
     };
-    socket.on('message:new', onNew);
+    const offBus = onChatListChanged(soon);
+    const socket = getChatSocket();
+    socket?.on('message:new', soon);
+    socket?.on('message:update', soon);
+    const poll = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') void loadRef.current();
+    }, 10000);
     return () => {
-      socket.off('message:new', onNew);
+      offBus();
+      socket?.off('message:new', soon);
+      socket?.off('message:update', soon);
+      clearInterval(poll);
       if (timer) clearTimeout(timer);
     };
   }, []);

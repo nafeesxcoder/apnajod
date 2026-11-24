@@ -233,7 +233,7 @@ export function HomeScreen({
               <View style={{ flex: 1, alignItems: "center" }}>
                 <Image
                   source={brandLogo}
-                  style={{ width: 116, height: 32 }}
+                  style={{ width: 160, height: 46 }}
                   resizeMode="contain"
                   accessibilityLabel="Apnajoda"
                 />

@@ -166,6 +166,7 @@ import {
 } from "../features/trust/screens/SafetyScreens";
 import { VerificationHubScreen } from "../features/trust/screens/VerificationHubScreen";
 import { ChatsScreen } from "../features/social/screens/ChatsScreen";
+import { notifyChatListChanged } from "../features/social/chatListBus";
 import { FindPeopleScreen } from "../features/social/screens/FindPeopleScreen";
 import { PersonScreen } from "../features/social/screens/PersonScreen";
 import { socialApi, type ContactsMatchResult, type SocialUser } from "../api/socialApi";
@@ -2095,7 +2096,7 @@ function MilaanApp() {
   };
   const persistChatMessage = (conversationId: string, message: ChatMessage) =>
     accessToken
-      ? chatApi.sendMessage(accessToken, conversationId, message)
+      ? chatApi.sendMessage(accessToken, conversationId, message).finally(notifyChatListChanged)
       : persistChatMessagePreview(conversationId, message);
   const persistDateProposal = (
     conversationId: string,
