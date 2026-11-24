@@ -23,6 +23,7 @@ import { GrowthTab } from "./GrowthTab";
 import { MusicTab } from "./MusicTab";
 import { PlansTab } from "./PlansTab";
 import { DemoAccountsTab } from "./DemoAccountsTab";
+import { TwoStepSection } from "./TwoStepSection";
 import { fonts, radius } from "../../../theme";
 import { serverDate } from "../../../domain/serverTime";
 
@@ -453,7 +454,12 @@ export function AdminDashboardScreen({
           {tab === "promo" && <PromoTab accessToken={accessToken} />}
           {tab === "questions" && <QuestionsTab accessToken={accessToken} />}
           {tab === "music" && <MusicTab accessToken={accessToken} />}
-          {tab === "security" && <SecurityTab accessToken={accessToken} />}
+          {tab === "security" && (
+            <>
+              <TwoStepSection accessToken={accessToken} />
+              <SecurityTab accessToken={accessToken} />
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>

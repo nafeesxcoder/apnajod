@@ -28,6 +28,9 @@ export function AdminLoginScreen({
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [step, setStep] = useState<"send" | "verify">("send");
+  // Password was right and two-step verification is on: the code is next.
+  const [challenge, setChallenge] = useState<{ token: string; authenticator: boolean } | null>(null);
+  const [code, setCode] = useState("");
 
   const handleLogin = async () => {
     if (!identifier || !password) {
@@ -37,10 +40,32 @@ export function AdminLoginScreen({
     setLoading(true);
     setError("");
     try {
-      const session = await adminApi.login(identifier, password);
-      onLogin(session.accessToken);
+      const result = await adminApi.login(identifier, password);
+      if (result.challenge) {
+        setChallenge(result.challenge);
+        setCode("");
+      } else if (result.session) {
+        onLogin(result.session.accessToken);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Login failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCode = async () => {
+    if (!challenge || code.length !== 6) {
+      setError("Enter the 6-digit code.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const session = await adminApi.verifyLoginCode(challenge.token, code);
+      onLogin(session.accessToken);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That code did not work.");
     } finally {
       setLoading(false);
     }
@@ -172,7 +197,57 @@ export function AdminLoginScreen({
           </Text>
         </View>
 
-        {!isForgot ? (
+        {!isForgot && challenge ? (
+          <>
+            <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.ink, lineHeight: 20 }}>
+              {challenge.authenticator
+                ? "Enter the 6-digit code from your authenticator app."
+                : "Enter the 6-digit code we sent to your phone."}
+            </Text>
+            <TextInput
+              accessibilityLabel="Two-step code"
+              value={code}
+              onChangeText={(value) => setCode(value.replace(/\D/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              style={{
+                backgroundColor: palette.paperSand,
+                borderWidth: 1,
+                borderColor: palette.rule,
+                borderRadius: radius.md,
+                padding: 14,
+                fontFamily: fonts.bodySemi,
+                fontSize: 20,
+                letterSpacing: 6,
+                textAlign: "center",
+                color: palette.ink,
+                outlineStyle: "none" as any,
+              }}
+            />
+            {!!error && <Text style={{ color: palette.crimson, fontSize: 13, textAlign: "center" }}>{error}</Text>}
+            <Pressable
+              onPress={handleCode}
+              disabled={loading}
+              style={{ backgroundColor: palette.navy, paddingVertical: 16, borderRadius: radius.pill, alignItems: "center", marginTop: 10 }}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 15 }}>Confirm</Text>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setChallenge(null);
+                setError("");
+              }}
+              style={{ alignItems: "center" }}
+            >
+              <Text style={{ color: palette.slate, fontFamily: fonts.body, fontSize: 13 }}>Back</Text>
+            </Pressable>
+          </>
+        ) : !isForgot ? (
           // ================= LOGIN VIEW =================
           <>
             <View>

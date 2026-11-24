@@ -36,6 +36,8 @@ export type TwoFactorChallenge = {
   twoFactorRequired: true;
   challengeToken: string;
   maskedPhone: string;
+  /** True when the code comes from an authenticator app, not a text message. */
+  authenticator?: boolean;
 };
 
 export type AuthSession = {

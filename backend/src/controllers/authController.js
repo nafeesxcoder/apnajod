@@ -62,6 +62,18 @@ const verifyOtp = asyncHandler(async (req, res) => {
   } else if (channel === "email" && !user.email_verified_at) {
     await userService.markEmailVerified(user.id);
   }
+  // Two-step verification is not skipped by signing in with a code: the second
+  // step runs first, and the session starts in loginTwoFactor.
+  if (Number(user.two_factor_enabled) === 1) {
+    await twoFactorService.sendCode(user);
+    return res.json({
+      ok: true,
+      twoFactorRequired: true,
+      challengeToken: twoFactorService.signChallenge(user.id),
+      maskedPhone: twoFactorService.maskPhone(user.phone),
+      authenticator: twoFactorService.usesAuthenticator(user),
+    });
+  }
   // Instagram-style: logging back in within 30 days of deletion restores the account.
   if (user.deleted_at) {
     if (userService.isWithinGracePeriod(user.deleted_at)) {
@@ -272,6 +284,7 @@ const login = asyncHandler(async (req, res) => {
       twoFactorRequired: true,
       challengeToken: twoFactorService.signChallenge(user.id),
       maskedPhone: twoFactorService.maskPhone(user.phone),
+      authenticator: twoFactorService.usesAuthenticator(user),
     });
   }
   return finishLogin(user, res);

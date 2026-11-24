@@ -68,6 +68,12 @@ router.get("/promo", adminController.getPromo);
 router.post("/promo", adminController.publishPromo);
 router.post("/promo/off", adminController.stopPromo);
 
+// Authenticator app sign-in for the admin.
+router.get("/2fa", adminController.authenticatorStatus);
+router.post("/2fa/setup", adminController.startAuthenticatorSetup);
+router.post("/2fa/confirm", adminController.confirmAuthenticatorSetup);
+router.post("/2fa/disable", adminController.disableAuthenticator);
+
 // Demo accounts for store and partner reviews: real accounts, flagged, deletable.
 router.get("/demo-users", adminController.listDemoUsers);
 router.post("/demo-users", adminController.createDemoUser);

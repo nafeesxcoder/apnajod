@@ -295,6 +295,23 @@ const updatePlan = asyncHandler(async (req, res) => {
   }
 });
 
+// Authenticator app for the admin's sign-in (two-step verification).
+const authenticatorStatus = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await require("../services/twoFactorService").authenticatorStatus(req.user.id)) });
+});
+
+const startAuthenticatorSetup = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await require("../services/twoFactorService").startAuthenticatorSetup(req.user.id)) });
+});
+
+const confirmAuthenticatorSetup = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await require("../services/twoFactorService").confirmAuthenticatorSetup(req.user.id, req.body?.code)) });
+});
+
+const disableAuthenticator = asyncHandler(async (req, res) => {
+  res.json({ ok: true, ...(await require("../services/twoFactorService").disableAuthenticator(req.user.id, req.body?.code)) });
+});
+
 const createDemoUser = asyncHandler(async (req, res) => {
   const userService = require("../services/userService");
   res.json({ ok: true, user: await userService.createDemoUser(req.body || {}) });
@@ -311,6 +328,10 @@ const deleteDemoUser = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  authenticatorStatus,
+  startAuthenticatorSetup,
+  confirmAuthenticatorSetup,
+  disableAuthenticator,
   createDemoUser,
   listDemoUsers,
   deleteDemoUser,

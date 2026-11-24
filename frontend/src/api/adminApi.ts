@@ -1,5 +1,5 @@
 import { API_URL } from "./config";
-import { authApi } from "./authApi";
+import { authApi, type AuthSession } from "./authApi";
 
 async function authFetch(path: string, accessToken: string, options: RequestInit = {}) {
   const response = await fetch(`${API_URL}${path}`, {
@@ -56,19 +56,44 @@ export type Growth = {
   activeTrackingSince: string | null;
 };
 
+/** What admin sign-in returns: a session, or the challenge for the second step. */
+type AdminLogin =
+  | { challenge: { token: string; authenticator: boolean }; session?: undefined }
+  | { session: AuthSession; challenge?: undefined };
+
+function requireAdminSession<T extends { user: { role?: string | null } }>(session: T): T {
+  if (session.user.role !== "admin") {
+    throw new Error("Access denied. You are not an admin.");
+  }
+  return session;
+}
+
 export const adminApi = {
-  login: async (identifier: string, password: string) => {
-    const session = await authApi.login({ identifier, password });
-    if ("twoFactorRequired" in session) {
-      throw new Error("Two-step verification is not supported on the admin sign-in yet.");
+  /**
+   * Admin sign-in. Either a session, or (when two-step verification is on) a
+   * challenge that needs the code from the authenticator app or the text message.
+   */
+  login: async (identifier: string, password: string): Promise<AdminLogin> => {
+    const result = await authApi.login({ identifier, password });
+    if ("twoFactorRequired" in result) {
+      return { challenge: { token: result.challengeToken, authenticator: !!result.authenticator } };
     }
-    
-    // Check agar user admin hai
-    if (session.user.role !== "admin") {
-      throw new Error("Access denied. You are not an admin.");
-    }
-    return session;
+    return { session: requireAdminSession(result) };
   },
+
+  /** The second step of admin sign-in: the 6-digit code. */
+  verifyLoginCode: async (challengeToken: string, code: string) => {
+    return requireAdminSession(await authApi.loginTwoFactor(challengeToken, code));
+  },
+
+  /** Two-step verification with an authenticator app: status, set up, turn off. */
+  twoFactorStatus: (token: string): Promise<{ ok: boolean; enabled: boolean }> => authFetch("/admin/2fa", token),
+  twoFactorSetup: (token: string): Promise<{ ok: boolean; secret: string; qrDataUrl: string }> =>
+    authFetch("/admin/2fa/setup", token, { method: "POST" }),
+  twoFactorConfirm: (token: string, code: string) =>
+    authFetch("/admin/2fa/confirm", token, { method: "POST", body: JSON.stringify({ code }) }),
+  twoFactorDisable: (token: string, code: string) =>
+    authFetch("/admin/2fa/disable", token, { method: "POST", body: JSON.stringify({ code }) }),
 
   // 👇 Ye 2 naye functions Forgot/Reset Password ke liye hain
   forgotPassword: (phone: string) => 

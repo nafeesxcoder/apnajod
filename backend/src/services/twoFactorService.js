@@ -3,6 +3,9 @@ const env = require("../config/env");
 const { query } = require("../config/db");
 const otpService = require("./otpService");
 const userService = require("./userService");
+const totpService = require("./totpService");
+const fc = require("./fieldCrypto");
+const QRCode = require("qrcode");
 const { ApiError } = require("../middleware/errorHandler");
 
 /**
@@ -40,7 +43,13 @@ function maskPhone(phone) {
   return digits.length >= 4 ? `••••• ${digits.slice(-4)}` : "";
 }
 
+/** Admins with an authenticator app use its code, not an SMS. */
+function usesAuthenticator(user) {
+  return !!user.totp_secret;
+}
+
 async function sendCode(user) {
+  if (usesAuthenticator(user)) return;
   if (!user.phone) {
     throw new ApiError(409, "Add and verify a mobile number before turning this on.");
   }
@@ -48,6 +57,12 @@ async function sendCode(user) {
 }
 
 async function checkCode(user, code) {
+  if (usesAuthenticator(user)) {
+    if (!(await totpService.verifyForUser(query, user, code))) {
+      throw new ApiError(400, "That code is wrong or has already been used. Check your authenticator app.");
+    }
+    return;
+  }
   await otpService.verifyOtp({
     channel: "phone",
     identifier: user.phone,
@@ -60,10 +75,63 @@ async function setEnabled(userId, enabled) {
   await query("UPDATE users SET two_factor_enabled = ? WHERE id = ?", [enabled ? 1 : 0, userId]);
 }
 
+/** Admin: is the authenticator app on for this account. */
+async function authenticatorStatus(userId) {
+  const user = await userService.findUserById(userId);
+  return { enabled: usesAuthenticator(user) };
+}
+
+/** Admin: a new secret and its QR code. Nothing is on until the first code checks out. */
+async function startAuthenticatorSetup(userId) {
+  const user = await userService.findUserById(userId);
+  if (usesAuthenticator(user)) {
+    throw new ApiError(409, "The authenticator app is already on. Turn it off first to set it up again.");
+  }
+  const secret = totpService.generateSecret();
+  await query("UPDATE users SET totp_pending = ? WHERE id = ?", [fc.encrypt(secret), userId]);
+  const qrDataUrl = await QRCode.toDataURL(totpService.otpauthUrl(user.username || "admin", secret), {
+    margin: 1,
+    width: 220,
+  });
+  return { secret, qrDataUrl };
+}
+
+async function confirmAuthenticatorSetup(userId, code) {
+  const user = await userService.findUserById(userId);
+  const pending = fc.decrypt(user.totp_pending);
+  if (!pending) throw new ApiError(400, "Start the setup again to get a new QR code.");
+  const step = totpService.matchStep(pending, code);
+  if (step < 0) throw new ApiError(400, "That code is wrong. Check the 6-digit code in your authenticator app.");
+  await query(
+    "UPDATE users SET totp_secret = totp_pending, totp_pending = NULL, totp_last_step = ?, two_factor_enabled = 1 WHERE id = ?",
+    [step, userId],
+  );
+  return { enabled: true };
+}
+
+/** Turning it off needs a current code from the app. */
+async function disableAuthenticator(userId, code) {
+  const user = await userService.findUserById(userId);
+  if (!usesAuthenticator(user)) throw new ApiError(400, "The authenticator app is not on.");
+  if (!(await totpService.verifyForUser(query, user, code))) {
+    throw new ApiError(400, "That code is wrong or has already been used.");
+  }
+  await query(
+    "UPDATE users SET totp_secret = NULL, totp_pending = NULL, totp_last_step = NULL, two_factor_enabled = 0 WHERE id = ?",
+    [userId],
+  );
+  return { enabled: false };
+}
+
 module.exports = {
+  authenticatorStatus,
+  startAuthenticatorSetup,
+  confirmAuthenticatorSetup,
+  disableAuthenticator,
   signChallenge,
   userForChallenge,
   maskPhone,
+  usesAuthenticator,
   sendCode,
   checkCode,
   setEnabled,
