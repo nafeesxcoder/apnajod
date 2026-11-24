@@ -157,10 +157,13 @@ describe('the web shell in public/', () => {
     expect(sw).not.toMatch(/Milaan/i);
   });
 
-  it('wears the brand colours in the browser chrome', () => {
-    expect(manifest.theme_color).toBe(palette.navy);
+  it('wears the app colours in the browser chrome, with no blue strip on top', () => {
+    // The browser's top bar takes the theme colour: the app's own cream, so the
+    // page runs edge to edge instead of showing a navy strip above it.
+    expect(manifest.theme_color).toBe(palette.paperBase);
     expect(manifest.background_color).toBe(palette.paperBase);
-    expect(html).toContain(`content="${palette.navy}"`);
+    expect(html).toContain(`content="${palette.paperBase}"`);
+    expect(html).not.toContain(`content="${palette.navy}"`);
     // The old ink-black theme colour painted the phone's status bar.
     expect(html).not.toContain('#1A1416');
   });
