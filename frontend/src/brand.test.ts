@@ -118,7 +118,8 @@ describe('app config', () => {
 
   it('ships the brand colours to the OS chrome', () => {
     expect(app.primaryColor).toBe(palette.navy);
-    expect(app.web.themeColor).toBe(palette.navy);
+    // The browser and the bottom bar take this colour: cream, so the app runs edge to edge.
+    expect(app.web.themeColor).toBe(palette.paperBase);
     expect(app.splash.backgroundColor).toBe(palette.paperBase);
     expect(app.android.adaptiveIcon.backgroundColor).toBe(palette.paperBase);
   });

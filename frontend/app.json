@@ -48,7 +48,7 @@
       "favicon": "./assets/favicon.png",
       "name": "Apnajoda",
       "shortName": "Apnajoda",
-      "themeColor": "#1F4D7A",
+      "themeColor": "#FDF7F4",
       "backgroundColor": "#FDF7F4"
     },
     "plugins": [
