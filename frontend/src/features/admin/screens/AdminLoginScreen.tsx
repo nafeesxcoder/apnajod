@@ -14,8 +14,11 @@ import { fonts, palette, radius } from "../../../theme";
 
 export function AdminLoginScreen({
   onLogin,
+  onBack,
 }: {
   onLogin: (token: string) => void;
+  /** Inside the app: back to Settings. On the web admin page there is no back. */
+  onBack?: () => void;
 }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -250,6 +253,11 @@ export function AdminLoginScreen({
         ) : !isForgot ? (
           // ================= LOGIN VIEW =================
           <>
+            {onBack && (
+              <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Back to app" style={{ alignSelf: "flex-start" }}>
+                <Text style={{ color: palette.slate, fontFamily: fonts.body, fontSize: 13 }}>Back to app</Text>
+              </Pressable>
+            )}
             <View>
               <Text
                 style={{

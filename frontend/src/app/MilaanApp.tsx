@@ -3733,6 +3733,7 @@ function MilaanApp() {
 
         {screen === "adminLogin" && (
           <AdminLoginScreen
+            onBack={isAdminMode ? undefined : () => setScreen("settings")}
             onLogin={(token: string) => {
               setAdminToken(token);
               setScreen("adminDashboard");
@@ -3743,8 +3744,8 @@ function MilaanApp() {
         {screen === "adminDashboard" && adminToken && (
           <AdminDashboardScreen
             accessToken={adminToken}
-            // Opened from Settings: go back to the app, still signed in.
-            exitLabel={isAdminMode ? "Logout" : "Back to app"}
+            // Logout ends the admin session here; the app stays signed in when opened from Settings.
+            exitLabel="Logout"
             onLogout={() => {
               setAdminToken(null);
               setScreen(isAdminMode ? "adminLogin" : "settings");
@@ -4122,8 +4123,9 @@ function MilaanApp() {
             onOpenAdmin={
               isAdmin && accessToken
                 ? () => {
-                    setAdminToken(accessToken);
-                    setScreen("adminDashboard");
+                    // The admin panel asks for the admin's password (and code) every time it opens.
+                    setAdminToken(null);
+                    setScreen("adminLogin");
                   }
                 : undefined
             }
