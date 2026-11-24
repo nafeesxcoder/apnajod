@@ -368,7 +368,21 @@ export function ChatsScreen({
                             <Ionicons accessibilityLabel="Muted" name="notifications-off-outline" size={13} color={colors.muted} />
                           )}
                           {!!conversation.pinned && !showArchived && (
-                            <Ionicons accessibilityLabel="Pinned" name="pin" size={13} color={colors.muted} />
+                            <View
+                              accessibilityLabel="Pinned chat"
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 3,
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                borderRadius: 8,
+                                backgroundColor: colors.accentSoft,
+                              }}
+                            >
+                              <Ionicons name="pin" size={12} color={colors.accent} />
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.accent }}>Pinned</Text>
+                            </View>
                           )}
                           <Text style={social.rowTime}>
                             {shortAge(conversation.lastAt)}
