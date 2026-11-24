@@ -69,6 +69,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { configureAnalyticsConsent, track } from "../lib/telemetry";
 import { CallHost } from "../features/chat/CallHost";
 import { YourActivityScreen } from "../features/profile/screens/YourActivityScreen";
+import { DevicesScreen } from "../features/profile/screens/DevicesScreen";
 import { IncomingCallHost } from "../features/chat/IncomingCallHost";
 import {
   fetchPersistedChatMessages as fetchPersistedChatMessagesPreview,
@@ -4099,6 +4100,9 @@ function MilaanApp() {
             navigate={navigateTo}
             onBack={() => setScreen("settings")}
           />
+        )}
+        {screen === "devices" && accessToken && (
+          <DevicesScreen accessToken={accessToken} onBack={() => setScreen("settings")} />
         )}
         {screen === "settings" && (
           <SettingsScreen accessToken={accessToken}

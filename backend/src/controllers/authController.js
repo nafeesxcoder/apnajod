@@ -444,6 +444,18 @@ const refresh = asyncHandler(async (req, res) => {
   const tokens = await sessionService.rotateSession(refreshToken);
   res.json({ ok: true, ...tokens });
 });
+const listSessions = asyncHandler(async (req, res) => {
+  res.json({ ok: true, sessions: await sessionService.listSessions(req.user.id, req.user.sid) });
+});
+
+const logoutSession = asyncHandler(async (req, res) => {
+  res.json(await sessionService.revokeSession(req.user.id, req.params.id));
+});
+
+const logoutOtherSessions = asyncHandler(async (req, res) => {
+  res.json(await sessionService.revokeOtherSessions(req.user.id, req.user.sid));
+});
+
 const logout = asyncHandler(async (req, res) => {
   await sessionService.revokeAllSessions(req.user.id);
   res.json({ ok: true });
@@ -583,6 +595,9 @@ module.exports = {
   logout,
   me,
   deleteAccount,
+  listSessions,
+  logoutSession,
+  logoutOtherSessions,
   deactivateAccount,
   googleStart,
   googleCallback,

@@ -50,6 +50,7 @@ export type Screen =
   | "premium"
   | "settings"
   | "yourActivity"
+  | "devices"
   | "two-step"
   | "safety"
   | "verifyHub"
@@ -109,6 +110,7 @@ export const previewScreens: readonly Screen[] = [
   "profile",
   "settings",
   "yourActivity",
+  "devices",
   "safety",
   "verifyHub",
   "support",

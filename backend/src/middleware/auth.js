@@ -1,6 +1,7 @@
 const { verifyAccessToken } = require('../utils/jwt');
 const { ApiError } = require('./errorHandler');
 const { query } = require('../config/db');
+const sessionService = require('../services/sessionService');
 
 // Backs the "last seen" feature: every authenticated request touches this
 // user's last_active_at, which other screens read to show "Last seen 5
@@ -84,7 +85,15 @@ async function requireAuth(req, res, next) {
     return next(new ApiError(403, 'This account has been suspended.'));
   }
 
-  req.user = { id: payload.sub };
+  // A device signed out from "Where you're logged in" is refused at once, not at the access token's expiry.
+  try {
+    if (payload.sid && !(await sessionService.isSessionActive(payload.sid, payload.sub))) {
+      return next(new ApiError(401, 'This device was signed out.'));
+    }
+  } catch (error) {
+    return next(error);
+  }
+  req.user = { id: payload.sub, sid: payload.sid || null };
   touchLastActive(payload.sub);
   next();
 }

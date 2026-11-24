@@ -19,6 +19,7 @@ const shareRoutes = require("./routes/shareRoutes");
 const referralRoutes = require("./routes/referralRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
+const { requestContext } = require("./utils/requestContext");
 const adminRoutes = require("./routes/adminRoutes");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 const { corsOptions, securityHeaders } = require("./config/security");
@@ -33,6 +34,7 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(requestContext);
 
 // Serve uploaded photos, videos and voice notes.
 // Uploads share the app's origin, so a file that runs script here could

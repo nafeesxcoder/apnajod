@@ -45,6 +45,9 @@ router.post("/otp/verify", otpVerifyLimiter, authController.verifyOtp);
 // Session
 router.post("/refresh", authController.refresh);
 router.post("/logout", requireAuth, authController.logout);
+router.get("/sessions", requireAuth, authController.listSessions);
+router.post("/sessions/logout-others", requireAuth, authController.logoutOtherSessions);
+router.post("/sessions/:id/logout", requireAuth, authController.logoutSession);
 router.get("/me", requireAuth, authController.me);
 router.post("/2fa/start", requireAuth, otpRequestLimiter, authController.twoFactorStart);
 router.post("/2fa/confirm", requireAuth, otpVerifyLimiter, authController.twoFactorConfirm);

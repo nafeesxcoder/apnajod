@@ -594,6 +594,11 @@ export function SettingsScreen({
                 label="Your activity"
                 onPress={() => navigate("yourActivity")}
               />
+              <SettingsRow
+                icon="phone-portrait-outline"
+                label="Where you're logged in"
+                onPress={() => navigate("devices")}
+              />
               <SettingsRow icon="chatbubble-ellipses-outline" label="Messages" onPress={openMessages} />
               <SettingsRow icon="volume-mute-outline" label="Muted accounts" onPress={openMuted} />
               <SettingsRow icon="eye-off-outline" label="Hide story from" onPress={openHide} />

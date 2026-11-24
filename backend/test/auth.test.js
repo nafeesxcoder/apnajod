@@ -170,8 +170,29 @@ async function query(sql, params = []) {
 
   // ---- refresh tokens ----
   if (q.startsWith("INSERT INTO refresh_tokens")) {
-    const [id, userId, tokenHash, expiresAt] = params;
-    db.refreshTokens.push({ id, user_id: userId, token_hash: tokenHash, expires_at: expiresAt, revoked_at: null });
+    const [id, userId, tokenHash, expiresAt, familyId] = params;
+    db.refreshTokens.push({ id, user_id: userId, token_hash: tokenHash, expires_at: expiresAt, family_id: familyId, revoked_at: null });
+    return { affectedRows: 1 };
+  }
+  // A session is live while one of its refresh tokens is not revoked and not expired.
+  if (q.startsWith("SELECT id FROM refresh_tokens WHERE family_id = ? AND user_id = ?")) {
+    const [familyId, userId] = params;
+    return db.refreshTokens
+      .filter((t) => t.family_id === familyId && t.user_id === userId && !t.revoked_at && new Date(t.expires_at) > new Date())
+      .slice(0, 1)
+      .map((t) => ({ id: t.id }));
+  }
+  if (q.startsWith("SELECT id FROM refresh_tokens WHERE family_id = ? AND revoked_at IS NULL")) {
+    const [familyId] = params;
+    return db.refreshTokens
+      .filter((t) => t.family_id === familyId && !t.revoked_at && new Date(t.expires_at) > new Date())
+      .slice(0, 1)
+      .map((t) => ({ id: t.id }));
+  }
+  if (q.startsWith("UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = ?")) {
+    db.refreshTokens.forEach((t) => {
+      if (t.id === params[0] && !t.revoked_at) t.revoked_at = new Date();
+    });
     return { affectedRows: 1 };
   }
   if (q.startsWith("UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id =")) {
