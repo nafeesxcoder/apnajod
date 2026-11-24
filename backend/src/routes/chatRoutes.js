@@ -33,6 +33,8 @@ router.post('/:conversationId/date-proposal', chatController.postDateProposal);
 router.put('/date-proposal/status', chatController.putDatePlanStatus);
 router.post('/date-proposal/checkin', chatController.postDateCheckIn);
 router.post('/:conversationId/location', chatController.postLocation);
+router.post('/:conversationId/location/:messageId/live', chatController.putLiveLocation);
+router.post('/:conversationId/location/:messageId/stop', chatController.postStopLiveLocation);
 router.get('/:conversationId/presence', chatController.getPresence);
 router.get('/:conversationId/streak', chatController.getStreak);
 router.post('/:conversationId/typing', chatController.postTyping);

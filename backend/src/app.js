@@ -23,7 +23,7 @@ const { requestContext } = require("./utils/requestContext");
 const adminRoutes = require("./routes/adminRoutes");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 const { corsOptions, securityHeaders } = require("./config/security");
-const { SERVABLE_EXTENSIONS } = require("./utils/uploadTypes");
+const { SERVABLE_EXTENSIONS, DOCUMENT_EXTENSIONS } = require("./utils/uploadTypes");
 
 const app = express();
 
@@ -46,6 +46,9 @@ app.use("/uploads", (req, res, next) => {
   const ext = path.extname(req.path).toLowerCase();
   if (!SERVABLE_EXTENSIONS.has(ext)) return res.status(404).json({ error: "Not found" });
   res.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self'; media-src 'self'; sandbox");
+  // A document is saved to the phone, never opened inside the app's origin.
+  if (DOCUMENT_EXTENSIONS.has(ext)) res.setHeader("Content-Disposition", "attachment");
+  res.setHeader("X-Content-Type-Options", "nosniff");
   next();
 });
 app.use(

@@ -1,4 +1,38 @@
+import { Platform } from "react-native";
 import { API_URL } from "./config";
+
+/** The type to send with a file: the picker's type if it gave one, else from the name. */
+const TYPES_BY_EXTENSION: Record<string, string> = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt: "text/plain",
+  csv: "text/csv",
+  zip: "application/zip",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  heic: "image/heic",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  m4a: "audio/mp4",
+  mp3: "audio/mpeg",
+  aac: "audio/aac",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+};
+
+export function mimeTypeFor(fileName: string, picked?: string | null): string {
+  if (picked && picked !== "application/octet-stream") return picked;
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return TYPES_BY_EXTENSION[extension] ?? "application/octet-stream";
+}
 import type { ChatMessage, CoupleChatSettings, DatePlanStatus } from "../storage";
 
 export type PersistenceResult<T = unknown> = {
@@ -219,6 +253,24 @@ export const chatApi = {
     await authFetch(`/chat/${conversationId}/screenshot`, accessToken, { method: "POST" });
   },
 
+  /** A live location moves to where the sharer is now. Only the sharer may. */
+  async updateLiveLocation(
+    accessToken: string,
+    conversationId: string,
+    messageId: string,
+    spot: { latitude: number; longitude: number; accuracy?: number },
+  ): Promise<void> {
+    await authFetch(`/chat/${conversationId}/location/${messageId}/live`, accessToken, {
+      method: "POST",
+      body: JSON.stringify(spot),
+    });
+  },
+
+  /** The sharer stops a live location; it ends on both sides. */
+  async stopLiveLocation(accessToken: string, conversationId: string, messageId: string): Promise<void> {
+    await authFetch(`/chat/${conversationId}/location/${messageId}/stop`, accessToken, { method: "POST" });
+  },
+
   async getSettings(
     accessToken: string,
     conversationId: string,
@@ -243,11 +295,19 @@ export const chatApi = {
     localUri: string,
     fileName: string,
     signal?: AbortSignal,
+    pickedMimeType?: string | null,
   ): Promise<string> {
-    const response = await fetch(localUri, { signal });
-    const blob = await response.blob();
+    const type = mimeTypeFor(fileName, pickedMimeType);
     const formData = new FormData();
-    formData.append("file", blob, fileName);
+    if (Platform.OS === "web") {
+      const response = await fetch(localUri, { signal });
+      const blob = await response.blob();
+      // The server reads the type from the file part: give it the real one.
+      formData.append("file", blob.type === type ? blob : new Blob([blob], { type }), fileName);
+    } else {
+      // The phone reads the file itself and sends it with its real type.
+      formData.append("file", { uri: localUri, name: fileName, type } as any);
+    }
     const uploadResponse = await fetch(`${API_URL}/chat/upload`, {
       method: "POST",
       signal,

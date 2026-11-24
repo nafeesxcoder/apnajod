@@ -1996,8 +1996,10 @@ export const chatStyles=StyleSheet.create({
 export const snapStyles=StyleSheet.create({
   screen:{flex:1,backgroundColor:colors.black},
   header:{height:62,paddingHorizontal:18,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  headerTitle:{fontFamily:'Mukta_700Bold',fontSize:16,color:colors.ivory},
-  sendText:{fontFamily:'Mukta_700Bold',fontSize:13,color: colors.textInverse},
+  headerTitle:{fontFamily:'Mukta_700Bold',fontSize:16,color:'#14202E'},
+  // The screen is light: the Send button is a solid colour with white text, so it is always visible.
+  sendButton:{height:40,paddingHorizontal:18,borderRadius:20,backgroundColor:'#A8243A',alignItems:'center',justifyContent:'center'},
+  sendText:{fontFamily:'Mukta_700Bold',fontSize:14,color:'#FFFFFF'},
   preview:{height:'52%',marginHorizontal:16,borderRadius:28,overflow:'hidden',backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line},
   previewSticker:{position:'absolute',right:22,top:22,fontSize:60},
   previewLabel:{position:'absolute',left:14,bottom:14,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:11,paddingVertical:8,borderRadius:16,backgroundColor:'rgba(13,14,15,.7)'},

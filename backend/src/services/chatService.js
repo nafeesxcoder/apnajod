@@ -181,6 +181,83 @@ async function editMessage(peerId, userId, messageId, text) {
   return rowToMessage(updated, userId);
 }
 
+/** A coordinate from the phone, or null if it is not a real one. */
+function validCoordinate(value, limit) {
+  const number = Number(value);
+  return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
+}
+
+/**
+ * Live location: the sharer's phone keeps sending its spot while the share
+ * lasts (30 minutes). Each update moves the card both people see. Only the
+ * sharer can move it, and only while it is still live.
+ */
+async function updateLiveLocation(peerId, userId, messageId, location) {
+  const conversationId = storageKey(userId, peerId);
+  const latitude = validCoordinate(location?.latitude, 90);
+  const longitude = validCoordinate(location?.longitude, 180);
+  if (latitude === null || longitude === null) {
+    const err = new Error("That location is not valid.");
+    err.status = 400;
+    throw err;
+  }
+  const row = await getOwnedMessage(peerId, userId, messageId);
+  if (row.sender_id !== userId || row.message_type !== "location") {
+    const err = new Error("Only the one who shared this location can move it.");
+    err.status = 403;
+    throw err;
+  }
+  const payload = parseJsonColumn(row.payload, {});
+  const shared = payload.location;
+  if (!shared?.live) {
+    const err = new Error("This location is not live.");
+    err.status = 400;
+    throw err;
+  }
+  if (shared.expiresAt && Date.now() > Number(shared.expiresAt)) {
+    const err = new Error("Live location has ended.");
+    err.status = 410;
+    throw err;
+  }
+  const accuracy = validCoordinate(location?.accuracy, 100000);
+  const now = Date.now();
+  payload.location = { ...shared, latitude, longitude, accuracy: accuracy ?? undefined, updatedAt: now };
+  await query(
+    "UPDATE chat_messages SET payload = ?, updated_at_ms = ? WHERE id = ? AND conversation_id = ?",
+    [JSON.stringify(payload), now, messageId, conversationId],
+  );
+  const [updated] = await query(
+    "SELECT * FROM chat_messages WHERE id = ? AND conversation_id = ?",
+    [messageId, conversationId],
+  );
+  emitMessageUpdate(peerId, updated, userId);
+  return rowToMessage(updated, userId);
+}
+
+/** The sharer stops: the card says so, and nothing more is sent. */
+async function stopLiveLocation(peerId, userId, messageId) {
+  const conversationId = storageKey(userId, peerId);
+  const row = await getOwnedMessage(peerId, userId, messageId);
+  if (row.sender_id !== userId || row.message_type !== "location") {
+    const err = new Error("Only the one who shared this location can stop it.");
+    err.status = 403;
+    throw err;
+  }
+  const payload = parseJsonColumn(row.payload, {});
+  if (payload.location) payload.location = { ...payload.location, live: false, expiresAt: Date.now() };
+  const now = Date.now();
+  await query(
+    "UPDATE chat_messages SET payload = ?, updated_at_ms = ? WHERE id = ? AND conversation_id = ?",
+    [JSON.stringify(payload), now, messageId, conversationId],
+  );
+  const [updated] = await query(
+    "SELECT * FROM chat_messages WHERE id = ? AND conversation_id = ?",
+    [messageId, conversationId],
+  );
+  emitMessageUpdate(peerId, updated, userId);
+  return rowToMessage(updated, userId);
+}
+
 const CLEARED_PAYLOAD = {
   text: undefined,
   uri: undefined,
@@ -899,6 +976,8 @@ module.exports = {
   createDateProposal,
   updateDatePlanStatus,
   shareLiveLocation,
+  updateLiveLocation,
+  stopLiveLocation,
   getPartnerPresence,
   onlineFor,
   setTyping,

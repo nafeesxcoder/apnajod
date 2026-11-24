@@ -50,10 +50,29 @@ const AUDIO_TYPES = {
   "audio/amr": ".amr",
 };
 
-const CHAT_TYPES = { ...PHOTO_TYPES, ...VIDEO_TYPES, ...AUDIO_TYPES };
+// Documents people send in chat (like WhatsApp): PDFs, Office files, text, zip.
+// They are only ever downloaded, never opened inline (see app.js).
+const DOCUMENT_TYPES = {
+  "application/pdf": ".pdf",
+  "application/msword": ".doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "application/vnd.ms-excel": ".xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+  "application/vnd.ms-powerpoint": ".ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+  "text/plain": ".txt",
+  "text/csv": ".csv",
+  "application/zip": ".zip",
+  "application/x-zip-compressed": ".zip",
+};
+
+const CHAT_TYPES = { ...PHOTO_TYPES, ...VIDEO_TYPES, ...AUDIO_TYPES, ...DOCUMENT_TYPES };
 
 /** Every extension an upload can end up with - the only ones served. */
 const SERVABLE_EXTENSIONS = new Set(Object.values(CHAT_TYPES));
+
+/** The document extensions: these are downloaded, not shown inline. */
+const DOCUMENT_EXTENSIONS = new Set(Object.values(DOCUMENT_TYPES));
 
 /** "Audio/WebM; codecs=opus" -> "audio/webm" */
 function baseType(mimetype) {
@@ -68,6 +87,8 @@ function extensionFor(mimetype, allowed) {
 module.exports = {
   PHOTO_TYPES,
   CHAT_TYPES,
+  DOCUMENT_TYPES,
+  DOCUMENT_EXTENSIONS,
   SERVABLE_EXTENSIONS,
   baseType,
   extensionFor,

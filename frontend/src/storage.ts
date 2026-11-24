@@ -48,7 +48,7 @@ export type ChatMessage = {
   sticker?: { faceUri: string; emoji: string; label: string; filter?: string };
   voice?: { uri: string; durationMs: number; transcript?: string; transcriptStatus?: 'available' | 'processing' | 'unavailable' };
   document?: { name: string; size?: number; mimeType?: string; kind: 'document' | 'video' };
-  location?: { latitude: number; longitude: number; label: string; live: boolean; expiresAt?: number; accuracy?: number };
+  location?: { latitude: number; longitude: number; label: string; live: boolean; expiresAt?: number; accuracy?: number; updatedAt?: number };
   date?: { venue: string; category: string; area: string; time: string; safetyCheckIn: boolean; packageTitle?: string; packageTier?: string; proposalId?: string; planStatus?: DatePlanStatus; /** You tapped "I'm safe" after it. */ safeByMe?: boolean; safeCount?: number };
   editedAt?: number;
   deletedAt?: number;

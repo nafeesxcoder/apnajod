@@ -32,7 +32,8 @@ const fileFilter = (req, file, cb) => {
 const chatUpload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 25 * 1024 * 1024 },
+  // Matches the app's limit (100 MB): documents, photos and videos.
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
 module.exports = chatUpload;

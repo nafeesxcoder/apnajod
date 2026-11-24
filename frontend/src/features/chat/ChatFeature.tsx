@@ -36,6 +36,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChatBackdrop } from "./ChatBackdrop";
+import { mimeTypeFor } from "../../api/chatApi";
 import { BACKGROUND_CHOICES } from "./chatBackgrounds";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -766,6 +767,51 @@ const coupleThemes = [
 // placeholder message id. The loader's X button on the bubble calls these.
 const mediaUploadCancels = new Map<string, () => void>();
 
+// Live location: while a share lasts, this phone sends its spot every few seconds.
+const LIVE_LOCATION_MINUTES = 30;
+type LiveLocationWatch = {
+  subscription: Promise<{ remove: () => void } | null>;
+  timer: ReturnType<typeof setTimeout>;
+};
+const liveLocationWatches = new Map<string, LiveLocationWatch>();
+
+function stopLiveWatch(messageId: string) {
+  const watch = liveLocationWatches.get(messageId);
+  if (!watch) return;
+  clearTimeout(watch.timer);
+  void watch.subscription.then((subscription) => subscription?.remove()).catch(() => undefined);
+  liveLocationWatches.delete(messageId);
+}
+
+function startLiveLocationShare(accessToken: string, conversationId: string, messageId: string, expiresAt: number) {
+  stopLiveWatch(messageId);
+  let lastSent = 0;
+  const subscription = Location.watchPositionAsync(
+    { accuracy: Location.Accuracy.Balanced, timeInterval: 10000, distanceInterval: 15 },
+    (position) => {
+      const now = Date.now();
+      if (now - lastSent < 8000) return;
+      lastSent = now;
+      void chatApi
+        .updateLiveLocation(accessToken, conversationId, messageId, {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy ?? undefined,
+        })
+        .catch(() => undefined);
+    },
+  ).catch(() => null);
+  // The share ends by itself when its time is up.
+  const timer = setTimeout(() => stopLiveWatch(messageId), Math.max(0, expiresAt - Date.now()));
+  liveLocationWatches.set(messageId, { subscription, timer });
+}
+
+/** The sharer stops: the phone stops sending, and the card on both sides says it has ended. */
+function stopLiveLocationShare(accessToken: string, conversationId: string, messageId: string) {
+  stopLiveWatch(messageId);
+  void chatApi.stopLiveLocation(accessToken, conversationId, messageId).catch(() => undefined);
+}
+
 // A tick can only move forward (sent -> delivered -> read). Local overrides
 // used to always win, which pinned sent messages to a single grey tick even
 // after the server reported them delivered/read.
@@ -1440,6 +1486,7 @@ export function ChatScreen({
   const sendMediaWithLoader = async (opts: {
     localUri: string;
     fileName: string;
+    mimeType?: string | null;
     build: (uri: string) => Omit<ChatMessage, "id" | "createdAt" | "status">;
   }) => {
     const placeholder: ChatMessage = {
@@ -1450,18 +1497,16 @@ export function ChatScreen({
     mediaUploadCancels.set(placeholder.id, () => controller.abort());
     setUploadingMessages((current) => [...current, placeholder]);
     try {
+      // A failed upload is reported, not sent: this phone's own file path means
+      // nothing to the other person.
       const uploadedUri = accessToken
-        ? await chatApi
-            .uploadMedia(
-              accessToken,
-              opts.localUri,
-              opts.fileName,
-              controller.signal,
-            )
-            .catch((error) => {
-              if (controller.signal.aborted) throw error;
-              return opts.localUri;
-            })
+        ? await chatApi.uploadMedia(
+            accessToken,
+            opts.localUri,
+            opts.fileName,
+            controller.signal,
+            opts.mimeType,
+          )
         : opts.localUri;
       if (controller.signal.aborted) return false;
       return await dispatchMessage(createMessage(opts.build(uploadedUri)));
@@ -1732,20 +1777,25 @@ export function ChatScreen({
       const position = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
+      const expiresAt = Date.now() + LIVE_LOCATION_MINUTES * 60 * 1000;
       const locationMessage = createMessage({
         type: "location",
         text: "Live location shared",
         location: {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          label: "Live location · tracking for 30 min",
+          label: `Live location · ${LIVE_LOCATION_MINUTES} min`,
           live: true,
-          expiresAt: Date.now() + 30 * 60 * 1000,
+          expiresAt,
           accuracy: position.coords.accuracy ?? undefined,
+          updatedAt: Date.now(),
         },
       });
-      await dispatchMessage(locationMessage);
+      const sent = await dispatchMessage(locationMessage);
       setShowAttachments(false);
+      if (sent && accessToken) {
+        startLiveLocationShare(accessToken, conversationIdFor(match), locationMessage.id, expiresAt);
+      }
     } catch {
       setChatError(
         "Could not get your current location. Try again outdoors or check permission settings.",
@@ -1886,62 +1936,31 @@ export function ChatScreen({
       const asset = result.assets[0];
       if (!asset) return;
       if (asset.size && asset.size > maxChatFileBytes) {
-        setChatError("Choose a document smaller than 100 MB.");
+        setChatError("Choose a file smaller than 100 MB.");
         return;
       }
+      const name = asset.name?.trim() || `document-${Date.now()}`;
       const isVideo = asset.mimeType?.startsWith("video/") ?? false;
-      const isImage = asset.mimeType?.startsWith("image/") ?? false;
-      if (isVideo || isImage) {
-        // A photo/video picked through the Document button gets the same
-        // caption preview as the Media button, instead of being sent
-        // instantly with no way to add text.
-        const name =
-          asset.name?.trim() ||
-          `Apnajoda-media-${Date.now()}.${isVideo ? "mp4" : "jpg"}`;
-        setPendingCaption("");
-        setPendingMediaError("");
-        setPendingMedia({
-          kind: isVideo ? "video" : "image",
-          uri: asset.uri,
-          asset: {
-            uri: asset.uri,
-            width: 0,
-            height: 0,
-            type: isVideo ? "video" : "image",
-            fileName: name,
-            fileSize: asset.size,
-            mimeType: asset.mimeType,
-          } as ImagePicker.ImagePickerAsset,
-          fallbackName: name,
-        });
-        setShowAttachments(false);
-        setAttachmentPage("main");
-        return;
-      }
-      const uploadedUri = accessToken
-        ? await chatApi
-            .uploadMedia(
-              accessToken,
-              asset.uri,
-              asset.name || `document-${Date.now()}`,
-            )
-            .catch(() => asset.uri)
-        : asset.uri;
-      await dispatchMessage(
-        createMessage({
+      setShowAttachments(false);
+      setAttachmentPage("main");
+      // Sent as a document, the way WhatsApp does: the file itself, a photo
+      // too (not a compressed picture), so it arrives as it was saved.
+      void sendMediaWithLoader({
+        localUri: asset.uri,
+        fileName: name,
+        mimeType: asset.mimeType,
+        build: (uri) => ({
           type: "document",
-          uri: uploadedUri,
+          uri,
           text: isVideo ? "Video" : "Document",
           document: {
-            name: asset.name || "Shared document",
+            name,
             size: asset.size,
-            mimeType: asset.mimeType ?? "application/octet-stream",
+            mimeType: mimeTypeFor(name, asset.mimeType),
             kind: isVideo ? "video" : "document",
           },
         }),
-      );
-      setShowAttachments(false);
-      setAttachmentPage("main");
+      });
     } catch (error) {
       setChatError(
         error instanceof Error
@@ -2750,6 +2769,7 @@ export function ChatScreen({
               >
                 <ChatBubble
                   message={message}
+                  conversationId={conversationIdFor(match)}
                   status={furthestStatus(
                     deliveryOverrides[message.id],
                     message.status,
@@ -3619,9 +3639,11 @@ function ChatBubble({
   onSwipeReply,
   onSwipeEdit,
   accessToken,
+  conversationId,
   onOpenLudo,
 }: {
   accessToken?: string;
+  conversationId?: string;
   onOpenLudo?: (gameId: string) => void;
   message: ChatMessage;
   status: ChatMessage["status"];
@@ -4202,11 +4224,19 @@ function ChatBubble({
             </View>
           )}
           {message.type === "location" && message.location && (
-            <LiveLocationCard location={message.location} />
+            <LiveLocationCard
+              location={message.location}
+              mine={mine}
+              onStop={
+                accessToken && conversationId
+                  ? () => stopLiveLocationShare(accessToken, conversationId, message.id)
+                  : undefined
+              }
+            />
           )}
           {message.type === "document" && message.document && (
             <View>
-              <DocumentChatCard document={message.document} mine={mine} />
+              <DocumentChatCard document={message.document} mine={mine} uri={message.uri} />
               {!!message.uploading && (
                 <UploadProgressOverlay messageId={message.id} compact />
               )}
@@ -5005,15 +5035,24 @@ function UploadProgressOverlay({
 function DocumentChatCard({
   document,
   mine,
+  uri,
 }: {
   document: NonNullable<ChatMessage["document"]>;
   mine: boolean;
+  uri?: string;
 }) {
   const extension =
     document.name.split(".").pop()?.slice(0, 5).toUpperCase() ||
     (document.kind === "video" ? "VIDEO" : "FILE");
   return (
-    <View style={chatStyles.documentCardWrap}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${document.name}`}
+      onPress={() => {
+        if (uri) void downloadMedia(uri, document.name);
+      }}
+      style={chatStyles.documentCardWrap}
+    >
       <View
         style={[
           chatStyles.documentCard,
@@ -5098,7 +5137,7 @@ function DocumentChatCard({
           />
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -5399,15 +5438,28 @@ function VoiceRecordingComposer({
   );
 }
 
+function updatedText(at: number, now: number) {
+  const seconds = Math.max(0, Math.round((now - at) / 1000));
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds} sec ago`;
+  return `${Math.round(seconds / 60)} min ago`;
+}
+
 function LiveLocationCard({
   location,
+  mine,
+  onStop,
 }: {
   location: NonNullable<ChatMessage["location"]>;
+  mine: boolean;
+  onStop?: () => void;
 }) {
   const [mapFallback, setMapFallback] = useState("");
-  const expiresIn = location.expiresAt
-    ? Math.max(0, Math.ceil((location.expiresAt - Date.now()) / 60000))
-    : 30;
+  const now = Date.now();
+  const live = !!location.live && (!location.expiresAt || now < location.expiresAt);
+  const minutesLeft = location.expiresAt
+    ? Math.max(0, Math.ceil((location.expiresAt - now) / 60000))
+    : 0;
   const coordinates = `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
   const openMap = () => {
     setMapFallback("");
@@ -5430,14 +5482,36 @@ function LiveLocationCard({
           <PremiumIcon name="navigate" tone="gold" size={46} iconSize={21} />
         </LinearGradient>
         <View style={chatStyles.locationInfo}>
-          <Text style={chatStyles.locationTitle}>Live location</Text>
+          <Text style={chatStyles.locationTitle}>
+            {live ? "Live location" : "Location"}
+          </Text>
           <Text style={chatStyles.locationSubtitle}>{location.label}</Text>
           <Text style={chatStyles.locationFine}>
-            {expiresIn > 0 ? `${expiresIn} min left · ` : "Expired · "}
-            approximate area shared
+            {live
+              ? `${minutesLeft} min left · updated ${
+                  location.updatedAt ? updatedText(location.updatedAt, now) : "just now"
+                }`
+              : "Sharing has ended"}
           </Text>
         </View>
       </Pressable>
+      {mine && live && onStop && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Stop sharing live location"
+          onPress={onStop}
+          style={{
+            alignSelf: "flex-start",
+            paddingHorizontal: 14,
+            paddingVertical: 7,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.danger,
+          }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.danger }}>Stop sharing</Text>
+        </Pressable>
+      )}
       {!!mapFallback && (
         <View style={chatStyles.locationFallback}>
           <MiniPremiumIcon
@@ -8515,7 +8589,7 @@ function SnapStudio({
           <Pressable
             disabled={!uri}
             onPress={() => onSend(uri, filter, sticker, viewOnce)}
-            style={premiumButtonStyles.smallGhost}
+            style={snapStyles.sendButton}
           >
             <Text style={[snapStyles.sendText, !uri && { opacity: 0.35 }]}>
               Send
@@ -8759,7 +8833,7 @@ function FaceEmojiStudio({
           <Pressable
             disabled={!uri}
             onPress={() => onSend(uri, emoji, filter)}
-            style={premiumButtonStyles.smallGhost}
+            style={snapStyles.sendButton}
           >
             <Text style={[snapStyles.sendText, !uri && { opacity: 0.35 }]}>
               Send

@@ -105,3 +105,18 @@ test("only media files are served, and always sandboxed", async () => {
     server.close();
   }
 });
+
+test("documents people send in chat are allowed, and are only ever downloaded", () => {
+  const { DOCUMENT_EXTENSIONS, SERVABLE_EXTENSIONS } = require("../src/utils/uploadTypes");
+  assert.equal(extensionFor("application/pdf", CHAT_TYPES), ".pdf");
+  assert.equal(extensionFor("application/vnd.openxmlformats-officedocument.wordprocessingml.document", CHAT_TYPES), ".docx");
+  assert.equal(extensionFor("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", CHAT_TYPES), ".xlsx");
+  assert.ok(SERVABLE_EXTENSIONS.has(".pdf"));
+  assert.ok(DOCUMENT_EXTENSIONS.has(".pdf"));
+  // Still refused: scripts and pages that run in the app's origin.
+  assert.equal(extensionFor("text/html", CHAT_TYPES), null);
+  assert.equal(extensionFor("image/svg+xml", CHAT_TYPES), null);
+  assert.equal(extensionFor("application/javascript", CHAT_TYPES), null);
+  assert.equal(extensionFor("application/x-msdownload", CHAT_TYPES), null);
+  assert.ok(!DOCUMENT_EXTENSIONS.has(".html"));
+});

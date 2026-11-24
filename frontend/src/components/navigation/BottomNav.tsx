@@ -11,11 +11,11 @@
  * screen only has to leave room on the correct edge - useNavInset() gives
  * it that padding without each screen inventing its own number.
  *
- * The active tab has a small indicator that slides from one tab to the next
- * (a spring), instead of jumping. Each tab reports where it sits, and the
- * indicator moves to the active one.
+ * The chosen tab has a soft pill behind its icon that opens out, and the
+ * icon lifts a little. Each tab animates itself, so only the tab that
+ * changes moves.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Animated, View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -46,12 +46,6 @@ const DESTINATIONS = [
   { icon: "person-outline", activeIcon: "person", label: "Profile", screen: "profile" },
 ] as const;
 
-/** The sliding indicator: a short line on the bar's top edge, or on the rail's left edge. */
-const BAR_INDICATOR = { width: 30, height: 3 };
-const RAIL_INDICATOR = { width: 3, height: 26 };
-
-type Box = { x: number; y: number; width: number; height: number };
-
 function NavItem({
   icon,
   activeIcon,
@@ -60,8 +54,8 @@ function NavItem({
   isWide,
   activeColor,
   inactiveColor,
+  pillColor,
   onPress,
-  onBox,
 }: {
   icon: string;
   activeIcon: string;
@@ -70,16 +64,30 @@ function NavItem({
   isWide: boolean;
   activeColor: string;
   inactiveColor: string;
+  pillColor: string;
   onPress: () => void;
-  onBox: (box: Box) => void;
 }) {
+  // 0 = not chosen, 1 = chosen. Springs between them, so a tap eases in.
+  const chosen = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.spring(chosen, {
+      toValue: isActive ? 1 : 0,
+      useNativeDriver: true,
+      friction: 7,
+      tension: 140,
+    }).start();
+  }, [isActive, chosen]);
+
+  const pillScale = chosen.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
+  const pillOpacity = chosen.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0.6, 1] });
+  const lift = chosen.interpolate({ inputRange: [0, 1], outputRange: [0, -3] });
+
   return (
     <TouchableOpacity
       accessibilityRole="tab"
       accessibilityState={{ selected: isActive }}
       accessibilityLabel={label}
       onPress={onPress}
-      onLayout={(event) => onBox(event.nativeEvent.layout)}
       style={[
         { alignItems: "center", justifyContent: "center" },
         // In a bar the items share the width. In a rail they are a
@@ -87,11 +95,23 @@ function NavItem({
         isWide ? styles.railItem : { flex: 1 },
       ]}
     >
-      <Ionicons name={(isActive ? activeIcon : icon) as any} size={24} color={isActive ? activeColor : inactiveColor} />
+      <View style={styles.iconBox}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.pill, { backgroundColor: pillColor, opacity: pillOpacity, transform: [{ scale: pillScale }] }]}
+        />
+        <Animated.View style={{ transform: [{ translateY: lift }] }}>
+          <Ionicons
+            name={(isActive ? activeIcon : icon) as any}
+            size={24}
+            color={isActive ? activeColor : inactiveColor}
+          />
+        </Animated.View>
+      </View>
       <Text
         style={{
           fontSize: isWide ? 11 : 10,
-          marginTop: 4,
+          marginTop: 3,
           color: isActive ? activeColor : inactiveColor,
           fontWeight: isActive ? "600" : "400",
         }}
@@ -116,35 +136,7 @@ export function BottomNav({
 
   const activeColor = light ? "#FFFFFF" : "#151719";
   const inactiveColor = light ? "rgba(255,255,255,0.6)" : "#9AA4AF";
-
-  // Where each tab sits inside the bar or rail, reported by the tabs themselves.
-  const boxes = useRef<Record<string, Box>>({});
-  const [layoutVersion, setLayoutVersion] = useState(0);
-  const onBox = useCallback((screen: string, box: Box) => {
-    const known = boxes.current[screen];
-    if (known && known.x === box.x && known.y === box.y && known.width === box.width && known.height === box.height) return;
-    boxes.current[screen] = box;
-    setLayoutVersion((version) => version + 1);
-  }, []);
-
-  const along = useRef(new Animated.Value(0)).current;
-  const placed = useRef(false);
-  const activeIndex = DESTINATIONS.findIndex((destination) => destination.screen === active);
-
-  useEffect(() => {
-    const box = boxes.current[active];
-    if (!box) return;
-    // Bar: centred under the tab, along the x axis. Rail: centred beside the tab, along y.
-    const target = isWide
-      ? box.y + box.height / 2 - RAIL_INDICATOR.height / 2
-      : box.x + box.width / 2 - BAR_INDICATOR.width / 2;
-    if (!placed.current) {
-      placed.current = true;
-      along.setValue(target);
-      return;
-    }
-    Animated.spring(along, { toValue: target, useNativeDriver: true, bounciness: 6, speed: 18 }).start();
-  }, [active, isWide, layoutVersion, along]);
+  const pillColor = light ? "rgba(255,255,255,0.2)" : "rgba(31,77,122,0.14)";
 
   return (
     <View
@@ -158,14 +150,6 @@ export function BottomNav({
             : { backgroundColor: "rgba(0,0,0,0.5)", borderTopColor: "transparent" }),
       ]}
     >
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          isWide ? styles.railIndicator : styles.barIndicator,
-          { backgroundColor: activeColor, opacity: activeIndex >= 0 ? 1 : 0 },
-          { transform: [isWide ? { translateY: along } : { translateX: along }] },
-        ]}
-      />
       {DESTINATIONS.map((destination) => (
         <NavItem
           key={destination.screen}
@@ -176,8 +160,8 @@ export function BottomNav({
           isWide={isWide}
           activeColor={activeColor}
           inactiveColor={inactiveColor}
+          pillColor={pillColor}
           onPress={() => navigate(destination.screen)}
-          onBox={(box) => onBox(destination.screen, box)}
         />
       ))}
     </View>
@@ -190,7 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#D3D6DA",
-    paddingTop: 10,
+    paddingTop: 8,
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -219,23 +203,18 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   railItem: {
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 12,
   },
-  barIndicator: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: BAR_INDICATOR.width,
-    height: BAR_INDICATOR.height,
-    borderRadius: 2,
+  iconBox: {
+    width: 60,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  railIndicator: {
+  pill: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: RAIL_INDICATOR.width,
-    height: RAIL_INDICATOR.height,
-    borderRadius: 2,
+    width: 60,
+    height: 32,
+    borderRadius: 16,
   },
 });

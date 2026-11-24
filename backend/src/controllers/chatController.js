@@ -75,6 +75,14 @@ const postLocation = wrap(async (req) => {
   return chatService.shareLiveLocation(req.params.conversationId, req.user.id, location, clientActionId);
 });
 
+const putLiveLocation = wrap(async (req) => {
+  return chatService.updateLiveLocation(req.params.conversationId, req.user.id, req.params.messageId, req.body);
+});
+
+const postStopLiveLocation = wrap(async (req) => {
+  return chatService.stopLiveLocation(req.params.conversationId, req.user.id, req.params.messageId);
+});
+
 const putEditMessage = wrap(async (req) => {
   const { text } = req.body;
   if (typeof text !== 'string') throw new ApiError(400, 'text is required');
@@ -177,6 +185,8 @@ module.exports = {
   postDateCheckIn,
   postPollVote,
   postLocation,
+  putLiveLocation,
+  postStopLiveLocation,
   getPresence,
   presenceFor,
   getStreak,
