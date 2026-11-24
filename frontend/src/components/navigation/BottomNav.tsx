@@ -11,12 +11,11 @@
  * screen only has to leave room on the correct edge - useNavInset() gives
  * it that padding without each screen inventing its own number.
  *
- * The chosen tab has a soft pill behind its icon that opens out, and the
- * icon lifts a little. Each tab animates itself, so only the tab that
- * changes moves.
+ * A chosen tab's icon bounces and a ring spreads out from it. Each tab
+ * animates itself, so only the tab that changes moves.
  */
 import { useEffect, useRef } from "react";
-import { Animated, View, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { Animated, Easing, View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -54,7 +53,7 @@ function NavItem({
   isWide,
   activeColor,
   inactiveColor,
-  pillColor,
+  ringColor,
   onPress,
 }: {
   icon: string;
@@ -64,23 +63,25 @@ function NavItem({
   isWide: boolean;
   activeColor: string;
   inactiveColor: string;
-  pillColor: string;
+  ringColor: string;
   onPress: () => void;
 }) {
-  // 0 = not chosen, 1 = chosen. Springs between them, so a tap eases in.
-  const chosen = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+  // When a tab is chosen, its icon bounces and a ring spreads out from it.
+  const pop = useRef(new Animated.Value(1)).current;
+  const ring = useRef(new Animated.Value(1)).current;
+  const wasActive = useRef(isActive);
   useEffect(() => {
-    Animated.spring(chosen, {
-      toValue: isActive ? 1 : 0,
-      useNativeDriver: true,
-      friction: 7,
-      tension: 140,
-    }).start();
-  }, [isActive, chosen]);
+    if (isActive && !wasActive.current) {
+      pop.setValue(0.72);
+      Animated.spring(pop, { toValue: 1, useNativeDriver: true, friction: 4, tension: 210 }).start();
+      ring.setValue(0);
+      Animated.timing(ring, { toValue: 1, duration: 560, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    }
+    wasActive.current = isActive;
+  }, [isActive, pop, ring]);
 
-  const pillScale = chosen.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
-  const pillOpacity = chosen.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0.6, 1] });
-  const lift = chosen.interpolate({ inputRange: [0, 1], outputRange: [0, -3] });
+  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.7] });
+  const ringOpacity = ring.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.85, 0] });
 
   return (
     <TouchableOpacity
@@ -98,9 +99,9 @@ function NavItem({
       <View style={styles.iconBox}>
         <Animated.View
           pointerEvents="none"
-          style={[styles.pill, { backgroundColor: pillColor, opacity: pillOpacity, transform: [{ scale: pillScale }] }]}
+          style={[styles.ring, { borderColor: ringColor, opacity: ringOpacity, transform: [{ scale: ringScale }] }]}
         />
-        <Animated.View style={{ transform: [{ translateY: lift }] }}>
+        <Animated.View style={{ transform: [{ scale: pop }] }}>
           <Ionicons
             name={(isActive ? activeIcon : icon) as any}
             size={24}
@@ -136,7 +137,7 @@ export function BottomNav({
 
   const activeColor = light ? "#FFFFFF" : "#151719";
   const inactiveColor = light ? "rgba(255,255,255,0.6)" : "#9AA4AF";
-  const pillColor = light ? "rgba(255,255,255,0.2)" : "rgba(31,77,122,0.14)";
+  const ringColor = light ? "rgba(255,255,255,0.85)" : "#1F4D7A";
 
   return (
     <View
@@ -160,7 +161,7 @@ export function BottomNav({
           isWide={isWide}
           activeColor={activeColor}
           inactiveColor={inactiveColor}
-          pillColor={pillColor}
+          ringColor={ringColor}
           onPress={() => navigate(destination.screen)}
         />
       ))}
@@ -206,15 +207,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   iconBox: {
-    width: 60,
-    height: 32,
+    width: 44,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
-  pill: {
+  ring: {
     position: "absolute",
-    width: 60,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
   },
 });

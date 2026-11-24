@@ -29,6 +29,13 @@ export default ({config}: ConfigContext): ExpoConfig => {
   const plugins = [
     ...(config.plugins ?? []),
     ['expo-dev-client', {addGeneratedScheme: variant === 'development'}],
+    // Saving a chat photo or video to the phone's gallery, and sharing a document.
+    ['expo-media-library', {
+      photosPermission: 'Apnajoda saves photos and videos you choose to download from a chat to your gallery.',
+      savePhotosPermission: 'Apnajoda saves photos and videos you download from a chat to your gallery.',
+      isAccessMediaLocationEnabled: false,
+    }],
+    'expo-sharing',
   ] as ExpoConfig['plugins'];
   const eas = easProjectId ? {projectId: easProjectId} : undefined;
   // Firebase's file for Android notifications. On EAS it comes from the file

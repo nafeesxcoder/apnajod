@@ -36,6 +36,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChatBackdrop } from "./ChatBackdrop";
+import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
 import { mimeTypeFor } from "../../api/chatApi";
 import { BACKGROUND_CHOICES } from "./chatBackgrounds";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -1952,7 +1953,6 @@ export function ChatScreen({
         build: (uri) => ({
           type: "document",
           uri,
-          text: isVideo ? "Video" : "Document",
           document: {
             name,
             size: asset.size,
@@ -4236,7 +4236,13 @@ function ChatBubble({
           )}
           {message.type === "document" && message.document && (
             <View>
-              <DocumentChatCard document={message.document} mine={mine} uri={message.uri} />
+              <DocumentChatCard
+              messageId={message.id}
+              document={message.document}
+              mine={mine}
+              uri={message.uri}
+              onOpenImage={onOpenImage}
+            />
               {!!message.uploading && (
                 <UploadProgressOverlay messageId={message.id} compact />
               )}
@@ -5032,114 +5038,200 @@ function UploadProgressOverlay({
   );
 }
 
+/**
+ * A file in a chat, the way WhatsApp shows one. A photo is shown as a picture:
+ * tap it to open it, and a received photo is saved to the gallery on its own.
+ * Any other file is a row: tap to download, then tap again to open it.
+ */
 function DocumentChatCard({
+  messageId,
   document,
   mine,
   uri,
+  onOpenImage,
 }: {
+  messageId: string;
   document: NonNullable<ChatMessage["document"]>;
   mine: boolean;
   uri?: string;
+  onOpenImage?: (uri: string) => void;
 }) {
-  const extension =
-    document.name.split(".").pop()?.slice(0, 5).toUpperCase() ||
-    (document.kind === "video" ? "VIDEO" : "FILE");
+  const image = !!document.mimeType?.startsWith("image/");
+  const kind: "image" | "video" | "file" = image ? "image" : document.kind === "video" ? "video" : "file";
+  const extension = document.name.split(".").pop()?.slice(0, 4).toUpperCase() || "FILE";
+  const [saved, setSaved] = useState<SavedFile | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState("");
+  const working = useRef(false);
+
+  useEffect(() => {
+    let live = true;
+    void readSaved(messageId).then((entry) => {
+      if (live) setSaved(entry);
+    });
+    return () => {
+      live = false;
+    };
+  }, [messageId]);
+
+  const download = async () => {
+    if (!uri || working.current) return;
+    working.current = true;
+    setBusy(true);
+    setFailed("");
+    try {
+      setSaved(await saveFile(messageId, uri, document.name, kind));
+    } catch (error) {
+      setFailed(error instanceof Error ? error.message : "Could not download this file.");
+    } finally {
+      working.current = false;
+      setBusy(false);
+    }
+  };
+
+  // A photo someone sent is saved to the gallery first, so it is there to open (phone only).
+  useEffect(() => {
+    if (mine || !image || !uri || Platform.OS === "web") return;
+    void readSaved(messageId).then((entry) => {
+      if (!entry) void download();
+    });
+    // Once per photo: the saved check above is what stops a second download.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messageId]);
+
+  const open = () => {
+    if (image) {
+      onOpenImage?.(saved?.localUri || uri || "");
+      return;
+    }
+    if (saved) {
+      void openSaved(saved).then((ok) => {
+        if (!ok) setSaved(null);
+      });
+      return;
+    }
+    void download();
+  };
+
+  if (image) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open photo"
+        onPress={open}
+        style={{ width: 230, height: 230, borderRadius: 16, overflow: "hidden", backgroundColor: "#E9E4E1" }}
+      >
+        {!!(saved?.localUri || uri) && (
+          <Image source={{ uri: saved?.localUri || uri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+        )}
+        {!saved && !busy && Platform.OS !== "web" && (
+          <View style={docStyles.badge}>
+            <Ionicons name="arrow-down" size={18} color="#FFFFFF" />
+          </View>
+        )}
+        {busy && (
+          <View style={docStyles.badge}>
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          </View>
+        )}
+        {!!failed && <Text style={docStyles.failed}>{failed}</Text>}
+      </Pressable>
+    );
+  }
+
+  const tone = mine ? "#FFFFFF" : "#14202E";
+  const muted = mine ? "rgba(255,255,255,0.78)" : "#5A6878";
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open ${document.name}`}
-      onPress={() => {
-        if (uri) void downloadMedia(uri, document.name);
-      }}
-      style={chatStyles.documentCardWrap}
+      accessibilityLabel={saved ? `Open ${document.name}` : `Download ${document.name}`}
+      onPress={open}
+      style={[docStyles.row, mine ? docStyles.rowMine : docStyles.rowTheirs]}
     >
-      <View
-        style={[
-          chatStyles.documentCard,
-          mine ? chatStyles.documentCardMine : chatStyles.documentCardTheirs,
-        ]}
-      >
-        <View
-          style={[chatStyles.documentIcon, mine && chatStyles.documentIconMine]}
-        >
-          <Ionicons
-            name={document.kind === "video" ? "play" : "document-text"}
-            size={22}
-            color={mine ? "#FFFFFF" : "#174069"}
-          />
-          <Text
-            style={[
-              chatStyles.documentExtension,
-              mine && chatStyles.documentExtensionMine,
-            ]}
-          >
-            {extension}
-          </Text>
-        </View>
-        <View style={chatStyles.documentCopy}>
-          <Text
-            numberOfLines={2}
-            style={[
-              chatStyles.documentName,
-              mine && chatStyles.documentNameMine,
-            ]}
-          >
-            {document.name}
-          </Text>
-          <View style={chatStyles.documentMetaRow}>
-            <Text
-              style={[
-                chatStyles.documentFine,
-                mine && chatStyles.documentFineMine,
-              ]}
-            >
-              {formatChatFileSize(document.size)}
-            </Text>
-            <View
-              style={[
-                chatStyles.documentMetaDot,
-                mine && chatStyles.documentMetaDotMine,
-              ]}
-            />
-            <Text
-              numberOfLines={1}
-              style={[
-                chatStyles.documentFine,
-                mine && chatStyles.documentFineMine,
-              ]}
-            >
-              {document.kind === "video" ? "Video" : "Document"}
-            </Text>
-          </View>
-          <View style={chatStyles.secureFileRow}>
-            <Ionicons
-              name="shield-checkmark"
-              size={11}
-              color={mine ? "#CE7788" : "#751D2F"}
-            />
-            <Text
-              style={[
-                chatStyles.secureFileText,
-                mine && chatStyles.secureFileTextMine,
-              ]}
-            >
-              Shared securely
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[chatStyles.documentOpen, mine && chatStyles.documentOpenMine]}
-        >
-          <Ionicons
-            name={document.kind === "video" ? "play" : "open-outline"}
-            size={17}
-            color={mine ? "#FFFFFF" : "#163D65"}
-          />
-        </View>
+      <View style={[docStyles.tile, mine && docStyles.tileMine]}>
+        <Text style={[docStyles.tileText, { color: mine ? "#1F4D7A" : "#FFFFFF" }]} numberOfLines={1}>
+          {extension}
+        </Text>
       </View>
+      <View style={docStyles.info}>
+        <Text numberOfLines={1} style={[docStyles.name, { color: tone }]}>
+          {document.name}
+        </Text>
+        <Text numberOfLines={1} style={[docStyles.meta, { color: muted }]}>
+          {[extension, formatChatFileSize(document.size), failed].filter(Boolean).join(" · ")}
+        </Text>
+      </View>
+      {busy ? (
+        <ActivityIndicator color={tone} />
+      ) : (
+        <Ionicons name={saved ? "open-outline" : "arrow-down-circle-outline"} size={28} color={tone} />
+      )}
     </Pressable>
   );
 }
+
+const docStyles = StyleSheet.create({
+  badge: {
+    position: "absolute",
+    right: 10,
+    bottom: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(20,32,46,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  failed: {
+    position: "absolute",
+    left: 10,
+    bottom: 10,
+    right: 60,
+    color: "#FFFFFF",
+    fontSize: 12,
+    backgroundColor: "rgba(20,32,46,0.6)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    width: 250,
+    paddingVertical: 4,
+  },
+  rowMine: {},
+  rowTheirs: {},
+  tile: {
+    width: 46,
+    height: 54,
+    borderRadius: 8,
+    backgroundColor: "#1F4D7A",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  tileMine: {
+    backgroundColor: "#FFFFFF",
+  },
+  tileText: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  info: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  name: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  meta: {
+    fontSize: 12,
+  },
+});
 
 function datePlanStatusLabel(status: DatePlanStatus) {
   return dateLifecycleCopy(status).label;
@@ -7129,11 +7221,15 @@ function MessageActionSheet({
             label: "Download",
             body: "Save to your phone",
             icon: "download-outline" as const,
-            onPress: () =>
-              void downloadMedia(
-                message.uri as string,
-                message.type === "document" ? message.document?.name ?? "document" : `apnajoda-${Date.now()}`,
-              ),
+            onPress: () => {
+              // Same save as the file card: a photo or video also goes to the gallery.
+              const name = message.type === "document" ? message.document?.name ?? "document" : `apnajoda-${Date.now()}`;
+              const kind = message.type === "document"
+                ? message.document?.mimeType?.startsWith("image/") ? "image"
+                : message.document?.kind === "video" ? "video" : "file"
+                : "image";
+              void saveFile(message.id, message.uri as string, name, kind).catch(() => downloadMedia(message.uri as string, name));
+            },
           },
         ]
       : []),
