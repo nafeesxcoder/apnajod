@@ -138,6 +138,8 @@ export function SplashScreen() {
           <Text style={styles.tagline}>Find Your Perfect Match</Text>
         </Animated.View>
       </View>
+
+      <Text style={styles.credit}>Powered by Unique Web Layer</Text>
     </SafeAreaView>
   );
 }
@@ -177,6 +179,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     letterSpacing: 1.2,
+    color: MUTED,
+    textAlign: "center",
+  },
+  // Sits under the preloader at the foot of the screen. SafeAreaView already
+  // keeps it clear of the home indicator, so only a small gap is needed here.
+  credit: {
+    paddingBottom: 18,
+    fontSize: 12,
+    letterSpacing: 0.4,
     color: MUTED,
     textAlign: "center",
   },
