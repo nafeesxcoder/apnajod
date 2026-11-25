@@ -30,6 +30,8 @@ export function RTCVideoView({
   muted?: boolean;
   volume?: number;
   sinkId?: string;
+  // Only the phone app layers its views (callMedia.native.tsx); the browser ignores it.
+  zOrder?: 0 | 1 | 2;
 }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   useEffect(() => {

@@ -1,10 +1,21 @@
 import { startRingback } from "./ringback";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Image,
+  PanResponder,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
 import { Modal } from "../../components/BackModal";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Match } from "../../data";
 import { chatStyles, callStyles } from "../../theme/appStyles";
@@ -86,6 +97,136 @@ function CircleButton({
         color={danger ? "#FDFDFD" : active ? "#D49AA6" : "#FDFDFD"}
       />
     </Pressable>
+  );
+}
+
+// Where the minimised call pill was last dropped, kept outside the component so
+// it stays there across minimise and return. -1 means it was never moved, so it
+// sits at the top right.
+const pillSpot = { x: -1, y: -1 };
+const PILL_GAP = 8;
+const PILL_RIGHT = 14;
+
+/**
+ * The call while it runs in the background: a small pill the person can drag
+ * anywhere on the screen. Let go and it settles against the nearer side. A tap
+ * still goes back to the call, and its end button still ends it.
+ */
+function MinimizedCallPill({
+  name,
+  stateLabel,
+  onReturn,
+  onEnd,
+}: {
+  name: string;
+  stateLabel: string;
+  onReturn: () => void;
+  onEnd: () => void;
+}) {
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const anchorTop = Platform.OS === "web" ? 14 : 50;
+  // The measured size and the screen, read by the drag handlers (set up once).
+  const size = useRef({ w: 0, h: 0 }).current;
+  const screen = useRef({ screenW, screenH, insets });
+  screen.current = { screenW, screenH, insets };
+  // Starts off screen until the first layout places it.
+  const pos = useRef(new Animated.ValueXY({ x: -9999, y: anchorTop })).current;
+  const at = useRef({ x: -9999, y: anchorTop });
+  const dragStart = useRef({ x: 0, y: 0 });
+  const placed = useRef(false);
+
+  const place = (x: number, y: number) => {
+    at.current = { x, y };
+    pos.setValue({ x, y });
+  };
+  const limits = () => {
+    const { screenW: sw, screenH: sh, insets: ins } = screen.current;
+    const minX = PILL_GAP + ins.left;
+    const minY = PILL_GAP + ins.top;
+    return {
+      minX,
+      maxX: Math.max(minX, sw - size.w - PILL_GAP - ins.right),
+      minY,
+      maxY: Math.max(minY, sh - size.h - PILL_GAP - ins.bottom),
+    };
+  };
+  const settle = (x: number, y: number) => {
+    const b = limits();
+    const cx = Math.min(Math.max(x, b.minX), b.maxX);
+    const cy = Math.min(Math.max(y, b.minY), b.maxY);
+    // Let go, and it rests against the nearer side of the screen.
+    const sx = cx + size.w / 2 < screen.current.screenW / 2 ? b.minX : b.maxX;
+    pillSpot.x = sx;
+    pillSpot.y = cy;
+    at.current = { x: sx, y: cy };
+    Animated.spring(pos, {
+      toValue: { x: sx, y: cy },
+      useNativeDriver: false,
+      friction: 9,
+      tension: 90,
+    }).start();
+  };
+  const drag = useRef(
+    PanResponder.create({
+      // A small move starts a drag; a plain tap stays a tap for the buttons.
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6,
+      onPanResponderGrant: () => {
+        pos.stopAnimation();
+        dragStart.current = { ...at.current };
+      },
+      onPanResponderMove: (_, g) =>
+        place(dragStart.current.x + g.dx, dragStart.current.y + g.dy),
+      onPanResponderRelease: (_, g) =>
+        settle(dragStart.current.x + g.dx, dragStart.current.y + g.dy),
+      onPanResponderTerminate: (_, g) =>
+        settle(dragStart.current.x + g.dx, dragStart.current.y + g.dy),
+    }),
+  ).current;
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    size.w = event.nativeEvent.layout.width;
+    size.h = event.nativeEvent.layout.height;
+    if (placed.current) return;
+    placed.current = true;
+    const b = limits();
+    const x =
+      pillSpot.x >= 0 ? pillSpot.x : screen.current.screenW - PILL_RIGHT - size.w;
+    const y = pillSpot.y >= 0 ? pillSpot.y : anchorTop;
+    place(
+      Math.min(Math.max(x, b.minX), b.maxX),
+      Math.min(Math.max(y, b.minY), b.maxY),
+    );
+  };
+
+  return (
+    <Animated.View
+      {...drag.panHandlers}
+      onLayout={onLayout}
+      style={[callStyles.minimizedCallPill, { left: pos.x, top: pos.y }]}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Return to call with ${name}`}
+        onPress={onReturn}
+        style={{ flexDirection: "row", alignItems: "center", gap: 7, flexShrink: 1 }}
+      >
+        <Ionicons name="call" size={14} color="#285F4D" />
+        <Text style={callStyles.minimizedCallText} numberOfLines={1}>
+          {name} · {stateLabel}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="End call"
+          hitSlop={8}
+          onPress={onEnd}
+          style={callStyles.minimizedCallEnd}
+        >
+          <Ionicons name="close" size={14} color="#141618" />
+        </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -421,26 +562,12 @@ export function CallModal({
         />
       )}
       {minimized && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Return to call with ${match.name}`}
-          onPress={() => setMinimized(false)}
-          style={callStyles.minimizedCallPill}
-        >
-          <Ionicons name="call" size={14} color="#FFFFFF" />
-          <Text style={callStyles.minimizedCallText} numberOfLines={1}>
-            {match.name} · {stateLabel}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="End call"
-            hitSlop={8}
-            onPress={() => engine.hangUp("hangup")}
-            style={callStyles.minimizedCallEnd}
-          >
-            <Ionicons name="close" size={14} color="#FFFFFF" />
-          </Pressable>
-        </Pressable>
+        <MinimizedCallPill
+          name={match.name}
+          stateLabel={stateLabel}
+          onReturn={() => setMinimized(false)}
+          onEnd={() => engine.hangUp("hangup")}
+        />
       )}
       {!minimized && (
       <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -630,6 +757,7 @@ export function CallModal({
                   mirrored={pipIsSelf}
                   muted={pipIsSelf}
                   volume={pipIsSelf ? undefined : remoteVolume}
+                  zOrder={1}
                 />
               ) : (
                 <Ionicons name="person" size={28} color="#FDFDFD" />

@@ -227,6 +227,41 @@ export function ProfileSetupScreen({
   return (
     <AppCanvas>
       <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase }}>
+        {/* Save from the top, as on Instagram: the button at the bottom is easy
+            to miss, and leaving the screen before it throws the edits away. */}
+        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4, backgroundColor: palette.paperBase }}>
+          <View
+            style={{
+              width: "100%",
+              maxWidth: MAX_WIDTH,
+              alignSelf: "center",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={{ fontFamily: fonts.display, fontSize: typeScale.title, color: palette.ink }}>
+              Edit profile
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Save profile"
+              onPress={handleSave}
+              disabled={photoBusy}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: palette.navy,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: photoBusy ? 0.5 : 1,
+              }}
+            >
+              <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
         <ScrollView
           contentContainerStyle={{
             paddingTop: 12,

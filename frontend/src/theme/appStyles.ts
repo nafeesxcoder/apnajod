@@ -1359,7 +1359,7 @@ export const callStyles=StyleSheet.create({
   // bar and a bottom control bar that float over it and auto-hide/tap-to-
   // reveal during a connected video call.
   fullScreenRoot:{flex:1,backgroundColor:'#FFFFFF'},
-  minimizedCallPill:{position:'absolute',top:Platform.OS==='web'?14:50,right:14,zIndex:50,flexDirection:'row',alignItems:'center',gap:7,maxWidth:230,paddingVertical:8,paddingHorizontal:12,borderRadius:22,backgroundColor:'#F1F2F3',borderWidth:1,borderColor:'#285F4D',shadowColor:'#000000',shadowOpacity:.3,shadowRadius:10,shadowOffset:{width:0,height:4}},
+  minimizedCallPill:{position:'absolute',zIndex:50,flexDirection:'row',alignItems:'center',gap:7,maxWidth:230,paddingVertical:8,paddingHorizontal:12,borderRadius:22,backgroundColor:'#F1F2F3',borderWidth:1,borderColor:'#285F4D',shadowColor:'#000000',shadowOpacity:.3,shadowRadius:10,shadowOffset:{width:0,height:4}},
   minimizedCallText:{flexShrink:1,fontFamily:'Mukta_600SemiBold',fontSize:11.5,color:'#141618'},
   minimizedCallEnd:{width:20,height:20,borderRadius:10,alignItems:'center',justifyContent:'center',backgroundColor:'rgba(255,255,255,.18)'},
   fullScreenMedia:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},
