@@ -2625,19 +2625,6 @@ export function ChatScreen({
                 <Text style={chatStyles.contextActionText}>Coach</Text>
               </Pressable>
             )}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Search messages"
-              accessibilityState={{ expanded: searchOpen }}
-              hitSlop={accessibilityHitSlop}
-              onPress={() => {
-                setSearchOpen((value) => !value);
-                setSearchQuery("");
-              }}
-              style={chatStyles.contextIcon}
-            >
-              <Ionicons name="search-outline" size={17} color={colors.muted} />
-            </Pressable>
             {chatWidth >= 410 && (
               <Pressable
                 accessibilityRole="button"
@@ -5169,10 +5156,8 @@ function DocumentChatCard({
       onPress={onOpen}
       style={docStyles.row}
     >
-      <View style={docStyles.fileIcon}>
-        <Text style={docStyles.fileIconText} numberOfLines={1}>
-          {extension}
-        </Text>
+      <View style={docStyles.pageWrap}>
+        <FilePageIcon label={extension} />
         {(busy || (!saved && Platform.OS !== "web")) && (
           <View style={docStyles.fileBadge}>
             {busy ? (
@@ -5197,6 +5182,18 @@ function DocumentChatCard({
         )}
       </View>
     </Pressable>
+  );
+}
+
+/** A file's icon as WhatsApp draws it: a page with a folded corner and its type on it. */
+function FilePageIcon({ label }: { label: string }) {
+  return (
+    <View style={docStyles.page}>
+      <View style={docStyles.pageFold} />
+      <Text style={docStyles.pageLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -5294,6 +5291,31 @@ const viewerStyles = StyleSheet.create({
 });
 
 const docStyles = StyleSheet.create({
+  pageWrap: { width: 48, height: 60 },
+  page: {
+    width: 48,
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: "#5F6B73",
+    justifyContent: "flex-end",
+    paddingBottom: 9,
+    paddingHorizontal: 7,
+  },
+  pageFold: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 15,
+    height: 15,
+    borderBottomLeftRadius: 4,
+    backgroundColor: "#C9D0D5",
+  },
+  pageLabel: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
   badge: {
     position: "absolute",
     right: 10,
@@ -8757,7 +8779,8 @@ function SnapStudio({
 }) {
   const [uri, setUri] = useState("");
   const [filter, setFilter] = useState(snapFilters[0]!.name);
-  const [sticker, setSticker] = useState("💘");
+  // "" is the original photo: no sticker unless one is picked.
+  const [sticker, setSticker] = useState("");
   const [viewOnce, setViewOnce] = useState(true);
   const [error, setError] = useState("");
   const activeFilter = snapFilters.find((item) => item.name === filter);
@@ -8793,7 +8816,7 @@ function SnapStudio({
     if (!visible) return;
     setUri("");
     setFilter(snapFilters[0]!.name);
-    setSticker("💘");
+    setSticker("");
     setViewOnce(true);
     void openCamera();
     // Only when the Snap screen opens, not on every render.
@@ -8812,9 +8835,11 @@ function SnapStudio({
                 style={[StyleSheet.absoluteFill, { backgroundColor: activeFilter.color }]}
               />
             )}
-            <Text pointerEvents="none" style={snapCamera.bigSticker}>
-              {sticker}
-            </Text>
+            {!!sticker && (
+              <Text pointerEvents="none" style={snapCamera.bigSticker}>
+                {sticker}
+              </Text>
+            )}
           </>
         ) : (
           <View style={snapCamera.shutterWrap}>
@@ -8901,6 +8926,14 @@ function SnapStudio({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={snapCamera.chipRow}
             >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Original, no sticker"
+                onPress={() => setSticker("")}
+                style={[snapCamera.originalChip, sticker === "" && snapCamera.originalChipOn]}
+              >
+                <Text style={snapCamera.originalText}>Original</Text>
+              </Pressable>
               {faceEmojiOptions.map((item) => (
                 <Pressable
                   key={item}
@@ -9079,6 +9112,20 @@ const snapCamera = StyleSheet.create({
   },
   pillOn: { backgroundColor: "rgba(168,36,58,0.85)" },
   pillText: { fontFamily: "Mukta_600SemiBold", fontSize: 13, color: "#FFFFFF" },
+  originalChip: {
+    height: 46,
+    paddingHorizontal: 16,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  originalChipOn: {
+    backgroundColor: "rgba(255,255,255,0.34)",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  originalText: { fontFamily: "Mukta_700Bold", fontSize: 13, color: "#FFFFFF" },
 });
 
 function FaceEmojiStudio({
