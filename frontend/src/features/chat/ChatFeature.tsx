@@ -2538,7 +2538,11 @@ export function ChatScreen({
               alignItems: "center",
               paddingHorizontal: 16,
               paddingVertical: 12,
-              backgroundColor: palette.paperBase,
+              // With a background chosen, the header is see-through so the picture runs behind it.
+              backgroundColor:
+                settings.background && settings.background !== "classic"
+                  ? "rgba(255,255,255,0.8)"
+                  : palette.paperBase,
               borderBottomWidth: 1,
               borderBottomColor: palette.rule,
               gap: 12,
@@ -3138,7 +3142,14 @@ export function ChatScreen({
             // (useKeyboardInset): on the web KeyboardAvoidingView does
             // nothing, and on Android "height" squeezed the composer under
             // the keyboard, so you could not see what you were typing.
-            style={[chatStyles.keyboardWrap, { paddingBottom: keyboardInset }]}
+            style={[
+              chatStyles.keyboardWrap,
+              // With a background chosen, the message box area is see-through too.
+              settings.background && settings.background !== "classic"
+                ? { backgroundColor: "rgba(255,255,255,0.8)" }
+                : null,
+              { paddingBottom: keyboardInset },
+            ]}
           >
             {!!text.trim() && messageSafety.signals.length > 0 && (
               <SafetyNudge
