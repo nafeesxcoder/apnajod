@@ -23,8 +23,8 @@ function SoundBars({ size, color, playing }: { size: number; color: string; play
     const loops = bars.map((bar, i) =>
       Animated.loop(
         Animated.sequence([
-          Animated.timing(bar, { toValue: 1, duration: 260 + i * 90, easing: Easing.inOut(Easing.quad), useNativeDriver: false }),
-          Animated.timing(bar, { toValue: 0.25, duration: 260 + i * 70, easing: Easing.inOut(Easing.quad), useNativeDriver: false }),
+          Animated.timing(bar, { toValue: 1, duration: 260 + i * 90, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(bar, { toValue: 0.25, duration: 260 + i * 70, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
         ]),
       ),
     );
@@ -36,7 +36,17 @@ function SoundBars({ size, color, playing }: { size: number; color: string; play
       {bars.map((bar, i) => (
         <Animated.View
           key={i}
-          style={{ width: size * 0.2, borderRadius: size, backgroundColor: color, height: bar.interpolate({ inputRange: [0, 1], outputRange: [0, size] }) }}
+          style={{
+            width: size * 0.2,
+            height: size,
+            borderRadius: size,
+            backgroundColor: color,
+            // Grows from the bottom: scale around the middle, then move it down by the same amount.
+            transform: [
+              { scaleY: bar },
+              { translateY: bar.interpolate({ inputRange: [0, 1], outputRange: [size / 2, 0] }) },
+            ],
+          }}
         />
       ))}
     </View>

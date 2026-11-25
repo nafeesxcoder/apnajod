@@ -51,6 +51,8 @@ export function StoryViewer({
   const height = useVisibleHeight();
   const [p, setP] = useState(0);
   const [s, setS] = useState(0);
+  // Width of one progress segment, measured once it is laid out.
+  const [barWidth, setBarWidth] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [held, setHeld] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -173,7 +175,7 @@ export function StoryViewer({
       toValue: 1,
       duration: storySeconds(story) * 1000 * (1 - done.current),
       easing: Easing.linear,
-      useNativeDriver: false,
+      useNativeDriver: true,
     });
     animation.start(({ finished }) => finished && nextRef.current());
     return () => animation.stop();
@@ -331,15 +333,24 @@ export function StoryViewer({
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, paddingTop: 10, paddingHorizontal: 8, gap: 10 }}>
               <View style={{ flexDirection: "row", gap: 4 }}>
                 {stories.map((item, index) => (
-                  <View key={item.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.35)", overflow: "hidden" }}>
+                  <View
+                    key={item.id}
+                    onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
+                    style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.35)", overflow: "hidden" }}
+                  >
                     {index < s ? (
                       <View style={{ flex: 1, backgroundColor: "#FFFFFF" }} />
                     ) : index === s ? (
+                      // The fill slides in from the left on the phone's own thread, so it never stutters.
                       <Animated.View
                         style={{
-                          height: 3,
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
                           backgroundColor: "#FFFFFF",
-                          width: progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
+                          transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-barWidth, 0] }) }],
                         }}
                       />
                     ) : null}

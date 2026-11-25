@@ -1203,12 +1203,14 @@ function PersonRow({
   return (
     <View
       style={{
-        ...whiteCard,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        paddingVertical: 12,
-        paddingHorizontal: 12,
+        gap: 12,
+        minHeight: 72,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: palette.ruleSoft,
       }}
     >
       <PressScale
@@ -1255,8 +1257,8 @@ function PersonRow({
           <Text
             numberOfLines={1}
             style={{
-              fontFamily: fonts.display,
-              fontSize: typeScale.section,
+              fontFamily: fonts.bodySemi,
+              fontSize: 16,
               color: palette.ink,
             }}
           >
@@ -1285,9 +1287,9 @@ function PersonRow({
             minHeight: 44,
             flexDirection: "row",
             gap: 6,
-            paddingHorizontal: 14,
+            paddingHorizontal: 16,
             borderRadius: radius.pill,
-            backgroundColor: settled ? palette.paper : palette.crimson,
+            backgroundColor: settled ? "transparent" : palette.crimson,
             borderWidth: settled ? 1 : 0,
             borderColor: palette.rule,
             alignItems: "center",
