@@ -14,8 +14,7 @@
  * A chosen tab's icon bounces and a ring spreads out from it. Each tab
  * animates itself, so only the tab that changes moves.
  */
-import { useEffect, useRef } from "react";
-import { Animated, Easing, View, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -53,7 +52,6 @@ function NavItem({
   isWide,
   activeColor,
   inactiveColor,
-  ringColor,
   onPress,
 }: {
   icon: string;
@@ -63,26 +61,8 @@ function NavItem({
   isWide: boolean;
   activeColor: string;
   inactiveColor: string;
-  ringColor: string;
   onPress: () => void;
 }) {
-  // When a tab is chosen, its icon bounces and a ring spreads out from it.
-  const pop = useRef(new Animated.Value(1)).current;
-  const ring = useRef(new Animated.Value(1)).current;
-  const wasActive = useRef(isActive);
-  useEffect(() => {
-    if (isActive && !wasActive.current) {
-      pop.setValue(0.72);
-      Animated.spring(pop, { toValue: 1, useNativeDriver: true, friction: 4, tension: 210 }).start();
-      ring.setValue(0);
-      Animated.timing(ring, { toValue: 1, duration: 560, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-    }
-    wasActive.current = isActive;
-  }, [isActive, pop, ring]);
-
-  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.7] });
-  const ringOpacity = ring.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.85, 0] });
-
   return (
     <TouchableOpacity
       accessibilityRole="tab"
@@ -97,17 +77,11 @@ function NavItem({
       ]}
     >
       <View style={styles.iconBox}>
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.ring, { borderColor: ringColor, opacity: ringOpacity, transform: [{ scale: ringScale }] }]}
+        <Ionicons
+          name={(isActive ? activeIcon : icon) as any}
+          size={24}
+          color={isActive ? activeColor : inactiveColor}
         />
-        <Animated.View style={{ transform: [{ scale: pop }] }}>
-          <Ionicons
-            name={(isActive ? activeIcon : icon) as any}
-            size={24}
-            color={isActive ? activeColor : inactiveColor}
-          />
-        </Animated.View>
       </View>
       <Text
         style={{
@@ -137,7 +111,6 @@ export function BottomNav({
 
   const activeColor = light ? "#FFFFFF" : "#151719";
   const inactiveColor = light ? "rgba(255,255,255,0.6)" : "#9AA4AF";
-  const ringColor = light ? "rgba(255,255,255,0.85)" : "#1F4D7A";
 
   return (
     <View
@@ -161,7 +134,6 @@ export function BottomNav({
           isWide={isWide}
           activeColor={activeColor}
           inactiveColor={inactiveColor}
-          ringColor={ringColor}
           onPress={() => navigate(destination.screen)}
         />
       ))}
@@ -211,12 +183,5 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
-  },
-  ring: {
-    position: "absolute",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
   },
 });

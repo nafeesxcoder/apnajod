@@ -45,49 +45,18 @@ export function useReducedMotion(): boolean {
 }
 
 /**
- * Fades a card up into place when it first appears. Give each card on a
- * screen a growing `delay` (0, 80, 160...) and they arrive one after
- * another.
+ * Cards just appear. (The slide-and-fade on first show was jerky on the
+ * installed Android app, so the app keeps its motion to plain taps.)
  */
 export function Reveal({
   children,
-  delay = 0,
   style,
 }: {
   children: ReactNode;
   delay?: number;
   style?: StyleProp<ViewStyle>;
 }) {
-  const reduced = useReducedMotion();
-  const progress = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (reduced) {
-      progress.setValue(1);
-      return;
-    }
-    const run = Animated.timing(progress, {
-      toValue: 1,
-      duration: 480,
-      delay,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: nativeDriver,
-    });
-    run.start();
-    return () => run.stop();
-  }, [reduced, delay, progress]);
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity: progress,
-          transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
-  );
+  return <View style={style}>{children}</View>;
 }
 
 /**
@@ -111,7 +80,7 @@ export function PressScale({
   const reduced = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const to = (value: number) =>
-    Animated.spring(scale, { toValue: value, useNativeDriver: nativeDriver, speed: 40, bounciness: 6 }).start();
+    Animated.timing(scale, { toValue: value, duration: 90, useNativeDriver: nativeDriver }).start();
   return (
     <Pressable
       {...props}
