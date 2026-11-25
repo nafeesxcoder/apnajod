@@ -2718,46 +2718,6 @@ export function ChatScreen({
               </Pressable>
             </View>
           )}
-          {chatWidth >= 410 && (
-          <View style={chatStyles.contextBar}>
-            <View style={shared.spacer} />
-            {false && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Reply coach"
-                accessibilityState={{ expanded: showCoach }}
-                hitSlop={accessibilityHitSlop}
-                onPress={() => setShowCoach((value) => !value)}
-                style={[
-                  chatStyles.contextAction,
-                  showCoach && chatStyles.contextActionOn,
-                ]}
-              >
-                <Ionicons
-                  name="sparkles-outline"
-                  size={14}
-                  color={showCoach ? colors.gold : colors.muted}
-                />
-                <Text style={chatStyles.contextActionText}>Coach</Text>
-              </Pressable>
-            )}
-            {chatWidth >= 410 && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Chat settings"
-                hitSlop={accessibilityHitSlop}
-                onPress={() => setSettingsOpen(true)}
-                style={chatStyles.contextIcon}
-              >
-                <Ionicons
-                  name="settings-outline"
-                  size={17}
-                  color={colors.muted}
-                />
-              </Pressable>
-            )}
-          </View>
-          )}
           {showCoach && (
             <View style={[coachStyles.chatCoach, chatStyles.coachPanel]}>
               <ScrollView
@@ -3384,12 +3344,12 @@ export function ChatScreen({
                   {!text.trim() && (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Send a snap"
+                      accessibilityLabel="Take a photo"
                       hitSlop={accessibilityHitSlop}
                       onPress={() => {
                         setShowEmoji(false);
                         setShowAttachments(false);
-                        setSnapOpen(true);
+                        void sendCameraPhoto();
                       }}
                       style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
                     >
