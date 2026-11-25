@@ -2225,12 +2225,121 @@ export function ChatScreen({
     previewMessages.find((message) => message.id === selectedMessageId) ?? null;
   // The "more" sheet opens from the top bar; it is shut whenever the selection goes.
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [deleteMenuOpen, setDeleteMenuOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   useEffect(() => {
-    if (!selectedMessageId) setActionMenuOpen(false);
+    if (!selectedMessageId) {
+      setActionMenuOpen(false);
+      setDeleteMenuOpen(false);
+      setEmojiPickerOpen(false);
+    }
   }, [selectedMessageId]);
   const closeQuickReact = () => {
     setQuickReactFor(null);
     setSelectedMessageId(null);
+  };
+  const closeEmojiPicker = () => {
+    setEmojiPickerOpen(false);
+    setSelectedMessageId(null);
+  };
+  // "Delete for me" hides the message on this side only; the other person still has it.
+  const deleteForMe = () => {
+    const target = selectedMessage;
+    setDeleteMenuOpen(false);
+    if (!target) return;
+    setHiddenMessageIds((current) => [...new Set([...current, target.id])]);
+    setSelectedMessageId(null);
+    void onMessageState(target.id, { hidden: true });
+  };
+  // "Delete for everyone" keeps the undo window and then deletes it for both sides.
+  const deleteForEveryone = () => {
+    setDeleteMenuOpen(false);
+    requestDeleteSelected();
+  };
+  // The top bar for the selected message. It is drawn in the chat and again inside
+  // the reaction overlay, so the overlay never covers its buttons.
+  const renderSelectionBar = () => {
+    if (!selectedMessage) return null;
+    return (
+      <SafeAreaView edges={["top"]} style={selectBar.bar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear selection"
+          hitSlop={8}
+          onPress={closeQuickReact}
+          style={selectBar.button}
+        >
+          <Ionicons name="arrow-back" size={22} color="#1F2A36" />
+        </Pressable>
+        <Text style={selectBar.count}>1</Text>
+        <View style={selectBar.spacer} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reply"
+          hitSlop={8}
+          onPress={() => {
+            setQuickReactFor(null);
+            setReplyTarget(selectedMessage);
+            setSelectedMessageId(null);
+          }}
+          style={selectBar.button}
+        >
+          <Ionicons name="arrow-undo-outline" size={22} color="#1F2A36" />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={selectedMessage.starredByMe ? "Unstar" : "Star"}
+          hitSlop={8}
+          onPress={() => {
+            setQuickReactFor(null);
+            void toggleStar(selectedMessage.id);
+          }}
+          style={selectBar.button}
+        >
+          <Ionicons
+            name={selectedMessage.starredByMe ? "star" : "star-outline"}
+            size={21}
+            color="#1F2A36"
+          />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Delete"
+          hitSlop={8}
+          onPress={() => {
+            setQuickReactFor(null);
+            setDeleteMenuOpen(true);
+          }}
+          style={selectBar.button}
+        >
+          <Ionicons name="trash-outline" size={21} color="#1F2A36" />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Forward"
+          hitSlop={8}
+          onPress={() => {
+            setQuickReactFor(null);
+            forwardSelected();
+          }}
+          style={selectBar.button}
+        >
+          <Ionicons name="arrow-redo-outline" size={22} color="#1F2A36" />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="More message actions"
+          hitSlop={8}
+          onPress={() => {
+            setQuickReactFor(null);
+            setActionMenuOpen(true);
+          }}
+          style={selectBar.button}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color="#1F2A36" />
+        </Pressable>
+      </SafeAreaView>
+    );
   };
   const selectMessage = (message: ChatMessage) => {
     if (message.deletedForEveryone) return;
@@ -2714,75 +2823,7 @@ export function ChatScreen({
               <Ionicons name="chevron-forward" size={16} color="#701B2C" />
             </Pressable>
           )}
-          {!!selectedMessage && !multiSelectMode && (
-            <SafeAreaView edges={["top"]} style={selectBar.bar}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Clear selection"
-                hitSlop={8}
-                onPress={closeQuickReact}
-                style={selectBar.button}
-              >
-                <Ionicons name="arrow-back" size={22} color="#1F2A36" />
-              </Pressable>
-              <Text style={selectBar.count}>1</Text>
-              <View style={selectBar.spacer} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Reply"
-                hitSlop={8}
-                onPress={() => {
-                  setReplyTarget(selectedMessage);
-                  setSelectedMessageId(null);
-                }}
-                style={selectBar.button}
-              >
-                <Ionicons name="arrow-undo-outline" size={22} color="#1F2A36" />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={selectedMessage.starredByMe ? "Unstar" : "Star"}
-                hitSlop={8}
-                onPress={() => void toggleStar(selectedMessage.id)}
-                style={selectBar.button}
-              >
-                <Ionicons
-                  name={selectedMessage.starredByMe ? "star" : "star-outline"}
-                  size={21}
-                  color="#1F2A36"
-                />
-              </Pressable>
-              {selectedMessage.mine !== false && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Delete"
-                  hitSlop={8}
-                  onPress={() => requestDeleteSelected()}
-                  style={selectBar.button}
-                >
-                  <Ionicons name="trash-outline" size={21} color="#1F2A36" />
-                </Pressable>
-              )}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Forward"
-                hitSlop={8}
-                onPress={() => forwardSelected()}
-                style={selectBar.button}
-              >
-                <Ionicons name="arrow-redo-outline" size={22} color="#1F2A36" />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="More message actions"
-                hitSlop={8}
-                onPress={() => setActionMenuOpen(true)}
-                style={selectBar.button}
-              >
-                <Ionicons name="ellipsis-vertical" size={20} color="#1F2A36" />
-              </Pressable>
-            </SafeAreaView>
-          )}
+          {!quickReactFor && !multiSelectMode && renderSelectionBar()}
           {multiSelectMode && (
             <View accessibilityRole="toolbar" style={chatStyles.multiSelectBar}>
               <Pressable
@@ -3461,6 +3502,7 @@ export function ChatScreen({
                     style={chatStyles.floatReactBackdrop}
                     onPress={closeQuickReact}
                   />
+                  {renderSelectionBar()}
                   <View
                     style={[
                       chatStyles.floatReactBar,
@@ -3492,7 +3534,7 @@ export function ChatScreen({
                       accessibilityRole="button"
                       accessibilityLabel="More message actions"
                       onPress={() => {
-                        setActionMenuOpen(true);
+                        setEmojiPickerOpen(true);
                         setQuickReactFor(null);
                       }}
                       style={chatStyles.floatReactMoreButton}
@@ -3503,6 +3545,85 @@ export function ChatScreen({
                 </Modal>
               );
             })()}
+          {deleteMenuOpen && !!selectedMessage && (
+            <Modal
+              visible
+              transparent
+              animationType="fade"
+              onRequestClose={() => setDeleteMenuOpen(false)}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close delete options"
+                style={chatStyles.floatReactBackdrop}
+                onPress={() => setDeleteMenuOpen(false)}
+              />
+              <View style={selectBar.deleteMenu}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete for me"
+                  onPress={deleteForMe}
+                  style={selectBar.menuItem}
+                >
+                  <Ionicons name="person-outline" size={18} color="#1F2A36" />
+                  <Text style={selectBar.menuText}>Delete for me</Text>
+                </Pressable>
+                {selectedMessage.mine !== false && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete for everyone"
+                    onPress={deleteForEveryone}
+                    style={selectBar.menuItem}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#A8243A" />
+                    <Text style={[selectBar.menuText, { color: "#A8243A" }]}>
+                      Delete for everyone
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            </Modal>
+          )}
+          {emojiPickerOpen && !!selectedMessage && (
+            <Modal
+              visible
+              transparent
+              animationType="slide"
+              onRequestClose={closeEmojiPicker}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close emoji picker"
+                style={chatStyles.floatReactBackdrop}
+                onPress={closeEmojiPicker}
+              />
+              <View style={selectBar.picker}>
+                <View style={selectBar.pickerHandle} />
+                <ScrollView>
+                  <View style={selectBar.pickerGrid}>
+                    {quickEmojis.map((item) => (
+                      <Pressable
+                        key={item}
+                        accessibilityRole="button"
+                        accessibilityLabel={`React ${item}`}
+                        onPress={() => {
+                          void reactToMessage(selectedMessage.id, item);
+                          setEmojiPickerOpen(false);
+                        }}
+                        style={[
+                          selectBar.pickerCell,
+                          selectedMessage.reactions?.me === item &&
+                            selectBar.pickerCellOn,
+                        ]}
+                      >
+                        <Text style={selectBar.pickerEmoji}>{item}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            </Modal>
+          )}
           <EditMessageSheet
             message={editTarget}
             onClose={() => setEditTarget(null)}
@@ -4313,6 +4434,7 @@ function ChatBubble({
               mine={mine}
               uri={message.uri}
               onOpen={() => onOpenMedia?.(message)}
+              onLongPress={onQuickReact}
             />
               {!!message.uploading && (
                 <UploadProgressOverlay messageId={message.id} compact />
@@ -5136,12 +5258,14 @@ function DocumentChatCard({
   document,
   mine,
   onOpen,
+  onLongPress,
 }: {
   messageId: string;
   document: NonNullable<ChatMessage["document"]>;
   mine: boolean;
   uri?: string;
   onOpen?: () => void;
+  onLongPress?: (event: GestureResponderEvent) => void;
 }) {
   const extension = extensionOf(document.name);
   const [saved, setSaved] = useState<SavedFile | null>(null);
@@ -5163,6 +5287,8 @@ function DocumentChatCard({
       accessibilityRole="button"
       accessibilityLabel={`Open ${document.name}`}
       onPress={onOpen}
+      onLongPress={onLongPress}
+      delayLongPress={280}
       style={docStyles.row}
     >
       <View style={docStyles.pageWrap}>
@@ -9056,6 +9182,58 @@ const selectBar = StyleSheet.create({
   button: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   count: { fontFamily: "Mukta_700Bold", fontSize: 18, color: "#1F2A36", marginLeft: 4 },
   spacer: { flex: 1 },
+  deleteMenu: {
+    position: "absolute",
+    top: 84,
+    right: 12,
+    minWidth: 220,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000000",
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    height: 46,
+  },
+  menuText: { fontFamily: "Mukta_600SemiBold", fontSize: 15, color: "#1F2A36" },
+  picker: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: "55%",
+    paddingTop: 10,
+    paddingBottom: 26,
+    paddingHorizontal: 12,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    backgroundColor: "#FFFFFF",
+  },
+  pickerHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D3D6DA",
+    marginBottom: 10,
+  },
+  pickerGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 6,
+  },
+  pickerCell: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  pickerCellOn: { backgroundColor: "#F1E4E7" },
+  pickerEmoji: { fontSize: 28 },
 });
 
 const snapCamera = StyleSheet.create({
