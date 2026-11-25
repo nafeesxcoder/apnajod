@@ -1,36 +1,40 @@
 /**
- * The home of the app: the member's conversations.
- *
- * There is no deck and no curation here. People arrive by being found and
- * followed, so this screen is a list of threads and a way to start one.
+ * The home of the app: the member's conversations, laid out the way the
+ * messaging apps people already use lay them out: a search bar on top, plain
+ * rows (photo, name, last message, time, unread count), and a round button to
+ * find people to start a chat with. Nothing moves on its own except when the
+ * list really changes, so scrolling stays smooth.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-import { chatApi } from '../../../api/chatApi';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   Pressable,
   RefreshControl,
-  ScrollView,
+  StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { chatApi } from '../../../api/chatApi';
 import type { ConversationSummary } from '../../../api/chatApi';
 import { parseStickerPayload } from '../../../domain/chatMediaCatalog';
 import { getChatSocket } from '../../../api/chatSocket';
 import { onChatListChanged } from '../chatListBus';
-import { archivedCount, listOrder } from "../chatListOrder";
+import { archivedCount, listOrder } from '../chatListOrder';
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
+import { useLayout } from '../../../layout/useLayout';
 import type { Screen } from '../../../app/navigation/types';
-import { social } from '../../../theme/socialStyles';
-import { colors, palette } from '../../../theme';
-import { brand, whiteCard } from '../../../components/brand';
-import { PressScale, Reveal, SpinRing } from '../../../components/motion';
+import { palette } from '../../../theme';
+
+const ROW_HEIGHT = 76;
+const AVATAR = 52;
+const MUTED = '#667781';
 
 /** "now", "4m", "3h", "2d" — enough to place a message without a clock. */
 function shortAge(ms: number) {
@@ -73,7 +77,7 @@ function previewOf(conversation: ConversationSummary) {
     case 'voice':
       return 'Voice note';
     case 'document':
-      return 'Document';
+      return message.document?.name ? `📄 ${message.document.name}` : 'Document';
     case 'location':
       return 'Location';
     case 'poll':
@@ -89,49 +93,124 @@ function previewOf(conversation: ConversationSummary) {
   }
 }
 
-/**
- * The other person spoke last and is waiting. Shown so a reply does not
- * get buried - the same signal the "your turn" push is built on.
- */
+/** The other person spoke last and is waiting for a reply. */
 function isYourTurn(conversation: ConversationSummary) {
   const message = conversation.lastMessage;
   return !!message && message.mine === false;
 }
 
-/**
- * Photo in the navy/crimson ring. The ring turns while a reply is waiting
- * (unread, or their turn), so the chats that need you stand out.
- */
-function Avatar({ name, url, waiting, online = false }: { name: string; url: string | null; waiting: boolean; online?: boolean }) {
-  const size = 54;
+/** Same chats, same order, same details: then the list is not redrawn. */
+function sameList(a: ConversationSummary[], b: ConversationSummary[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (
+      x.conversationId !== y.conversationId ||
+      x.lastAt !== y.lastAt ||
+      x.unread !== y.unread ||
+      !!x.pinned !== !!y.pinned ||
+      !!x.archived !== !!y.archived ||
+      !!x.muted !== !!y.muted ||
+      x.user.name !== y.user.name ||
+      x.user.avatarUrl !== y.user.avatarUrl ||
+      x.lastMessage?.id !== y.lastMessage?.id ||
+      x.lastMessage?.text !== y.lastMessage?.text
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function Avatar({ name, url, online, waiting }: { name: string; url: string | null; online: boolean; waiting: boolean }) {
   return (
-    <View style={{ width: size, height: size }}>
-    <SpinRing size={size} spin={waiting}>
+    <View style={[styles.avatarRing, waiting && styles.avatarRingOn]}>
       {url ? (
         <Image
           accessibilityLabel={`${name} profile photo`}
           source={{ uri: url }}
-          style={[social.avatar, { width: '100%', height: '100%' }]}
+          style={{ width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 }}
         />
       ) : (
-        <View
-          style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: palette.paperSand }}
-        >
-          <Text style={[social.avatarInitial, { fontSize: size * 0.38 }]}>
-            {(name || '?').trim().charAt(0).toUpperCase()}
-          </Text>
+        <View style={styles.initialBox}>
+          <Text style={styles.initial}>{(name || '?').trim().charAt(0).toUpperCase()}</Text>
         </View>
       )}
-    </SpinRing>
-      {online && (
-        <View
-          accessibilityLabel="Online"
-          style={{ position: 'absolute', right: 0, bottom: 0, width: 13, height: 13, borderRadius: 7, backgroundColor: palette.emerald, borderWidth: 2, borderColor: '#FFFFFF' }}
-        />
-      )}
+      {online && <View accessibilityLabel="Online" style={styles.online} />}
     </View>
   );
 }
+
+const ChatRow = function ChatRow({
+  conversation,
+  active,
+  online,
+  waiting,
+  pinned,
+  onPress,
+}: {
+  conversation: ConversationSummary;
+  active: boolean;
+  online: boolean;
+  waiting: boolean;
+  pinned: boolean;
+  onPress: () => void;
+}) {
+  const unread = conversation.unread > 0;
+  const yourTurn = unread && isYourTurn(conversation);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Chat with ${conversation.user.name}${unread ? `, ${conversation.unread} unread` : ''}`}
+      onPress={onPress}
+      android_ripple={{ color: 'rgba(31,77,122,0.08)' }}
+      style={[styles.row, active && styles.rowActive]}
+    >
+      <Avatar name={conversation.user.name} url={conversation.user.avatarUrl} online={online} waiting={waiting} />
+      <View style={styles.middle}>
+        <View style={styles.nameLine}>
+          <Text numberOfLines={1} style={[styles.name, unread && styles.nameUnread]}>
+            {conversation.user.name}
+          </Text>
+          {!!conversation.streak?.show && (
+            <Text
+              accessibilityLabel={
+                conversation.streak.atRisk
+                  ? `${conversation.streak.count} day streak, reply today to keep it`
+                  : `${conversation.streak.count} day streak`
+              }
+              style={styles.streak}
+            >
+              🔥 {conversation.streak.count}
+              {conversation.streak.atRisk ? ' ⏳' : ''}
+            </Text>
+          )}
+        </View>
+        <Text numberOfLines={1} style={[styles.preview, (unread || yourTurn) && styles.previewUnread]}>
+          {yourTurn && (
+            <Text accessibilityLabel="Your turn to reply" style={styles.yourTurn}>
+              Your turn ·{' '}
+            </Text>
+          )}
+          {previewOf(conversation)}
+        </Text>
+      </View>
+      <View style={styles.side}>
+        <Text style={[styles.time, unread && styles.timeUnread]}>{shortAge(conversation.lastAt)}</Text>
+        <View style={styles.badges}>
+          {!!conversation.muted && <Ionicons name="notifications-off" size={14} color={MUTED} accessibilityLabel="Muted" />}
+          {pinned && <Ionicons name="pin" size={14} color={palette.navy} accessibilityLabel="Pinned" />}
+          {unread && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{conversation.unread > 9 ? '9+' : conversation.unread}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Pressable>
+  );
+};
 
 export function ChatsScreen({
   onLoad,
@@ -151,10 +230,17 @@ export function ChatsScreen({
   navigate: (screen: Screen) => void;
 }) {
   const navInset = useNavInset();
+  const { isWide } = useLayout();
   const [items, setItems] = useState<ConversationSummary[] | null>(null);
+  const [query, setQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  // Archived chats sit in their own folder at the top of the list.
+  const [showArchived, setShowArchived] = useState(false);
+
   // Green dots: who is online among the shown chats, checked every 30 seconds.
   const [onlineIds, setOnlineIds] = useState<Record<string, boolean>>({});
-  const onlineKey = (items ?? []).map((c) => c.user.userId).join(",");
+  const onlineKey = (items ?? []).map((c) => c.user.userId).join(',');
   useEffect(() => {
     if (!accessToken || !onlineKey) return;
     let live = true;
@@ -170,18 +256,16 @@ export function ChatsScreen({
       clearInterval(timer);
     };
   }, [accessToken, onlineKey]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-  // Archived chats sit in their own folder at the top of the list.
-  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
     try {
-      setItems(await onLoad());
+      const next = await onLoad();
+      // Only a real change redraws the list; an unchanged poll does nothing.
+      setItems((current) => (current && sameList(current, next) ? current : next));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load your chats.');
-      setItems([]);
+      setItems((current) => current ?? []);
     }
   }, [onLoad]);
 
@@ -222,211 +306,386 @@ export function ChatsScreen({
     setRefreshing(false);
   };
 
-  // On a desktop with a conversation open, this list is not the screen -
-  // it is the column beside it, the way every desktop messenger works.
+  // The rows on screen: the chosen folder, in order, filtered by the search.
+  const rows = useMemo(() => {
+    const ordered = listOrder(items ?? [], showArchived);
+    const needle = query.trim().toLowerCase();
+    if (!needle) return ordered;
+    return ordered.filter(
+      (c) =>
+        c.user.name.toLowerCase().includes(needle) ||
+        (c.user.username ?? '').toLowerCase().includes(needle) ||
+        previewOf(c).toLowerCase().includes(needle),
+    );
+  }, [items, showArchived, query]);
+
+  // On a desktop with a conversation open, this list is the column beside it.
   const paneStyle = pane
     ? {
-        position: "absolute" as const,
+        position: 'absolute' as const,
         top: 0,
         bottom: 0,
         left: 0,
         width: RAIL_WIDTH + CHAT_LIST_WIDTH,
         borderRightWidth: 1,
-        borderRightColor: "#D3D6DA",
+        borderRightColor: palette.rule,
         zIndex: 10,
       }
     : null;
 
-  return (
-    <View style={[social.root, paneStyle]}>
-      <SafeAreaView
-        style={[social.safe, { paddingLeft: navInset.paddingLeft }]}
-      >
-        <View style={social.header}>
-          <Text style={social.headerTitle}>Chats</Text>
-          <View style={social.headerSpacer} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Find people"
-            hitSlop={10}
-            onPress={onFind}
-            style={social.back}
-          >
-            <Ionicons name="search" size={20} color={colors.text} />
-          </Pressable>
+  const archived = archivedCount(items ?? []);
+  const header = (
+    <View>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Chats</Text>
+      </View>
+      <View style={styles.searchWrap}>
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color={MUTED} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search chats"
+            placeholderTextColor={MUTED}
+            accessibilityLabel="Search chats"
+            returnKeyType="search"
+            autoCorrect={false}
+            style={styles.searchInput}
+          />
+          {!!query && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={MUTED} />
+            </Pressable>
+          )}
         </View>
-
-        {items === null ? (
-          <View style={social.center}>
-            <ActivityIndicator color={colors.accent} />
+      </View>
+      {(showArchived || archived > 0) && !query && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={showArchived ? 'Back to chats' : `Archived chats, ${archived}`}
+          onPress={() => setShowArchived((v) => !v)}
+          style={styles.folder}
+        >
+          <View style={styles.folderIcon}>
+            <Ionicons name={showArchived ? 'arrow-back' : 'archive-outline'} size={20} color={palette.navy} />
           </View>
+          <Text style={styles.folderText}>{showArchived ? 'Archived chats' : 'Archived'}</Text>
+          {!showArchived && <Text style={styles.folderCount}>{archived}</Text>}
+        </Pressable>
+      )}
+      {!!error && <Text style={styles.error}>{error}</Text>}
+    </View>
+  );
+
+  const empty =
+    items === null ? null : query ? (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>No chats match “{query.trim()}”.</Text>
+        <Pressable accessibilityRole="button" onPress={onFind} style={styles.emptyButton}>
+          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.emptyButtonText}>Find “{query.trim()}” on Apnajoda</Text>
+        </Pressable>
+      </View>
+    ) : showArchived ? (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>No archived chats.</Text>
+      </View>
+    ) : (
+      <View style={styles.empty}>
+        <Ionicons name="chatbubbles-outline" size={44} color={palette.navySoft} />
+        <Text style={styles.emptyTitle}>No chats yet</Text>
+        <Text style={styles.emptyText}>Find someone by their username and say hello.</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Find people" onPress={onFind} style={styles.emptyButton}>
+          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.emptyButtonText}>Find people</Text>
+        </Pressable>
+      </View>
+    );
+
+  return (
+    <View style={[styles.root, paneStyle]}>
+      <SafeAreaView style={[styles.safe, { paddingLeft: navInset.paddingLeft }]}>
+        {items === null ? (
+          <>
+            {header}
+            <View style={styles.loading}>
+              <ActivityIndicator color={palette.navy} />
+            </View>
+          </>
         ) : (
-          <ScrollView
+          <FlatList
+            data={rows}
+            keyExtractor={(item) => item.conversationId}
+            renderItem={({ item: conversation }) => (
+              <ChatRow
+                conversation={conversation}
+                active={conversation.conversationId === activeConversationId}
+                online={!!onlineIds[conversation.user.userId]}
+                waiting={conversation.unread > 0 || isYourTurn(conversation)}
+                pinned={!!conversation.pinned && !showArchived}
+                onPress={() => onOpenConversation(conversation)}
+              />
+            )}
+            ListHeaderComponent={header}
+            ListEmptyComponent={empty}
+            initialNumToRender={12}
+            windowSize={7}
+            maxToRenderPerBatch={10}
             onScroll={handleBottomNavScroll}
             scrollEventThrottle={16}
-            contentContainerStyle={social.listContent}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />
-            }
-          >
-            {!!error && <Text style={social.error}>{error}</Text>}
-
-            {items.length === 0 && !error ? (
-              <View style={social.emptyBlock}>
-                <Ionicons
-                  name="chatbubbles-outline"
-                  size={44}
-                  color={colors.accentSoft}
-                />
-                <Text style={social.emptyTitle}>No chats yet</Text>
-                <Text style={social.emptyText}>
-                  Find someone by their username and say hello.
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Find people"
-                  onPress={onFind}
-                  style={social.primaryButton}
-                >
-                  <Text style={social.primaryButtonText}>Find people</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <>
-              {/* Archived: tap to open the folder (or go back to your chats). */}
-              {(showArchived || archivedCount(items) > 0) && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={showArchived ? "Back to chats" : `Archived chats, ${archivedCount(items)}`}
-                  onPress={() => setShowArchived((v) => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10 }}
-                >
-                  <Ionicons name={showArchived ? 'arrow-back' : 'archive-outline'} size={20} color={colors.text} />
-                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.text }}>
-                    {showArchived ? 'Archived chats' : 'Archived'}
-                  </Text>
-                  {!showArchived && (
-                    <Text style={{ fontSize: 13, color: colors.muted }}>{archivedCount(items)}</Text>
-                  )}
-                </Pressable>
-              )}
-              {showArchived && archivedCount(items) === 0 && (
-                <Text style={[social.emptyText, { textAlign: 'center', marginTop: 12 }]}>No archived chats.</Text>
-              )}
-              {listOrder(items, showArchived).map((conversation, index) => (
-                <Reveal key={conversation.conversationId} delay={Math.min(index, 8) * 50}>
-                <PressScale
-                  scaleTo={0.985}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Chat with ${conversation.user.name}${
-                    conversation.unread ? `, ${conversation.unread} unread` : ''
-                  }`}
-                  onPress={() => onOpenConversation(conversation)}
-                  // Beside an open thread, the list has to say which one
-                  // is open. Without it both panes are visible and neither
-                  // tells you where you are.
-                  containerStyle={{ marginBottom: 10 }}
-                  style={[
-                    social.row,
-                    {
-                      ...whiteCard,
-                      borderBottomWidth: 0,
-                      paddingHorizontal: 12,
-                    },
-                    conversation.conversationId === activeConversationId && {
-                      backgroundColor: "#EEF2F6",
-                    },
-                  ]}
-                >
-                  <View style={social.rowMain}>
-                    <Avatar
-                      name={conversation.user.name}
-                      url={conversation.user.avatarUrl}
-                      waiting={conversation.unread > 0 || isYourTurn(conversation)}
-                      online={!!onlineIds[conversation.user.userId]}
-                    />
-                    <View style={social.rowText}>
-                      <View style={social.rowTitleLine}>
-                        <Text numberOfLines={1} style={social.rowTitle}>
-                          {conversation.user.name}
-                        </Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          {!!conversation.streak?.show && (
-                            <Text
-                              accessibilityLabel={
-                                conversation.streak.atRisk
-                                  ? `${conversation.streak.count} day streak, reply today to keep it`
-                                  : `${conversation.streak.count} day streak`
-                              }
-                              style={{ fontSize: 12, fontWeight: '700', color: '#C2410C' }}
-                            >
-                              🔥 {conversation.streak.count}
-                              {conversation.streak.atRisk ? ' ⏳' : ''}
-                            </Text>
-                          )}
-                          {!!conversation.muted && (
-                            <Ionicons accessibilityLabel="Muted" name="notifications-off-outline" size={13} color={colors.muted} />
-                          )}
-                          {!!conversation.pinned && !showArchived && (
-                            <View
-                              accessibilityLabel="Pinned chat"
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: 3,
-                                paddingHorizontal: 6,
-                                paddingVertical: 2,
-                                borderRadius: 8,
-                                backgroundColor: colors.accentSoft,
-                              }}
-                            >
-                              <Ionicons name="pin" size={12} color={colors.accent} />
-                              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.accent }}>Pinned</Text>
-                            </View>
-                          )}
-                          <Text style={social.rowTime}>
-                            {shortAge(conversation.lastAt)}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        {isYourTurn(conversation) && (
-                          <View
-                            accessibilityLabel="Your turn to reply"
-                            style={{
-                              backgroundColor: brand.pillBg,
-                              borderRadius: 999,
-                              paddingHorizontal: 8,
-                              paddingVertical: 1,
-                            }}
-                          >
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: brand.pillText }}>
-                              Your turn
-                            </Text>
-                          </View>
-                        )}
-                        <Text numberOfLines={1} style={[social.rowSub, { flexShrink: 1 }]}>
-                          {previewOf(conversation)}
-                        </Text>
-                      </View>
-                    </View>
-                    {conversation.unread > 0 && (
-                      <View style={social.unreadDot}>
-                        <Text style={social.unreadDotText}>
-                          {conversation.unread > 9 ? '9+' : conversation.unread}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </PressScale>
-                </Reveal>
-              ))}
-              </>
-            )}
-          </ScrollView>
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 150 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
+          />
         )}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Find people to chat with"
+          onPress={onFind}
+          style={[styles.fab, { bottom: isWide ? 28 : 100 }]}
+        >
+          <Ionicons name="add" size={30} color="#FFFFFF" />
+        </Pressable>
+
         <BottomNav active="chats" navigate={navigate} />
       </SafeAreaView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  safe: {
+    flex: 1,
+  },
+  titleRow: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: palette.ink,
+  },
+  searchWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 42,
+    paddingHorizontal: 14,
+    borderRadius: 21,
+    backgroundColor: '#F0F2F5',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: palette.ink,
+    paddingVertical: 0,
+  },
+  folder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  folderIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: palette.paperSand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.ink,
+  },
+  folderCount: {
+    fontSize: 13,
+    color: MUTED,
+  },
+  row: {
+    height: ROW_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  rowActive: {
+    backgroundColor: '#F0F2F5',
+  },
+  middle: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  nameLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  streak: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#C2410C',
+  },
+  avatarRing: {
+    width: AVATAR + 6,
+    height: AVATAR + 6,
+    borderRadius: (AVATAR + 6) / 2,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarRingOn: {
+    borderColor: palette.navy,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: palette.ink,
+  },
+  nameUnread: {
+    fontWeight: '700',
+  },
+  preview: {
+    fontSize: 14,
+    color: MUTED,
+  },
+  previewUnread: {
+    color: palette.ink,
+    fontWeight: '600',
+  },
+  yourTurn: {
+    color: palette.crimson,
+    fontWeight: '700',
+  },
+  side: {
+    alignItems: 'flex-end',
+    gap: 6,
+    minWidth: 48,
+  },
+  time: {
+    fontSize: 12,
+    color: MUTED,
+  },
+  timeUnread: {
+    color: palette.navy,
+    fontWeight: '700',
+  },
+  badges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    minHeight: 20,
+  },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: palette.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  initialBox: {
+    width: AVATAR,
+    height: AVATAR,
+    borderRadius: AVATAR / 2,
+    backgroundColor: palette.paperSand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initial: {
+    fontSize: AVATAR * 0.4,
+    fontWeight: '700',
+    color: palette.navy,
+  },
+  online: {
+    position: 'absolute',
+    right: 1,
+    bottom: 1,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: palette.emerald,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  loading: {
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  error: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    color: palette.crimson,
+    fontSize: 13,
+  },
+  empty: {
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 32,
+    paddingTop: 48,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.ink,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: MUTED,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: palette.navy,
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  fab: {
+    position: 'absolute',
+    right: 18,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: palette.crimson,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+});
