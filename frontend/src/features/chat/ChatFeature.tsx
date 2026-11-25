@@ -2603,6 +2603,7 @@ export function ChatScreen({
               </Pressable>
             </View>
           )}
+          {chatWidth >= 410 && (
           <View style={chatStyles.contextBar}>
             <View style={shared.spacer} />
             {false && (
@@ -2641,6 +2642,7 @@ export function ChatScreen({
               </Pressable>
             )}
           </View>
+          )}
           {showCoach && (
             <View style={[coachStyles.chatCoach, chatStyles.coachPanel]}>
               <ScrollView
@@ -5044,16 +5046,15 @@ function extensionOf(name: string) {
 }
 
 /**
- * A file in a chat, the way WhatsApp shows one. A photo is a picture, and a
- * received photo is saved to the gallery on its own. Any other file is a card:
- * its type on a file icon, the name, and "size • TYPE". Tapping either opens
- * it full screen, where it can be saved or forwarded.
+ * A file in a chat, the way WhatsApp shows it: a card with the file's type on
+ * a page icon, its name, and "size • TYPE". Nothing is shown inside the card
+ * itself, not even a photo sent as a document; tapping the card opens it full
+ * screen, where it can be saved or forwarded.
  */
 function DocumentChatCard({
   messageId,
   document,
   mine,
-  uri,
   onOpen,
 }: {
   messageId: string;
@@ -5062,15 +5063,8 @@ function DocumentChatCard({
   uri?: string;
   onOpen?: () => void;
 }) {
-  const image = !!document.mimeType?.startsWith("image/");
-  const kind: "image" | "video" | "file" = image ? "image" : document.kind === "video" ? "video" : "file";
   const extension = extensionOf(document.name);
   const [saved, setSaved] = useState<SavedFile | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState("");
-  // A photo keeps its own shape, as on WhatsApp (kept within a sensible range).
-  const [ratio, setRatio] = useState(1);
-  const working = useRef(false);
 
   useEffect(() => {
     let live = true;
@@ -5081,71 +5075,6 @@ function DocumentChatCard({
       live = false;
     };
   }, [messageId]);
-
-  const download = async () => {
-    if (!uri || working.current) return;
-    working.current = true;
-    setBusy(true);
-    setFailed("");
-    try {
-      setSaved(await saveFile(messageId, uri, document.name, kind));
-    } catch (error) {
-      setFailed(error instanceof Error ? error.message : "Could not download this file.");
-    } finally {
-      working.current = false;
-      setBusy(false);
-    }
-  };
-
-  // A photo someone sent is saved to the gallery first, so it is there to open (phone only).
-  useEffect(() => {
-    if (mine || !image || !uri || Platform.OS === "web") return;
-    void readSaved(messageId).then((entry) => {
-      if (!entry) void download();
-    });
-    // Once per photo: the saved check above is what stops a second download.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messageId]);
-
-  if (image) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open photo"
-        onPress={onOpen}
-        style={{
-          width: 240,
-          aspectRatio: Math.min(Math.max(ratio, 0.75), 1.5),
-          borderRadius: 14,
-          overflow: "hidden",
-          backgroundColor: "#E5E7EA",
-        }}
-      >
-        {!!(saved?.localUri || uri) && (
-          <Image
-            source={{ uri: saved?.localUri || uri }}
-            style={{ width: "100%", height: "100%" }}
-            resizeMode="cover"
-            onLoad={(event) => {
-              const size = event?.nativeEvent?.source;
-              if (size?.width && size?.height) setRatio(size.width / size.height);
-            }}
-          />
-        )}
-        {!saved && !busy && Platform.OS !== "web" && (
-          <View style={docStyles.badge}>
-            <Ionicons name="arrow-down" size={18} color="#FFFFFF" />
-          </View>
-        )}
-        {busy && (
-          <View style={docStyles.badge}>
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          </View>
-        )}
-        {!!failed && <Text style={docStyles.failed}>{failed}</Text>}
-      </Pressable>
-    );
-  }
 
   const tone = mine ? "#FFFFFF" : "#14202E";
   const muted = mine ? "rgba(255,255,255,0.78)" : "#5A6878";
@@ -5158,13 +5087,9 @@ function DocumentChatCard({
     >
       <View style={docStyles.pageWrap}>
         <FilePageIcon label={extension} />
-        {(busy || (!saved && Platform.OS !== "web")) && (
+        {!saved && Platform.OS !== "web" && (
           <View style={docStyles.fileBadge}>
-            {busy ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Ionicons name="arrow-down" size={12} color="#FFFFFF" />
-            )}
+            <Ionicons name="arrow-down" size={12} color="#FFFFFF" />
           </View>
         )}
       </View>
@@ -5175,11 +5100,6 @@ function DocumentChatCard({
         <Text numberOfLines={1} style={[docStyles.meta, { color: muted }]}>
           {[fileSizeLabel(document.size), extension].filter(Boolean).join(" • ")}
         </Text>
-        {!!failed && (
-          <Text numberOfLines={1} style={[docStyles.meta, { color: muted }]}>
-            {failed}
-          </Text>
-        )}
       </View>
     </Pressable>
   );
