@@ -35,7 +35,6 @@ export const chatMoreAttachments=[
   {id:'gif',label:'GIF',icon:'happy',color:'#1D4F81'},
   {id:'document',label:'Document',icon:'document-text',color:'#235A92'},
   {id:'location',label:'Location',icon:'location',color:'#AA2A44'},
-  {id:'snap',label:'Snap',icon:'camera',color:'#1D4F81'},
   {id:'spark',label:'Spark',icon:'sparkles',color:'#AA2A44'},
   {id:'back',label:'Back',icon:'arrow-back',color:'#235A92'},
 ] as const;

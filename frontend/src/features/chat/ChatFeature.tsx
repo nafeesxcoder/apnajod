@@ -2093,10 +2093,6 @@ export function ChatScreen({
       setGamesOpen(true);
       return;
     }
-    if (id === "snap") {
-      setSnapOpen(true);
-      return;
-    }
     if (id === "face") {
       setFaceEmojiOpen(true);
       return;
