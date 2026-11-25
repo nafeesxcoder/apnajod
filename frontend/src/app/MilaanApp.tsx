@@ -2615,6 +2615,28 @@ function MilaanApp() {
         reactions: undefined,
         starredByMe: undefined,
         pinnedAt: undefined,
+        hiddenForMe: undefined,
+        deletedAt: undefined,
+        storyReply: undefined,
+        uploading: undefined,
+        // A live location goes on as a place, not as someone's live tracking.
+        location: source.location
+          ? { ...source.location, live: false, expiresAt: undefined }
+          : undefined,
+        // A date plan is a new proposal in the other chat, so it starts again.
+        date: source.date
+          ? {
+              ...source.date,
+              proposalId: undefined,
+              planStatus: undefined,
+              safeByMe: undefined,
+              safeCount: undefined,
+            }
+          : undefined,
+        // A poll is sent fresh: the votes stay with the original.
+        poll: source.poll
+          ? { question: source.poll.question, options: source.poll.options }
+          : undefined,
         createdAt: Date.now() + sent,
         status: "sent",
       };

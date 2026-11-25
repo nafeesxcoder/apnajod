@@ -36,6 +36,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChatBackdrop } from "./ChatBackdrop";
+import { MediaViewer } from "./MediaViewer";
 import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
 import { mimeTypeFor } from "../../api/chatApi";
 import { BACKGROUND_CHOICES } from "./chatBackgrounds";
@@ -826,12 +827,6 @@ function furthestStatus(
 }
 
 const maxChatFileBytes = 100 * 1024 * 1024;
-const formatChatFileSize = (bytes?: number) => {
-  if (!bytes || bytes < 1) return "Size unavailable";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
-};
 
 // expo-image-picker's web shim (ExponentImagePicker.web.ts) listens for a
 // 'cancel' event alongside the real 'change' event on its hidden <input>,
@@ -1149,8 +1144,23 @@ export function ChatScreen({
   const [highlightedMessageId, setHighlightedMessageId] = useState<
     string | null
   >(null);
-  const [viewerImageUri, setViewerImageUri] = useState<string | null>(null);
-  const [viewerVideoUri, setViewerVideoUri] = useState<string | null>(null);
+  // The photo, video or file opened full screen from a message (null = closed),
+  // and whether that file is already saved on the phone.
+  const [viewerMessage, setViewerMessage] = useState<ChatMessage | null>(null);
+  const [viewerSaved, setViewerSaved] = useState<SavedFile | null>(null);
+  useEffect(() => {
+    setViewerSaved(null);
+    if (!viewerMessage) return;
+    let live = true;
+    void readSaved(viewerMessage.id).then((entry) => {
+      if (live) setViewerSaved(entry);
+    });
+    return () => {
+      live = false;
+    };
+    // Only when a different message is opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerMessage?.id]);
   // Photo/video picked from gallery or camera waits here for a caption and
   // an explicit send, same as WhatsApp's pre-send preview -- it is NOT
   // uploaded or dispatched to the chat until the user taps the send icon.
@@ -2294,6 +2304,49 @@ export function ChatScreen({
     }
     setSelectedMessageId(null);
   };
+  // Save what the viewer shows: a photo or video to the gallery, a file to the phone.
+  const viewerSave = () => {
+    const opened = viewerMessage;
+    if (!opened?.uri) return;
+    const isFile = opened.type === "document";
+    const isVideo = isFile && opened.document?.kind === "video";
+    const isGif = opened.type === "gif";
+    const name = isFile
+      ? opened.document?.name ?? "file"
+      : `apnajoda-${Date.now()}.${isVideo ? "mp4" : isGif ? "gif" : "jpg"}`;
+    const kind = isFile
+      ? opened.document?.mimeType?.startsWith("image/")
+        ? "image"
+        : isVideo
+          ? "video"
+          : "file"
+      : isVideo
+        ? "video"
+        : "image";
+    void saveFile(opened.id, opened.uri, name, kind)
+      .then((entry) => {
+        setViewerSaved(entry);
+        setMessageActionNotice("Saved to your phone.");
+      })
+      .catch(() => downloadMedia(opened.uri as string, name));
+  };
+  // Forward the opened message, the same as the message menu does.
+  const viewerForward = () => {
+    const opened = viewerMessage;
+    if (!opened) return;
+    setViewerMessage(null);
+    setForwardMessages([opened]);
+  };
+  // A saved file opens with its app; until it is saved, tapping saves it.
+  const viewerOpenFile = () => {
+    if (viewerSaved) {
+      void openSaved(viewerSaved).then((ok) => {
+        if (!ok) setViewerSaved(null);
+      });
+      return;
+    }
+    viewerSave();
+  };
   const forwardSelected = () => {
     const chosen = multiSelectMode
       ? previewMessages.filter((message) =>
@@ -2800,8 +2853,7 @@ export function ChatScreen({
                       ? () => setEditTarget(message)
                       : undefined
                   }
-                  onOpenImage={(uri) => setViewerImageUri(uri)}
-                  onOpenVideo={(uri) => setViewerVideoUri(uri)}
+                  onOpenMedia={(opened) => setViewerMessage(opened)}
                   onQuickReact={(event) => {
                     if (multiSelectMode || message.deletedForEveryone) return;
                     const { pageX, pageY } = event.nativeEvent;
@@ -2810,84 +2862,39 @@ export function ChatScreen({
                 />
               </View>
             ))}
-            <Modal
-              visible={!!viewerImageUri}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setViewerImageUri(null)}
+            <MediaViewer
+              visible={!!viewerMessage}
+              title={viewerMessage ? (viewerMessage.mine ? "You" : match.name) : ""}
+              subtitle={
+                viewerMessage
+                  ? new Date(viewerMessage.createdAt).toLocaleString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : ""
+              }
+              onClose={() => setViewerMessage(null)}
+              onDownload={
+                viewerMessage?.uri && viewerMessage.type !== "snap"
+                  ? viewerSave
+                  : undefined
+              }
+              onForward={
+                viewerMessage && viewerMessage.type !== "snap"
+                  ? viewerForward
+                  : undefined
+              }
             >
-              <Pressable
-                style={{
-                  flex: 1,
-                  backgroundColor: "#000000",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onPress={() => setViewerImageUri(null)}
-              >
-                {viewerImageUri && (
-                  <ExpoImage
-                    source={{ uri: viewerImageUri }}
-                    style={{ width: "100%", height: "100%" }}
-                    contentFit="contain"
-                    autoplay
-                  />
-                )}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                  onPress={() => setViewerImageUri(null)}
-                  style={{
-                    position: "absolute",
-                    top: 48,
-                    right: 20,
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons name="close" size={24} color="#FFFFFF" />
-                </Pressable>
-              </Pressable>
-            </Modal>
-            <Modal
-              visible={!!viewerVideoUri}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setViewerVideoUri(null)}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "#000000",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {viewerVideoUri && <InlineVideoPlayer uri={viewerVideoUri} />}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Close video"
-                  onPress={() => setViewerVideoUri(null)}
-                  style={{
-                    position: "absolute",
-                    top: 48,
-                    right: 20,
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons name="close" size={24} color="#FFFFFF" />
-                </Pressable>
-              </View>
-            </Modal>
+              {viewerMessage && (
+                <ViewerBody
+                  message={viewerMessage}
+                  saved={viewerSaved}
+                  onOpenFile={viewerOpenFile}
+                />
+              )}
+            </MediaViewer>
             {!!normalizedSearch && !visibleMessages.length && (
               <View style={chatStyles.emptySearch}>
                 <Ionicons
@@ -3633,8 +3640,7 @@ function ChatBubble({
   onDateAction,
   onPollVote,
   onPress,
-  onOpenImage,
-  onOpenVideo,
+  onOpenMedia,
   onQuickReact,
   onSwipeReply,
   onSwipeEdit,
@@ -3663,8 +3669,8 @@ function ChatBubble({
   /** A poll's options. */
   onPollVote?: (choice: number) => void;
   onPress?: () => void;
-  onOpenImage?: (uri: string) => void;
-  onOpenVideo?: (uri: string) => void;
+  /** A photo, video or file opened full screen (save and forward from there). */
+  onOpenMedia?: (message: ChatMessage) => void;
   onQuickReact?: (event: GestureResponderEvent) => void;
   onSwipeReply?: () => void;
 }) {
@@ -3760,14 +3766,10 @@ function ChatBubble({
   const incomingSafety = !mine && textBody ? scanMessageSafety(textBody) : null;
   const isVideoDocument =
     message.type === "document" && message.document?.kind === "video";
+  // A file, photo or video opens full screen, with save and forward at the top.
   const openDocument = () => {
     if (!message.uri) return;
-    if (isVideoDocument) {
-      // Play videos inside the app rather than handing off to the browser.
-      onOpenVideo?.(message.uri);
-      return;
-    }
-    void Linking.openURL(message.uri).catch(() => undefined);
+    onOpenMedia?.(message);
   };
   const isMediaBubble =
     message.type === "image" ||
@@ -3885,7 +3887,7 @@ function ChatBubble({
                       message.type === "snap" ||
                       (message.type === "gif" && !catalogGif)) &&
                     message.uri
-                  ? () => onOpenImage?.(message.uri!)
+                  ? () => onOpenMedia?.(message)
                   : onPress
           }
           onLongPress={
@@ -4241,7 +4243,7 @@ function ChatBubble({
               document={message.document}
               mine={mine}
               uri={message.uri}
-              onOpenImage={onOpenImage}
+              onOpen={() => onOpenMedia?.(message)}
             />
               {!!message.uploading && (
                 <UploadProgressOverlay messageId={message.id} compact />
@@ -5038,30 +5040,49 @@ function UploadProgressOverlay({
   );
 }
 
+/** The size the way WhatsApp writes it: "2.3 kB", "1.4 MB". */
+function fileSizeLabel(bytes?: number) {
+  if (!bytes || bytes < 1) return "";
+  if (bytes < 1000) return `${bytes} B`;
+  if (bytes < 1000 * 1000) return `${trimDecimal(bytes / 1000)} kB`;
+  return `${trimDecimal(bytes / (1000 * 1000))} MB`;
+}
+
+function trimDecimal(value: number) {
+  return value >= 10 ? String(Math.round(value)) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function extensionOf(name: string) {
+  return name.split(".").pop()?.slice(0, 4).toUpperCase() || "FILE";
+}
+
 /**
- * A file in a chat, the way WhatsApp shows one. A photo is shown as a picture:
- * tap it to open it, and a received photo is saved to the gallery on its own.
- * Any other file is a row: tap to download, then tap again to open it.
+ * A file in a chat, the way WhatsApp shows one. A photo is a picture, and a
+ * received photo is saved to the gallery on its own. Any other file is a card:
+ * its type on a file icon, the name, and "size • TYPE". Tapping either opens
+ * it full screen, where it can be saved or forwarded.
  */
 function DocumentChatCard({
   messageId,
   document,
   mine,
   uri,
-  onOpenImage,
+  onOpen,
 }: {
   messageId: string;
   document: NonNullable<ChatMessage["document"]>;
   mine: boolean;
   uri?: string;
-  onOpenImage?: (uri: string) => void;
+  onOpen?: () => void;
 }) {
   const image = !!document.mimeType?.startsWith("image/");
   const kind: "image" | "video" | "file" = image ? "image" : document.kind === "video" ? "video" : "file";
-  const extension = document.name.split(".").pop()?.slice(0, 4).toUpperCase() || "FILE";
+  const extension = extensionOf(document.name);
   const [saved, setSaved] = useState<SavedFile | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState("");
+  // A photo keeps its own shape, as on WhatsApp (kept within a sensible range).
+  const [ratio, setRatio] = useState(1);
   const working = useRef(false);
 
   useEffect(() => {
@@ -5099,30 +5120,30 @@ function DocumentChatCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageId]);
 
-  const open = () => {
-    if (image) {
-      onOpenImage?.(saved?.localUri || uri || "");
-      return;
-    }
-    if (saved) {
-      void openSaved(saved).then((ok) => {
-        if (!ok) setSaved(null);
-      });
-      return;
-    }
-    void download();
-  };
-
   if (image) {
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open photo"
-        onPress={open}
-        style={{ width: 230, height: 230, borderRadius: 16, overflow: "hidden", backgroundColor: "#E9E4E1" }}
+        onPress={onOpen}
+        style={{
+          width: 240,
+          aspectRatio: Math.min(Math.max(ratio, 0.75), 1.5),
+          borderRadius: 14,
+          overflow: "hidden",
+          backgroundColor: "#E5E7EA",
+        }}
       >
         {!!(saved?.localUri || uri) && (
-          <Image source={{ uri: saved?.localUri || uri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+          <Image
+            source={{ uri: saved?.localUri || uri }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="cover"
+            onLoad={(event) => {
+              const size = event?.nativeEvent?.source;
+              if (size?.width && size?.height) setRatio(size.width / size.height);
+            }}
+          />
         )}
         {!saved && !busy && Platform.OS !== "web" && (
           <View style={docStyles.badge}>
@@ -5144,31 +5165,133 @@ function DocumentChatCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={saved ? `Open ${document.name}` : `Download ${document.name}`}
-      onPress={open}
-      style={[docStyles.row, mine ? docStyles.rowMine : docStyles.rowTheirs]}
+      accessibilityLabel={`Open ${document.name}`}
+      onPress={onOpen}
+      style={docStyles.row}
     >
-      <View style={[docStyles.tile, mine && docStyles.tileMine]}>
-        <Text style={[docStyles.tileText, { color: mine ? "#1F4D7A" : "#FFFFFF" }]} numberOfLines={1}>
+      <View style={docStyles.fileIcon}>
+        <Text style={docStyles.fileIconText} numberOfLines={1}>
           {extension}
         </Text>
+        {(busy || (!saved && Platform.OS !== "web")) && (
+          <View style={docStyles.fileBadge}>
+            {busy ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Ionicons name="arrow-down" size={12} color="#FFFFFF" />
+            )}
+          </View>
+        )}
       </View>
       <View style={docStyles.info}>
-        <Text numberOfLines={1} style={[docStyles.name, { color: tone }]}>
+        <Text numberOfLines={2} style={[docStyles.name, { color: tone }]}>
           {document.name}
         </Text>
         <Text numberOfLines={1} style={[docStyles.meta, { color: muted }]}>
-          {[extension, formatChatFileSize(document.size), failed].filter(Boolean).join(" · ")}
+          {[fileSizeLabel(document.size), extension].filter(Boolean).join(" • ")}
         </Text>
+        {!!failed && (
+          <Text numberOfLines={1} style={[docStyles.meta, { color: muted }]}>
+            {failed}
+          </Text>
+        )}
       </View>
-      {busy ? (
-        <ActivityIndicator color={tone} />
-      ) : (
-        <Ionicons name={saved ? "open-outline" : "arrow-down-circle-outline"} size={28} color={tone} />
-      )}
     </Pressable>
   );
 }
+
+/** A file on the full-screen viewer: its type, name and size, and the one button to use it. */
+function ViewerFile({
+  name,
+  size,
+  saved,
+  onPress,
+}: {
+  name: string;
+  size?: number;
+  saved: boolean;
+  onPress: () => void;
+}) {
+  const extension = extensionOf(name);
+  return (
+    <View style={viewerStyles.fileWrap}>
+      <View style={viewerStyles.fileIcon}>
+        <Text style={viewerStyles.fileIconText} numberOfLines={1}>
+          {extension}
+        </Text>
+      </View>
+      <Text style={viewerStyles.fileName} numberOfLines={3}>
+        {name}
+      </Text>
+      <Text style={viewerStyles.fileMeta}>
+        {[fileSizeLabel(size), extension].filter(Boolean).join(" • ")}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={saved ? "Open file" : "Download file"}
+        onPress={onPress}
+        style={viewerStyles.fileButton}
+      >
+        <Ionicons name={saved ? "open-outline" : "download-outline"} size={18} color="#FFFFFF" />
+        <Text style={viewerStyles.fileButtonText}>{saved ? "Open" : "Download"}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/** What the full-screen viewer shows: a video, a file card, or the photo itself. */
+function ViewerBody({
+  message,
+  saved,
+  onOpenFile,
+}: {
+  message: ChatMessage;
+  saved: SavedFile | null;
+  onOpenFile: () => void;
+}) {
+  const uri = message.uri ?? "";
+  const doc = message.document;
+  if (doc?.kind === "video") return <InlineVideoPlayer uri={uri} />;
+  if (doc && !doc.mimeType?.startsWith("image/")) {
+    return <ViewerFile name={doc.name} size={doc.size} saved={!!saved} onPress={onOpenFile} />;
+  }
+  return (
+    <ExpoImage
+      source={{ uri: saved?.localUri || uri }}
+      style={{ width: "100%", height: "100%" }}
+      contentFit="contain"
+      autoplay
+    />
+  );
+}
+
+const viewerStyles = StyleSheet.create({
+  fileWrap: { alignItems: "center", gap: 12, paddingHorizontal: 32 },
+  fileIcon: {
+    width: 96,
+    height: 120,
+    borderRadius: 10,
+    backgroundColor: "#8696A0",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 14,
+    paddingHorizontal: 6,
+  },
+  fileIconText: { color: "#FFFFFF", fontSize: 18, fontWeight: "800" },
+  fileName: { color: "#FFFFFF", fontSize: 16, fontWeight: "600", textAlign: "center" },
+  fileMeta: { color: "rgba(255,255,255,0.72)", fontSize: 13 },
+  fileButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 22,
+    borderRadius: 24,
+    backgroundColor: "#A8243A",
+  },
+  fileButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+});
 
 const docStyles = StyleSheet.create({
   badge: {
@@ -5201,28 +5324,36 @@ const docStyles = StyleSheet.create({
     width: 250,
     paddingVertical: 4,
   },
-  rowMine: {},
-  rowTheirs: {},
-  tile: {
+  fileIcon: {
     width: 46,
-    height: 54,
-    borderRadius: 8,
-    backgroundColor: "#1F4D7A",
+    height: 58,
+    borderRadius: 6,
+    backgroundColor: "#8696A0",
+    justifyContent: "flex-end",
     alignItems: "center",
-    justifyContent: "center",
+    paddingBottom: 8,
     paddingHorizontal: 4,
   },
-  tileMine: {
-    backgroundColor: "#FFFFFF",
-  },
-  tileText: {
+  fileIconText: {
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "800",
+  },
+  fileBadge: {
+    position: "absolute",
+    right: -6,
+    top: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#14202E",
+    alignItems: "center",
+    justifyContent: "center",
   },
   info: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 3,
   },
   name: {
     fontSize: 15,
