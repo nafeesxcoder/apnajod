@@ -8760,127 +8760,109 @@ function SnapStudio({
   const [sticker, setSticker] = useState("💘");
   const [viewOnce, setViewOnce] = useState(true);
   const [error, setError] = useState("");
-  useEffect(() => {
-    if (visible) {
-      setUri("");
-      setFilter(snapFilters[0]!.name);
-      setSticker("💘");
-      setViewOnce(true);
-      setError("");
-    }
-  }, [visible]);
-  const choose = async (camera = false) => {
+  const activeFilter = snapFilters.find((item) => item.name === filter);
+
+  // A Snap is a photo taken now, so the camera is the only way in: it opens
+  // straight away, with no menu first, and a library photo is not offered here.
+  const openCamera = async () => {
     setError("");
     try {
-      const permission = camera
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        setError(
-          camera
-            ? "Camera permission is needed to create a Snap."
-            : "Photo permission is needed to choose a Snap.",
-        );
+        setError("Camera permission is needed to create a Snap. Allow it in your settings.");
         return;
       }
-      const result = camera
-        ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ["images"],
-            quality: 0.8,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            quality: 0.8,
-          });
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+      });
       if (!result.canceled && result.assets[0]) {
         setUri(result.assets[0].uri);
         return;
       }
-      setError("No photo selected. Choose camera or library to continue.");
+      setError("No photo taken. Tap the camera to try again.");
     } catch (e) {
       setError(
-        e instanceof Error
-          ? e.message
-          : "Could not open camera or photo library. Please try again.",
+        e instanceof Error ? e.message : "Could not open the camera. Please try again.",
       );
     }
   };
+
+  // Each time the Snap screen opens, start fresh and open the camera.
+  useEffect(() => {
+    if (!visible) return;
+    setUri("");
+    setFilter(snapFilters[0]!.name);
+    setSticker("💘");
+    setViewOnce(true);
+    void openCamera();
+    // Only when the Snap screen opens, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={snapStyles.screen}>
-        <View style={snapStyles.header}>
-          <Pressable onPress={onClose} style={chatStyles.sheetClose}>
-            <PremiumIcon name="close" tone="dark" size={38} iconSize={18} />
-          </Pressable>
-          <Text style={snapStyles.headerTitle}>Apnajoda Snap</Text>
+      <View style={snapCamera.screen}>
+        {uri ? (
+          <>
+            <Image source={{ uri }} style={styles.fill} resizeMode="cover" />
+            {!!activeFilter && (
+              <View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFill, { backgroundColor: activeFilter.color }]}
+              />
+            )}
+            <Text pointerEvents="none" style={snapCamera.bigSticker}>
+              {sticker}
+            </Text>
+          </>
+        ) : (
+          <View style={snapCamera.shutterWrap}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open camera"
+              onPress={() => void openCamera()}
+              style={snapCamera.shutter}
+            >
+              <Ionicons name="camera" size={38} color="#FFFFFF" />
+            </Pressable>
+            <Text style={snapCamera.shutterHint}>
+              {error || "Tap to take your Snap"}
+            </Text>
+          </View>
+        )}
+
+        <SafeAreaView edges={["top"]} style={snapCamera.topBar} pointerEvents="box-none">
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close Snap"
+            onPress={onClose}
+            style={snapCamera.roundButton}
+          >
+            <Ionicons name="close" size={22} color="#FFFFFF" />
+          </Pressable>
+          <View style={snapCamera.titlePill}>
+            <Ionicons name="camera" size={16} color="#FFFFFF" />
+            <Text style={snapCamera.titlePillText}>Snap</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Send Snap"
             disabled={!uri}
             onPress={() => onSend(uri, filter, sticker, viewOnce)}
-            style={snapStyles.sendButton}
+            style={[snapCamera.sendPill, !uri && snapCamera.sendPillOff]}
           >
-            <Text style={[snapStyles.sendText, !uri && { opacity: 0.35 }]}>
-              Send
-            </Text>
+            <Text style={snapCamera.sendPillText}>Send</Text>
           </Pressable>
-        </View>
-        {uri ? (
-          <View style={snapStyles.preview}>
-            <Image source={{ uri }} style={styles.fill} />
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: snapFilters.find(
-                    (item) => item.name === filter,
-                  )?.color,
-                },
-              ]}
-            />
-            <Text style={snapStyles.previewSticker}>{sticker}</Text>
-            <View style={snapStyles.previewLabel}>
-              <MiniPremiumIcon
-                name={viewOnce ? "eye-off" : "time"}
-                tone="dark"
-                size={28}
-                iconSize={13}
-              />
-              <Text style={snapStyles.previewLabelText}>
-                {viewOnce ? "View once" : "Available for 24 hours"}
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <LinearGradient
-            colors={["#0F1113", "#0D0E0F"]}
-            style={snapStyles.empty}
-          >
-            <PremiumIcon name="camera" tone="ruby" size={74} iconSize={34} />
-            <Text style={snapStyles.emptyTitle}>Create a playful moment</Text>
-            <Text style={styles.helper}>
-              Take a photo or choose one from your library.
-            </Text>
-            <View style={snapStyles.emptyActions}>
-              <Button
-                label="Camera"
-                icon="camera"
-                onPress={() => void choose(true)}
-              />
-              <Button
-                label="Photo library"
-                variant="secondary"
-                icon="images"
-                onPress={() => void choose(false)}
-              />
-            </View>
-          </LinearGradient>
-        )}
-        {uri && (
-          <View style={snapStyles.controls}>
-            <Text style={styles.sectionLabel}>FILTERS</Text>
+        </SafeAreaView>
+
+        {!!uri && (
+          <SafeAreaView edges={["bottom"]} style={snapCamera.bottomPanel}>
+            <Text style={snapCamera.bottomLabel}>FILTERS</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 12 }}
+              contentContainerStyle={snapCamera.chipRow}
             >
               {snapFilters.map((item) => (
                 <Pressable
@@ -8888,27 +8870,24 @@ function SnapStudio({
                   accessibilityRole="button"
                   accessibilityLabel={`Filter: ${item.name}`}
                   onPress={() => setFilter(item.name)}
-                  style={snapStyles.filterItem}
+                  style={snapCamera.filterTile}
                 >
                   <View
                     style={[
-                      snapStyles.filterThumb,
-                      filter === item.name && snapStyles.filterThumbOn,
+                      snapCamera.filterThumb,
+                      filter === item.name && snapCamera.filterThumbOn,
                     ]}
                   >
                     <Image source={{ uri }} style={styles.fill} />
                     <View
-                      style={[
-                        StyleSheet.absoluteFill,
-                        { backgroundColor: item.color },
-                      ]}
+                      style={[StyleSheet.absoluteFill, { backgroundColor: item.color }]}
                     />
                   </View>
                   <Text
                     numberOfLines={1}
                     style={[
-                      snapStyles.filterText,
-                      filter === item.name && snapStyles.filterTextOn,
+                      snapCamera.filterText,
+                      filter === item.name && snapCamera.filterTextOn,
                     ]}
                   >
                     {item.name}
@@ -8916,65 +8895,191 @@ function SnapStudio({
                 </Pressable>
               ))}
             </ScrollView>
-            <Text style={styles.sectionLabel}>FUN STICKERS</Text>
+            <Text style={snapCamera.bottomLabel}>STICKERS</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 14 }}
+              contentContainerStyle={snapCamera.chipRow}
             >
               {faceEmojiOptions.map((item) => (
                 <Pressable
                   key={item}
                   onPress={() => setSticker(item)}
                   style={[
-                    snapStyles.emojiChoice,
-                    sticker === item && snapStyles.emojiChoiceOn,
+                    snapCamera.stickerChip,
+                    sticker === item && snapCamera.stickerChipOn,
                   ]}
                 >
-                  <Text style={{ fontSize: 28 }}>{item}</Text>
+                  <Text style={{ fontSize: 26 }}>{item}</Text>
                 </Pressable>
               ))}
             </ScrollView>
-            <Pressable
-              onPress={() => setViewOnce((value) => !value)}
-              style={snapStyles.viewOnce}
-            >
-              <MiniPremiumIcon
-                name={viewOnce ? "checkmark-circle" : "ellipse-outline"}
-                tone={viewOnce ? "gold" : "dark"}
-                size={34}
-                iconSize={16}
-              />
-              <View>
-                <Text style={shared.label}>View once</Text>
-                <Text style={styles.helper}>
-                  A private snap that disappears after opening
+            <View style={snapCamera.bottomRow}>
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: viewOnce }}
+                onPress={() => setViewOnce((value) => !value)}
+                style={[snapCamera.pill, viewOnce && snapCamera.pillOn]}
+              >
+                <Ionicons
+                  name={viewOnce ? "eye-off" : "time-outline"}
+                  size={16}
+                  color="#FFFFFF"
+                />
+                <Text style={snapCamera.pillText}>
+                  {viewOnce ? "View once" : "24 hours"}
                 </Text>
-              </View>
-            </Pressable>
-            <Button
-              label="Replace photo"
-              variant="secondary"
-              icon="camera-reverse"
-              onPress={() => void choose(true)}
-            />
-          </View>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Take another photo"
+                onPress={() => void openCamera()}
+                style={snapCamera.pill}
+              >
+                <Ionicons name="camera" size={16} color="#FFFFFF" />
+                <Text style={snapCamera.pillText}>Retake</Text>
+              </Pressable>
+            </View>
+          </SafeAreaView>
         )}
-        {!!error && (
-          <View style={snapStyles.errorCard}>
-            <MiniPremiumIcon
-              name="alert-circle-outline"
-              tone="ruby"
-              size={28}
-              iconSize={13}
-            />
-            <Text style={snapStyles.errorText}>{error}</Text>
-          </View>
-        )}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
+
+const snapCamera = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#0D0E0F" },
+  topBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingTop: 4,
+  },
+  roundButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(13,14,15,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  titlePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "rgba(13,14,15,0.55)",
+  },
+  titlePillText: { fontFamily: "Mukta_700Bold", fontSize: 16, color: "#FFFFFF" },
+  sendPill: {
+    height: 42,
+    paddingHorizontal: 20,
+    borderRadius: 21,
+    backgroundColor: "#A8243A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendPillOff: { opacity: 0.35 },
+  sendPillText: { fontFamily: "Mukta_700Bold", fontSize: 15, color: "#FFFFFF" },
+  shutterWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+    paddingHorizontal: 32,
+  },
+  shutter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#A8243A",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 5,
+    borderColor: "rgba(255,255,255,0.85)",
+  },
+  shutterHint: {
+    fontFamily: "Mukta_600SemiBold",
+    fontSize: 15,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+  },
+  bigSticker: { position: "absolute", right: 24, top: 120, fontSize: 64 },
+  bottomPanel: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: 14,
+    paddingBottom: 12,
+    gap: 10,
+    backgroundColor: "rgba(13,14,15,0.5)",
+  },
+  bottomLabel: {
+    fontFamily: "Mukta_700Bold",
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: "rgba(255,255,255,0.7)",
+    paddingHorizontal: 16,
+  },
+  chipRow: { paddingHorizontal: 16, gap: 12 },
+  filterTile: { alignItems: "center", gap: 5 },
+  filterThumb: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  filterThumbOn: { borderColor: "#FFFFFF" },
+  filterText: {
+    fontFamily: "Mukta_600SemiBold",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.75)",
+    width: 70,
+    textAlign: "center",
+  },
+  filterTextOn: { color: "#FFFFFF", fontFamily: "Mukta_700Bold" },
+  stickerChip: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  stickerChipOn: {
+    backgroundColor: "rgba(255,255,255,0.34)",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  pillOn: { backgroundColor: "rgba(168,36,58,0.85)" },
+  pillText: { fontFamily: "Mukta_600SemiBold", fontSize: 13, color: "#FFFFFF" },
+});
 
 function FaceEmojiStudio({
   visible,
