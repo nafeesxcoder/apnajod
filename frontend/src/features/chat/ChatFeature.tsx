@@ -40,7 +40,7 @@ import { MediaViewer } from "./MediaViewer";
 import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
 import { mimeTypeFor, type ConversationSummary } from "../../api/chatApi";
 import { BACKGROUND_CHOICES } from "./chatBackgrounds";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as DocumentPicker from "expo-document-picker";
@@ -2512,10 +2512,13 @@ export function ChatScreen({
         "The original message is outside the loaded history.",
       );
   };
+  const insets = useSafeAreaInsets();
   return (
     <ChatRuntimeContext.Provider value={effectivePorts}>
       <AppCanvas>
         <SafeAreaView
+          // The header reaches up under the status bar itself, so the top is left out here.
+          edges={["left", "right", "bottom"]}
           style={[
             chatPremiumStyles.safeArea,
             { backgroundColor: "transparent" },
@@ -2537,12 +2540,10 @@ export function ChatScreen({
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
-              paddingVertical: 12,
-              // With a background chosen, the header is see-through so the picture runs behind it.
-              backgroundColor:
-                settings.background && settings.background !== "classic"
-                  ? "rgba(255,255,255,0.8)"
-                  : palette.paperBase,
+              // The header is solid and reaches up under the status bar, so the chat picture never shows above it.
+              paddingTop: insets.top + 12,
+              paddingBottom: 12,
+              backgroundColor: palette.paperBase,
               borderBottomWidth: 1,
               borderBottomColor: palette.rule,
               gap: 12,

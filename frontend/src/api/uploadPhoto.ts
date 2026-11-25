@@ -1,5 +1,9 @@
 import { API_URL } from "./config";
 
+// True in the phone app (React Native). There the file is handed over as it is:
+// turning a local file into a blob first fails with "Network request failed".
+const onPhone = typeof navigator !== "undefined" && navigator.product === "ReactNative";
+
 /**
  * Put an image the member picked onto the server and return its public URL.
  *
@@ -16,8 +20,12 @@ export async function uploadPhoto(
   accessToken: string,
 ): Promise<string> {
   const body = new FormData();
-  const file = await fetch(uri).then((response) => response.blob());
-  body.append("photo", file, "photo.jpg");
+  if (onPhone) {
+    body.append("photo", { uri, name: "photo.jpg", type: "image/jpeg" } as any);
+  } else {
+    const file = await fetch(uri).then((response) => response.blob());
+    body.append("photo", file, "photo.jpg");
+  }
 
   const response = await fetch(`${API_URL}/profile/upload-photo`, {
     method: "POST",
