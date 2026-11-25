@@ -5252,6 +5252,39 @@ function ViewerBody({
   if (doc && !doc.mimeType?.startsWith("image/")) {
     return <ViewerFile name={doc.name} size={doc.size} saved={!!saved} onPress={onOpenFile} />;
   }
+  // A Snap: the photo with its filter and sticker, and the filter's name below it.
+  if (message.type === "snap" && message.snap) {
+    const filter = snapFilters.find((item) => item.name === message.snap?.filter);
+    return (
+      <View style={viewerStyles.snapWrap}>
+        <View style={viewerStyles.snapPhoto}>
+          <ExpoImage
+            source={{ uri }}
+            style={StyleSheet.absoluteFill}
+            contentFit="contain"
+            autoplay
+          />
+          {!!filter && (
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFill, { backgroundColor: filter.color }]}
+            />
+          )}
+          {!!message.snap.sticker && (
+            <Text pointerEvents="none" style={viewerStyles.snapSticker}>
+              {message.snap.sticker}
+            </Text>
+          )}
+        </View>
+        <View style={viewerStyles.snapFooter}>
+          <Text style={viewerStyles.snapFilter}>{message.snap.filter}</Text>
+          <Text style={viewerStyles.snapMeta}>
+            {message.snap.viewOnce ? "View once" : "Available for 24 hours"}
+          </Text>
+        </View>
+      </View>
+    );
+  }
   return (
     <ExpoImage
       source={{ uri: saved?.localUri || uri }}
@@ -5263,6 +5296,25 @@ function ViewerBody({
 }
 
 const viewerStyles = StyleSheet.create({
+  snapWrap: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    gap: 12,
+  },
+  snapPhoto: {
+    width: "92%",
+    flex: 1,
+    borderRadius: 22,
+    overflow: "hidden",
+    backgroundColor: "#0D0E0F",
+  },
+  snapSticker: { position: "absolute", right: 14, top: 14, fontSize: 52 },
+  snapFooter: { alignItems: "center", gap: 4 },
+  snapFilter: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  snapMeta: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
   fileWrap: { alignItems: "center", gap: 12, paddingHorizontal: 32 },
   fileIcon: {
     width: 96,
