@@ -8855,11 +8855,7 @@ function CoupleSettingsSheet({
                       chosen && { borderColor: palette.navy, backgroundColor: "rgba(31,77,122,0.08)" },
                     ]}
                   >
-                    {background.image ? (
-                      <Image source={background.image} style={coupleStyles.themeDot} />
-                    ) : (
-                      <LinearGradient colors={background.colors} style={coupleStyles.themeDot} />
-                    )}
+                    <LinearGradient colors={background.colors} style={coupleStyles.themeDot} />
                     <Text style={coupleStyles.themeName}>{background.name}</Text>
                   </Pressable>
                 );
