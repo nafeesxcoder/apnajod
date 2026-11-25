@@ -171,49 +171,23 @@ export function HomeScreen({
           paddingLeft: navInset.paddingLeft,
         }}
       >
-        <ScrollView
-          ref={feedScrollRef}
-          onScroll={(event) => {
-            handleBottomNavScroll(event);
-            // Near the end of Home: load the next page of posts.
-            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 900) {
-              const now = Date.now();
-              if (now - feedAskedAt.current > 1500) {
-                feedAskedAt.current = now;
-                setFeedMore((n) => n + 1);
-              }
-            }
+        {/* Pinned at the top: the logo, + and bell stay while the feed scrolls. */}
+        <View
+          style={{
+            width: "100%",
+            maxWidth: isDesktopHome ? DESKTOP_MAX_WIDTH : MAX_WIDTH,
+            alignSelf: "center",
+            paddingHorizontal: 20,
+            backgroundColor: palette.paperBase,
           }}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 120 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={() => {
-                setFeedReload((n) => n + 1);
-                onRetryMatches();
-              }}
-              tintColor={palette.crimson}
-            />
-          }
         >
-          <View
-            style={{
-              width: "100%",
-              maxWidth: isDesktopHome ? DESKTOP_MAX_WIDTH : MAX_WIDTH,
-              alignSelf: "center",
-              paddingHorizontal: 20,
-            }}
-          >
             {/* Header */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                paddingTop: 20,
-                paddingBottom: 16,
+                paddingTop: 4,
+                paddingBottom: 12,
               }}
             >
               <View style={{ width: 44, alignItems: "flex-start", marginTop: -8 }}>
@@ -288,7 +262,43 @@ export function HomeScreen({
 
               </View>
             </View>
-
+        </View>
+        <ScrollView
+          ref={feedScrollRef}
+          onScroll={(event) => {
+            handleBottomNavScroll(event);
+            // Near the end of Home: load the next page of posts.
+            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 900) {
+              const now = Date.now();
+              if (now - feedAskedAt.current > 1500) {
+                feedAskedAt.current = now;
+                setFeedMore((n) => n + 1);
+              }
+            }
+          }}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => {
+                setFeedReload((n) => n + 1);
+                onRetryMatches();
+              }}
+              tintColor={palette.crimson}
+            />
+          }
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: isDesktopHome ? DESKTOP_MAX_WIDTH : MAX_WIDTH,
+              alignSelf: "center",
+              paddingHorizontal: 20,
+            }}
+          >
             {/* The festival the admin has on: greeting and a festive story. */}
             {festival && (
               <FestivalBanner

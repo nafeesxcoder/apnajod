@@ -298,15 +298,8 @@ export function FindPeopleScreen({
               paddingVertical: 20,
             }}
           >
-            {/* Header */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 20,
-              }}
-            >
+            {/* Header: back, and the title on one line */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
               <PressScale
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
@@ -324,27 +317,9 @@ export function FindPeopleScreen({
               >
                 <Ionicons name="arrow-back" size={20} color={palette.ink} />
               </PressScale>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: typeScale.title,
-                    color: palette.ink,
-                  }}
-                >
-                  Find people
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 13,
-                    color: palette.slate,
-                    marginTop: 2,
-                  }}
-                >
-                  Discover someone worth meeting
-                </Text>
-              </View>
+              <Text style={{ flex: 1, fontFamily: fonts.display, fontSize: typeScale.title, color: palette.ink }}>
+                Find people
+              </Text>
             </View>
 
             {/* Search box — compact */}
@@ -534,69 +509,51 @@ export function FindPeopleScreen({
               </>
             ) : (
               <>
-                {/* Tab switch: Discover / Contacts */}
+                {/* Tab switch: Discover / My contacts, as one control */}
                 <View
-                  style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}
+                  style={{
+                    flexDirection: "row",
+                    padding: 4,
+                    borderRadius: radius.pill,
+                    backgroundColor: palette.paperSand,
+                    marginBottom: 14,
+                  }}
                 >
-                  <PressScale
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: tab === "discover" }}
-                    accessibilityLabel="Discover"
-                    onPress={() => setTab("discover")}
-                    containerStyle={{ flex: 1 }}
-                    style={{
-                      minHeight: 44,
-                      justifyContent: "center",
-                      borderRadius: radius.pill,
-                      backgroundColor:
-                        tab === "discover" ? palette.navy : palette.paper,
-                      borderWidth: tab === "discover" ? 0 : 1,
-                      borderColor: palette.rule,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemi,
-                        fontSize: 13,
-                        color: tab === "discover" ? "#FFFFFF" : palette.ink,
-                      }}
-                    >
-                      Discover
-                    </Text>
-                  </PressScale>
-                  <PressScale
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: tab === "contacts" }}
-                    accessibilityLabel="My contacts"
-                    onPress={() => {
-                      setTab("contacts");
-                      // The phone app checks straight away; a browser waits for "Choose contacts".
-                      if (contacts === null && contactsMode === "device")
-                        void loadContacts();
-                    }}
-                    containerStyle={{ flex: 1 }}
-                    style={{
-                      minHeight: 44,
-                      justifyContent: "center",
-                      borderRadius: radius.pill,
-                      backgroundColor:
-                        tab === "contacts" ? palette.navy : palette.paper,
-                      borderWidth: tab === "contacts" ? 0 : 1,
-                      borderColor: palette.rule,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: fonts.bodySemi,
-                        fontSize: 13,
-                        color: tab === "contacts" ? "#FFFFFF" : palette.ink,
-                      }}
-                    >
-                      My contacts
-                    </Text>
-                  </PressScale>
+                  {(["discover", "contacts"] as const).map((key) => {
+                    const on = tab === key;
+                    return (
+                      <Pressable
+                        key={key}
+                        accessibilityRole="tab"
+                        accessibilityState={{ selected: on }}
+                        accessibilityLabel={key === "discover" ? "Discover" : "My contacts"}
+                        onPress={() => {
+                          setTab(key);
+                          // The phone app checks straight away; a browser waits for "Choose contacts".
+                          if (key === "contacts" && contacts === null && contactsMode === "device") void loadContacts();
+                        }}
+                        style={{
+                          flex: 1,
+                          minHeight: 40,
+                          borderRadius: radius.pill,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: on ? "#FFFFFF" : "transparent",
+                          ...(on ? cardShadow : {}),
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: fonts.bodySemi,
+                            fontSize: 14,
+                            color: on ? palette.navy : palette.slate,
+                          }}
+                        >
+                          {key === "discover" ? "Discover" : "My contacts"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
 
                 {tab === "discover" ? (

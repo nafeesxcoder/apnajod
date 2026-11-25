@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -350,7 +351,7 @@ export function ChatsScreen({
             accessibilityLabel="Search chats"
             returnKeyType="search"
             autoCorrect={false}
-            style={styles.searchInput}
+            style={[styles.searchInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
           />
           {!!query && (
             <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}>
