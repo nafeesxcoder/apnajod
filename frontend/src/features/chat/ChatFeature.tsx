@@ -4264,17 +4264,7 @@ function ChatBubble({
           )}
           {message.type === "snap" && message.snap && (
             <>
-              <View
-                style={[
-                  StyleSheet.absoluteFill,
-                  {
-                    backgroundColor:
-                      snapFilters.find(
-                        (item) => item.name === message.snap?.filter,
-                      )?.color ?? "transparent",
-                  },
-                ]}
-              />
+              <SnapLensLayer lens={lensFor(message.snap?.filter)} />
               {!!message.snap.sticker && (
                 <Text style={chatStyles.snapSticker}>
                   {message.snap.sticker}
@@ -5381,7 +5371,6 @@ function ViewerBody({
   }
   // A Snap: the photo with its filter and sticker, and the filter's name below it.
   if (message.type === "snap" && message.snap) {
-    const filter = snapFilters.find((item) => item.name === message.snap?.filter);
     return (
       <View style={viewerStyles.snapWrap}>
         <View style={viewerStyles.snapPhoto}>
@@ -5391,12 +5380,7 @@ function ViewerBody({
             contentFit="contain"
             autoplay
           />
-          {!!filter && (
-            <View
-              pointerEvents="none"
-              style={[StyleSheet.absoluteFill, { backgroundColor: filter.color }]}
-            />
-          )}
+          <SnapLensLayer lens={lensFor(message.snap.filter)} />
           {!!message.snap.sticker && (
             <Text pointerEvents="none" style={viewerStyles.snapSticker}>
               {message.snap.sticker}
@@ -8942,8 +8926,170 @@ function TypingDots() {
   );
 }
 
-// The lenses on a Snap: "Original" is the photo as it was taken, the rest are colour looks.
-const snapLenses = [{ name: "Original", color: "transparent" }, ...snapFilters];
+// The Snap lenses are ours: colour looks, light leaks, frames and falling hearts.
+// (Snapchat's own lenses belong to Snapchat and cannot be copied.)
+type SnapLens = {
+  name: string;
+  emoji: string;
+  gradient: [string, string];
+  kind: "none" | "tint" | "leak" | "frame" | "polaroid" | "hearts";
+  color?: string;
+};
+
+const snapLenses: SnapLens[] = [
+  { name: "Original", emoji: "📷", gradient: ["#3A3F46", "#15171A"], kind: "none" },
+  { name: "Neon Club", emoji: "🌃", gradient: ["#1F4F7E", "#0E2238"], kind: "tint", color: "rgba(35,90,146,0.24)" },
+  { name: "Royal Ruby", emoji: "💎", gradient: ["#A8243A", "#4A0F1A"], kind: "tint", color: "rgba(161,40,64,0.26)" },
+  { name: "Golden Hour", emoji: "🌅", gradient: ["#F0A060", "#7A3A1C"], kind: "leak", color: "rgba(255,170,90,0.38)" },
+  { name: "Polaroid", emoji: "🎞️", gradient: ["#F4F4F4", "#9AA0A6"], kind: "polaroid" },
+  { name: "Heart Rain", emoji: "💖", gradient: ["#E0557F", "#7A1B3A"], kind: "hearts" },
+  { name: "Neon Frame", emoji: "✨", gradient: ["#3B3F9C", "#101238"], kind: "frame", color: "#7CF5FF" },
+  { name: "Noir", emoji: "🖤", gradient: ["#4A4D52", "#050505"], kind: "tint", color: "rgba(0,0,0,0.38)" },
+];
+
+/** The lens for a name. Snaps sent before these lenses carry an old colour filter, which still shows. */
+function lensFor(name?: string): SnapLens | null {
+  if (!name) return null;
+  const found = snapLenses.find((item) => item.name === name);
+  if (found) return found;
+  const old = snapFilters.find((item) => item.name === name);
+  return old
+    ? { name, emoji: "🎨", gradient: ["#3A3F46", "#15171A"], kind: "tint", color: old.color }
+    : null;
+}
+
+const snapLensStyles = StyleSheet.create({
+  frame: { margin: 10, borderWidth: 6, borderRadius: 26 },
+  polaroid: { borderWidth: 14, borderBottomWidth: 60, borderColor: "#FFFFFF" },
+});
+
+/** Falling hearts: small hearts that drop down the screen, one after another. */
+function FallingHearts() {
+  const { height } = useWindowDimensions();
+  const drops = useRef(
+    Array.from({ length: 7 }, (_, index) => ({
+      left: 6 + ((index * 37) % 84),
+      delay: index * 420,
+      fall: new Animated.Value(0),
+    })),
+  ).current;
+  useEffect(() => {
+    const loops = drops.map((drop) =>
+      Animated.loop(
+        Animated.timing(drop.fall, {
+          toValue: 1,
+          duration: 3600,
+          delay: drop.delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ),
+    );
+    loops.forEach((loop) => loop.start());
+    return () => loops.forEach((loop) => loop.stop());
+  }, [drops]);
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {drops.map((drop, index) => (
+        <Animated.Text
+          key={index}
+          style={{
+            position: "absolute",
+            left: `${drop.left}%`,
+            top: 0,
+            fontSize: 26,
+            transform: [
+              {
+                translateY: drop.fall.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-40, height],
+                }),
+              },
+            ],
+          }}
+        >
+          💖
+        </Animated.Text>
+      ))}
+    </View>
+  );
+}
+
+/** The lens drawn over a photo or the live camera. It never takes a tap. */
+function SnapLensLayer({ lens }: { lens: SnapLens | null | undefined }) {
+  if (!lens || lens.kind === "none") return null;
+  if (lens.kind === "tint") {
+    return (
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: lens.color }]} />
+    );
+  }
+  if (lens.kind === "leak") {
+    return (
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={[lens.color ?? "rgba(255,170,90,0.38)", "rgba(255,170,90,0)"]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0.1, y: 0.9 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+    );
+  }
+  if (lens.kind === "frame") {
+    return (
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, snapLensStyles.frame, { borderColor: lens.color ?? "#7CF5FF" }]}
+      />
+    );
+  }
+  if (lens.kind === "polaroid") {
+    return <View pointerEvents="none" style={[StyleSheet.absoluteFill, snapLensStyles.polaroid]} />;
+  }
+  return <FallingHearts />;
+}
+
+/** The lens cards along the bottom: each one a colour, an emoji and the lens's name. */
+function LensCarousel({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (name: string) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={snapLive.carousel}
+    >
+      {snapLenses.map((item) => {
+        const on = item.name === selected;
+        return (
+          <Pressable
+            key={item.name}
+            accessibilityRole="button"
+            accessibilityLabel={`Lens: ${item.name}`}
+            accessibilityState={{ selected: on }}
+            onPress={() => onSelect(item.name)}
+            style={[snapLive.card, on && snapLive.cardOn]}
+          >
+            <LinearGradient
+              colors={item.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={snapLive.cardEmoji}>{item.emoji}</Text>
+            <Text numberOfLines={2} style={snapLive.cardName}>
+              {item.name}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
 
 function SnapStudio({
   visible,
@@ -8970,7 +9116,7 @@ function SnapStudio({
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const cameraAllowed = !!permission?.granted;
-  const activeLens = snapLenses.find((item) => item.name === lens) ?? snapLenses[0]!;
+  const activeLens = lensFor(lens) ?? snapLenses[0]!;
 
   // Each time Snap opens: a fresh camera, and the camera permission asked for once.
   useEffect(() => {
@@ -9007,12 +9153,7 @@ function SnapStudio({
       {uri ? (
         <View style={snapCamera.screen}>
           <Image source={{ uri }} style={styles.fill} resizeMode="cover" />
-          {activeLens.color !== "transparent" && (
-            <View
-              pointerEvents="none"
-              style={[StyleSheet.absoluteFill, { backgroundColor: activeLens.color }]}
-            />
-          )}
+          <SnapLensLayer lens={activeLens} />
           {!!sticker && (
             <Text pointerEvents="none" style={snapCamera.bigSticker}>
               {sticker}
@@ -9028,7 +9169,6 @@ function SnapStudio({
               <Ionicons name="close" size={22} color="#FFFFFF" />
             </Pressable>
             <View style={snapCamera.titlePill}>
-              <Ionicons name="camera" size={16} color="#FFFFFF" />
               <Text style={snapCamera.titlePillText}>Snap</Text>
             </View>
             <Pressable
@@ -9041,38 +9181,7 @@ function SnapStudio({
             </Pressable>
           </SafeAreaView>
           <SafeAreaView edges={["bottom"]} style={snapCamera.bottomPanel}>
-            <Text style={snapCamera.bottomLabel}>LENSES</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={snapCamera.chipRow}
-            >
-              {snapLenses.map((item) => (
-                <Pressable
-                  key={item.name}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Lens: ${item.name}`}
-                  onPress={() => setLens(item.name)}
-                  style={snapCamera.filterTile}
-                >
-                  <View style={[snapCamera.filterThumb, lens === item.name && snapCamera.filterThumbOn]}>
-                    <Image source={{ uri }} style={styles.fill} />
-                    <View
-                      style={[
-                        StyleSheet.absoluteFill,
-                        { backgroundColor: item.color === "transparent" ? "transparent" : item.color },
-                      ]}
-                    />
-                  </View>
-                  <Text
-                    numberOfLines={1}
-                    style={[snapCamera.filterText, lens === item.name && snapCamera.filterTextOn]}
-                  >
-                    {item.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <LensCarousel selected={lens} onSelect={setLens} />
             <Text style={snapCamera.bottomLabel}>STICKERS</Text>
             <ScrollView
               horizontal
@@ -9145,66 +9254,41 @@ function SnapStudio({
               </Pressable>
             </View>
           )}
-          {activeLens.color !== "transparent" && (
-            <View
-              pointerEvents="none"
-              style={[StyleSheet.absoluteFill, { backgroundColor: activeLens.color }]}
-            />
-          )}
+          <SnapLensLayer lens={activeLens} />
           <SafeAreaView edges={["top"]} style={snapLive.top} pointerEvents="box-none">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close Snap"
               onPress={onClose}
-              style={snapLive.roundButton}
+              style={snapLive.closeButton}
             >
               <Ionicons name="close" size={22} color="#FFFFFF" />
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={flash === "on" ? "Flash on" : "Flash off"}
-              onPress={() => setFlash((value) => (value === "on" ? "off" : "on"))}
-              style={snapLive.roundButton}
-            >
-              <Ionicons name={flash === "on" ? "flash" : "flash-off"} size={20} color="#FFFFFF" />
-            </Pressable>
+            <View style={snapLive.titlePill}>
+              <Text style={snapLive.titleText}>SNAP</Text>
+            </View>
+            <View style={snapLive.closeButton} />
           </SafeAreaView>
           <View style={snapLive.rail} pointerEvents="box-none">
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={flash === "on" ? "Flash on" : "Flash off"}
+              onPress={() => setFlash((value) => (value === "on" ? "off" : "on"))}
+              style={snapLive.railButton}
+            >
+              <Ionicons name={flash === "on" ? "flash" : "flash-off"} size={20} color="#FFFFFF" />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Switch camera"
               onPress={() => setFacing((value) => (value === "back" ? "front" : "back"))}
-              style={snapLive.roundButton}
+              style={snapLive.railButton}
             >
-              <Ionicons name="camera-reverse-outline" size={22} color="#FFFFFF" />
+              <Ionicons name="camera-reverse-outline" size={21} color="#FFFFFF" />
             </Pressable>
           </View>
           <SafeAreaView edges={["bottom"]} style={snapLive.bottom}>
-            <Text style={snapLive.lensName}>{lens}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={snapLive.lensRow}
-            >
-              {snapLenses.map((item) => (
-                <Pressable
-                  key={item.name}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Lens: ${item.name}`}
-                  onPress={() => setLens(item.name)}
-                  style={snapLive.lens}
-                >
-                  <View style={[snapLive.lensCircle, lens === item.name && snapLive.lensCircleOn]}>
-                    <View
-                      style={[
-                        StyleSheet.absoluteFill,
-                        { backgroundColor: item.color === "transparent" ? "#2A2D31" : item.color },
-                      ]}
-                    />
-                  </View>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <LensCarousel selected={lens} onSelect={setLens} />
             <View style={snapLive.shutterRow}>
               <Pressable
                 accessibilityRole="button"
@@ -9224,7 +9308,7 @@ function SnapStudio({
   );
 }
 
-// The live Snap camera: the preview fills the screen, the lenses sit above the shutter.
+// The live Snap camera: a right rail, lens cards along the bottom, and a crimson shutter.
 const snapLive = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#000000" },
   permission: {
@@ -9258,55 +9342,76 @@ const snapLive = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 14,
-    paddingTop: 4,
+    paddingTop: 6,
   },
-  roundButton: {
+  closeButton: {
     width: 42,
     height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(13,14,15,0.55)",
     alignItems: "center",
     justifyContent: "center",
   },
-  rail: { position: "absolute", right: 14, top: 120, gap: 16 },
+  titlePill: {
+    paddingHorizontal: 18,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(168,36,58,0.9)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  titleText: {
+    fontFamily: "Mukta_700Bold",
+    fontSize: 13,
+    letterSpacing: 2,
+    color: "#FFFFFF",
+  },
+  rail: {
+    position: "absolute",
+    right: 12,
+    top: 120,
+    gap: 14,
+    alignItems: "center",
+  },
+  railButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(20,22,26,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   bottom: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    gap: 12,
-    paddingBottom: 14,
+    gap: 14,
+    paddingBottom: 12,
   },
-  lensName: {
-    fontFamily: "Mukta_700Bold",
-    fontSize: 14,
-    color: "#FFFFFF",
-    textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.6)",
-    textShadowRadius: 4,
-  },
-  lensRow: { paddingHorizontal: 16, gap: 14, alignItems: "center" },
-  lens: { alignItems: "center" },
-  lensCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  carousel: { paddingHorizontal: 14, gap: 10, alignItems: "flex-end" },
+  card: {
+    width: 80,
+    height: 104,
+    borderRadius: 18,
     overflow: "hidden",
+    padding: 9,
+    justifyContent: "space-between",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.55)",
+    borderColor: "rgba(255,255,255,0.25)",
   },
-  lensCircleOn: { borderColor: "#FFFFFF", borderWidth: 3 },
+  cardOn: { borderColor: "#FFFFFF", borderWidth: 3 },
+  cardEmoji: { fontSize: 26 },
+  cardName: { fontFamily: "Mukta_700Bold", fontSize: 12, color: "#FFFFFF" },
   shutterRow: { alignItems: "center" },
   shutter: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 5,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 4,
     borderColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: "#FFFFFF" },
+  shutterInner: { width: 74, height: 74, borderRadius: 37, backgroundColor: "#A8243A" },
   error: {
     fontFamily: "Mukta_600SemiBold",
     fontSize: 13,
