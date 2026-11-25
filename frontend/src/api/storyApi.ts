@@ -1,4 +1,7 @@
 import { API_URL } from "./config";
+
+// True in the phone app (React Native sets navigator.product), false on the web.
+const onPhone = typeof navigator !== "undefined" && navigator.product === "ReactNative";
 import type { StoryMusic } from "./musicApi";
 
 export type StoryItem = {
@@ -120,8 +123,13 @@ export const storyApi = {
     const body = new FormData();
     // Close friends: only the people on your list see it.
     if (audience === "close") body.append("audience", "close");
-    const file = await fetch(uri).then((response) => response.blob());
-    body.append("photo", file, "story.jpg");
+    if (!onPhone) {
+      const file = await fetch(uri).then((response) => response.blob());
+      body.append("photo", file, "story.jpg");
+    } else {
+      // The phone reads the file itself and sends it as a JPEG.
+      body.append("photo", { uri, name: "story.jpg", type: "image/jpeg" } as any);
+    }
     // Only which song, where and how long - no sound file.
     if (music) {
       body.append("musicTrackId", music.trackId);
