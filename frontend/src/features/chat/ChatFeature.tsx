@@ -38,7 +38,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ChatBackdrop } from "./ChatBackdrop";
 import { MediaViewer } from "./MediaViewer";
 import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
-import { mimeTypeFor } from "../../api/chatApi";
+import { mimeTypeFor, type ConversationSummary } from "../../api/chatApi";
 import { BACKGROUND_CHOICES } from "./chatBackgrounds";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -929,7 +929,6 @@ export function ChatScreen({
   onDelete,
   onMessageState,
   onForward,
-  forwardTargets = [],
   onOpenConversation: _onOpenConversation,
   onReport,
   onBlock,
@@ -979,8 +978,6 @@ export function ChatScreen({
     },
   ) => Promise<boolean>;
   onForward: (target: Match, messages: ChatMessage[]) => Promise<number>;
-  /** The real matches a message can be forwarded to. */
-  forwardTargets?: Match[];
   onOpenConversation: (target: Match) => void;
   onReport: (reason: string, details?: string) => void | Promise<unknown>;
   onBlock: () => void;
@@ -3598,7 +3595,7 @@ export function ChatScreen({
             visible={forwardMessages.length > 0}
             messages={forwardMessages}
             current={match}
-            targets={forwardTargets}
+            accessToken={accessToken}
             onClose={() => setForwardMessages([])}
             onForward={async (target) => {
               const sent = await onForward(target, forwardMessages);
@@ -7781,23 +7778,57 @@ function EditMessageSheet({
   );
 }
 
+/** A chat from the chat list, in the shape a forward needs: its id is the chat's id. */
+function conversationAsMatch(item: ConversationSummary): Match {
+  return {
+    id: item.user.userId,
+    matchId: item.conversationId,
+    name: item.user.name || item.user.username,
+    photo: item.user.avatarUrl ?? "",
+    city: "",
+    profession: "",
+  } as Match;
+}
+
 function ForwardSelectorSheet({
   visible,
   messages,
   current,
-  targets,
+  accessToken,
   onClose,
   onForward,
 }: {
   visible: boolean;
   messages: ChatMessage[];
   current: Match;
-  targets: Match[];
+  accessToken: string;
   onClose: () => void;
   onForward: (target: Match) => Promise<void>;
 }) {
   const [query, setQuery] = useState("");
   const [sendingId, setSendingId] = useState("");
+  // The chats the member already has: only real conversations, never sample profiles.
+  const [targets, setTargets] = useState<Match[]>([]);
+  useEffect(() => {
+    if (!visible || !accessToken) return;
+    let live = true;
+    void chatApi
+      .fetchConversations(accessToken)
+      .then((conversations) => {
+        if (!live) return;
+        setTargets(
+          conversations
+            .filter((item) => item.user.userId !== current.id)
+            .map(conversationAsMatch),
+        );
+      })
+      .catch(() => {
+        if (live) setTargets([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [visible, accessToken, current.id]);
   useEffect(() => {
     if (visible) {
       setQuery("");
@@ -8813,7 +8844,11 @@ function CoupleSettingsSheet({
                       chosen && { borderColor: palette.navy, backgroundColor: "rgba(31,77,122,0.08)" },
                     ]}
                   >
-                    <LinearGradient colors={background.colors} style={coupleStyles.themeDot} />
+                    {background.image ? (
+                      <Image source={background.image} style={coupleStyles.themeDot} />
+                    ) : (
+                      <LinearGradient colors={background.colors} style={coupleStyles.themeDot} />
+                    )}
                     <Text style={coupleStyles.themeName}>{background.name}</Text>
                   </Pressable>
                 );
