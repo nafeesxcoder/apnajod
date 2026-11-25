@@ -38,6 +38,12 @@ export default ({config}: ConfigContext): ExpoConfig => {
       granularPermissions: ['photo', 'video'],
     }],
     'expo-sharing',
+    // The Snap camera. Snaps and photos are pictures, so the app never records sound.
+    ['expo-camera', {
+      cameraPermission: 'Apnajoda uses the camera to take a Snap or a photo for your chat.',
+      recordAudioAndroid: false,
+      barcodeScannerEnabled: false,
+    }],
   ] as ExpoConfig['plugins'];
   const eas = easProjectId ? {projectId: easProjectId} : undefined;
   // Firebase's file for Android notifications. On EAS it comes from the file
