@@ -2223,6 +2223,15 @@ export function ChatScreen({
     .sort((a, b) => (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0));
   const selectedMessage =
     previewMessages.find((message) => message.id === selectedMessageId) ?? null;
+  // The "more" sheet opens from the top bar; it is shut whenever the selection goes.
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!selectedMessageId) setActionMenuOpen(false);
+  }, [selectedMessageId]);
+  const closeQuickReact = () => {
+    setQuickReactFor(null);
+    setSelectedMessageId(null);
+  };
   const selectMessage = (message: ChatMessage) => {
     if (message.deletedForEveryone) return;
     if (multiSelectMode) {
@@ -2233,9 +2242,9 @@ export function ChatScreen({
       );
       return;
     }
-    setSelectedMessageId((current) =>
-      current === message.id ? null : message.id,
-    );
+    // A new selection starts with a long press, as in WhatsApp; a tap only
+    // clears the message that is already selected.
+    setSelectedMessageId((current) => (current === message.id ? null : current));
   };
   const startMultiSelect = (message?: ChatMessage) => {
     setMultiSelectMode(true);
@@ -2705,6 +2714,75 @@ export function ChatScreen({
               <Ionicons name="chevron-forward" size={16} color="#701B2C" />
             </Pressable>
           )}
+          {!!selectedMessage && !multiSelectMode && (
+            <SafeAreaView edges={["top"]} style={selectBar.bar}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear selection"
+                hitSlop={8}
+                onPress={closeQuickReact}
+                style={selectBar.button}
+              >
+                <Ionicons name="arrow-back" size={22} color="#1F2A36" />
+              </Pressable>
+              <Text style={selectBar.count}>1</Text>
+              <View style={selectBar.spacer} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Reply"
+                hitSlop={8}
+                onPress={() => {
+                  setReplyTarget(selectedMessage);
+                  setSelectedMessageId(null);
+                }}
+                style={selectBar.button}
+              >
+                <Ionicons name="arrow-undo-outline" size={22} color="#1F2A36" />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={selectedMessage.starredByMe ? "Unstar" : "Star"}
+                hitSlop={8}
+                onPress={() => void toggleStar(selectedMessage.id)}
+                style={selectBar.button}
+              >
+                <Ionicons
+                  name={selectedMessage.starredByMe ? "star" : "star-outline"}
+                  size={21}
+                  color="#1F2A36"
+                />
+              </Pressable>
+              {selectedMessage.mine !== false && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete"
+                  hitSlop={8}
+                  onPress={() => requestDeleteSelected()}
+                  style={selectBar.button}
+                >
+                  <Ionicons name="trash-outline" size={21} color="#1F2A36" />
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Forward"
+                hitSlop={8}
+                onPress={() => forwardSelected()}
+                style={selectBar.button}
+              >
+                <Ionicons name="arrow-redo-outline" size={22} color="#1F2A36" />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="More message actions"
+                hitSlop={8}
+                onPress={() => setActionMenuOpen(true)}
+                style={selectBar.button}
+              >
+                <Ionicons name="ellipsis-vertical" size={20} color="#1F2A36" />
+              </Pressable>
+            </SafeAreaView>
+          )}
           {multiSelectMode && (
             <View accessibilityRole="toolbar" style={chatStyles.multiSelectBar}>
               <Pressable
@@ -2847,6 +2925,8 @@ export function ChatScreen({
                     if (multiSelectMode || message.deletedForEveryone) return;
                     const { pageX, pageY } = event.nativeEvent;
                     setQuickReactFor({ message, pageX, pageY });
+                    // A long press also selects the message, which brings up the top bar.
+                    setSelectedMessageId(message.id);
                   }}
                 />
               </View>
@@ -3310,7 +3390,7 @@ export function ChatScreen({
               being in a conversation replaces the app's main navigation with
               just that conversation until you go back. */}
           <MessageActionSheet
-            visible={!!selectedMessage}
+            visible={!!selectedMessage && actionMenuOpen}
             message={selectedMessage}
             reaction={selectedMessage?.reactions?.me || undefined}
             starred={!!selectedMessage?.starredByMe}
@@ -3373,13 +3453,13 @@ export function ChatScreen({
                   visible
                   transparent
                   animationType="fade"
-                  onRequestClose={() => setQuickReactFor(null)}
+                  onRequestClose={closeQuickReact}
                 >
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Close quick reactions"
                     style={chatStyles.floatReactBackdrop}
-                    onPress={() => setQuickReactFor(null)}
+                    onPress={closeQuickReact}
                   />
                   <View
                     style={[
@@ -3412,7 +3492,7 @@ export function ChatScreen({
                       accessibilityRole="button"
                       accessibilityLabel="More message actions"
                       onPress={() => {
-                        setSelectedMessageId(quickReactFor.message.id);
+                        setActionMenuOpen(true);
                         setQuickReactFor(null);
                       }}
                       style={chatStyles.floatReactMoreButton}
@@ -8899,6 +8979,32 @@ function SnapStudio({
     </Modal>
   );
 }
+
+/** The top bar that appears when a message is selected: back, count, and its actions. */
+const selectBar = StyleSheet.create({
+  bar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingBottom: 8,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E4E7EB",
+    shadowColor: "#000000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  button: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  count: { fontFamily: "Mukta_700Bold", fontSize: 18, color: "#1F2A36", marginLeft: 4 },
+  spacer: { flex: 1 },
+});
 
 const snapCamera = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#0D0E0F" },
