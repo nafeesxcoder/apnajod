@@ -34,6 +34,8 @@ export default ({config}: ConfigContext): ExpoConfig => {
       photosPermission: 'Apnajoda saves photos and videos you choose to download from a chat to your gallery.',
       savePhotosPermission: 'Apnajoda saves photos and videos you download from a chat to your gallery.',
       isAccessMediaLocationEnabled: false,
+      // Only photos and videos: the app never reads the phone's audio library.
+      granularPermissions: ['photo', 'video'],
     }],
     'expo-sharing',
   ] as ExpoConfig['plugins'];

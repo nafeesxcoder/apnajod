@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Linking,
   Platform,
@@ -204,7 +205,24 @@ export function FindPeopleScreen({
     return () => clearTimeout(timer);
   }, [term, onSearch, searchMode]);
 
+  // Before the phone's contacts are read, say why and what leaves the phone (Play requires this).
   const loadContacts = async () => {
+    setError("");
+    if (contactsMode === "device") {
+      Alert.alert(
+        "Find people you know",
+        "Apnajoda reads the phone numbers in your contacts and checks which of them are already on Apnajoda. Only the numbers are sent to us to match. Names stay on your phone.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Continue", onPress: () => void readContacts() },
+        ],
+      );
+      return;
+    }
+    await readContacts();
+  };
+
+  const readContacts = async () => {
     setError("");
     // Android Chrome: you pick the contacts to check (the browser's own list).
     let picked: BookContact[] | undefined;
