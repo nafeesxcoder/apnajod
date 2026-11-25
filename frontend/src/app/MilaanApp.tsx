@@ -3920,6 +3920,7 @@ function MilaanApp() {
               onMessageState={(messageId, input) =>
                 updateChatMessageState(conversationPartner, messageId, input)
               }
+              forwardTargets={serverMatches ?? []}
               onForward={(target, forwarded) =>
                 forwardChatMessages(target, forwarded)
               }

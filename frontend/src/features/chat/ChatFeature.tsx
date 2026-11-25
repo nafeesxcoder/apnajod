@@ -91,7 +91,7 @@ import {
   fetchStreak,
   type ChatStreak,
 } from "../../api/chatApi";
-import { matches, type Match } from "../../data";
+import type { Match } from "../../data";
 import type { PreviewState, Screen } from "../../app/navigation/types";
 import type {
   ChatMessage,
@@ -929,6 +929,7 @@ export function ChatScreen({
   onDelete,
   onMessageState,
   onForward,
+  forwardTargets = [],
   onOpenConversation: _onOpenConversation,
   onReport,
   onBlock,
@@ -978,6 +979,8 @@ export function ChatScreen({
     },
   ) => Promise<boolean>;
   onForward: (target: Match, messages: ChatMessage[]) => Promise<number>;
+  /** The real matches a message can be forwarded to. */
+  forwardTargets?: Match[];
   onOpenConversation: (target: Match) => void;
   onReport: (reason: string, details?: string) => void | Promise<unknown>;
   onBlock: () => void;
@@ -3595,6 +3598,7 @@ export function ChatScreen({
             visible={forwardMessages.length > 0}
             messages={forwardMessages}
             current={match}
+            targets={forwardTargets}
             onClose={() => setForwardMessages([])}
             onForward={async (target) => {
               const sent = await onForward(target, forwardMessages);
@@ -7781,12 +7785,14 @@ function ForwardSelectorSheet({
   visible,
   messages,
   current,
+  targets,
   onClose,
   onForward,
 }: {
   visible: boolean;
   messages: ChatMessage[];
   current: Match;
+  targets: Match[];
   onClose: () => void;
   onForward: (target: Match) => Promise<void>;
 }) {
@@ -7799,7 +7805,7 @@ function ForwardSelectorSheet({
     }
   }, [visible]);
   const normalized = query.trim().toLowerCase();
-  const recipients = matches.filter(
+  const recipients = targets.filter(
     (item) =>
       item.id !== current.id &&
       (!normalized ||
