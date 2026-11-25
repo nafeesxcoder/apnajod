@@ -18,16 +18,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
+  isEmailEntry,
+  isValidEmail,
   isValidPassword,
   isValidPhone,
   isValidUsername,
+  normalizeAuthEmail,
   normalizeAuthPhone,
   normalizeUsername,
   passwordError,
   usernameError,
 } from "../../../domain/validation";
 import { authApi, AuthRequestError } from "../../../api/authApi";
-import { DEFAULT_COUNTRY } from "../../../domain/countries";
 import { access } from "../../../theme/accessStyles";
 import { colors } from "../../../theme";
 import { keyboardBehavior } from "../../../layout/keyboardBehavior";
@@ -176,11 +178,10 @@ function AccessField({
 }
 
 /**
- * The mobile field. This is where the design spends its boldness: display-size
- * digits, a fixed brass +91, and a live count, because "how many numbers do I
- * type?" was the question that stopped people.
+ * The mobile-or-email field. Digits are read as a mobile number and an @ makes
+ * it an email; the code goes to whichever one is typed.
  */
-function PhoneField({
+function ContactField({
   value,
   onChange,
   error,
@@ -191,35 +192,31 @@ function PhoneField({
   error?: string;
   autoFocus?: boolean;
 }) {
+  const emailEntry = isEmailEntry(value);
   const digits = value.replace(/\D/g, "").slice(0, 10);
-  const remaining = 10 - digits.length;
-  const grouped = digits.length > 5 ? `${digits.slice(0, 5)} ${digits.slice(5)}` : digits;
+  const help = !value.trim()
+    ? "Type a 10-digit mobile number, or an email address."
+    : emailEntry
+      ? "We will send one code to this email."
+      : digits.length === 10
+        ? "We will send one code to this number."
+        : `${digits.length} of 10 digits`;
   return (
-    <AccessField
-      label="Mobile number"
-      help={
-        remaining === 0
-          ? "We will send one code to this number."
-          : `${digits.length} of 10 digits`
-      }
-      error={error}
-    >
-      <View style={[access.phoneBox, !!error && access.inputBad]}>
-        <Text style={access.dial}>{DEFAULT_COUNTRY.dial}</Text>
-        <View style={access.dialRule} />
+    <AccessField label="Mobile number or email" help={help} error={error}>
+      <View style={[access.inputBox, !!error && access.inputBad]}>
         <TextInput
-          accessibilityLabel="Mobile number"
+          accessibilityLabel="Mobile number or email"
           autoFocus={autoFocus}
-          value={grouped}
-          onChangeText={(next) => onChange(next.replace(/\D/g, "").slice(0, 10))}
-          keyboardType="number-pad"
-          textContentType="telephoneNumber"
-          autoComplete="tel"
-          maxLength={11}
-          placeholder="98765 43210"
+          value={value}
+          onChangeText={(next) => onChange(next.replace(/\s/g, ""))}
+          keyboardType="default"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          placeholder="98765 43210 or you@example.com"
           placeholderTextColor={colors.lineSoft}
           selectionColor={colors.accent}
-          style={access.phoneInput}
+          style={access.input}
         />
       </View>
     </AccessField>
@@ -315,7 +312,7 @@ export function AccessWelcomeScreen({
    Sign up: mobile, username, password
    ============================================================ */
 
-export type SignUpDraft = { phone: string; username: string; password: string };
+export type SignUpDraft = { phone?: string; email?: string; username: string; password: string };
 
 export function SignUpScreen({
   onBack,
@@ -328,7 +325,7 @@ export function SignUpScreen({
   onCheckUsername: (username: string) => Promise<{ available: boolean; reason: string }>;
   onSubmit: (draft: SignUpDraft) => Promise<void>;
 }) {
-  const [phone, setPhone] = useState("");
+  const [contact, setContact] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -338,10 +335,11 @@ export function SignUpScreen({
   const [checking, setChecking] = useState(false);
   const checkToken = useRef(0);
 
-  const phoneOk = isValidPhone(phone);
+  const emailEntry = isEmailEntry(contact);
+  const contactOk = emailEntry ? isValidEmail(contact) : isValidPhone(contact);
   const nameMessage = usernameError(username);
   const passwordMessage = passwordError(password);
-  const ready = phoneOk && !nameMessage && !passwordMessage && !nameTaken;
+  const ready = contactOk && !nameMessage && !passwordMessage && !nameTaken;
 
   // Checking as they type means they find out the username is taken before
   // they have filled in a password, not after the OTP.
@@ -373,11 +371,10 @@ export function SignUpScreen({
     if (!ready) return;
     setLoading(true);
     try {
-      await onSubmit({
-        phone: normalizeAuthPhone(phone) as string,
-        username: normalizeUsername(username),
-        password,
-      });
+      const who = emailEntry
+        ? { email: normalizeAuthEmail(contact) as string }
+        : { phone: normalizeAuthPhone(contact) as string };
+      await onSubmit({ ...who, username: normalizeUsername(username), password });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Could not start sign-up. Try again.");
     } finally {
@@ -400,11 +397,11 @@ export function SignUpScreen({
       />
 
       <View style={access.stack}>
-        <PhoneField
+        <ContactField
           autoFocus
-          value={phone}
-          onChange={setPhone}
-          error={submitted && !phoneOk ? "Enter your 10-digit mobile number." : ""}
+          value={contact}
+          onChange={setContact}
+          error={submitted && !contactOk ? "Enter a 10-digit mobile number or an email address." : ""}
         />
 
         <AccessField
@@ -504,6 +501,10 @@ export function OtpScreen({
   }, [seconds]);
 
   const masked = useMemo(() => {
+    if (destination.includes("@")) {
+      const [name = "", domain = ""] = destination.split("@");
+      return `${name.slice(0, 1)}•••@${domain}`;
+    }
     const digits = destination.replace(/\D/g, "");
     return digits.length >= 4 ? `••••• ${digits.slice(-4)}` : destination;
   }, [destination]);
@@ -643,7 +644,7 @@ export function LogInScreen({
     setError("");
     setAppealToken(null);
     if (!identifier.trim()) {
-      setError("Enter your username or mobile number.");
+      setError("Enter your username, mobile number or email.");
       return;
     }
     if (!password) {
@@ -672,13 +673,13 @@ export function LogInScreen({
   return (
     <AccessPage onBack={onBack}>
       <Wordmark />
-      <Heading title="Log in" body="Use your username or your mobile number." />
+      <Heading title="Log in" body="Use your username, mobile number or email." />
 
       <View style={access.stack}>
-        <AccessField label="Username or mobile number">
+        <AccessField label="Username, mobile number or email">
           <View style={access.inputBox}>
             <TextInput
-              accessibilityLabel="Username or mobile number"
+              accessibilityLabel="Username, mobile number or email"
               autoFocus
               value={identifier}
               onChangeText={setIdentifier}
@@ -787,7 +788,7 @@ export function ForgotPasswordScreen({
   const submit = async () => {
     setError("");
     if (!identifier.trim()) {
-      setError("Enter your username or mobile number.");
+      setError("Enter your username, mobile number or email.");
       return;
     }
     setLoading(true);
@@ -805,18 +806,18 @@ export function ForgotPasswordScreen({
       <Wordmark />
       <Heading
         title={"Forgot your\npassword?"}
-        body="We will send a code to the mobile number on your account. Then you choose a new password."
+        body="We will send a code to the mobile number or email on your account. Then you choose a new password."
       />
 
       <View style={access.stack}>
         <AccessField
-          label="Username or mobile number"
+          label="Username, mobile number or email"
           help="Whichever you remember."
           error={error}
         >
           <View style={[access.inputBox, !!error && access.inputBad]}>
             <TextInput
-              accessibilityLabel="Username or mobile number"
+              accessibilityLabel="Username, mobile number or email"
               autoFocus
               value={identifier}
               onChangeText={setIdentifier}

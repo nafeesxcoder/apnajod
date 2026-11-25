@@ -26,6 +26,12 @@ export const isValidPhone = (value: string) => normalizeAuthPhone(value) !== nul
 
 export const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
+/** The email the way it is sent and stored: trimmed, in lower case. */
+export const normalizeAuthEmail = (value: string) => (isValidEmail(value) ? value.trim().toLowerCase() : null);
+
+/** Typed with an @, it is an email; anything else is read as a mobile number. */
+export const isEmailEntry = (value: string) => value.includes('@');
+
 /**
  * Usernames are what most members will log in with, so the rules stay easy to
  * explain: 3-20 characters, letters/numbers/._ only, must start with a letter

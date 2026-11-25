@@ -3381,7 +3381,7 @@ function MilaanApp() {
             onSubmit={async (draft) => {
               await authApi.registerStart(draft);
               setSignUpDraft(draft);
-              setAuthDestination(draft.phone);
+              setAuthDestination(draft.email ?? draft.phone ?? "");
               setOtpPurpose("signup");
               setScreen("otp");
             }}

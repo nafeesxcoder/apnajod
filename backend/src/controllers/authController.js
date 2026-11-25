@@ -10,6 +10,7 @@ const env = require("../config/env");
 const { normalizeIndianPhone } = require("../utils/otp");
 const appealService = require("../services/appealService");
 const twoFactorService = require("../services/twoFactorService");
+const { codeTargetFor, normalizeEmailEntry } = require("../services/codeTarget");
 // In-memory OAuth state store (swap for Redis in production / multi-instance deploys)
 const oauthStates = new Map();
 function createState(meta = {}) {
@@ -141,36 +142,60 @@ const checkUsername = asyncHandler(async (req, res) => {
   });
 });
 
+// ---------- Sign-up takes an Indian mobile number or an email ----------
+// The code goes to whichever one was given. Only one of them is sent.
+function signUpTarget({ phone, email }) {
+  if (email) {
+    const address = normalizeEmailEntry(email);
+    if (!address) throw new ApiError(400, "Enter a valid email address.");
+    return { channel: "email", identifier: address };
+  }
+  const national = normalizeIndianPhone(phone);
+  if (!national) {
+    throw new ApiError(400, "Enter a valid 10-digit Indian mobile number or an email address.");
+  }
+  return { channel: "phone", identifier: national };
+}
+
+// The account a sign-up is for, found by its number or its email.
+function findByTarget(target) {
+  return target.channel === "email"
+    ? userService.findUserByEmail(target.identifier)
+    : userService.findUserByPhone(target.identifier);
+}
+
 // ---------- Step 1 of sign-up: claim the details, send the OTP ----------
 const registerStart = asyncHandler(async (req, res) => {
-  const { phone, username, password } = req.body;
+  const { phone, email, username, password } = req.body;
 
-  const normalizedPhone = normalizeIndianPhone(phone);
-  if (!normalizedPhone) {
-    throw new ApiError(400, "Enter a valid 10-digit Indian mobile number.");
-  }
+  const target = signUpTarget({ phone, email });
   const usernameError = userService.validateUsername(username);
   if (usernameError) throw new ApiError(400, usernameError);
   const passwordError = userService.validatePassword(password);
   if (passwordError) throw new ApiError(400, passwordError);
 
-  const existingPhone = await userService.findUserByPhone(normalizedPhone);
-  if (existingPhone && !existingPhone.deleted_at) {
-    throw new ApiError(409, "This mobile number already has an account. Log in instead.");
+  const existing = await findByTarget(target);
+  if (existing && !existing.deleted_at) {
+    throw new ApiError(
+      409,
+      target.channel === "email"
+        ? "This email already has an account. Log in instead."
+        : "This mobile number already has an account. Log in instead.",
+    );
   }
   if (!(await userService.isUsernameAvailable(username))) {
     throw new ApiError(409, "That username is taken. Try another one.");
   }
 
   const result = await otpService.requestOtp({
-    channel: "phone",
-    identifier: normalizedPhone,
+    channel: target.channel,
+    identifier: target.identifier,
     purpose: "register",
   });
 
   res.json({
     ok: true,
-    phone: normalizedPhone,
+    [target.channel]: target.identifier,
     username: userService.normalizeUsername(username),
     ...result,
   });
@@ -178,12 +203,9 @@ const registerStart = asyncHandler(async (req, res) => {
 
 // ---------- Step 2 of sign-up: confirm the OTP, create the account ----------
 const registerVerify = asyncHandler(async (req, res) => {
-  const { phone, username, password, code, invite } = req.body;
+  const { phone, email, username, password, code, invite } = req.body;
 
-  const normalizedPhone = normalizeIndianPhone(phone);
-  if (!normalizedPhone) {
-    throw new ApiError(400, "Enter a valid 10-digit Indian mobile number.");
-  }
+  const target = signUpTarget({ phone, email });
   const usernameError = userService.validateUsername(username);
   if (usernameError) throw new ApiError(400, usernameError);
   const passwordError = userService.validatePassword(password);
@@ -191,8 +213,8 @@ const registerVerify = asyncHandler(async (req, res) => {
   if (!code) throw new ApiError(400, "Enter the code we sent you.");
 
   await otpService.verifyOtp({
-    channel: "phone",
-    identifier: normalizedPhone,
+    channel: target.channel,
+    identifier: target.identifier,
     code,
     purpose: "register",
   });
@@ -203,9 +225,9 @@ const registerVerify = asyncHandler(async (req, res) => {
     throw new ApiError(409, "That username was just taken. Pick another one.");
   }
 
-  let user = await userService.findUserByPhone(normalizedPhone);
+  let user = await findByTarget(target);
   if (user) {
-    // Re-registering a number inside its 30-day deletion grace period.
+    // Re-registering inside the 30-day deletion grace period.
     if (user.deleted_at && userService.isWithinGracePeriod(user.deleted_at)) {
       await userService.restoreUser(user.id);
     } else if (user.deleted_at) {
@@ -213,11 +235,15 @@ const registerVerify = asyncHandler(async (req, res) => {
     }
     await userService.setUsername(user.id, username);
     await userService.setPassword(user.id, password);
-    await userService.markPhoneVerified(user.id);
+    if (target.channel === "email") {
+      await userService.markEmailVerified(user.id);
+    } else {
+      await userService.markPhoneVerified(user.id);
+    }
     user = await userService.findUserById(user.id);
   } else {
     user = await userService.createUser({
-      phone: normalizedPhone,
+      [target.channel]: target.identifier,
       username: userService.normalizeUsername(username),
       passwordHash: await userService.hashPassword(password),
     });
@@ -352,18 +378,19 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const generic = {
     ok: true,
     sent: true,
-    message: "If that account exists, we sent a code to its registered mobile number.",
+    message: "If that account exists, we sent a code to its registered mobile number or email.",
     expiresInSeconds: env.otp.expiresMinutes * 60,
   };
 
-  if (!user || !user.phone || (user.deleted_at && !userService.isWithinGracePeriod(user.deleted_at))) {
+  const target = codeTargetFor(user);
+  if (!user || !target || (user.deleted_at && !userService.isWithinGracePeriod(user.deleted_at))) {
     return res.json(generic);
   }
 
   try {
     await otpService.requestOtp({
-      channel: "phone",
-      identifier: user.phone,
+      channel: target.channel,
+      identifier: target.identifier,
       purpose: "password_reset",
     });
   } catch (error) {
@@ -390,11 +417,12 @@ const resetPassword = asyncHandler(async (req, res) => {
   if (passwordError) throw new ApiError(400, passwordError);
 
   const user = await userService.findUserByIdentifier(identifier, normalizeIndianPhone);
-  if (!user || !user.phone) throw new ApiError(400, "That code is not valid. Request a new one.");
+  const target = codeTargetFor(user);
+  if (!user || !target) throw new ApiError(400, "That code is not valid. Request a new one.");
 
   await otpService.verifyOtp({
-    channel: "phone",
-    identifier: user.phone,
+    channel: target.channel,
+    identifier: target.identifier,
     code,
     purpose: "password_reset",
   });

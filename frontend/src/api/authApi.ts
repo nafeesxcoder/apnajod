@@ -109,7 +109,7 @@ export const authApi = {
     }
     return data as { available: boolean; reason: string; username?: string };
   },
-  registerStart(input: { phone: string; username: string; password: string }) {
+  registerStart(input: { phone?: string; email?: string; username: string; password: string }) {
     return post<{ phone: string; username: string; expiresInSeconds: number }>(
       "/auth/register",
       input,
@@ -117,7 +117,7 @@ export const authApi = {
     );
   },
   /** `invite` is the username from an ?invite= link, if they came from one. */
-  registerVerify(input: { phone: string; username: string; password: string; code: string; invite?: string }) {
+  registerVerify(input: { phone?: string; email?: string; username: string; password: string; code: string; invite?: string }) {
     return post<AuthSession>("/auth/register/verify", input, "Could not create your account");
   },
 

@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const env = require("../config/env");
+const { codeTargetFor } = require("./codeTarget");
 const { query } = require("../config/db");
 const otpService = require("./otpService");
 const userService = require("./userService");
@@ -50,10 +51,11 @@ function usesAuthenticator(user) {
 
 async function sendCode(user) {
   if (usesAuthenticator(user)) return;
-  if (!user.phone) {
-    throw new ApiError(409, "Add and verify a mobile number before turning this on.");
+  const target = codeTargetFor(user);
+  if (!target) {
+    throw new ApiError(409, "Add a mobile number or an email before turning this on.");
   }
-  await otpService.requestOtp({ channel: "phone", identifier: user.phone, purpose: PURPOSE });
+  await otpService.requestOtp({ channel: target.channel, identifier: target.identifier, purpose: PURPOSE });
 }
 
 async function checkCode(user, code) {
@@ -63,9 +65,11 @@ async function checkCode(user, code) {
     }
     return;
   }
+  const target = codeTargetFor(user);
+  if (!target) throw new ApiError(409, "Add a mobile number or an email before turning this on.");
   await otpService.verifyOtp({
-    channel: "phone",
-    identifier: user.phone,
+    channel: target.channel,
+    identifier: target.identifier,
     code: String(code),
     purpose: PURPOSE,
   });

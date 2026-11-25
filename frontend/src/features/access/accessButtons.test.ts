@@ -61,7 +61,7 @@ describe('the way in', () => {
       source.indexOf('export function SignUpScreen'),
       source.indexOf('export function', source.indexOf('export function SignUpScreen') + 10),
     );
-    const fields = [...signUp.matchAll(/<(AccessField|PhoneField)\b/g)];
+    const fields = [...signUp.matchAll(/<(AccessField|ContactField)\b/g)];
     expect(fields).toHaveLength(3);
   });
 });
