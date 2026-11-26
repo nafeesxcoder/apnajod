@@ -502,7 +502,7 @@ export function VoiceBar({ room, users, onJoin, onLeave, busy }: { room: VoiceRo
 // --- Buttons and the win ---------------------------------------------------------
 
 export function GoldButton({ label, onPress, disabled, busy, tone = "gold", accessibilityLabel }: { label: string; onPress: () => void; disabled?: boolean; busy?: boolean; tone?: "gold" | "green"; accessibilityLabel?: string }) {
-  const colors: [string, string] = tone === "gold" ? [L.goldLight, L.goldDark] : ["#4ADE80", "#15803D"];
+  const colors: [string, string] = tone === "gold" ? ["#B0245F", "#8A1A47"] : ["#4ADE80", "#15803D"];
   return (
     <PressScale
       accessibilityRole="button"
@@ -513,7 +513,7 @@ export function GoldButton({ label, onPress, disabled, busy, tone = "gold", acce
       style={{ opacity: disabled ? 0.45 : 1 }}
     >
       <LinearGradient colors={colors} style={{ borderRadius: 999, paddingVertical: 15, alignItems: "center", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" }}>
-        {busy ? <ActivityIndicator color="#5C0F2E" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: tone === "gold" ? "#8A1A47" : "#FFFFFF" }}>{label}</Text>}
+        {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: "#FFFFFF" }}>{label}</Text>}
       </LinearGradient>
     </PressScale>
   );

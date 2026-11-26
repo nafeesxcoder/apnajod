@@ -256,7 +256,7 @@ export function LudoScreen({
         value={search}
         onChangeText={setSearch}
         placeholder="Search by name or @username"
-        placeholderTextColor={L.textMuted}
+        placeholderTextColor={L.textSoft}
         autoCapitalize="none"
         autoCorrect={false}
         style={[{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: L.text, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as never) : null]}
@@ -357,7 +357,7 @@ export function LudoScreen({
         {wallet && (
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Pressable accessibilityRole="button" accessibilityLabel="Open the Ludo store" onPress={() => setStoreOpen(true)} style={{ flex: 1, padding: 12, borderRadius: 18, backgroundColor: L.glass, borderWidth: 1, borderColor: L.glassBorder, gap: 2 }}>
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.gold }}>{wallet.coins} coins</Text>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.text }}>{wallet.coins} coins</Text>
               <Text style={{ fontFamily: fonts.body, fontSize: 12, color: L.textSoft }}>
                 {wallet.level} · {wallet.wins} wins{wallet.streak > 1 ? ` · 🔥${wallet.streak}` : ""}
               </Text>
@@ -387,7 +387,7 @@ export function LudoScreen({
                 <Text numberOfLines={1} style={{ flex: 1, fontFamily: row.me ? fonts.bodyBold : fonts.bodySemi, fontSize: 14, color: L.text }}>
                   {row.me ? "You" : row.name}
                 </Text>
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: L.gold }}>{row.coins} coins</Text>
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: L.text }}>{row.coins} coins</Text>
               </View>
             ))}
           </View>
@@ -452,10 +452,10 @@ export function LudoScreen({
                   accessibilityLabel={picked.length > 1 ? `Invite ${picked.length} picked` : `Invite ${m.name} now`}
                   disabled={busy}
                   onPress={createAndInvite}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: L.gold, opacity: busy ? 0.6 : 1 }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: "#B0245F", opacity: busy ? 0.6 : 1 }}
                 >
-                  {busy ? <ActivityIndicator size="small" color="#8A1A47" /> : <Ionicons name="paper-plane" size={15} color="#8A1A47" />}
-                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#8A1A47" }}>{picked.length > 1 ? `Invite ${picked.length}` : "Invite"}</Text>
+                  {busy ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Ionicons name="paper-plane" size={15} color="#FFFFFF" />}
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#FFFFFF" }}>{picked.length > 1 ? `Invite ${picked.length}` : "Invite"}</Text>
                 </Pressable>
               ) : (
                 <Ionicons name="ellipse-outline" size={26} color={L.textMuted} />
