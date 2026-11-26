@@ -39,6 +39,7 @@ import { ChatBackdrop } from "./ChatBackdrop";
 import { MediaViewer } from "./MediaViewer";
 import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
 import { mimeTypeFor, type ConversationSummary } from "../../api/chatApi";
+import { socialApi, type SocialUser } from "../../api/socialApi";
 import { BACKGROUND_CHOICES } from "./chatBackgrounds";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -7790,6 +7791,18 @@ function EditMessageSheet({
   );
 }
 
+/** A person found by search, in the shape a forward needs: their id is the chat's id. */
+function personAsMatch(user: SocialUser): Match {
+  return {
+    id: user.userId,
+    matchId: user.userId,
+    name: user.name || user.username,
+    photo: user.avatarUrl ?? "",
+    city: "",
+    profession: "Public account",
+  } as Match;
+}
+
 /** A chat from the chat list, in the shape a forward needs: its id is the chat's id. */
 function conversationAsMatch(item: ConversationSummary): Match {
   return {
@@ -7798,7 +7811,7 @@ function conversationAsMatch(item: ConversationSummary): Match {
     name: item.user.name || item.user.username,
     photo: item.user.avatarUrl ?? "",
     city: "",
-    profession: "",
+    profession: "Chat",
   } as Match;
 }
 
@@ -7821,6 +7834,31 @@ function ForwardSelectorSheet({
   const [sendingId, setSendingId] = useState("");
   // The chats the member already has: only real conversations, never sample profiles.
   const [targets, setTargets] = useState<Match[]>([]);
+  // Public accounts found by typing a name: only those who accept messages from everyone
+  // can be sent to, and the server checks that again when the message is sent.
+  const [people, setPeople] = useState<SocialUser[]>([]);
+  useEffect(() => {
+    const term = query.trim();
+    if (!visible || !accessToken || term.length < 2) {
+      setPeople([]);
+      return;
+    }
+    let live = true;
+    const timer = setTimeout(() => {
+      void socialApi
+        .search(accessToken, term)
+        .then((results) => {
+          if (live) setPeople(results.filter((user) => user.userId !== current.id));
+        })
+        .catch(() => {
+          if (live) setPeople([]);
+        });
+    }, 350);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [query, visible, accessToken, current.id]);
   useEffect(() => {
     if (!visible || !accessToken) return;
     let live = true;
@@ -7848,7 +7886,7 @@ function ForwardSelectorSheet({
     }
   }, [visible]);
   const normalized = query.trim().toLowerCase();
-  const recipients = targets.filter(
+  const chatRecipients = targets.filter(
     (item) =>
       item.id !== current.id &&
       (!normalized ||
@@ -7856,6 +7894,11 @@ function ForwardSelectorSheet({
           .toLowerCase()
           .includes(normalized)),
   );
+  const chatIds = new Set(chatRecipients.map((item) => item.id));
+  const recipients = [
+    ...chatRecipients,
+    ...people.filter((user) => !chatIds.has(user.userId)).map(personAsMatch),
+  ];
   const choose = async (target: Match) => {
     setSendingId(target.id);
     try {
@@ -7875,7 +7918,7 @@ function ForwardSelectorSheet({
       <SafeAreaView style={[chatStyles.sheet, { maxHeight: "88%" }]}>
         <SheetHeader
           title="Forward messages"
-          subtitle={`${messages.length} ${messages.length === 1 ? "message" : "messages"} · choose a verified conversation`}
+          subtitle={`${messages.length} ${messages.length === 1 ? "message" : "messages"} · choose a chat or a person`}
           onClose={onClose}
         />
         <View style={chatStyles.gifSearchWrap}>
@@ -7919,7 +7962,7 @@ function ForwardSelectorSheet({
               <View style={{ flex: 1 }}>
                 <Text style={chatStyles.forwardName}>{person.name}</Text>
                 <Text style={chatStyles.forwardMeta}>
-                  {person.city} · Verified match
+                  {[person.city, person.profession].filter(Boolean).join(" · ")}
                 </Text>
               </View>
               <View style={chatStyles.forwardButton}>
@@ -7933,7 +7976,7 @@ function ForwardSelectorSheet({
           ))}
           {!recipients.length && (
             <Text style={chatStyles.emojiEmpty}>
-              No verified conversation matches this search.
+              No chat or person matches this search.
             </Text>
           )}
         </ScrollView>
