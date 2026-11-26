@@ -131,13 +131,48 @@ export function musicLabel(music: Pick<EditorMusic, "title" | "artist">): string
   return `♫ ${text.length > 34 ? `${text.slice(0, 33)}…` : text}`;
 }
 
-/** Puts a song on the story, with its sticker (a card to start), or changes the song. */
+/**
+ * Puts a song on the story, with its sticker (a card to start), or changes the song.
+ * A song that was put on with no title keeps having none.
+ */
 export function setMusic(state: EditorState, music: EditorMusic, id: string): EditorState {
   const sticker = state.items.find((item) => item.kind === "music");
-  const items: Item[] = sticker
+  const items: Item[] = state.music || sticker
     ? state.items
     : [...state.items, { id, kind: "music" as const, style: "card" as const, x: 0.5, y: 0.22, scale: 1, rotation: 0 }];
   return { ...state, music, items };
+}
+
+/** How the song's sticker looks: a card, a small pill or the words. */
+export type SongLook = { style: MusicStyle; lyricFont?: LyricFont };
+
+/** The song's sticker look, or null when the song has no title on the story. */
+export function songLook(state: EditorState): SongLook | null {
+  const sticker = state.items.find((item): item is MusicItem => item.kind === "music");
+  return sticker ? { style: sticker.style, lyricFont: sticker.lyricFont } : null;
+}
+
+/**
+ * Sets the song's look. With null the sticker goes and no title is shown -
+ * the song itself still plays.
+ */
+export function setSongLook(state: EditorState, look: SongLook | null, id: string): EditorState {
+  const sticker = state.items.find((item): item is MusicItem => item.kind === "music");
+  if (!look) return { ...state, items: state.items.filter((item) => item.kind !== "music") };
+  if (!sticker) {
+    return {
+      ...state,
+      items: [...state.items, { id, kind: "music" as const, style: look.style, lyricFont: look.lyricFont, x: 0.5, y: 0.22, scale: 1, rotation: 0 }],
+    };
+  }
+  return { ...state, items: state.items.map((item) => (item === sticker ? { ...sticker, style: look.style, lyricFont: look.lyricFont } : item)) };
+}
+
+/** The name of the song's look, for the Song look button. */
+export function songLookLabel(state: EditorState): string {
+  const look = songLook(state);
+  if (!look) return "No title";
+  return look.style === "card" ? "Card" : look.style === "pill" ? "Small" : "Lyrics";
 }
 
 /** Brings an item to the front (the one you touch goes on top). */

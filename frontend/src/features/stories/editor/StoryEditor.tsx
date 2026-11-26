@@ -29,6 +29,9 @@ import {
   MAX_MENTIONS,
   removeItem,
   setMusic,
+  setSongLook,
+  songLook,
+  songLookLabel,
   toFront,
   updateItem,
   type EditorState,
@@ -39,6 +42,7 @@ import {
 } from "./model";
 import { StickerSheet } from "./StickerSheet";
 import { MusicSheet } from "../music/MusicSheet";
+import { SongLookSheet } from "./SongLookSheet";
 import { LiveComposer, type PollDraft, type QuestionDraft } from "./LiveComposer";
 import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
@@ -104,6 +108,7 @@ export function StoryEditor({
   const [editing, setEditing] = useState<string | null>(null);
   const [stickers, setStickers] = useState(false);
   const [musicOpen, setMusicOpen] = useState(false);
+  const [lookOpen, setLookOpen] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   // The poll / question being made or changed (with the sticker's id when changing one).
   const [liveDraft, setLiveDraft] = useState<{ kind: "poll" | "question"; id: string | null } | null>(null);
@@ -595,6 +600,17 @@ export function StoryEditor({
                   {textStory ? "Swipe for colours" : "Swipe the photo for filters"} · disappears after 24 hours
                 </Text>
               )}
+              {song && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Song look"
+                  onPress={() => setLookOpen(true)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: "rgba(0,0,0,0.45)" }}
+                >
+                  <Ionicons name="color-palette-outline" size={16} color="#FFFFFF" />
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Song look · {songLookLabel(state)}</Text>
+                </Pressable>
+              )}
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <Pressable
                   accessibilityRole="button"
@@ -731,6 +747,20 @@ export function StoryEditor({
           setMusicOpen(false);
           const sticker = stateRef.current.items.find((item) => item.kind === "music");
           commit(sticker ? removeItem(stateRef.current, sticker.id) : { ...stateRef.current, music: null });
+        }}
+      />
+
+      <SongLookSheet
+        visible={lookOpen}
+        width={screenWidth}
+        music={stickerMusic}
+        current={songLook(state)}
+        onClose={() => setLookOpen(false)}
+        onPick={(look) => {
+          setLookOpen(false);
+          const next = setSongLook(stateRef.current, look, newId());
+          commit(next);
+          showToast(songLookLabel(next));
         }}
       />
 

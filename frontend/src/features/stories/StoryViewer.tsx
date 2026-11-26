@@ -388,7 +388,8 @@ export function StoryViewer({
                         </View>
                       )}
                     </View>
-                    {!!story.music && (
+                    {/* The song's title shows only with its sticker: a story with no title shows none. */}
+                    {!!story.music && hasMusicSticker && (
                       <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.9)", fontFamily: fonts.body, fontSize: 12 }}>
                         ♫ {story.music.title}
                         {story.music.artist ? ` · ${story.music.artist}` : ""}

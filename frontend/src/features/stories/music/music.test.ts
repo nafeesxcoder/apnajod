@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("react-native", () => ({ Platform: { OS: "web" } }));
 
 import { clampStart, clipLengths, nudgeStart, storySeconds } from "./clip";
-import { EMPTY_STATE, liveStickers, musicLabel, removeItem, setMusic } from "../editor/model";
+import { EMPTY_STATE, liveStickers, musicLabel, removeItem, setMusic, setSongLook, songLookLabel } from "../editor/model";
 import { clipLines, lineAt, nextMusicLook } from "./lyrics";
 
 const read = (path: string) => readFileSync(join(__dirname, path), "utf8").replace(/\r\n/g, "\n");
@@ -57,6 +57,30 @@ describe("story music", () => {
     expect(changed.items).toHaveLength(1);
     expect(removeItem(withSong, "m1").music).toBeNull();
     expect(musicLabel({ title: "A".repeat(50), artist: "" })).toHaveLength(36);
+  });
+
+  it("can have the song with no title: it plays, and no sticker is shown", () => {
+    const withSong = setMusic(EMPTY_STATE, song, "m1");
+    const quiet = setSongLook(withSong, null, "unused");
+    expect(quiet.music).toEqual(song);
+    expect(liveStickers(quiet)).toEqual([]);
+    expect(songLookLabel(quiet)).toBe("No title");
+    // Changing the song keeps "no title"; choosing a look brings the sticker back.
+    expect(setMusic(quiet, { ...song, title: "Other" }, "m2").items).toHaveLength(0);
+    const shown = setSongLook(quiet, { style: "pill" }, "m3");
+    expect(shown.items).toEqual([expect.objectContaining({ kind: "music", style: "pill" })]);
+    expect(songLookLabel(shown)).toBe("Small");
+    expect(songLookLabel(setSongLook(shown, { style: "lyrics", lyricFont: "glow" }, "m4"))).toBe("Lyrics");
+  });
+
+  it("shows the song's title on the story only when it has its sticker", () => {
+    expect(read("../StoryViewer.tsx")).toContain("{!!story.music && hasMusicSticker && (");
+    const editor = read("../editor/StoryEditor.tsx");
+    expect(editor).toContain('accessibilityLabel="Song look"');
+    expect(editor).toContain("<SongLookSheet");
+    const sheet = read("../editor/SongLookSheet.tsx");
+    expect(sheet).toContain('label: "No title"');
+    expect(sheet).toContain('title="Song look"');
   });
 
   it("sends only the song, start and length with the story", () => {
