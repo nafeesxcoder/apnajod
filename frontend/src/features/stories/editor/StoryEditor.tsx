@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, Animated, Image, PanResponder, Platform, Pressable, ScrollView, Text, View, useWindowDimensions, type GestureResponderEvent } from "react-native";
+import { Animated, Image, PanResponder, Platform, Pressable, ScrollView, Text, View, useWindowDimensions, type GestureResponderEvent } from "react-native";
 import { Modal } from "../../../components/BackModal";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { storyApi } from "../../../api/storyApi";
-import { fonts, palette, radius } from "../../../theme";
+import { fonts, palette } from "../../../theme";
 import { Sheet, useVisibleHeight } from "../../posts/PostSheets";
 import { backdropFor, bakeStory } from "./bake";
 import { FILTERS, cssFilter, filterById, nativeFilter } from "./filters";
@@ -46,7 +46,7 @@ import {
 } from "./model";
 import { StickerSheet } from "./StickerSheet";
 import { MusicSheet } from "../music/MusicSheet";
-import { SongLookSheet } from "./SongLookSheet";
+import { StoryDock, type Audience } from "./StoryDock";
 import { LiveComposer, type PollDraft, type QuestionDraft } from "./LiveComposer";
 import { MentionSheet } from "./MentionSheet";
 import { createClipPlayer } from "../music/clipPlayer";
@@ -54,7 +54,7 @@ import { clipLines, nextMusicLook } from "../music/lyrics";
 import { TextComposer, type TextDraft } from "./TextComposer";
 import { TEXT_STORY_SCALE, stepTheme, textThemesWith } from "./themes";
 import { currentFestival } from "../../festival/festivalStore";
-import { CLOSE_GREEN, CloseFriendsSheet } from "../CloseFriendsSheet";
+import { CloseFriendsSheet } from "../CloseFriendsSheet";
 import { closeFriendsApi } from "../../../api/closeFriendsApi";
 
 /** The photo picked for a story - or, with `text`, a text story on a coloured background. */
@@ -120,7 +120,8 @@ export function StoryEditor({
   const [editing, setEditing] = useState<string | null>(null);
   const [stickers, setStickers] = useState(false);
   const [musicOpen, setMusicOpen] = useState(false);
-  const [lookOpen, setLookOpen] = useState(false);
+  // Who the story goes to: everyone who follows you, or your close friends.
+  const [audience, setAudience] = useState<Audience>("all");
   const [mentionOpen, setMentionOpen] = useState(false);
   // The poll / question being made or changed (with the sticker's id when changing one).
   const [liveDraft, setLiveDraft] = useState<{ kind: "poll" | "question"; id: string | null } | null>(null);
@@ -137,7 +138,6 @@ export function StoryEditor({
   // Close friends: how many are on your list (null until known), and the list sheet.
   const [closeCount, setCloseCount] = useState<number | null>(null);
   const [closeOpen, setCloseOpen] = useState(false);
-  const [sharingTo, setSharingTo] = useState<"all" | "close">("all");
   const [tool, setTool] = useState<Tool>("pen");
   const [penColor, setPenColor] = useState("#FFFFFF");
   const [penSize, setPenSize] = useState<keyof typeof STROKE_SIZES>("M");
@@ -386,7 +386,6 @@ export function StoryEditor({
       return;
     }
     setBusy(true);
-    setSharingTo(audience);
     setError("");
     let made: string | null = null;
     try {
@@ -413,6 +412,11 @@ export function StoryEditor({
   const rect = photo ? cropRect(photo.width, photo.height, state.crop) : { x: 0, y: 0, width: 1, height: 1 };
   // Whether the photo already fills the frame (the Fill button then gives back the whole photo).
   const filled = !!photo && Math.abs(state.crop.zoom - coverZoom(photo.width, photo.height)) < 0.01;
+  // The line under the share buttons: how to use the story now, or how long it stays.
+  const emptyStory = state.items.length === 0 && state.strokes.length === 0;
+  const hint = emptyStory
+    ? `${textStory ? "Swipe for colours" : "Pinch to zoom · swipe for filters"} · disappears after 24 hours`
+    : "Disappears after 24 hours";
   const dragging = !!drag;
   const trashHot = drag ? overTrash(drag.x, drag.y) : false;
 
@@ -680,52 +684,21 @@ export function StoryEditor({
                   {error}
                 </Text>
               )}
-              {state.items.length === 0 && state.strokes.length === 0 && (
-                <Text style={{ color: "rgba(255,255,255,0.85)", fontFamily: fonts.body, fontSize: 12, textShadowColor: "rgba(0,0,0,0.6)", textShadowRadius: 4 }}>
-                  {textStory ? "Swipe for colours" : "Swipe the photo for filters"} · disappears after 24 hours
-                </Text>
-              )}
-              {song && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Song look"
-                  onPress={() => setLookOpen(true)}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: "rgba(0,0,0,0.45)" }}
-                >
-                  <Ionicons name="color-palette-outline" size={16} color="#FFFFFF" />
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Song look · {songLookLabel(state)}</Text>
-                </Pressable>
-              )}
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Share to your story"
-                  onPress={() => void share("all")}
-                  disabled={busy}
-                  style={{ minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 8, opacity: busy ? 0.8 : 1 }}
-                >
-                  {busy && sharingTo === "all" ? <ActivityIndicator color={palette.crimson} /> : <Ionicons name="add-circle" size={22} color={palette.crimson} />}
-                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>{busy && sharingTo === "all" ? "Sharing..." : "Your story"}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Share to close friends"
-                  onPress={() => void share("close")}
-                  onLongPress={() => setCloseOpen(true)}
-                  disabled={busy}
-                  style={{ minHeight: 48, paddingHorizontal: 18, borderRadius: radius.pill, backgroundColor: CLOSE_GREEN, flexDirection: "row", alignItems: "center", gap: 8, opacity: busy ? 0.8 : 1 }}
-                >
-                  {busy && sharingTo === "close" ? <ActivityIndicator color="#FFFFFF" /> : <Ionicons name="star" size={18} color="#FFFFFF" />}
-                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>{busy && sharingTo === "close" ? "Sharing..." : "Close friends"}</Text>
-                </Pressable>
-              </View>
-              {closeCount !== null && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Edit close friends list" onPress={() => setCloseOpen(true)} hitSlop={6}>
-                  <Text style={{ color: "rgba(255,255,255,0.85)", fontFamily: fonts.body, fontSize: 12, textDecorationLine: "underline" }}>
-                    {closeCount === 0 ? "Choose your close friends" : `Close friends: ${closeCount} ${closeCount === 1 ? "person" : "people"} · Edit`}
-                  </Text>
-                </Pressable>
-              )}
+              <StoryDock
+                width={fw - 24}
+                song={!!song}
+                look={songLook(state)}
+                lookName={songLookLabel(state)}
+                hasWords={!!stickerMusic?.lyrics.length}
+                onLook={(look) => commit(setSongLook(stateRef.current, look, newId()))}
+                audience={audience}
+                onAudience={setAudience}
+                closeCount={closeCount}
+                onEditClose={() => setCloseOpen(true)}
+                onShare={(who) => void share(who)}
+                busy={busy}
+                hint={hint}
+              />
             </View>
           )}
 
@@ -832,20 +805,6 @@ export function StoryEditor({
           setMusicOpen(false);
           const sticker = stateRef.current.items.find((item) => item.kind === "music");
           commit(sticker ? removeItem(stateRef.current, sticker.id) : { ...stateRef.current, music: null });
-        }}
-      />
-
-      <SongLookSheet
-        visible={lookOpen}
-        width={screenWidth}
-        music={stickerMusic}
-        current={songLook(state)}
-        onClose={() => setLookOpen(false)}
-        onPick={(look) => {
-          setLookOpen(false);
-          const next = setSongLook(stateRef.current, look, newId());
-          commit(next);
-          showToast(songLookLabel(next));
         }}
       />
 

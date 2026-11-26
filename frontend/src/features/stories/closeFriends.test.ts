@@ -9,7 +9,7 @@ const read = (p: string) => readFileSync(join(__dirname, p), "utf8");
 describe("close friends stories", () => {
   it("shares to Close friends from the editor, picking the list first if it is empty", () => {
     const editor = read("editor/StoryEditor.tsx");
-    expect(editor).toContain('accessibilityLabel="Share to close friends"');
+    expect(read("editor/StoryDock.tsx")).toContain('"Share to close friends"');
     expect(editor).toContain('if (audience === "close" && closeCount === 0) {');
     expect(editor).toContain("liveStickers(state), audience);");
     expect(read("../../api/storyApi.ts")).toContain('if (audience === "close") body.append("audience", "close");');

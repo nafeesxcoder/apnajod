@@ -170,7 +170,7 @@ export function setSongLook(state: EditorState, look: SongLook | null, id: strin
   return { ...state, items: state.items.map((item) => (item === sticker ? { ...sticker, style: look.style, lyricFont: look.lyricFont } : item)) };
 }
 
-/** The name of the song's look, for the Song look button. */
+/** The name of the song's look, as the title row shows it. */
 export function songLookLabel(state: EditorState): string {
   const look = songLook(state);
   if (!look) return "No title";

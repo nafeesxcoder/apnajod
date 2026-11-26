@@ -80,11 +80,10 @@ describe("story music", () => {
   it("shows the song's title on the story only when it has its sticker", () => {
     expect(read("../StoryViewer.tsx")).toContain("{!!story.music && hasMusicSticker && (");
     const editor = read("../editor/StoryEditor.tsx");
-    expect(editor).toContain('accessibilityLabel="Song look"');
-    expect(editor).toContain("<SongLookSheet");
-    const sheet = read("../editor/SongLookSheet.tsx");
-    expect(sheet).toContain('label: "No title"');
-    expect(sheet).toContain('title="Song look"');
+    expect(editor).toContain("<StoryDock");
+    const dock = read("../editor/StoryDock.tsx");
+    expect(dock).toContain('accessibilityLabel="Song title"');
+    expect(dock).toContain('label: "No title"');
   });
 
   it("sends only the song, start and length with the story", () => {
