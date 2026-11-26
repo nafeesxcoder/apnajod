@@ -6031,49 +6031,40 @@ function ChatOptionsSheet({
   onSafety: () => void;
   onSelectMessages: () => void;
 }) {
-  const options = [
+  const rows = [
+    { title: "Search", sub: "Find a message in this chat", icon: "search-outline" as const, tint: "#E6EEF7", color: "#1F4D7A", onPress: onSearch },
+    { title: "Select messages", sub: "Forward, copy or delete several", icon: "checkmark-done-outline" as const, tint: "#E6EEF7", color: "#1F4D7A", onPress: onSelectMessages },
+    { title: "Disappearing messages", sub: retentionLabel, icon: "timer-outline" as const, tint: "#FBEAEE", color: "#A8243A", onPress: onSettings },
+    { title: "Mute notifications", sub: "Silence this chat", icon: "notifications-off-outline" as const, tint: "#F1EEF9", color: "#5B4B8A", onPress: onSettings },
+    { title: "Chat appearance", sub: "Background and theme", icon: "color-palette-outline" as const, tint: "#FFF4E5", color: "#B26A00", onPress: onSettings },
+  ];
+  const privacyRows = screenshotDetection
+    ? [
+        {
+          title: "Screenshot alerts",
+          sub: screenshotAlerts ? "On: they are told when you take one" : "Off",
+          icon: "scan-outline" as const,
+          tint: "#E7F6EE",
+          color: "#1E7A4C",
+          onPress: onSettings,
+        },
+      ]
+    : [];
+  const safetyRows = [
     {
-      label: "Search",
-      icon: "search-outline" as const,
-      onPress: onSearch,
-    },
-    {
-      label: "Select messages",
-      icon: "checkmark-done-outline" as const,
-      onPress: onSelectMessages,
-    },
-    {
-      label: `Disappearing messages · ${retentionLabel}`,
-      icon: "timer-outline" as const,
-      onPress: onSettings,
-    },
-    {
-      label: "Mute notifications",
-      icon: "notifications-off-outline" as const,
-      onPress: onSettings,
-    },
-    {
-      label: "Chat appearance",
-      icon: "color-palette-outline" as const,
-      onPress: onSettings,
-    },
-    // "Conversation inbox" is gone: it listed sample profiles, not your
-    // chats. Pinned and archived chats now live in the Chats list itself.
-    // Only the phone app can tell when a screenshot is taken.
-    ...(screenshotDetection
-      ? [
-          {
-            label: `Screenshot alerts · ${screenshotAlerts ? "On" : "Off"}`,
-            icon: "scan-outline" as const,
-            onPress: onSettings,
-          },
-        ]
-      : []),
-    {
-      label: "Report or block",
+      title: "Report or block",
+      sub: "Stop messages, or tell us",
       icon: "shield-checkmark-outline" as const,
+      tint: "#FDECEC",
+      color: "#A8243A",
       onPress: onSafety,
     },
+  ];
+  const sections = [
+    { label: "FIND", rows: rows.slice(0, 2) },
+    { label: "CONVERSATION", rows: rows.slice(2) },
+    ...(privacyRows.length ? [{ label: "PRIVACY", rows: privacyRows }] : []),
+    { label: "SAFETY", rows: safetyRows },
   ];
   return (
     <Modal
@@ -6083,32 +6074,159 @@ function ChatOptionsSheet({
       onRequestClose={onClose}
     >
       <Pressable style={chatStyles.modalBackdrop} onPress={onClose} />
-      <SafeAreaView style={chatStyles.sheet}>
-        <SheetHeader
-          title="Chat options"
-          subtitle="Conversation tools and privacy"
-          onClose={onClose}
-        />
-        <View style={chatStyles.optionList}>
-          {options.map((option) => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={option.label}
-              key={option.label}
-              onPress={option.onPress}
-              style={chatStyles.optionRow}
-            >
-              <Ionicons name={option.icon} size={20} color={colors.text} />
-              <Text style={[chatStyles.optionTitle, { flex: 1 }]}>
-                {option.label}
-              </Text>
-            </Pressable>
+      <SafeAreaView edges={["bottom"]} style={optionsUi.sheet}>
+        <View style={optionsUi.handle} />
+        <LinearGradient
+          colors={["#1F4D7A", "#A8243A"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={optionsUi.hero}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={optionsUi.heroTitle}>Chat options</Text>
+            <Text style={optionsUi.heroSub}>Tools and privacy for this chat</Text>
+            <View style={optionsUi.chips}>
+              <View style={optionsUi.chip}>
+                <Ionicons name="timer-outline" size={13} color="#FFFFFF" />
+                <Text style={optionsUi.chipText}>{retentionLabel}</Text>
+              </View>
+              {screenshotDetection && (
+                <View style={optionsUi.chip}>
+                  <Ionicons
+                    name={screenshotAlerts ? "scan-outline" : "close-circle-outline"}
+                    size={13}
+                    color="#FFFFFF"
+                  />
+                  <Text style={optionsUi.chipText}>
+                    {screenshotAlerts ? "Screenshot alerts on" : "Screenshot alerts off"}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close chat options"
+            onPress={onClose}
+            style={optionsUi.close}
+          >
+            <Ionicons name="close" size={18} color="#FFFFFF" />
+          </Pressable>
+        </LinearGradient>
+        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+          {sections.map((section) => (
+            <View key={section.label} style={optionsUi.section}>
+              <Text style={optionsUi.sectionLabel}>{section.label}</Text>
+              <View style={optionsUi.card}>
+                {section.rows.map((row, index) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={row.title}
+                    key={row.title}
+                    onPress={row.onPress}
+                    style={[optionsUi.row, index > 0 && optionsUi.rowBorder]}
+                  >
+                    <View style={[optionsUi.iconWrap, { backgroundColor: row.tint }]}>
+                      <Ionicons name={row.icon} size={18} color={row.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={optionsUi.rowTitle}>{row.title}</Text>
+                      <Text style={optionsUi.rowSub}>{row.sub}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#B0B7C0" />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           ))}
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </Modal>
   );
 }
+
+const optionsUi = StyleSheet.create({
+  sheet: {
+    maxHeight: "88%",
+    backgroundColor: "#FBF8F5",
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingTop: 8,
+  },
+  handle: {
+    alignSelf: "center",
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D3D6DA",
+    marginBottom: 12,
+  },
+  hero: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginHorizontal: 14,
+    padding: 18,
+    borderRadius: 20,
+  },
+  heroTitle: { fontSize: 22, fontWeight: "800", color: "#FFFFFF" },
+  heroSub: { marginTop: 3, fontSize: 13, color: "rgba(255,255,255,0.82)" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  chipText: { fontSize: 12, fontWeight: "600", color: "#FFFFFF" },
+  close: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  section: { marginTop: 18, paddingHorizontal: 14 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    color: "#7C8593",
+    marginLeft: 6,
+    marginBottom: 8,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    overflow: "hidden",
+    shadowColor: "#133557",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  rowBorder: { borderTopWidth: 1, borderTopColor: "#EEF0F3" },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowTitle: { fontSize: 15, fontWeight: "600", color: "#14202E" },
+  rowSub: { marginTop: 2, fontSize: 12, color: "#7C8593" },
+});
 
 export function RoseComposer({
   visible,

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Animated, PanResponder, Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -7,9 +7,13 @@ import { palette } from "../theme";
 /** Room for the two buttons that slide out from the right. */
 const REVEAL = 132;
 
+/** The row that is open right now. Opening another row closes it first. */
+let closeOpenRow: (() => void) | null = null;
+
 /**
  * A row that slides left to show two buttons, the way Instagram's notifications
  * do: ••• for more options, and a bin to delete the row from this phone.
+ * Only one row is open at a time.
  */
 export function SwipeRow({
   children,
@@ -23,19 +27,48 @@ export function SwipeRow({
   const x = useRef(new Animated.Value(0)).current;
   const isOpen = useRef(false);
 
-  const settle = (open: boolean) => {
-    isOpen.current = open;
+  const closeMe = useRef(() => {
+    isOpen.current = false;
     Animated.spring(x, {
-      toValue: open ? -REVEAL : 0,
+      toValue: 0,
       useNativeDriver: true,
       friction: 9,
       tension: 80,
     }).start();
+  }).current;
+
+  const settle = (open: boolean) => {
+    if (open) {
+      if (closeOpenRow && closeOpenRow !== closeMe) closeOpenRow();
+      closeOpenRow = closeMe;
+      isOpen.current = true;
+      Animated.spring(x, {
+        toValue: -REVEAL,
+        useNativeDriver: true,
+        friction: 9,
+        tension: 80,
+      }).start();
+    } else {
+      if (closeOpenRow === closeMe) closeOpenRow = null;
+      closeMe();
+    }
   };
+
+  // A row that unmounts while open must not stay the "open" one.
+  useEffect(
+    () => () => {
+      if (closeOpenRow === closeMe) closeOpenRow = null;
+    },
+    [closeMe],
+  );
 
   const pan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderGrant: () => {
+        // Starting to drag this row closes whichever other row is open.
+        if (closeOpenRow && closeOpenRow !== closeMe) closeOpenRow();
+      },
       onPanResponderMove: (_, g) => {
         const base = isOpen.current ? -REVEAL : 0;
         x.setValue(Math.min(0, Math.max(-REVEAL, base + g.dx)));
