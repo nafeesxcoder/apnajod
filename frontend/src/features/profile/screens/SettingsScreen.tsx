@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -165,6 +165,10 @@ function SettingsCard({ children, delay = 0, danger }: { children: React.ReactNo
   );
 }
 
+// Where the Settings list was scrolled to, and when it was last left. Going into a
+// setting and coming back lands where you were; a fresh visit starts at the top.
+const settingsScroll = { y: 0, leftAt: 0 };
+
 export function SettingsScreen({
   navigate,
   isPrivate,
@@ -185,6 +189,11 @@ export function SettingsScreen({
   onOpenAdmin?: () => void;
   accessToken?: string;
 }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const restoredScroll = useRef(false);
+  useEffect(() => () => {
+    settingsScroll.leftAt = Date.now();
+  }, []);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   // ---- notifications (browser push) ----
@@ -346,12 +355,25 @@ export function SettingsScreen({
     <AppCanvas>
       <SafeAreaView style={{ flex: 1, backgroundColor: palette.paperBase }}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{
             paddingTop: 12,
             paddingBottom: 60,
             paddingHorizontal: 12,
           }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            settingsScroll.y = event.nativeEvent.contentOffset.y;
+          }}
+          onContentSizeChange={() => {
+            if (restoredScroll.current) return;
+            restoredScroll.current = true;
+            const returning = Date.now() - settingsScroll.leftAt < 60_000;
+            if (returning && settingsScroll.y > 0) {
+              scrollRef.current?.scrollTo({ y: settingsScroll.y, animated: false });
+            }
+          }}
         >
           <View
             style={{
