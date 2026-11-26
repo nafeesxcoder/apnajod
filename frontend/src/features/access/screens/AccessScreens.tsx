@@ -149,6 +149,9 @@ function TextAction({ label, onPress }: { label: string; onPress: () => void }) 
 }
 
 /** A labelled field with help text below, replaced by the error when there is one. */
+// The browser's own red focus ring is turned off on the web; the field keeps its look.
+const noWebOutline = Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : null;
+
 function AccessField({
   label,
   help,
@@ -214,9 +217,9 @@ function ContactField({
           autoCorrect={false}
           autoComplete="off"
           placeholder="98765 43210 or you@example.com"
-          placeholderTextColor={colors.lineSoft}
+          placeholderTextColor={colors.muted}
           selectionColor={colors.accent}
-          style={access.input}
+          style={[access.input, noWebOutline]}
         />
       </View>
     </AccessField>
@@ -250,9 +253,9 @@ function PasswordInput({
         autoCorrect={false}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        placeholderTextColor={colors.lineSoft}
+        placeholderTextColor={colors.muted}
         selectionColor={colors.accent}
-        style={access.input}
+        style={[access.input, noWebOutline]}
       />
       <Pressable
         accessibilityRole="button"
@@ -424,9 +427,9 @@ export function SignUpScreen({
               autoComplete="username-new"
               maxLength={20}
               placeholder="riya_07"
-              placeholderTextColor={colors.lineSoft}
+              placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
-              style={access.input}
+              style={[access.input, noWebOutline]}
             />
             {isValidUsername(username) && !nameTaken && !checking && (
               <Ionicons name="checkmark-circle" size={20} color={colors.success} />
@@ -554,7 +557,7 @@ export function OtpScreen({
           autoComplete="sms-otp"
           maxLength={6}
           placeholder="000000"
-          placeholderTextColor={colors.lineSoft}
+          placeholderTextColor={colors.muted}
           selectionColor={colors.accent}
           style={[access.codeInput, !!error && access.inputBad]}
         />
@@ -687,9 +690,9 @@ export function LogInScreen({
               autoCorrect={false}
               autoComplete="username"
               placeholder="riya_07"
-              placeholderTextColor={colors.lineSoft}
+              placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
-              style={access.input}
+              style={[access.input, noWebOutline]}
             />
           </View>
         </AccessField>
@@ -736,7 +739,7 @@ export function LogInScreen({
                     multiline
                     maxLength={1000}
                     placeholder="Tell us why you think this is a mistake"
-                    placeholderTextColor={colors.lineSoft}
+                    placeholderTextColor={colors.muted}
                     selectionColor={colors.accent}
                     style={[access.input, { minHeight: 96, textAlignVertical: "top" }]}
                   />
@@ -824,9 +827,9 @@ export function ForgotPasswordScreen({
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="riya_07"
-              placeholderTextColor={colors.lineSoft}
+              placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
-              style={access.input}
+              style={[access.input, noWebOutline]}
             />
           </View>
         </AccessField>
@@ -1033,9 +1036,9 @@ export function QuickProfileScreen({
               autoComplete="given-name"
               maxLength={40}
               placeholder="Riya"
-              placeholderTextColor={colors.lineSoft}
+              placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
-              style={access.input}
+              style={[access.input, noWebOutline]}
             />
           </View>
         </AccessField>
@@ -1056,9 +1059,9 @@ export function QuickProfileScreen({
               keyboardType="number-pad"
               maxLength={2}
               placeholder="26"
-              placeholderTextColor={colors.lineSoft}
+              placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
-              style={access.input}
+              style={[access.input, noWebOutline]}
             />
           </View>
         </AccessField>

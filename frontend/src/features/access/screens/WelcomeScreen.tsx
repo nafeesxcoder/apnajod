@@ -170,6 +170,16 @@ export function AccessWelcomeScreen({
                   </TouchableOpacity>
                 </View>
 
+                <Text
+                  style={{
+                    marginTop: 18,
+                    textAlign: "center",
+                    fontSize: 13,
+                    color: "#5B5478",
+                  }}
+                >
+                  Founded by Nafees Ahmad
+                </Text>
               </Animated.View>
             </SafeAreaView>
           </LinearGradient>

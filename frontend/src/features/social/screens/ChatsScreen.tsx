@@ -485,7 +485,7 @@ export function ChatsScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: palette.paperBase,
   },
   safe: {
     flex: 1,
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     height: 42,
     paddingHorizontal: 14,
     borderRadius: 21,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#FFFFFF',
   },
   searchInput: {
     flex: 1,
@@ -588,10 +588,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   rowActive: {
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#F3E8FF',
   },
   middle: {
     flex: 1,
