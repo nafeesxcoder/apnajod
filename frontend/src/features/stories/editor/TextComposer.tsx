@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
-import { fonts } from "../../../theme";
+import { Ionicons } from "@expo/vector-icons";
+
+import { fonts, palette } from "../../../theme";
 import { STORY_FONTS, TEXT_PAD } from "./fonts";
 import { COLORS, FONT_LABELS, type FontKey, LINE_HEIGHT, type TextBg, type TextItem, textColors } from "./model";
 import { keyboardBehavior } from "../../../layout/keyboardBehavior";
@@ -95,7 +97,9 @@ export function TextComposer({
           onPress={() => onDone(draft)}
           style={{ paddingHorizontal: 12, height: 44, justifyContent: "center" }}
         >
-          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: "#FFFFFF" }}>Done</Text>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="checkmark" size={22} color={palette.ink} />
+          </View>
         </Pressable>
       </View>
 

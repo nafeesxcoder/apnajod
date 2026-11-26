@@ -290,15 +290,7 @@ export function StoryEditor({
     [],
   );
 
-  // The zoom buttons: a step in or out, or straight to filling the frame (and back to the whole photo).
-  const zoomPhoto = (factor: number) => {
-    const size = photoSizeRef.current;
-    if (!size) return;
-    const crop = stateRef.current.crop;
-    const next = clampCrop(size.w, size.h, { ...crop, zoom: crop.zoom * factor });
-    if (next.zoom === crop.zoom) return;
-    commit({ ...stateRef.current, crop: next });
-  };
+  // Fill the frame with the photo, or give back the whole photo.
   const fillFrame = () => {
     const size = photoSizeRef.current;
     if (!size) return;
@@ -417,6 +409,39 @@ export function StoryEditor({
   const hint = emptyStory
     ? `${textStory ? "Swipe for colours" : "Pinch to zoom · swipe for filters"} · disappears after 24 hours`
     : "Disappears after 24 hours";
+  // A tool on the right: its name, then a round button.
+  const railItem = (label: string, onPress: () => void, child: ReactNode) => (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+      <Text
+        style={{
+          fontFamily: fonts.bodySemi,
+          fontSize: 13,
+          color: "#FFFFFF",
+          backgroundColor: "rgba(20,16,46,0.55)",
+          paddingHorizontal: 9,
+          paddingVertical: 4,
+          borderRadius: 10,
+          overflow: "hidden",
+        }}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "rgba(20,16,46,0.6)",
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.28)",
+        }}
+      >
+        {child}
+      </View>
+    </Pressable>
+  );
   const dragging = !!drag;
   const trashHot = drag ? overTrash(drag.x, drag.y) : false;
 
@@ -558,47 +583,42 @@ export function StoryEditor({
             </View>
           )}
 
-          {/* Top: close, and the tools. */}
+          {/* Top left: back. The tools run down the right side, each with its name, like Instagram's editor. */}
           {!dragging && mode === "idle" && (
-            <View style={{ position: "absolute", top: 10, left: 10, right: 10, flexDirection: "row", alignItems: "center" }}>
-              {iconButton("Close story editor", close, <Ionicons name="close" size={26} color="#FFFFFF" />)}
-              <View style={{ flex: 1 }} />
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                {historyCount > 0 && iconButton("Undo", undo, <Ionicons name="arrow-undo" size={21} color="#FFFFFF" />)}
-                {textStory
-                  ? iconButton(
-                      "Change background",
-                      () => changeTheme(1),
-                      <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#FFFFFF", overflow: "hidden" }}>
-                        <LinearGradient colors={textThemesRef.current[stepTheme(theme, 1, textThemesRef.current.length)]!.colors} style={{ flex: 1 }} />
-                      </View>,
-                    )
-                  : iconButton("Filters", () => setMode("filters"), <Ionicons name="color-filter-outline" size={22} color="#FFFFFF" />)}
-                {iconButton("Draw", () => setMode("draw"), <MaterialCommunityIcons name="draw" size={22} color="#FFFFFF" />)}
-                {iconButton("Music", () => setMusicOpen(true), <Ionicons name="musical-notes" size={21} color="#FFFFFF" />)}
-                {iconButton("Stickers", () => setStickers(true), <Ionicons name="happy-outline" size={23} color="#FFFFFF" />)}
-                {iconButton(
-                  "Add text",
-                  () => {
-                    setEditing(null);
-                    setMode("text");
-                  },
-                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: "#FFFFFF" }}>Aa</Text>,
-                )}
-              </View>
+            <View style={{ position: "absolute", top: 10, left: 10 }}>
+              {iconButton("Close story editor", close, <Ionicons name="arrow-back" size={24} color="#FFFFFF" />)}
             </View>
           )}
-
-          {/* Zoom: pinch to zoom and drag to move work too; these buttons make the photo bigger or fill the story. */}
-          {!dragging && mode === "idle" && !textStory && !!photo && (
-            <View style={{ position: "absolute", right: 10, top: 64, gap: 8 }}>
-              {iconButton("Zoom in", () => zoomPhoto(1.25), <Ionicons name="add" size={24} color="#FFFFFF" />)}
-              {iconButton("Zoom out", () => zoomPhoto(0.8), <Ionicons name="remove" size={24} color="#FFFFFF" />)}
-              {iconButton(
-                filled ? "Show the whole photo" : "Fill the story",
-                fillFrame,
-                <Ionicons name={filled ? "contract-outline" : "expand-outline"} size={20} color="#FFFFFF" />,
+          {!dragging && mode === "idle" && (
+            <View pointerEvents="box-none" style={{ position: "absolute", right: 10, top: 64, alignItems: "flex-end", gap: 12 }}>
+              {historyCount > 0 && railItem("Undo", undo, <Ionicons name="arrow-undo" size={21} color="#FFFFFF" />)}
+              {railItem(
+                "Text",
+                () => {
+                  setEditing(null);
+                  setMode("text");
+                },
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: "#FFFFFF" }}>Aa</Text>,
               )}
+              {railItem("Stickers", () => setStickers(true), <Ionicons name="happy-outline" size={23} color="#FFFFFF" />)}
+              {railItem("Music", () => setMusicOpen(true), <Ionicons name="musical-notes" size={21} color="#FFFFFF" />)}
+              {textStory
+                ? railItem(
+                    "Background",
+                    () => changeTheme(1),
+                    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#FFFFFF", overflow: "hidden" }}>
+                      <LinearGradient colors={textThemesRef.current[stepTheme(theme, 1, textThemesRef.current.length)]!.colors} style={{ flex: 1 }} />
+                    </View>,
+                  )
+                : railItem("Filters", () => setMode("filters"), <Ionicons name="color-filter-outline" size={22} color="#FFFFFF" />)}
+              {railItem("Draw", () => setMode("draw"), <MaterialCommunityIcons name="draw" size={22} color="#FFFFFF" />)}
+              {!textStory &&
+                !!photo &&
+                railItem(
+                  filled ? "Whole photo" : "Fill the story",
+                  fillFrame,
+                  <Ionicons name={filled ? "contract-outline" : "expand-outline"} size={20} color="#FFFFFF" />,
+                )}
             </View>
           )}
 

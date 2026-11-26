@@ -101,7 +101,7 @@ describe("story editor", () => {
     expect(read("bake.ts")).toContain("cropRect(image.naturalWidth, image.naturalHeight, state.crop)");
     const editor = read("StoryEditor.tsx");
     expect(editor).toContain("const rect = photo ? cropRect(photo.width, photo.height, state.crop)");
-    expect(editor).toContain('"Zoom in"');
+    expect(editor).toContain('"Fill the story"');
     expect(editor).toContain("touchCount(e) >= 2");
     expect(editor).toContain("if (gesture?.kind !== \"pinch\" && gesture?.kind !== \"pan\" && Math.abs(g.dx) > 50)");
   });

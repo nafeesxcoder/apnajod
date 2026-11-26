@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, PanResponder, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, PanResponder, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
 import { clock, musicApi, type MusicTrack, type StoryMusic } from "../../../api/musicApi";
@@ -7,11 +8,18 @@ import { fonts, palette, radius } from "../../../theme";
 import { Sheet } from "../../posts/PostSheets";
 import { clampStart, clipLengths, nudgeStart } from "./clip";
 import { audioDuration, createClipPlayer, type ClipPlayer } from "./clipPlayer";
+import { loadSavedMusic, saveSavedMusic } from "./savedMusic";
+
+/** The picker's own colours: the app's ink, with light text and the lilac / rose accents. */
+const WHITE_SOFT = "rgba(255,255,255,0.6)";
+const CHIP = "rgba(255,255,255,0.1)";
+const LILAC = "#F3E8FF";
+const ROSE = "#F2B6CF";
 
 /**
  * Music for a story: search the library, tap a song (it plays), drag the
  * window to the part you want (or nudge it 5 seconds at a time), pick 5 to
- * 30 seconds, then "Use this song".
+ * 30 seconds, then "Use this song". Songs can be saved with the bookmark.
  */
 export function MusicSheet({
   visible,
@@ -40,6 +48,19 @@ export function MusicSheet({
   const player = useRef<ClipPlayer | null>(null);
   // Lengths read from the song itself, for songs the library saved without one.
   const [measured, setMeasured] = useState<Record<string, number>>({});
+  // "For you" is every song; "Saved" is the ones bookmarked on this device.
+  const [filter, setFilter] = useState<"for-you" | "saved">("for-you");
+  const [saved, setSaved] = useState<string[]>([]);
+
+  useEffect(() => {
+    void loadSavedMusic().then(setSaved);
+  }, []);
+
+  const toggleSaved = (id: string) => {
+    const next = saved.includes(id) ? saved.filter((each) => each !== id) : [...saved, id];
+    setSaved(next);
+    void saveSavedMusic(next);
+  };
 
   const stopPreview = () => {
     player.current?.stop();
@@ -150,83 +171,119 @@ export function MusicSheet({
 
   const windowLeft = duration ? (start / duration) * barWidth : 0;
   const windowWidth = duration ? Math.max(14, (Math.min(length, duration) / duration) * barWidth) : barWidth;
+  const shown = filter === "saved" ? tracks.filter((track) => saved.includes(track.id)) : tracks;
 
   return (
     <Sheet
       visible={visible}
       title="Music"
       tall
+      dark
       onClose={() => {
         stopPreview();
         onClose();
       }}
     >
       <View style={{ flex: 1 }}>
-        <View style={{ padding: 12, paddingBottom: 6 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: palette.paperSand, borderRadius: radius.pill, paddingHorizontal: 14, minHeight: 42 }}>
-            <Ionicons name="search" size={18} color={palette.slate} />
+        <View style={{ padding: 12, paddingBottom: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: CHIP, borderRadius: radius.pill, paddingHorizontal: 14, minHeight: 44 }}>
+            <Ionicons name="search" size={18} color={WHITE_SOFT} />
             <TextInput
               value={words}
               onChangeText={setWords}
               placeholder="Search music"
-              placeholderTextColor={palette.slate}
+              placeholderTextColor="rgba(255,255,255,0.5)"
               accessibilityLabel="Search music"
-              style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: palette.ink, ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null) }}
+              style={{ flex: 1, fontFamily: fonts.body, fontSize: 15, color: "#FFFFFF", ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null) }}
             />
           </View>
         </View>
 
+        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 12, paddingBottom: 10 }}>
+          {(["for-you", "saved"] as const).map((key) => {
+            const on = filter === key;
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityLabel={key === "for-you" ? "For you" : "Saved"}
+                accessibilityState={{ selected: on }}
+                onPress={() => setFilter(key)}
+                style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, justifyContent: "center", backgroundColor: on ? LILAC : CHIP }}
+              >
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: on ? palette.ink : "#FFFFFF" }}>
+                  {key === "for-you" ? "For you" : "Saved"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <FlatList
-          data={tracks}
+          data={shown}
           keyExtractor={(track) => track.id}
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             loading ? (
-              <ActivityIndicator color={palette.crimson} style={{ marginTop: 24 }} />
+              <ActivityIndicator color={ROSE} style={{ marginTop: 24 }} />
             ) : (
-              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate, textAlign: "center", padding: 24 }}>
-                {error || (words.trim() ? "No songs found." : "No songs yet.")}
+              <Text style={{ fontFamily: fonts.body, fontSize: 14, color: WHITE_SOFT, textAlign: "center", padding: 24 }}>
+                {error ||
+                  (filter === "saved"
+                    ? "No saved songs yet. Tap the bookmark on a song to keep it."
+                    : words.trim()
+                      ? "No songs found."
+                      : "No songs yet.")}
               </Text>
             )
           }
           renderItem={({ item }) => {
             const on = chosen?.id === item.id;
+            const isSaved = saved.includes(item.id);
             return (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Song ${item.title}${item.artist ? ` by ${item.artist}` : ""}`}
                 onPress={() => choose(item)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, minHeight: 58, backgroundColor: on ? palette.crimsonTint : "transparent" }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, minHeight: 64, backgroundColor: on ? "rgba(176,36,95,0.28)" : "transparent" }}
               >
-                <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: on ? palette.crimson : palette.paperSand, alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name={on && playing ? "volume-high" : "musical-notes"} size={20} color={on ? "#FFFFFF" : palette.crimson} />
-                </View>
+                <Cover track={item} playing={on && playing} />
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{item.title}</Text>
-                  <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>
+                  <Text numberOfLines={1} style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>{item.title}</Text>
+                  <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 13, color: WHITE_SOFT }}>
                     {[item.artist, item.durationSec ? clock(item.durationSec) : ""].filter(Boolean).join(" · ")}
                   </Text>
                 </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={isSaved ? `Remove ${item.title} from saved` : `Save ${item.title}`}
+                  accessibilityState={{ selected: isSaved }}
+                  hitSlop={10}
+                  onPress={() => toggleSaved(item.id)}
+                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={22} color={isSaved ? ROSE : "#FFFFFF"} />
+                </Pressable>
               </Pressable>
             );
           }}
         />
 
         {chosen && (
-          <View style={{ borderTopWidth: 1, borderTopColor: palette.rule, padding: 14, gap: 12 }}>
+          <View style={{ borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.12)", padding: 14, gap: 12 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={playing ? "Pause preview" : "Play preview"}
                 onPress={() => (playing ? (player.current?.pause(), setPlaying(false)) : preview(chosen, start, length))}
-                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: palette.ink, alignItems: "center", justifyContent: "center" }}
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
               >
-                <Ionicons name={playing ? "pause" : "play"} size={18} color="#FFFFFF" />
+                <Ionicons name={playing ? "pause" : "play"} size={18} color={palette.ink} />
               </Pressable>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>{chosen.title}</Text>
-                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>
+                <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: "#FFFFFF" }}>{chosen.title}</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: WHITE_SOFT }}>
                   Plays {clock(start)} – {clock(start + length)}
                 </Text>
               </View>
@@ -246,9 +303,9 @@ export function MusicSheet({
                     setStart(from);
                     preview(chosen, from, seconds);
                   }}
-                  style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: "center", backgroundColor: length === seconds ? palette.crimson : palette.paperSand }}
+                  style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: "center", backgroundColor: length === seconds ? palette.crimson : CHIP }}
                 >
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: length === seconds ? "#FFFFFF" : palette.ink }}>{seconds}s</Text>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>{seconds}s</Text>
                 </Pressable>
               ))}
             </View>
@@ -258,11 +315,11 @@ export function MusicSheet({
               <View style={{ gap: 6 }}>
               <View
                 onLayout={(e) => setBarWidth(Math.max(1, e.nativeEvent.layout.width))}
-                style={{ height: 40, borderRadius: 8, backgroundColor: palette.paperSand, justifyContent: "center" }}
+                style={{ height: 40, borderRadius: 8, backgroundColor: CHIP, justifyContent: "center" }}
               >
                 <View style={{ position: "absolute", left: 8, right: 8, flexDirection: "row", alignItems: "center", gap: 3, height: 40 }}>
                   {Array.from({ length: 40 }, (_, i) => (
-                    <View key={i} style={{ flex: 1, height: 8 + ((i * 37) % 22), borderRadius: 2, backgroundColor: palette.rule }} />
+                    <View key={i} style={{ flex: 1, height: 8 + ((i * 37) % 22), borderRadius: 2, backgroundColor: "rgba(255,255,255,0.22)" }} />
                   ))}
                 </View>
                 <View
@@ -276,15 +333,15 @@ export function MusicSheet({
                     width: windowWidth,
                     borderRadius: 8,
                     borderWidth: 2,
-                    borderColor: palette.crimson,
-                    backgroundColor: "rgba(185,28,60,0.18)",
+                    borderColor: ROSE,
+                    backgroundColor: "rgba(242,182,207,0.22)",
                     ...(Platform.OS === "web" ? ({ cursor: "grab", touchAction: "none" } as object) : null),
                   }}
                 />
               </View>
               {/* The song's start and end, and 5 seconds back or forward. */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>0:00</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: WHITE_SOFT }}>0:00</Text>
                 <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", gap: 10 }}>
                   {([-5, 5] as const).map((by) => (
                     <Pressable
@@ -292,14 +349,14 @@ export function MusicSheet({
                       accessibilityRole="button"
                       accessibilityLabel={by < 0 ? "5 seconds earlier" : "5 seconds later"}
                       onPress={() => nudge(by)}
-                      style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: palette.paperSand }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: CHIP }}
                     >
-                      <Ionicons name={by < 0 ? "play-back" : "play-forward"} size={14} color={palette.ink} />
-                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>{by < 0 ? "−5s" : "+5s"}</Text>
+                      <Ionicons name={by < 0 ? "play-back" : "play-forward"} size={14} color="#FFFFFF" />
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>{by < 0 ? "−5s" : "+5s"}</Text>
                     </Pressable>
                   ))}
                 </View>
-                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>{clock(duration)}</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: WHITE_SOFT }}>{clock(duration)}</Text>
               </View>
               </View>
             )}
@@ -313,9 +370,9 @@ export function MusicSheet({
                     stopPreview();
                     onRemove();
                   }}
-                  style={{ flex: 1, minHeight: 46, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.rule, alignItems: "center", justifyContent: "center" }}
+                  style={{ flex: 1, minHeight: 46, borderRadius: radius.pill, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: palette.crimson }}>Remove music</Text>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: ROSE }}>Remove music</Text>
                 </Pressable>
               )}
               <Pressable
@@ -343,5 +400,16 @@ export function MusicSheet({
         )}
       </View>
     </Sheet>
+  );
+}
+
+/** A song's cover: its picture, or the app's rose gradient with a note. */
+function Cover({ track, playing }: { track: MusicTrack; playing: boolean }) {
+  const size = 48;
+  if (track.coverUrl) return <Image source={{ uri: track.coverUrl }} style={{ width: size, height: size, borderRadius: 8, backgroundColor: CHIP }} />;
+  return (
+    <LinearGradient colors={[palette.crimson, palette.navyDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: size, height: size, borderRadius: 8, alignItems: "center", justifyContent: "center" }}>
+      <Ionicons name={playing ? "volume-high" : "musical-notes"} size={20} color="#FFFFFF" />
+    </LinearGradient>
   );
 }

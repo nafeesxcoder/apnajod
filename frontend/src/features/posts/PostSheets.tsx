@@ -54,6 +54,7 @@ export function Sheet({
   onClose,
   children,
   tall,
+  dark,
 }: {
   visible: boolean;
   title: string;
@@ -61,6 +62,8 @@ export function Sheet({
   children: ReactNode;
   /** Takes most of the screen (comments) instead of fitting its content. */
   tall?: boolean;
+  /** The app's ink instead of white, with light text (the music picker). */
+  dark?: boolean;
 }) {
   const height = useVisibleHeight();
   const { width } = useWindowDimensions();
@@ -81,7 +84,7 @@ export function Sheet({
         />
         <View
           style={{
-            backgroundColor: palette.paper,
+            backgroundColor: dark ? palette.ink : palette.paper,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
             borderBottomLeftRadius: centred ? 22 : 0,
@@ -97,7 +100,7 @@ export function Sheet({
         >
           {!centred && (
             <View style={{ alignItems: "center", paddingTop: 8 }}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: palette.rule }} />
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: dark ? "rgba(255,255,255,0.3)" : palette.rule }} />
             </View>
           )}
           <View
@@ -107,13 +110,13 @@ export function Sheet({
               paddingHorizontal: 8,
               minHeight: 48,
               borderBottomWidth: 1,
-              borderBottomColor: palette.rule,
+              borderBottomColor: dark ? "rgba(255,255,255,0.12)" : palette.rule,
             }}
           >
             <View style={{ width: 44 }} />
             <Text
               accessibilityRole="header"
-              style={{ flex: 1, textAlign: "center", fontFamily: fonts.bodyBold, fontSize: 16, color: palette.ink }}
+              style={{ flex: 1, textAlign: "center", fontFamily: fonts.bodyBold, fontSize: 16, color: dark ? "#FFFFFF" : palette.ink }}
             >
               {title}
             </Text>
@@ -123,7 +126,7 @@ export function Sheet({
               onPress={onClose}
               style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
             >
-              <Ionicons name="close" size={22} color={palette.ink} />
+              <Ionicons name="close" size={22} color={dark ? "#FFFFFF" : palette.ink} />
             </Pressable>
           </View>
           {tall ? (
