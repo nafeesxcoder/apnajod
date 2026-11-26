@@ -40,7 +40,7 @@ export function FestivalWishChip({ theme, onSend }: { theme: FestivalTheme; onSe
 /** The card in the chat. A theme that has since gone keeps a plain look. */
 export function FestivalWishCard({ wish, mine }: { wish: FestivalWishPayload; mine: boolean }) {
   const theme = FESTIVAL_THEMES[wish.themeKey];
-  const colors: [string, string] = theme ? theme.colors : [palette.crimson, "#1F4D7A"];
+  const colors: [string, string] = theme ? theme.colors : [palette.crimson, "#B0245F"];
   const ink = theme?.ink ?? "#FFFFFF";
   return (
     <LinearGradient

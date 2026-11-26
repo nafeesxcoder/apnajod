@@ -156,7 +156,7 @@ export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<st
       context.fillStyle = "#FFFFFF";
       roundRect(context, -width / 2, -height / 2, width, height, size);
       context.fill();
-      context.fillStyle = "#14202E";
+      context.fillStyle = "#14102E";
       context.fillText(item.value, 0, 0);
     }
     context.restore();

@@ -16,11 +16,11 @@
     "scheme": "apnajoda",
     "orientation": "default",
     "userInterfaceStyle": "light",
-    "primaryColor": "#1F4D7A",
+    "primaryColor": "#B0245F",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#FDF7F4"
+      "backgroundColor": "#FBF4FF"
     },
     "ios": {
       "supportsTablet": false,
@@ -36,7 +36,7 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FDF7F4"
+        "backgroundColor": "#FBF4FF"
       },
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
@@ -54,8 +54,8 @@
       "favicon": "./assets/favicon.png",
       "name": "Apnajoda",
       "shortName": "Apnajoda",
-      "themeColor": "#FDF7F4",
-      "backgroundColor": "#FDF7F4"
+      "themeColor": "#FBF4FF",
+      "backgroundColor": "#FBF4FF"
     },
     "plugins": [
       [
@@ -94,7 +94,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#1F4D7A"
+          "color": "#B0245F"
         }
       ],
       [

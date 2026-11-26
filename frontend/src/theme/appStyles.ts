@@ -1996,9 +1996,9 @@ export const chatStyles=StyleSheet.create({
 export const snapStyles=StyleSheet.create({
   screen:{flex:1,backgroundColor:colors.black},
   header:{height:62,paddingHorizontal:18,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  headerTitle:{fontFamily:'Mukta_700Bold',fontSize:16,color:'#14202E'},
+  headerTitle:{fontFamily:'Mukta_700Bold',fontSize:16,color:'#14102E'},
   // The screen is light: the Send button is a solid colour with white text, so it is always visible.
-  sendButton:{height:40,paddingHorizontal:18,borderRadius:20,backgroundColor:'#A8243A',alignItems:'center',justifyContent:'center'},
+  sendButton:{height:40,paddingHorizontal:18,borderRadius:20,backgroundColor:'#D6336C',alignItems:'center',justifyContent:'center'},
   sendText:{fontFamily:'Mukta_700Bold',fontSize:14,color:'#FFFFFF'},
   preview:{height:'52%',marginHorizontal:16,borderRadius:28,overflow:'hidden',backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line},
   previewSticker:{position:'absolute',right:22,top:22,fontSize:60},
@@ -2484,10 +2484,10 @@ Object.assign(chatStyles as Record<string, any>, {
 });
 
 Object.assign(chatPremiumStyles as Record<string, any>, {
-  safeArea:{...chatPremiumStyles.safeArea,backgroundColor:'#FDF7F4',borderColor:'#EADDD2'},
-  messages:{...chatPremiumStyles.messages,backgroundColor:'#FDF7F4'},
-  theirBubble:{...chatPremiumStyles.theirBubble,backgroundColor:'#FFFFFF',borderColor:'#EADDD2',shadowColor:'#153B61',shadowOpacity:.06,shadowRadius:8},
-  composer:{...chatPremiumStyles.composer,backgroundColor:'#FDF7F4',borderTopColor:'#EADDD2'},
+  safeArea:{...chatPremiumStyles.safeArea,backgroundColor:'#FBF4FF',borderColor:'#E7D8EE'},
+  messages:{...chatPremiumStyles.messages,backgroundColor:'#FBF4FF'},
+  theirBubble:{...chatPremiumStyles.theirBubble,backgroundColor:'#FFFFFF',borderColor:'#E7D8EE',shadowColor:'#153B61',shadowOpacity:.06,shadowRadius:8},
+  composer:{...chatPremiumStyles.composer,backgroundColor:'#FBF4FF',borderTopColor:'#E7D8EE'},
   chatInput:{...chatPremiumStyles.chatInput,color:colors.text,fontFamily:'Mukta_700Bold'},
 });
 

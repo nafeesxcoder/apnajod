@@ -18,7 +18,7 @@ export const brand = {
   /** Text on the navy hero (8:1 on navy). */
   onHero: "#FFFFFF",
   /** Secondary text on the navy hero (4.9:1 on navy). */
-  onHeroSoft: "#C9D8E8",
+  onHeroSoft: "#FBE3EE",
   pillBg: palette.crimsonTint,
   pillText: palette.crimson,
 };
@@ -32,7 +32,7 @@ export const cardShadow: ViewStyle =
   Platform.OS === "web"
     ? ({ boxShadow: "0 2px 16px rgba(20,32,46,0.09)" } as ViewStyle)
     : {
-        shadowColor: "#14202E",
+        shadowColor: "#14102E",
         shadowOpacity: 0.09,
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 2 },

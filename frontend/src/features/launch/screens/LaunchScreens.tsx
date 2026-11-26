@@ -5,10 +5,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const brandMark = require("../../../../assets/apnajoda-mark.png");
 const brandWordmark = require("../../../../assets/apnajoda-wordmark.png");
 
-const NAVY = "#1F4D7A";
-const CRIMSON = "#A8243A";
-const PAPER = "#FDF7F4";
-const MUTED = "#5A6878";
+const NAVY = "#B0245F";
+const CRIMSON = "#D6336C";
+const PAPER = "#FBF4FF";
+const MUTED = "#5B5478";
 
 const RING = 148;
 const JOIN_MS = 900;
@@ -23,7 +23,7 @@ const PART_MS = 700;
  * nothing, and the app would have looked like every other app for the three
  * seconds a person spends deciding what it is.
  *
- * The ground is the same #FDF7F4 as the native splash in app.json, so the
+ * The ground is the same #FBF4FF as the native splash in app.json, so the
  * handover from the OS splash to this screen has no flash of another colour.
  * The artwork is the two-colour mark, not the white one: on paper the white
  * version is invisible, which is exactly how the first version of this

@@ -80,7 +80,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
       </Text>
 
       <View style={{ gap: 8, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#D9E0E7" }}>
-        <Text style={{ fontWeight: "700", color: "#1F4D7A" }}>New demo account</Text>
+        <Text style={{ fontWeight: "700", color: "#B0245F" }}>New demo account</Text>
         <TextInput
           accessibilityLabel="Demo username"
           placeholder="Username (3-20 letters, numbers, . or _)"
@@ -109,17 +109,17 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
           accessibilityRole="button"
           disabled={busy || !username || !password}
           onPress={() => void create()}
-          style={{ padding: 12, borderRadius: 999, backgroundColor: "#1F4D7A", opacity: busy || !username || !password ? 0.5 : 1 }}
+          style={{ padding: 12, borderRadius: 999, backgroundColor: "#B0245F", opacity: busy || !username || !password ? 0.5 : 1 }}
         >
           <Text style={{ textAlign: "center", color: "#FFFFFF", fontWeight: "700" }}>Create demo account</Text>
         </Pressable>
       </View>
 
-      {!!notice && <Text style={{ color: "#1F4D7A" }}>{notice}</Text>}
-      {!!error && <Text style={{ color: "#A8243A" }}>{error}</Text>}
+      {!!notice && <Text style={{ color: "#B0245F" }}>{notice}</Text>}
+      {!!error && <Text style={{ color: "#D6336C" }}>{error}</Text>}
 
       {users === null ? (
-        <ActivityIndicator color="#A8243A" />
+        <ActivityIndicator color="#D6336C" />
       ) : users.length === 0 ? (
         <Text style={{ color: "#5B6B7A" }}>No demo accounts yet.</Text>
       ) : (
@@ -135,7 +135,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
             {confirmId === user.id ? (
               <>
                 <Pressable accessibilityRole="button" disabled={busy} onPress={() => void remove(user.id)}>
-                  <Text style={{ color: "#A8243A", fontWeight: "700" }}>Delete for good</Text>
+                  <Text style={{ color: "#D6336C", fontWeight: "700" }}>Delete for good</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => setConfirmId(null)}>
                   <Text style={{ color: "#5B6B7A" }}>Cancel</Text>
@@ -143,7 +143,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
               </>
             ) : (
               <Pressable accessibilityRole="button" onPress={() => setConfirmId(user.id)}>
-                <Text style={{ color: "#A8243A", fontWeight: "700" }}>Delete</Text>
+                <Text style={{ color: "#D6336C", fontWeight: "700" }}>Delete</Text>
               </Pressable>
             )}
           </View>

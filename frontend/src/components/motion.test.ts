@@ -28,7 +28,7 @@ describe('Navy x Crimson look and motion', () => {
   });
 
   it('text on the navy hero is readable', () => {
-    // White and the soft blue-grey both pass 4.5:1 on navy #1F4D7A.
+    // White and the soft pink both pass 4.5:1 on the burgundy hero #B0245F.
     const lum = (hex: string) => {
       const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
       return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
@@ -37,7 +37,7 @@ describe('Navy x Crimson look and motion', () => {
       const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
       return (x! + 0.05) / (y! + 0.05);
     };
-    expect(ratio('#FFFFFF', '#1F4D7A')).toBeGreaterThan(4.5);
-    expect(ratio('#C9D8E8', '#1F4D7A')).toBeGreaterThan(4.5);
+    expect(ratio('#FFFFFF', '#B0245F')).toBeGreaterThan(4.5);
+    expect(ratio('#FBE3EE', '#B0245F')).toBeGreaterThan(4.5);
   });
 });

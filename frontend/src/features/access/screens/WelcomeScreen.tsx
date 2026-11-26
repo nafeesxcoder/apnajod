@@ -15,8 +15,8 @@ import { LinearGradient } from "expo-linear-gradient";
 const brandLogo = require("../../../../assets/apnajoda-logo.png");
 
 // Brand navy and its pressed step, from the mark.
-const NAVY = "#1F4D7A";
-const NAVY_DARK = "#12355A";
+const NAVY = "#B0245F";
+const NAVY_DARK = "#8A1A47";
 const WHITE = "#FFFFFF";
 
 const DARK = "#151719";

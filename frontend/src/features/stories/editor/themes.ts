@@ -5,7 +5,7 @@
 export type TextTheme = { id: string; name: string; colors: [string, string] };
 
 export const TEXT_THEMES: TextTheme[] = [
-  { id: "apnajoda", name: "Apnajoda", colors: ["#A3293C", "#1F4D7A"] },
+  { id: "apnajoda", name: "Apnajoda", colors: ["#A3293C", "#B0245F"] },
   { id: "sunset", name: "Sunset", colors: ["#FF5F6D", "#FFC371"] },
   { id: "ocean", name: "Ocean", colors: ["#2193B0", "#6DD5ED"] },
   { id: "royal", name: "Royal", colors: ["#4568DC", "#B06AB3"] },

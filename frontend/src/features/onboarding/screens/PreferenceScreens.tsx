@@ -285,7 +285,7 @@ export function VibesScreen({
                         style={{
                           fontFamily: fonts.body,
                           fontSize: 11,
-                          color: selected ? "#F7E3E7" : palette.slate,
+                          color: selected ? "#FBE3EE" : palette.slate,
                           marginTop: 1,
                         }}
                       >
@@ -482,7 +482,7 @@ export function IntentScreen({
                         style={{
                           fontFamily: fonts.body,
                           fontSize: 12,
-                          color: selected ? "#F7E3E7" : palette.slate,
+                          color: selected ? "#FBE3EE" : palette.slate,
                           marginTop: 2,
                           lineHeight: 17,
                         }}
