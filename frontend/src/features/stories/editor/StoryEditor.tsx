@@ -64,7 +64,7 @@ type Mode = "idle" | "text" | "draw" | "filters" | "live";
 type Tool = "pen" | "marker" | "eraser";
 type Pose = { x: number; y: number; scale: number; rotation: number };
 /** A touch on the photo: a pinch (zoom), a drag (move it) or a plain swipe (the next filter). */
-type PhotoGesture = { kind: "pinch" | "pan" | "swipe"; crop: Crop; span: number; moved: boolean };
+type PhotoGesture = { kind: "pinch" | "pan" | "swipe"; crop: Crop; span: number; ax: number; ay: number; moved: boolean };
 const touchCount = (event: GestureResponderEvent) => event.nativeEvent.touches?.length ?? 0;
 /** The distance between the first two fingers, or 0 with fewer than two. */
 const touchSpan = (event: GestureResponderEvent) => {
@@ -254,16 +254,27 @@ export function StoryEditor({
           if (stateRef.current.crop.zoom > 1 && modeRef.current === "idle") return Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4;
           return Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy);
         },
-        onPanResponderGrant: (e) => {
-          const zoomedIn = stateRef.current.crop.zoom > 1 && modeRef.current === "idle";
-          const kind = photoSizeRef.current && touchCount(e) >= 2 ? "pinch" : zoomedIn ? "pan" : "swipe";
-          gestureRef.current = { kind, crop: stateRef.current.crop, span: touchSpan(e), moved: false };
+        onPanResponderGrant: () => {
+          // The kind is set on each move, from how many fingers are down now.
+          gestureRef.current = { kind: "swipe", crop: stateRef.current.crop, span: 0, ax: 0, ay: 0, moved: false };
         },
         onPanResponderMove: (e, g) => {
           const gesture = gestureRef.current;
           const size = photoSizeRef.current;
-          if (!gesture || !size || gesture.kind === "swipe") return;
-          // The first move keeps the photo as it was before the gesture, for undo.
+          if (!gesture || !size) return;
+          // Two fingers pinch. One finger drags a zoomed photo, and swipes for the filter when the photo is whole.
+          const next: PhotoGesture["kind"] =
+            touchCount(e) >= 2 ? "pinch" : stateRef.current.crop.zoom > 1 && modeRef.current === "idle" ? "pan" : "swipe";
+          // When the fingers change, the new part starts from where the photo is now.
+          if (next !== gesture.kind) {
+            gesture.kind = next;
+            gesture.crop = stateRef.current.crop;
+            gesture.span = touchSpan(e);
+            gesture.ax = g.dx;
+            gesture.ay = g.dy;
+          }
+          if (gesture.kind === "swipe") return;
+          // The first change keeps the photo as it was before the gesture, for undo.
           if (!gesture.moved) {
             remember();
             gesture.moved = true;
@@ -273,7 +284,11 @@ export function StoryEditor({
           const crop =
             gesture.kind === "pinch"
               ? clampCrop(size.w, size.h, { ...gesture.crop, zoom: gesture.crop.zoom * (gesture.span && span ? span / gesture.span : 1) })
-              : clampCrop(size.w, size.h, { zoom: gesture.crop.zoom, x: gesture.crop.x + g.dx / frame.w, y: gesture.crop.y + g.dy / frame.h });
+              : clampCrop(size.w, size.h, {
+                  zoom: gesture.crop.zoom,
+                  x: gesture.crop.x + (g.dx - gesture.ax) / frame.w,
+                  y: gesture.crop.y + (g.dy - gesture.ay) / frame.h,
+                });
           stateRef.current = { ...stateRef.current, crop };
           setState(stateRef.current);
         },
