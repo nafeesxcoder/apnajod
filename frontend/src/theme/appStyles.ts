@@ -1423,10 +1423,10 @@ export const aiStyles=StyleSheet.create({
   chatRose:{width:40,height:40,borderRadius:20,backgroundColor:'rgba(80,18,30,.92)',borderWidth:1,borderColor:'rgba(170,42,68,.55)',alignItems:'center',justifyContent:'center',shadowColor:colors.gold,shadowOpacity:.24,shadowRadius:10},
   chatRoseEmoji:{fontSize:19},
   freeDot:{position:'absolute',right:-1,top:-1,width:9,height:9,borderRadius:5,backgroundColor:colors.gold,borderWidth:1,borderColor:colors.black},
-  roseComposerHero:{borderRadius:24,padding:18,alignItems:'center',gap:7,borderWidth:1,borderColor:'#D3D6DA'},
+  roseComposerHero:{borderRadius:24,padding:18,alignItems:'center',gap:7,borderWidth:1,borderColor:'#F2B6CF'},
   roseComposerEmoji:{fontSize:52},
   roseComposerTitle:{fontFamily:'Mukta_700Bold',fontSize:18,color:colors.ivory},
-  roseComposerBody:{fontFamily:'Mukta_400Regular',fontSize:11.5,lineHeight:17,color:'#4D5156',textAlign:'center'},
+  roseComposerBody:{fontFamily:'Mukta_400Regular',fontSize:12.5,lineHeight:18,color:'#3A3358',textAlign:'center'},
   roseNote:{minHeight:92,borderRadius:18,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line,color:colors.ivory,padding:14,fontFamily:'Mukta_400Regular',fontSize:13,textAlignVertical:'top'},
 });
 

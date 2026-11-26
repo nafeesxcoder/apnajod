@@ -6282,7 +6282,7 @@ export function RoseComposer({
           onClose={onClose}
         />
         <LinearGradient
-          colors={["#4F111D", "#0E0F10"]}
+          colors={["#FFF4F8", "#F9D3E3"]}
           style={aiStyles.roseComposerHero}
         >
           <PremiumIcon name="sparkles" tone="gold" size={76} iconSize={35} />
@@ -6301,7 +6301,7 @@ export function RoseComposer({
           multiline
           maxLength={120}
           placeholder="Write a short note…"
-          placeholderTextColor="#265E97"
+          placeholderTextColor="#8A7A9A"
           style={aiStyles.roseNote}
         />
         <Button
