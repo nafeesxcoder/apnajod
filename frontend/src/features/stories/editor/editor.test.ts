@@ -9,6 +9,9 @@ import {
   EMPTY_STATE,
   addItem,
   addStroke,
+  coverZoom,
+  cropRect,
+  NO_CROP,
   eraseAt,
   isEdited,
   outputSize,
@@ -75,6 +78,32 @@ describe("story editor", () => {
     expect(wide.y).toBeCloseTo(0.289, 3);
     expect(outputSize(4000, 3000)).toEqual({ width: 2160, height: 3840 });
     expect(outputSize(600, 800)).toEqual({ width: 1080, height: 1920 });
+  });
+
+  it("zooms and moves the photo in the frame, or fills the frame with it", () => {
+    // The whole photo is where photoRect puts it.
+    expect(cropRect(4000, 3000, NO_CROP)).toEqual(photoRect(4000, 3000));
+    // Zoomed in, it moves only until its left edge reaches the frame's left edge.
+    const zoomed = cropRect(4000, 3000, { zoom: 2, x: 99, y: 0 });
+    expect(zoomed.width).toBeCloseTo(2, 5);
+    expect(zoomed.x).toBeCloseTo(0, 5);
+    // Filling the frame: the photo covers every edge.
+    const filled = cropRect(4000, 3000, { zoom: coverZoom(4000, 3000), x: 0, y: 0 });
+    expect(filled.width).toBeGreaterThanOrEqual(1 - 1e-9);
+    expect(filled.height).toBeGreaterThanOrEqual(1 - 1e-9);
+    expect(isEdited({ ...EMPTY_STATE, crop: { zoom: 1.5, x: 0, y: 0 } })).toBe(true);
+    // A zoomed photo is saved at the sharpness it is shown at, and never below 1080 wide.
+    expect(outputSize(4000, 3000, { zoom: 3, x: 0, y: 0 }).width).toBe(1333);
+    expect(outputSize(4000, 3000, { zoom: 6, x: 0, y: 0 }).width).toBe(1080);
+  });
+
+  it("shows the same zoomed photo on the phone and in the web picture", () => {
+    expect(read("bake.ts")).toContain("cropRect(image.naturalWidth, image.naturalHeight, state.crop)");
+    const editor = read("StoryEditor.tsx");
+    expect(editor).toContain("const rect = photo ? cropRect(photo.width, photo.height, state.crop)");
+    expect(editor).toContain('"Zoom in"');
+    expect(editor).toContain("touchCount(e) >= 2");
+    expect(editor).toContain("if (gesture?.kind !== \"pinch\" && gesture?.kind !== \"pan\" && Math.abs(g.dx) > 50)");
   });
 
   it("has ten filters whose saved colours match the CSS preview", () => {

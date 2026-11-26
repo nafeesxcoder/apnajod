@@ -47,26 +47,30 @@ describe("story music", () => {
     expect(storySeconds({ music: null })).toBe(5);
   });
 
-  it("puts a song sticker on the story and takes the song off with it", () => {
-    const withSong = setMusic(EMPTY_STATE, song, "m1");
+  it("puts a song on the story with no title until a look is chosen, and takes the song off with its sticker", () => {
+    const withSong = setMusic(EMPTY_STATE, song);
     expect(withSong.music).toEqual(song);
-    // The sticker starts as a card, and is live (not drawn into the photo).
-    expect(withSong.items[0]).toMatchObject({ kind: "music", style: "card" });
-    expect(liveStickers(withSong).map((item) => item.kind)).toEqual(["music"]);
-    const changed = setMusic(withSong, { ...song, title: "Other" }, "m2");
+    // No title by default: the song plays, and no sticker is drawn.
+    expect(withSong.items).toHaveLength(0);
+    expect(liveStickers(withSong)).toEqual([]);
+    // Choosing a look adds the sticker, which is live (not drawn into the photo).
+    const titled = setSongLook(withSong, { style: "card" }, "m1");
+    expect(titled.items[0]).toMatchObject({ kind: "music", style: "card" });
+    expect(liveStickers(titled).map((item) => item.kind)).toEqual(["music"]);
+    const changed = setMusic(titled, { ...song, title: "Other" });
     expect(changed.items).toHaveLength(1);
-    expect(removeItem(withSong, "m1").music).toBeNull();
+    expect(removeItem(titled, "m1").music).toBeNull();
     expect(musicLabel({ title: "A".repeat(50), artist: "" })).toHaveLength(36);
   });
 
   it("can have the song with no title: it plays, and no sticker is shown", () => {
-    const withSong = setMusic(EMPTY_STATE, song, "m1");
+    const withSong = setSongLook(setMusic(EMPTY_STATE, song), { style: "card" }, "m1");
     const quiet = setSongLook(withSong, null, "unused");
     expect(quiet.music).toEqual(song);
     expect(liveStickers(quiet)).toEqual([]);
     expect(songLookLabel(quiet)).toBe("No title");
     // Changing the song keeps "no title"; choosing a look brings the sticker back.
-    expect(setMusic(quiet, { ...song, title: "Other" }, "m2").items).toHaveLength(0);
+    expect(setMusic(quiet, { ...song, title: "Other" }).items).toHaveLength(0);
     const shown = setSongLook(quiet, { style: "pill" }, "m3");
     expect(shown.items).toEqual([expect.objectContaining({ kind: "music", style: "pill" })]);
     expect(songLookLabel(shown)).toBe("Small");

@@ -62,9 +62,15 @@ export type EditorMusic = {
   lyrics?: LyricLine[];
 };
 
-export type EditorState = { filter: string; items: Item[]; strokes: Stroke[]; music: EditorMusic | null };
+/** The photo's zoom and place in the frame: zoom 1 is the whole photo; x and y move it, as fractions of the frame. */
+export type Crop = { zoom: number; x: number; y: number };
+export const NO_CROP: Crop = { zoom: 1, x: 0, y: 0 };
+/** How far the photo can be zoomed in. */
+export const MAX_ZOOM = 6;
 
-export const EMPTY_STATE: EditorState = { filter: "normal", items: [], strokes: [], music: null };
+export type EditorState = { filter: string; items: Item[]; strokes: Stroke[]; music: EditorMusic | null; crop: Crop };
+
+export const EMPTY_STATE: EditorState = { filter: "normal", items: [], strokes: [], music: null, crop: NO_CROP };
 
 /** The story frame: 9 wide, 16 tall. */
 export const FRAME_ASPECT = 9 / 16;
@@ -93,7 +99,7 @@ let counter = 0;
 export const newId = () => `${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
 export function isEdited(state: EditorState): boolean {
-  return state.filter !== "normal" || state.items.length > 0 || state.strokes.length > 0;
+  return state.filter !== "normal" || state.items.length > 0 || state.strokes.length > 0 || state.crop.zoom !== 1 || state.crop.x !== 0 || state.crop.y !== 0;
 }
 
 export function addItem(state: EditorState, item: Item): EditorState {
@@ -132,15 +138,11 @@ export function musicLabel(music: Pick<EditorMusic, "title" | "artist">): string
 }
 
 /**
- * Puts a song on the story, with its sticker (a card to start), or changes the song.
- * A song that was put on with no title keeps having none.
+ * Puts a song on the story. It has no title until a look is chosen (setSongLook):
+ * the song plays, and nothing is shown with it.
  */
-export function setMusic(state: EditorState, music: EditorMusic, id: string): EditorState {
-  const sticker = state.items.find((item) => item.kind === "music");
-  const items: Item[] = state.music || sticker
-    ? state.items
-    : [...state.items, { id, kind: "music" as const, style: "card" as const, x: 0.5, y: 0.22, scale: 1, rotation: 0 }];
-  return { ...state, music, items };
+export function setMusic(state: EditorState, music: EditorMusic): EditorState {
+  return { ...state, music };
 }
 
 /** How the song's sticker looks: a card, a small pill or the words. */
@@ -297,12 +299,42 @@ export function photoRect(photoWidth: number, photoHeight: number): { x: number;
   return { x: (1 - width) / 2, y: 0, width, height: 1 };
 }
 
+export const clampZoom = (zoom: number) => Math.min(MAX_ZOOM, Math.max(1, zoom));
+
+/**
+ * The crop kept in range: the zoom between 1 and MAX_ZOOM, and the photo moved
+ * no further than its edge can reach the frame's edge, so it never leaves
+ * the frame uncovered where it could cover it.
+ */
+export function clampCrop(photoWidth: number, photoHeight: number, crop: Crop): Crop {
+  const base = photoRect(photoWidth, photoHeight);
+  const zoom = clampZoom(crop.zoom);
+  const maxX = Math.max(0, (base.width * zoom - 1) / 2);
+  const maxY = Math.max(0, (base.height * zoom - 1) / 2);
+  return { zoom, x: Math.min(maxX, Math.max(-maxX, crop.x)), y: Math.min(maxY, Math.max(-maxY, crop.y)) };
+}
+
+/** Where the photo sits in the frame (fractions of the frame), zoomed and moved by its crop. NO_CROP is photoRect. */
+export function cropRect(photoWidth: number, photoHeight: number, crop: Crop = NO_CROP): { x: number; y: number; width: number; height: number } {
+  const base = photoRect(photoWidth, photoHeight);
+  const c = clampCrop(photoWidth, photoHeight, crop);
+  const width = base.width * c.zoom;
+  const height = base.height * c.zoom;
+  return { x: (1 - width) / 2 + c.x, y: (1 - height) / 2 + c.y, width, height };
+}
+
+/** The zoom that fills the whole frame with the photo, with no gap at any edge. */
+export function coverZoom(photoWidth: number, photoHeight: number): number {
+  const base = photoRect(photoWidth, photoHeight);
+  return clampZoom(Math.max(1 / base.width, 1 / base.height));
+}
+
 /**
  * The saved story's size in pixels: the photo kept at its own sharpness
  * inside the 9:16 frame, at least 1080 wide and at most 2160 x 3840.
  */
-export function outputSize(photoWidth: number, photoHeight: number): { width: number; height: number } {
-  const rect = photoRect(photoWidth, photoHeight);
+export function outputSize(photoWidth: number, photoHeight: number, crop: Crop = NO_CROP): { width: number; height: number } {
+  const rect = cropRect(photoWidth, photoHeight, crop);
   const native = photoWidth / rect.width;
   const width = Math.round(Math.min(2160, Math.max(1080, native)));
   return { width, height: Math.round(width / FRAME_ASPECT) };

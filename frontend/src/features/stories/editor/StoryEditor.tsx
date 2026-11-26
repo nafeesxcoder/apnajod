@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, Animated, Image, PanResponder, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Animated, Image, PanResponder, Platform, Pressable, ScrollView, Text, View, useWindowDimensions, type GestureResponderEvent } from "react-native";
 import { Modal } from "../../../components/BackModal";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -22,7 +22,10 @@ import {
   isEdited,
   newId,
   overTrash,
-  photoRect,
+  clampCrop,
+  coverZoom,
+  cropRect,
+  NO_CROP,
   pushHistory,
   isLive,
   liveStickers,
@@ -34,6 +37,7 @@ import {
   songLookLabel,
   toFront,
   updateItem,
+  type Crop,
   type EditorState,
   type PollItem,
   type QuestionItem,
@@ -59,6 +63,14 @@ export type PickedStoryPhoto = { uri: string; width: number; height: number; tex
 type Mode = "idle" | "text" | "draw" | "filters" | "live";
 type Tool = "pen" | "marker" | "eraser";
 type Pose = { x: number; y: number; scale: number; rotation: number };
+/** A touch on the photo: a pinch (zoom), a drag (move it) or a plain swipe (the next filter). */
+type PhotoGesture = { kind: "pinch" | "pan" | "swipe"; crop: Crop; span: number; moved: boolean };
+const touchCount = (event: GestureResponderEvent) => event.nativeEvent.touches?.length ?? 0;
+/** The distance between the first two fingers, or 0 with fewer than two. */
+const touchSpan = (event: GestureResponderEvent) => {
+  const [a, b] = event.nativeEvent.touches ?? [];
+  return a && b ? Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY) : 0;
+};
 
 const filterStyle = (id: string): object => {
   const steps = filterById(id).steps;
@@ -225,18 +237,76 @@ export function StoryEditor({
   const stepRef = useRef(stepFilter);
   stepRef.current = stepFilter;
 
-  // Swipe left / right on the photo for the next filter.
+  // The photo: pinch it to zoom, drag it to move it once it is zoomed in, and swipe left or right for the next filter.
+  const modeRef = useRef<Mode>(mode);
+  modeRef.current = mode;
+  const photoSizeRef = useRef<{ w: number; h: number } | null>(null);
+  photoSizeRef.current = photo && !photo.text ? { w: photo.width, h: photo.height } : null;
+  const frameSizeRef = useRef({ w: fw, h: fh });
+  frameSizeRef.current = { w: fw, h: fh };
+  const gestureRef = useRef<PhotoGesture | null>(null);
   const swipe = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy),
+        onMoveShouldSetPanResponder: (e, g) => {
+          if (photoSizeRef.current && touchCount(e) >= 2) return true;
+          if (stateRef.current.crop.zoom > 1 && modeRef.current === "idle") return Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4;
+          return Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy);
+        },
+        onPanResponderGrant: (e) => {
+          const zoomedIn = stateRef.current.crop.zoom > 1 && modeRef.current === "idle";
+          const kind = photoSizeRef.current && touchCount(e) >= 2 ? "pinch" : zoomedIn ? "pan" : "swipe";
+          gestureRef.current = { kind, crop: stateRef.current.crop, span: touchSpan(e), moved: false };
+        },
+        onPanResponderMove: (e, g) => {
+          const gesture = gestureRef.current;
+          const size = photoSizeRef.current;
+          if (!gesture || !size || gesture.kind === "swipe") return;
+          // The first move keeps the photo as it was before the gesture, for undo.
+          if (!gesture.moved) {
+            remember();
+            gesture.moved = true;
+          }
+          const frame = frameSizeRef.current;
+          const span = touchSpan(e);
+          const crop =
+            gesture.kind === "pinch"
+              ? clampCrop(size.w, size.h, { ...gesture.crop, zoom: gesture.crop.zoom * (gesture.span && span ? span / gesture.span : 1) })
+              : clampCrop(size.w, size.h, { zoom: gesture.crop.zoom, x: gesture.crop.x + g.dx / frame.w, y: gesture.crop.y + g.dy / frame.h });
+          stateRef.current = { ...stateRef.current, crop };
+          setState(stateRef.current);
+        },
         onPanResponderRelease: (_e, g) => {
-          if (Math.abs(g.dx) > 50) stepRef.current(g.dx < 0 ? 1 : -1);
+          const gesture = gestureRef.current;
+          gestureRef.current = null;
+          // Only a plain swipe changes the filter: a pinch or a drag moves the photo.
+          if (gesture?.kind !== "pinch" && gesture?.kind !== "pan" && Math.abs(g.dx) > 50) stepRef.current(g.dx < 0 ? 1 : -1);
+        },
+        onPanResponderTerminate: () => {
+          gestureRef.current = null;
         },
       }),
     [],
   );
+
+  // The zoom buttons: a step in or out, or straight to filling the frame (and back to the whole photo).
+  const zoomPhoto = (factor: number) => {
+    const size = photoSizeRef.current;
+    if (!size) return;
+    const crop = stateRef.current.crop;
+    const next = clampCrop(size.w, size.h, { ...crop, zoom: crop.zoom * factor });
+    if (next.zoom === crop.zoom) return;
+    commit({ ...stateRef.current, crop: next });
+  };
+  const fillFrame = () => {
+    const size = photoSizeRef.current;
+    if (!size) return;
+    const fill = coverZoom(size.w, size.h);
+    const filled = Math.abs(stateRef.current.crop.zoom - fill) < 0.01;
+    commit({ ...stateRef.current, crop: filled ? NO_CROP : { zoom: fill, x: 0, y: 0 } });
+    showToast(filled ? "Whole photo" : "Filled");
+  };
 
   // Drawing.
   const onPoint = (x: number, y: number, first: boolean) => {
@@ -340,7 +410,9 @@ export function StoryEditor({
     }
   };
 
-  const rect = photo ? photoRect(photo.width, photo.height) : { x: 0, y: 0, width: 1, height: 1 };
+  const rect = photo ? cropRect(photo.width, photo.height, state.crop) : { x: 0, y: 0, width: 1, height: 1 };
+  // Whether the photo already fills the frame (the Fill button then gives back the whole photo).
+  const filled = !!photo && Math.abs(state.crop.zoom - coverZoom(photo.width, photo.height)) < 0.01;
   const dragging = !!drag;
   const trashHot = drag ? overTrash(drag.x, drag.y) : false;
 
@@ -510,6 +582,19 @@ export function StoryEditor({
                   <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: "#FFFFFF" }}>Aa</Text>,
                 )}
               </View>
+            </View>
+          )}
+
+          {/* Zoom: pinch to zoom and drag to move work too; these buttons make the photo bigger or fill the story. */}
+          {!dragging && mode === "idle" && !textStory && !!photo && (
+            <View style={{ position: "absolute", right: 10, top: 64, gap: 8 }}>
+              {iconButton("Zoom in", () => zoomPhoto(1.25), <Ionicons name="add" size={24} color="#FFFFFF" />)}
+              {iconButton("Zoom out", () => zoomPhoto(0.8), <Ionicons name="remove" size={24} color="#FFFFFF" />)}
+              {iconButton(
+                filled ? "Show the whole photo" : "Fill the story",
+                fillFrame,
+                <Ionicons name={filled ? "contract-outline" : "expand-outline"} size={20} color="#FFFFFF" />,
+              )}
             </View>
           )}
 
@@ -741,7 +826,7 @@ export function StoryEditor({
         onClose={() => setMusicOpen(false)}
         onPick={(music) => {
           setMusicOpen(false);
-          commit(setMusic(stateRef.current, music, newId()));
+          commit(setMusic(stateRef.current, music));
         }}
         onRemove={() => {
           setMusicOpen(false);

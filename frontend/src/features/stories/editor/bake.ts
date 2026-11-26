@@ -10,8 +10,8 @@ import {
   TEXT_SIZE,
   isLive,
   type EditorState,
+  cropRect,
   outputSize,
-  photoRect,
   textColors,
 } from "./model";
 
@@ -52,7 +52,7 @@ function roundRect(context: CanvasRenderingContext2D, x: number, y: number, w: n
 export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<string> {
   // A text story has no photo: just the background and what is on it.
   const image = uri ? await loadImage(uri) : null;
-  const out = image ? outputSize(image.naturalWidth, image.naturalHeight) : { width: 1080, height: 1920 };
+  const out = image ? outputSize(image.naturalWidth, image.naturalHeight, state.crop) : { width: 1080, height: 1920 };
   const canvas = document.createElement("canvas");
   canvas.width = out.width;
   canvas.height = out.height;
@@ -75,7 +75,8 @@ export async function bakeStory({ uri, state, backdrop }: BakeInput): Promise<st
   context.fillRect(0, 0, W, H);
 
   if (image) {
-    const rect = photoRect(image.naturalWidth, image.naturalHeight);
+    // The photo as the editor shows it: zoomed and moved by its crop.
+    const rect = cropRect(image.naturalWidth, image.naturalHeight, state.crop);
     const px = { x: rect.x * W, y: rect.y * H, w: rect.width * W, h: rect.height * H };
     const steps = filterById(state.filter).steps;
     context.imageSmoothingQuality = "high";
