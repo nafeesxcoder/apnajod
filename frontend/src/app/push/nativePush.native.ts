@@ -3,9 +3,9 @@ import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 
 import { pushApi } from "../../api/pushApi";
-import { pushTarget, type PushTargets } from "./nativePush";
+import { pushTarget, type PushTargets } from "./pushTarget";
 
-export { pushTarget, type PushTargets } from "./nativePush";
+export { pushTarget, type PushTargets } from "./pushTarget";
 
 // A notification that arrives while the app is open still shows at the top.
 Notifications.setNotificationHandler({
