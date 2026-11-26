@@ -178,7 +178,7 @@ export function AccessWelcomeScreen({
                     color: "#5B5478",
                   }}
                 >
-                  Founded by Nafees Ahmad
+                  Powered by Unique Web Layer
                 </Text>
               </Animated.View>
             </SafeAreaView>
