@@ -55,7 +55,7 @@ export function LudoEntry({
           accessibilityRole="button"
           accessibilityLabel="Play Ludo with 2 to 4 players and live voice"
           onPress={() => onOpen(null)}
-          style={{ borderRadius: radius.lg, overflow: "hidden", backgroundColor: "#2B1466", padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}
+          style={{ borderRadius: radius.lg, overflow: "hidden", backgroundColor: "#8A1A47", padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}
         >
           <View style={{ width: 56, height: 56, borderRadius: 14, overflow: "hidden", flexDirection: "row", flexWrap: "wrap" }}>
             {SEAT_COLORS.map((c) => (

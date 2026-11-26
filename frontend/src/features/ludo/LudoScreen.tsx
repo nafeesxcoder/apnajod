@@ -454,8 +454,8 @@ export function LudoScreen({
                   onPress={createAndInvite}
                   style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: L.gold, opacity: busy ? 0.6 : 1 }}
                 >
-                  {busy ? <ActivityIndicator size="small" color="#2B1466" /> : <Ionicons name="paper-plane" size={15} color="#2B1466" />}
-                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#2B1466" }}>{picked.length > 1 ? `Invite ${picked.length}` : "Invite"}</Text>
+                  {busy ? <ActivityIndicator size="small" color="#8A1A47" /> : <Ionicons name="paper-plane" size={15} color="#8A1A47" />}
+                  <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#8A1A47" }}>{picked.length > 1 ? `Invite ${picked.length}` : "Invite"}</Text>
                 </Pressable>
               ) : (
                 <Ionicons name="ellipse-outline" size={26} color={L.textMuted} />

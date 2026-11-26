@@ -29,7 +29,7 @@ const TABS: { kind: StoreItem["kind"] | "swap"; label: string; icon: keyof typeo
   { kind: "swap", label: "Swap", icon: "swap-horizontal" },
 ];
 
-const S = { bg: "#160B3A", card: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.14)", text: "#FFFFFF", soft: "#C9BDF5", gold: "#F6C445", green: "#22C55E" };
+const S = { bg: "#160B3A", card: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.14)", text: "#FFFFFF", soft: "#F2B6CF", gold: "#F6C445", green: "#22C55E" };
 
 // Swap deals: an icon for each (no emoji, so it draws the same everywhere).
 const DEAL_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -239,8 +239,8 @@ export function LudoStore({ visible, accessToken, onClose, startTab = "theme" }:
                 onPress={() => setTab(t.kind)}
                 style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, height: 38, borderRadius: 19, backgroundColor: tab === t.kind ? S.gold : S.card }}
               >
-                <Ionicons name={t.icon} size={15} color={tab === t.kind ? "#2B1466" : S.text} />
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: tab === t.kind ? "#2B1466" : S.text }}>{t.label}</Text>
+                <Ionicons name={t.icon} size={15} color={tab === t.kind ? "#8A1A47" : S.text} />
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: tab === t.kind ? "#8A1A47" : S.text }}>{t.label}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -289,7 +289,7 @@ export function LudoStore({ visible, accessToken, onClose, startTab = "theme" }:
                       }
                       style={{ paddingHorizontal: 16, height: 38, borderRadius: 19, justifyContent: "center", backgroundColor: wallet.coins < deal.coins ? "rgba(255,255,255,0.1)" : confirm === what ? S.green : S.gold }}
                     >
-                      {busy === what ? <ActivityIndicator color="#2B1466" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: wallet.coins < deal.coins ? S.soft : "#2B1466" }}>{confirm === what ? "Sure?" : "Swap"}</Text>}
+                      {busy === what ? <ActivityIndicator color="#8A1A47" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: wallet.coins < deal.coins ? S.soft : "#8A1A47" }}>{confirm === what ? "Sure?" : "Swap"}</Text>}
                     </Pressable>
                   </View>
                 ))}
@@ -342,11 +342,11 @@ export function LudoStore({ visible, accessToken, onClose, startTab = "theme" }:
                       style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, height: 36, borderRadius: 18, backgroundColor: confirm === item.key ? S.green : afford ? S.gold : "rgba(255,255,255,0.1)" }}
                     >
                       {busy === item.key ? (
-                        <ActivityIndicator color="#2B1466" />
+                        <ActivityIndicator color="#8A1A47" />
                       ) : (
                         <>
-                          <Ionicons name={confirm === item.key ? "checkmark" : "lock-closed"} size={13} color={afford ? "#2B1466" : S.soft} />
-                          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: afford ? "#2B1466" : S.soft }}>{confirm === item.key ? "Unlock?" : item.price}</Text>
+                          <Ionicons name={confirm === item.key ? "checkmark" : "lock-closed"} size={13} color={afford ? "#8A1A47" : S.soft} />
+                          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: afford ? "#8A1A47" : S.soft }}>{confirm === item.key ? "Unlock?" : item.price}</Text>
                         </>
                       )}
                     </Pressable>

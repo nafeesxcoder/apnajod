@@ -96,7 +96,7 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
       <View style={{ flex: 1, backgroundColor: "rgba(10,4,30,0.82)", alignItems: "center", justifyContent: "center", padding: 20 }}>
         <LinearGradient colors={["#3A1F86", "#1E0F4D"]} style={{ width: "100%", maxWidth: 380, borderRadius: 28, padding: 20, alignItems: "center", gap: 12, borderWidth: 2, borderColor: "#F6C445" }}>
           <Text style={{ fontFamily: fonts.display, fontSize: 26, color: "#F6C445" }}>Daily Spin 🎡</Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: "#C9BDF5", textAlign: "center" }}>One free spin every day. Win coins, Sparks or a surprise from the Ludo store!</Text>
+          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: "#F2B6CF", textAlign: "center" }}>One free spin every day. Win coins, Sparks or a surprise from the Ludo store!</Text>
 
           <View style={{ width: SIZE, height: SIZE + 14, alignItems: "center" }}>
             {/* The pointer. */}
@@ -111,7 +111,7 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
                 overflow: "hidden",
                 borderWidth: 6,
                 borderColor: "#F6C445",
-                backgroundColor: "#2B1466",
+                backgroundColor: "#8A1A47",
                 transform: [{ rotate: angle.interpolate({ inputRange: [0, 360], outputRange: ["0deg", "360deg"] }) }],
               }}
             >
@@ -134,7 +134,7 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
               <Text accessibilityLiveRegion="polite" style={{ fontFamily: fonts.bodyBold, fontSize: 28, color: "#FFFFFF" }}>
                 {shown.big}
               </Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: "#C9BDF5", textAlign: "center" }}>{shown.small}</Text>
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: "#F2B6CF", textAlign: "center" }}>{shown.small}</Text>
             </View>
           ) : null}
           {!!error && <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FDA4AF", textAlign: "center" }}>{error}</Text>}
@@ -148,13 +148,13 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
           ) : (
             <Pressable accessibilityRole="button" accessibilityLabel="Spin the wheel" disabled={spinning} onPress={() => void spin()} style={{ alignSelf: "stretch" }}>
               <LinearGradient colors={["#FFE9A3", "#C48A12"]} style={{ borderRadius: 999, paddingVertical: 15, alignItems: "center" }}>
-                {spinning ? <ActivityIndicator color="#2B1466" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: "#2B1466" }}>SPIN!</Text>}
+                {spinning ? <ActivityIndicator color="#8A1A47" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 17, color: "#8A1A47" }}>SPIN!</Text>}
               </LinearGradient>
             </Pressable>
           )}
           {!spinning && !prize && (
             <Pressable accessibilityRole="button" accessibilityLabel="Later" onPress={() => setOpen(false)} hitSlop={8}>
-              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#C9BDF5" }}>Later</Text>
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#F2B6CF" }}>Later</Text>
             </Pressable>
           )}
         </LinearGradient>

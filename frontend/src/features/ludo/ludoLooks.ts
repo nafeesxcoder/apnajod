@@ -24,7 +24,7 @@ export type BoardTheme = {
 };
 
 export const BOARD_THEMES: Record<string, BoardTheme> = {
-  royal: { name: "Royal Night", bg: ["#2B1466", "#1A0D45", "#0C0626"], frame: ["#FFE9A3", "#F6C445", "#C48A12"], cell: "#FFF8EB", line: "rgba(60,40,20,0.14)", star: "#C48A12", center: "#F6C445", text: "#FFFFFF", textSoft: "#C9BDF5", glass: "rgba(255,255,255,0.07)", glassBorder: "rgba(255,255,255,0.14)" },
+  royal: { name: "Royal Night", bg: ["#8A1A47", "#5C0F2E", "#2A0814"], frame: ["#FFE9A3", "#F6C445", "#C48A12"], cell: "#FFF8EB", line: "rgba(60,40,20,0.14)", star: "#C48A12", center: "#F6C445", text: "#FFFFFF", textSoft: "#F2B6CF", glass: "rgba(255,255,255,0.07)", glassBorder: "rgba(255,255,255,0.14)" },
   classic: { name: "Classic", bg: ["#E8EEF7", "#D7E1EF", "#C3D0E3"], frame: ["#FFFFFF", "#CBD5E1", "#94A3B8"], cell: "#FFFFFF", line: "rgba(15,23,42,0.16)", star: "#64748B", center: "#94A3B8", text: "#0F172A", textSoft: "#475569", glass: "rgba(255,255,255,0.7)", glassBorder: "rgba(15,23,42,0.12)" },
   wood: { name: "Wooden", bg: ["#5B3A1E", "#3E2612", "#24150A"], frame: ["#C98B4E", "#9A5E2B", "#6B3C17"], cell: "#F3E1C2", line: "rgba(90,50,20,0.25)", star: "#9A5E2B", center: "#C98B4E", text: "#FFF7EC", textSoft: "#E8CFAE", glass: "rgba(255,240,220,0.08)", glassBorder: "rgba(255,230,200,0.18)" },
   ocean: { name: "Ocean", bg: ["#0E7490", "#0B4F6C", "#062C43"], frame: ["#A5F3FC", "#22D3EE", "#0891B2"], cell: "#ECFEFF", line: "rgba(8,80,110,0.18)", star: "#0891B2", center: "#22D3EE", text: "#FFFFFF", textSoft: "#BAE6FD", glass: "rgba(255,255,255,0.08)", glassBorder: "rgba(165,243,252,0.22)", centerMark: "🌊" },

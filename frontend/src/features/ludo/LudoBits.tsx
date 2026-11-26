@@ -133,7 +133,7 @@ function ReactionBubble({ reaction }: { reaction: { value: string; kind: "emoji"
         <Text style={{ fontSize: 34 }}>{reaction.value}</Text>
       ) : (
         <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, maxWidth: 170 }}>
-          <Text numberOfLines={2} style={{ fontFamily: fonts.bodyBold, fontSize: 12.5, color: "#1A0D45" }}>
+          <Text numberOfLines={2} style={{ fontFamily: fonts.bodyBold, fontSize: 12.5, color: "#5C0F2E" }}>
             {reaction.value}
           </Text>
         </View>
@@ -399,7 +399,7 @@ export function SoundPanelBody() {
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <Text style={{ flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: "#FFFFFF" }}>Game sound</Text>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#C9BDF5" }}>{Math.round(shown * 100)}%</Text>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#F2B6CF" }}>{Math.round(shown * 100)}%</Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
         <Pressable
@@ -435,7 +435,7 @@ export function SoundPanel({ onClose }: { onClose: () => void }) {
       style={{ position: "absolute", top: 54, right: 12, zIndex: 80, width: 236, borderRadius: 20, padding: 14, backgroundColor: "#24154F", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 }}
     >
       <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10} style={{ position: "absolute", top: 10, right: 10, zIndex: 2 }}>
-        <Ionicons name="close" size={18} color="#C9BDF5" />
+        <Ionicons name="close" size={18} color="#F2B6CF" />
       </Pressable>
       <SoundPanelBody />
     </View>
@@ -513,7 +513,7 @@ export function GoldButton({ label, onPress, disabled, busy, tone = "gold", acce
       style={{ opacity: disabled ? 0.45 : 1 }}
     >
       <LinearGradient colors={colors} style={{ borderRadius: 999, paddingVertical: 15, alignItems: "center", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" }}>
-        {busy ? <ActivityIndicator color="#1A0D45" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: tone === "gold" ? "#2B1466" : "#FFFFFF" }}>{label}</Text>}
+        {busy ? <ActivityIndicator color="#5C0F2E" /> : <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: tone === "gold" ? "#8A1A47" : "#FFFFFF" }}>{label}</Text>}
       </LinearGradient>
     </PressScale>
   );
