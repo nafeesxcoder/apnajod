@@ -826,12 +826,31 @@ function cleanBackground(value) {
   return typeof value === 'string' && /^[a-z0-9-]{1,32}$/.test(value) ? value : undefined;
 }
 
+/**
+ * The archive time is the server's clock, the same clock that stamps each message:
+ * a chat comes back when a message is newer than it. Archiving stamps now; keeping
+ * an archive keeps its first stamp; restoring clears it. Any time the app sends is ignored.
+ */
+function stampArchive(previous, next, now = Date.now()) {
+  const out = { ...(next || {}) };
+  delete out.archivedAt;
+  if (!out.conversationArchived) return out;
+  const kept = previous && previous.conversationArchived && Number(previous.archivedAt) > 0;
+  out.archivedAt = kept ? Number(previous.archivedAt) : now;
+  return out;
+}
+
 async function saveSettings(peerId, userId, settings) {
   const conversationId = storageKey(userId, peerId);
   await assertParticipant(peerId, userId);
   if (settings && typeof settings === 'object') {
     settings = { ...settings, background: cleanBackground(settings.background) };
     if (settings.background === undefined) delete settings.background;
+    const [previous] = await query(
+      "SELECT settings FROM chat_conversation_settings WHERE conversation_id = ? AND user_id = ?",
+      [conversationId, userId],
+    );
+    settings = stampArchive(previous ? parseJsonColumn(previous.settings, {}) : {}, settings);
   }
   await query(
     `INSERT INTO chat_conversation_settings (conversation_id, user_id, settings)
@@ -863,13 +882,15 @@ async function screenshotNotice(peerId, userId) {
   if (theirs.screenshotAlerts === false) return { sent: false, reason: "off" };
   if (screenshotSent.size > 20000) screenshotSent.clear();
   screenshotSent.set(`${conversationId}:${userId}`, Date.now());
-  await sendMessage(peerId, userId, {
+  const stored = await sendMessage(peerId, userId, {
     id: crypto.randomUUID(),
     type: "text",
     text: "📸 Took a screenshot of this chat",
     screenshotNotice: true,
     createdAt: Date.now(),
   });
+  // sendMessage only tells the other person, so the one who took it gets the line here too.
+  realtime.emitToUser(userId, "message:new", { conversationId: peerId, message: stored });
   return { sent: true };
 }
 
@@ -965,6 +986,7 @@ module.exports = {
   storageKey,
   listConversations,
   listFlags,
+  stampArchive,
   screenshotNotice,
   assertParticipant,
   assertParticipantByConversationId,

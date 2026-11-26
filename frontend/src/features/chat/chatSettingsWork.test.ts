@@ -15,7 +15,9 @@ describe("chat settings that work", () => {
     expect(listOrder(items, false).map((c) => c.conversationId)).toEqual(["b", "a"]);
     expect(listOrder(items, true).map((c) => c.conversationId)).toEqual(["c"]);
     expect(archivedCount(items)).toBe(1);
-    expect(chat).toContain('...(key === "conversationArchived" ? { archivedAt: next ? Date.now() : undefined } : {}),');
+    // The archive time is stamped by the server's clock, so the app does not send one.
+    expect(chat).not.toContain("archivedAt: next ? Date.now()");
+    expect(chat).toContain("Find it in Settings, under Archived chats.");
   });
 
   it("colours your bubbles, the send button and the background with the chat theme", () => {
@@ -38,6 +40,11 @@ describe("chat settings that work", () => {
     expect(read("src/features/chat/screenshotWatch.native.ts")).toContain("ScreenCapture.addScreenshotListener(onScreenshot)");
     expect(chat).toContain("void chatApi.screenshot(accessToken, conversationId)");
     expect(chat).toContain("{screenshotDetection && (");
+  });
+
+  it("the Share in chat tray closes on the back button, not the chat", () => {
+    expect(chat).toContain('import { useBackToClose } from "../../app/navigation/useBackToClose";');
+    expect(chat).toContain("useBackToClose(showAttachments, () => {");
   });
 
   it("no longer lists sample profiles as your conversations", () => {

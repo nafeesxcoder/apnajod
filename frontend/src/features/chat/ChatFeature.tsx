@@ -35,6 +35,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useBackToClose } from "../../app/navigation/useBackToClose";
 import { ChatBackdrop } from "./ChatBackdrop";
 import { MediaViewer } from "./MediaViewer";
 import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
@@ -1106,6 +1107,11 @@ export function ChatScreen({
     previewState === "chat-attachments",
   );
   const [attachmentPage, setAttachmentPage] = useState<"main" | "more">("main");
+  // The Share in chat tray is a popup: the phone's back button closes it, not the chat.
+  useBackToClose(showAttachments, () => {
+    setShowAttachments(false);
+    setAttachmentPage("main");
+  });
   const [showEmoji, setShowEmoji] = useState(previewState === "chat-emoji");
   const [recordingPreviewVisible, setRecordingPreviewVisible] = useState(
     previewState === "chat-recording",
@@ -8562,11 +8568,10 @@ function CoupleSettingsSheet({
     key: "conversationPinned" | "conversationArchived",
   ) => {
     const next = !settings[key];
+    // The server stamps the archive time (its own clock), so a new message brings the chat back.
     onChange({
       ...settings,
       [key]: next,
-      // Archived now: a new message after this moment brings it back.
-      ...(key === "conversationArchived" ? { archivedAt: next ? Date.now() : undefined } : {}),
     });
     setStatus(
       key === "conversationPinned"
@@ -8574,7 +8579,7 @@ function CoupleSettingsSheet({
           ? "Conversation pinned to the top."
           : "Conversation unpinned."
         : next
-          ? "Conversation moved to Archived. New messages can bring it back."
+          ? "Conversation archived. Find it in Settings, under Archived chats."
           : "Conversation restored to your inbox.",
     );
   };

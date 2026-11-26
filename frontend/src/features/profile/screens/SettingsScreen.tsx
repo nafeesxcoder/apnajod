@@ -29,6 +29,8 @@ import { profileApi } from "../../../api/profileApi";
 import { socialApi, type MutedPerson } from "../../../api/socialApi";
 import { storyApi } from "../../../api/storyApi";
 import { matchApi } from "../../../api/matchApi";
+import { chatApi, type ConversationSummary } from "../../../api/chatApi";
+import { defaultCoupleChatSettings } from "../../../storage";
 import { openSavedTabNext } from "../components/PostsSection";
 
 const MAX_WIDTH = 720;
@@ -178,6 +180,7 @@ export function SettingsScreen({
   onDeactivate,
   onDeletePermanently,
   onOpenAdmin,
+  onOpenConversation,
   accessToken,
 }: {
   navigate: (screen: any) => void;
@@ -188,6 +191,8 @@ export function SettingsScreen({
   onDeletePermanently: () => void;
   /** Only passed for admin accounts; everyone else never sees the entry. */
   onOpenAdmin?: () => void;
+  /** Opens one of your chats (from Archived chats). */
+  onOpenConversation?: (conversation: ConversationSummary) => void;
   accessToken?: string;
 }) {
   const scrollRef = useRef<ScrollView>(null);
@@ -211,6 +216,9 @@ export function SettingsScreen({
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [mutedOpen, setMutedOpen] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  // null while loading; the chats you archived otherwise.
+  const [archivedChats, setArchivedChats] = useState<ConversationSummary[] | null>(null);
   const [hideOpen, setHideOpen] = useState(false);
   const [messageFrom, setMessageFrom] = useState<"everyone" | "matches">("everyone");
   const [mutedPeople, setMutedPeople] = useState<MutedPerson[]>([]);
@@ -242,6 +250,30 @@ export function SettingsScreen({
     if (!accessToken) return;
     await socialApi.unmute(accessToken, userId).catch(() => undefined);
     setMutedPeople((current) => current.filter((person) => person.userId !== userId));
+  };
+  // Archived chats are listed here now, not in the Chats list.
+  const openArchived = () => {
+    setArchivedOpen(true);
+    if (accessToken)
+      void chatApi
+        .fetchConversations(accessToken)
+        .then((all) => setArchivedChats(all.filter((conversation) => conversation.archived)))
+        .catch(() => setArchivedChats([]));
+  };
+  const restoreArchived = async (conversationId: string) => {
+    if (!accessToken) return;
+    try {
+      const current = await chatApi.getSettings(accessToken, conversationId);
+      const saved = await chatApi.saveSettings(accessToken, conversationId, {
+        ...defaultCoupleChatSettings,
+        ...(current ?? {}),
+        conversationArchived: false,
+      });
+      if (!saved.saved) return;
+      setArchivedChats((list) => (list ?? []).filter((c) => c.conversationId !== conversationId));
+    } catch {
+      // Still archived; the list stays as it was.
+    }
   };
   const openHide = () => {
     setHideOpen(true);
@@ -623,6 +655,7 @@ export function SettingsScreen({
                 onPress={() => navigate("devices")}
               />
               <SettingsRow icon="chatbubble-ellipses-outline" label="Messages" onPress={openMessages} />
+              <SettingsRow icon="archive-outline" label="Archived chats" onPress={openArchived} />
               <SettingsRow icon="volume-mute-outline" label="Muted accounts" onPress={openMuted} />
               <SettingsRow icon="eye-off-outline" label="Hide story from" onPress={openHide} />
               <SettingsRow
@@ -734,6 +767,53 @@ export function SettingsScreen({
                 </View>
               ))
             )}
+          </View>
+        </Sheet>
+        <Sheet visible={archivedOpen} title="Archived chats" onClose={() => setArchivedOpen(false)}>
+          <View style={{ padding: 16, gap: 12 }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate, lineHeight: 19 }}>
+              Chats you archived. A new message from them brings a chat back to your Chats list.
+            </Text>
+            {archivedChats === null && (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Loading...</Text>
+            )}
+            {archivedChats !== null && archivedChats.length === 0 && (
+              <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>No archived chats.</Text>
+            )}
+            {(archivedChats ?? []).map((conversation) => (
+              <View key={conversation.conversationId} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open chat with ${conversation.user.name}`}
+                  disabled={!onOpenConversation}
+                  onPress={() => {
+                    setArchivedOpen(false);
+                    onOpenConversation?.(conversation);
+                  }}
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
+                >
+                  {conversation.user.avatarUrl ? (
+                    <Image source={{ uri: conversation.user.avatarUrl }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: palette.paperSand }} />
+                  ) : (
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: palette.navy, alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: palette.cream }}>{(conversation.user.name || "?").charAt(0).toUpperCase()}</Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.ink }}>{conversation.user.name}</Text>
+                    <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 12, color: palette.slate }}>@{conversation.user.username}</Text>
+                  </View>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Restore chat with ${conversation.user.name}`}
+                  onPress={() => void restoreArchived(conversation.conversationId)}
+                  style={{ paddingVertical: 7, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: palette.navy }}
+                >
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>Restore</Text>
+                </Pressable>
+              </View>
+            ))}
           </View>
         </Sheet>
         <Sheet visible={hideOpen} title="Hide story from" onClose={() => setHideOpen(false)}>

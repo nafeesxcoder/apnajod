@@ -29,7 +29,7 @@ import type { ConversationSummary } from '../../../api/chatApi';
 import { parseStickerPayload } from '../../../domain/chatMediaCatalog';
 import { getChatSocket } from '../../../api/chatSocket';
 import { onChatListChanged } from '../chatListBus';
-import { archivedCount, listOrder } from '../chatListOrder';
+import { listOrder } from '../chatListOrder';
 import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../components/navigation/BottomNav';
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
 import { useLayout } from '../../../layout/useLayout';
@@ -239,8 +239,6 @@ export function ChatsScreen({
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  // Archived chats sit in their own folder at the top of the list.
-  const [showArchived, setShowArchived] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Green dots: who is online among the shown chats, checked every 30 seconds.
@@ -311,9 +309,10 @@ export function ChatsScreen({
     setRefreshing(false);
   };
 
-  // The rows on screen: the chosen folder, in order, filtered by the search.
+  // The rows on screen: your chats, pinned first, filtered by the search. Archived
+  // chats are not here; they are under Settings, Archived chats.
   const rows = useMemo(() => {
-    const ordered = listOrder(items ?? [], showArchived);
+    const ordered = listOrder(items ?? [], false);
     const needle = query.trim().toLowerCase();
     if (!needle) return ordered;
     return ordered.filter(
@@ -322,7 +321,7 @@ export function ChatsScreen({
         (c.user.username ?? '').toLowerCase().includes(needle) ||
         previewOf(c).toLowerCase().includes(needle),
     );
-  }, [items, showArchived, query]);
+  }, [items, query]);
 
   // On a desktop with a conversation open, this list is the column beside it.
   const paneStyle = pane
@@ -338,7 +337,6 @@ export function ChatsScreen({
       }
     : null;
 
-  const archived = archivedCount(items ?? []);
   const header = (
     <View>
       <View style={[styles.titleRow, styles.titleBar]}>
@@ -365,7 +363,6 @@ export function ChatsScreen({
             <View style={styles.menuHandle} />
             {(
               [
-                { label: 'Archived chats', icon: 'archive-outline', run: () => setShowArchived(true) },
                 { label: 'Notifications', icon: 'notifications-outline', run: () => navigate('likes') },
                 { label: 'Find people', icon: 'search-outline', run: () => onFind() },
                 { label: 'Settings', icon: 'settings-outline', run: () => navigate('settings') },
@@ -408,20 +405,6 @@ export function ChatsScreen({
           )}
         </View>
       </View>
-      {(showArchived || archived > 0) && !query && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={showArchived ? 'Back to chats' : `Archived chats, ${archived}`}
-          onPress={() => setShowArchived((v) => !v)}
-          style={styles.folder}
-        >
-          <View style={styles.folderIcon}>
-            <Ionicons name={showArchived ? 'arrow-back' : 'archive-outline'} size={20} color={palette.navy} />
-          </View>
-          <Text style={styles.folderText}>{showArchived ? 'Archived chats' : 'Archived'}</Text>
-          {!showArchived && <Text style={styles.folderCount}>{archived}</Text>}
-        </Pressable>
-      )}
       {!!error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
@@ -434,10 +417,6 @@ export function ChatsScreen({
           <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
           <Text style={styles.emptyButtonText}>Find “{query.trim()}” on Apnajoda</Text>
         </Pressable>
-      </View>
-    ) : showArchived ? (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>No archived chats.</Text>
       </View>
     ) : (
       <View style={styles.empty}>
@@ -471,7 +450,7 @@ export function ChatsScreen({
                 active={conversation.conversationId === activeConversationId}
                 online={!!onlineIds[conversation.user.userId]}
                 waiting={conversation.unread > 0 || isYourTurn(conversation)}
-                pinned={!!conversation.pinned && !showArchived}
+                pinned={!!conversation.pinned}
                 onPress={() => onOpenConversation(conversation)}
               />
             )}

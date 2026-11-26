@@ -4134,6 +4134,7 @@ function MilaanApp() {
         {screen === "settings" && (
           <SettingsScreen accessToken={accessToken}
             navigate={navigateTo}
+            onOpenConversation={(conversation) => openConversationWith(conversation.user)}
             isPrivate={isPrivateAccount}
             onPrivacyChange={async (next) => {
               if (!accessToken) return;
