@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { setNavPhoto } from "../components/navigation/navPhoto";
 import {
   captureInviteFromUrl,
   clearInvite,
@@ -803,6 +804,9 @@ function MilaanApp() {
     previewDataRuntime.initialCoinBalance,
   );
   const [profilePhotos, setProfilePhotos] = useState<string[]>([]);
+  useEffect(() => {
+    setNavPhoto(profilePhotos[0]);
+  }, [profilePhotos]);
   const [selfieUri, setSelfieUri] = useState("");
   const [voiceIntroUri, setVoiceIntroUri] = useState("");
   const [vouches, setVouches] = useState<string[]>([]);

@@ -2875,16 +2875,12 @@ export function ChatScreen({
               followingBottomUntil.current = Date.now() + 800;
               messagesRef.current?.scrollToEnd({ animated: true });
             }}
-            // A light wash of the chat theme's colour behind the messages.
-            style={{
-              backgroundColor:
-                settings.background && settings.background !== "classic" ? "transparent" : activeTheme.wash,
-            }}
+            // The messages sit on the app's own background, with no tint or film over it.
+            style={{ backgroundColor: "transparent" }}
             contentContainerStyle={[
               styles.messages,
               chatPremiumStyles.messages,
-              // The messages sit on the chosen background, not on a white film over it.
-              settings.background && settings.background !== "classic" ? { backgroundColor: "transparent" } : null,
+              { backgroundColor: "transparent" },
             ]}
           >
             {visibleMessages.map((message) => (
@@ -3555,8 +3551,8 @@ export function ChatScreen({
                     onPress={deleteForEveryone}
                     style={selectBar.menuItem}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#D6336C" />
-                    <Text style={[selectBar.menuText, { color: "#D6336C" }]}>
+                    <Ionicons name="trash-outline" size={18} color="#B0245F" />
+                    <Text style={[selectBar.menuText, { color: "#B0245F" }]}>
                       Delete for everyone
                     </Text>
                   </Pressable>
@@ -5451,7 +5447,7 @@ const viewerStyles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 22,
     borderRadius: 24,
-    backgroundColor: "#D6336C",
+    backgroundColor: "#B0245F",
   },
   fileButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
 });
@@ -6040,7 +6036,7 @@ function ChatOptionsSheet({
   const rows = [
     { title: "Search", sub: "Find a message in this chat", icon: "search-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSearch },
     { title: "Select messages", sub: "Forward, copy or delete several", icon: "checkmark-done-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSelectMessages },
-    { title: "Disappearing messages", sub: retentionLabel, icon: "timer-outline" as const, tint: "#FBEAEE", color: "#D6336C", onPress: onSettings },
+    { title: "Disappearing messages", sub: retentionLabel, icon: "timer-outline" as const, tint: "#FBEAEE", color: "#B0245F", onPress: onSettings },
     { title: "Mute notifications", sub: "Silence this chat", icon: "notifications-off-outline" as const, tint: "#F1EEF9", color: "#5B4B8A", onPress: onSettings },
     { title: "Chat appearance", sub: "Background and theme", icon: "color-palette-outline" as const, tint: "#FFF4E5", color: "#B26A00", onPress: onSettings },
   ];
@@ -6062,7 +6058,7 @@ function ChatOptionsSheet({
       sub: "Stop messages, or tell us",
       icon: "shield-checkmark-outline" as const,
       tint: "#FDECEC",
-      color: "#D6336C",
+      color: "#B0245F",
       onPress: onSafety,
     },
   ];
@@ -6083,7 +6079,7 @@ function ChatOptionsSheet({
       <SafeAreaView edges={["bottom"]} style={optionsUi.sheet}>
         <View style={optionsUi.handle} />
         <LinearGradient
-          colors={["#B0245F", "#D6336C"]}
+          colors={["#B0245F", "#B0245F"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={optionsUi.hero}
@@ -9137,7 +9133,7 @@ type SnapLens = {
 const snapLenses: SnapLens[] = [
   { name: "Original", emoji: "📷", gradient: ["#3A3F46", "#15171A"], kind: "none" },
   { name: "Neon Club", emoji: "🌃", gradient: ["#1F4F7E", "#0E2238"], kind: "tint", color: "rgba(35,90,146,0.24)" },
-  { name: "Royal Ruby", emoji: "💎", gradient: ["#D6336C", "#4A0F1A"], kind: "tint", color: "rgba(161,40,64,0.26)" },
+  { name: "Royal Ruby", emoji: "💎", gradient: ["#B0245F", "#4A0F1A"], kind: "tint", color: "rgba(161,40,64,0.26)" },
   { name: "Golden Hour", emoji: "🌅", gradient: ["#F0A060", "#7A3A1C"], kind: "leak", color: "rgba(255,170,90,0.38)" },
   { name: "Polaroid", emoji: "🎞️", gradient: ["#F4F4F4", "#9AA0A6"], kind: "polaroid" },
   { name: "Heart Rain", emoji: "💖", gradient: ["#E0557F", "#7A1B3A"], kind: "hearts" },
@@ -9526,7 +9522,7 @@ const snapLive = StyleSheet.create({
     height: 44,
     paddingHorizontal: 22,
     borderRadius: 22,
-    backgroundColor: "#D6336C",
+    backgroundColor: "#B0245F",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -9609,7 +9605,7 @@ const snapLive = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  shutterInner: { width: 74, height: 74, borderRadius: 37, backgroundColor: "#D6336C" },
+  shutterInner: { width: 74, height: 74, borderRadius: 37, backgroundColor: "#B0245F" },
   error: {
     fontFamily: "Mukta_600SemiBold",
     fontSize: 13,
@@ -9733,7 +9729,7 @@ const snapCamera = StyleSheet.create({
     height: 42,
     paddingHorizontal: 20,
     borderRadius: 21,
-    backgroundColor: "#D6336C",
+    backgroundColor: "#B0245F",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -9750,7 +9746,7 @@ const snapCamera = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#D6336C",
+    backgroundColor: "#B0245F",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 5,

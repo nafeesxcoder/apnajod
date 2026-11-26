@@ -6,7 +6,7 @@ const brandMark = require("../../../../assets/apnajoda-mark.png");
 const brandWordmark = require("../../../../assets/apnajoda-wordmark.png");
 
 const NAVY = "#B0245F";
-const CRIMSON = "#D6336C";
+const CRIMSON = "#B0245F";
 const PAPER = "#FBF4FF";
 const MUTED = "#5B5478";
 

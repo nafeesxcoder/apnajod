@@ -23,10 +23,10 @@ describe("chat settings that work", () => {
   it("colours your bubbles, the send button and the background with the chat theme", () => {
     expect(chat).toContain("? { backgroundColor: accent || palette.navy, borderBottomRightRadius: 4 }");
     expect(chat).toContain("backgroundColor: activeTheme.accent,");
-    // A chosen background shows through the message list; the accent wash is the default.
-    expect(chat).toContain('settings.background && settings.background !== "classic" ? "transparent" : activeTheme.wash');
+    // The message list sits on the app's own background: no accent wash over it.
+    expect(chat).toContain('style={{ backgroundColor: "transparent" }}');
     // The messages' own background is cleared too, or it would cover the chosen picture.
-    expect(chat).toContain('{ backgroundColor: "transparent" } : null,');
+    expect(chat).toContain('{ backgroundColor: "transparent" },');
   });
 
   it("has sound on or silent instead of ringtones a phone cannot play per chat", () => {

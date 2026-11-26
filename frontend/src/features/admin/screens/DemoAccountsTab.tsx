@@ -116,10 +116,10 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
       </View>
 
       {!!notice && <Text style={{ color: "#B0245F" }}>{notice}</Text>}
-      {!!error && <Text style={{ color: "#D6336C" }}>{error}</Text>}
+      {!!error && <Text style={{ color: "#B0245F" }}>{error}</Text>}
 
       {users === null ? (
-        <ActivityIndicator color="#D6336C" />
+        <ActivityIndicator color="#B0245F" />
       ) : users.length === 0 ? (
         <Text style={{ color: "#5B6B7A" }}>No demo accounts yet.</Text>
       ) : (
@@ -135,7 +135,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
             {confirmId === user.id ? (
               <>
                 <Pressable accessibilityRole="button" disabled={busy} onPress={() => void remove(user.id)}>
-                  <Text style={{ color: "#D6336C", fontWeight: "700" }}>Delete for good</Text>
+                  <Text style={{ color: "#B0245F", fontWeight: "700" }}>Delete for good</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => setConfirmId(null)}>
                   <Text style={{ color: "#5B6B7A" }}>Cancel</Text>
@@ -143,7 +143,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
               </>
             ) : (
               <Pressable accessibilityRole="button" onPress={() => setConfirmId(user.id)}>
-                <Text style={{ color: "#D6336C", fontWeight: "700" }}>Delete</Text>
+                <Text style={{ color: "#B0245F", fontWeight: "700" }}>Delete</Text>
               </Pressable>
             )}
           </View>

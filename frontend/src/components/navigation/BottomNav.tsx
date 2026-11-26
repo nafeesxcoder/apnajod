@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   PanResponder,
   Platform,
   StyleSheet,
@@ -25,6 +26,7 @@ import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { palette } from "../../theme";
+import { useNavPhoto } from "./navPhoto";
 import { RAIL_WIDTH } from "../../layout/breakpoints";
 import { useLayout } from "../../layout/useLayout";
 
@@ -72,6 +74,7 @@ function NavItem({
   activeColor,
   inactiveColor,
   onPress,
+  photo,
 }: {
   icon: string;
   activeIcon: string;
@@ -81,6 +84,8 @@ function NavItem({
   activeColor: string;
   inactiveColor: string;
   onPress: () => void;
+  /** The member's own photo, shown instead of the icon on the Profile tab. */
+  photo?: string | null;
 }) {
   return (
     <TouchableOpacity
@@ -95,23 +100,32 @@ function NavItem({
         isWide ? styles.railItem : { flex: 1, height: "100%" },
       ]}
     >
-      <View style={styles.iconBox}>
-        <Ionicons
-          name={(isActive ? activeIcon : icon) as any}
-          size={isWide ? 24 : 22}
-          color={isActive ? activeColor : inactiveColor}
-        />
-      </View>
-      <Text
-        style={{
-          fontSize: isWide ? 11 : 10,
-          marginTop: isWide ? 3 : 1,
-          color: isActive ? activeColor : inactiveColor,
-          fontWeight: isActive ? "600" : "400",
-        }}
-      >
-        {label}
-      </Text>
+      {photo && !isWide ? (
+        <View style={[styles.photoRing, { borderColor: isActive ? activeColor : "transparent" }]}>
+          <Image source={{ uri: photo }} style={styles.photo} />
+        </View>
+      ) : (
+        <View style={styles.iconBox}>
+          <Ionicons
+            name={(isActive ? activeIcon : icon) as any}
+            size={isWide ? 24 : 22}
+            color={isActive ? activeColor : inactiveColor}
+          />
+        </View>
+      )}
+      {/* Labels only on the laptop rail; the phone bar shows icons alone. */}
+      {isWide && (
+        <Text
+          style={{
+            fontSize: 11,
+            marginTop: 3,
+            color: isActive ? activeColor : inactiveColor,
+            fontWeight: isActive ? "600" : "400",
+          }}
+        >
+          {label}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -128,6 +142,7 @@ export function BottomNav({
   const insets = useSafeAreaInsets();
   const { isWide } = useLayout();
 
+  const photo = useNavPhoto();
   const activeIdx = DESTINATIONS.findIndex((destination) => destination.screen === active);
   const activeColor = light ? "#FFFFFF" : palette.navy;
   const inactiveColor = light ? "rgba(255,255,255,0.6)" : palette.slate;
@@ -266,6 +281,7 @@ export function BottomNav({
             label={destination.label}
             isActive={index === highlight}
             isWide={false}
+            photo={destination.screen === "profile" ? photo : null}
             activeColor={activeColor}
             inactiveColor={inactiveColor}
             onPress={() => navigate(destination.screen)}
@@ -284,9 +300,9 @@ const styles = StyleSheet.create({
     right: 14,
     height: BAR_HEIGHT,
     borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.35)",
+    backgroundColor: "rgba(255,255,255,0.5)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.75)",
+    borderColor: "rgba(255,255,255,0.9)",
     shadowColor: "#3A1A5E",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
@@ -314,7 +330,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   tint: {
-    backgroundColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(255,255,255,0.55)",
   },
   tintLight: {
     backgroundColor: "rgba(20,16,46,0.35)",
@@ -362,6 +378,20 @@ const styles = StyleSheet.create({
   },
   railItem: {
     paddingVertical: 12,
+  },
+  // The Profile tab's photo, in a ring that lights up when the tab is chosen.
+  photoRing: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photo: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   iconBox: {
     width: 44,

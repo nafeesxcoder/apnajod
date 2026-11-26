@@ -95,7 +95,7 @@ export function TwoStepSection({ accessToken }: { accessToken: string }) {
       style={{
         padding: 12,
         borderRadius: 999,
-        backgroundColor: danger ? "#D6336C" : "#B0245F",
+        backgroundColor: danger ? "#B0245F" : "#B0245F",
         opacity: disabled || busy ? 0.5 : 1,
       }}
     >
@@ -108,7 +108,7 @@ export function TwoStepSection({ accessToken }: { accessToken: string }) {
       <Text style={{ fontWeight: "700", fontSize: 16, color: "#B0245F" }}>Two-step verification</Text>
 
       {enabled === null ? (
-        <ActivityIndicator color="#D6336C" />
+        <ActivityIndicator color="#B0245F" />
       ) : enabled ? (
         <>
           <Text style={{ color: "#1B2A3A", lineHeight: 20 }}>
@@ -146,7 +146,7 @@ export function TwoStepSection({ accessToken }: { accessToken: string }) {
       )}
 
       {!!notice && <Text style={{ color: "#B0245F" }}>{notice}</Text>}
-      {!!error && <Text style={{ color: "#D6336C" }}>{error}</Text>}
+      {!!error && <Text style={{ color: "#B0245F" }}>{error}</Text>}
     </View>
   );
 }

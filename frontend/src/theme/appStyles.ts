@@ -1998,7 +1998,7 @@ export const snapStyles=StyleSheet.create({
   header:{height:62,paddingHorizontal:18,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   headerTitle:{fontFamily:'Mukta_700Bold',fontSize:16,color:'#14102E'},
   // The screen is light: the Send button is a solid colour with white text, so it is always visible.
-  sendButton:{height:40,paddingHorizontal:18,borderRadius:20,backgroundColor:'#D6336C',alignItems:'center',justifyContent:'center'},
+  sendButton:{height:40,paddingHorizontal:18,borderRadius:20,backgroundColor:'#B0245F',alignItems:'center',justifyContent:'center'},
   sendText:{fontFamily:'Mukta_700Bold',fontSize:14,color:'#FFFFFF'},
   preview:{height:'52%',marginHorizontal:16,borderRadius:28,overflow:'hidden',backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line},
   previewSticker:{position:'absolute',right:22,top:22,fontSize:60},
