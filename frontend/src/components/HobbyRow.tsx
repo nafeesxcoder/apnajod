@@ -92,7 +92,16 @@ export function HobbyRow({ hobbies }: { hobbies: string[] }) {
         >
           <Pressable
             onPress={() => undefined}
-            style={{ backgroundColor: palette.paper, borderRadius: radius.lg, padding: 18, gap: 12 }}
+            style={{
+              backgroundColor: palette.paper,
+              borderRadius: radius.lg,
+              padding: 18,
+              gap: 12,
+              // A card in the middle on a wide screen, not a strip across it.
+              width: "100%",
+              maxWidth: 420,
+              alignSelf: "center",
+            }}
           >
             <Text style={{ fontFamily: fonts.display, fontSize: typeScale.section, color: palette.ink }}>Hobbies</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>

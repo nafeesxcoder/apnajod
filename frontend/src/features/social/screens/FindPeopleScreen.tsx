@@ -343,7 +343,7 @@ export function FindPeopleScreen({
                   value={term}
                   onChangeText={setTerm}
                   placeholder="Search by username..."
-                  placeholderTextColor={palette.navySoft}
+                  placeholderTextColor={palette.slate}
                   autoCapitalize="none"
                   autoCorrect={false}
                   selectionColor={palette.navy}
@@ -361,7 +361,7 @@ export function FindPeopleScreen({
                     flex: 1,
                     fontSize: 15,
                     fontFamily: fonts.body,
-                    color: palette.navySoft,
+                    color: palette.slate,
                   }}
                 >
                   Search by username...
@@ -478,7 +478,7 @@ export function FindPeopleScreen({
                     <Ionicons
                       name="search-outline"
                       size={36}
-                      color={palette.navySoft}
+                      color={palette.slate}
                       style={{ marginBottom: 12 }}
                     />
                     <Text
@@ -741,7 +741,7 @@ export function FindPeopleScreen({
                         <Ionicons
                           name="people-outline"
                           size={36}
-                          color={palette.navySoft}
+                          color={palette.slate}
                           style={{ marginBottom: 12 }}
                         />
                         <Text
@@ -761,41 +761,6 @@ export function FindPeopleScreen({
                       </View>
                     )}
 
-                    {contactsSupported && (
-                      <PressScale
-                        accessibilityRole="button"
-                        accessibilityLabel="Find friends from contacts"
-                        onPress={() => {
-                          setTab("contacts");
-                          if (contacts === null && contactsMode === "device") void loadContacts();
-                        }}
-                        containerStyle={{ marginTop: 16 }}
-                        style={{
-                          minHeight: 48,
-                          borderRadius: radius.pill,
-                          ...whiteCard,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                        }}
-                      >
-                        <Ionicons
-                          name="people-circle-outline"
-                          size={20}
-                          color={palette.navy}
-                        />
-                        <Text
-                          style={{
-                            fontFamily: fonts.bodySemi,
-                            fontSize: 13,
-                            color: palette.navy,
-                          }}
-                        >
-                          Find friends from contacts
-                        </Text>
-                      </PressScale>
-                    )}
                   </>
                 ) : (
                   <>
@@ -811,7 +776,7 @@ export function FindPeopleScreen({
                         <Ionicons
                           name="phone-portrait-outline"
                           size={36}
-                          color={palette.navySoft}
+                          color={palette.slate}
                           style={{ marginBottom: 12 }}
                         />
                         <Text
@@ -998,7 +963,7 @@ function ContactResults({
   if (!contacts.matched.length && !invites.length) {
     return (
       <View style={{ ...whiteCard, padding: 24, alignItems: "center" }}>
-        <Ionicons name="people-outline" size={36} color={palette.navySoft} style={{ marginBottom: 12 }} />
+        <Ionicons name="people-outline" size={36} color={palette.slate} style={{ marginBottom: 12 }} />
         <Text style={{ fontFamily: fonts.body, fontSize: 14, color: palette.slate, textAlign: "center" }}>
           No Indian mobile numbers found in your contacts.
         </Text>
