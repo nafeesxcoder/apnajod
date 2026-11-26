@@ -2444,7 +2444,11 @@ export function ChatScreen({
         setViewerSaved(entry);
         setMessageActionNotice("Saved to your phone.");
       })
-      .catch(() => downloadMedia(opened.uri as string, name));
+      .catch((error: unknown) =>
+        setMessageActionNotice(
+          error instanceof Error ? error.message : "Could not save this file.",
+        ),
+      );
   };
   // Forward the opened message, the same as the message menu does.
   const viewerForward = () => {
@@ -3986,6 +3990,29 @@ function ChatBubble({
       paddingVertical: 8,
     },
   ];
+  // A screenshot notice is a line in the middle of the chat, not a bubble.
+  if (message.screenshotNotice) {
+    return (
+      <View style={{ alignItems: "center", marginVertical: 10 }}>
+        <Text
+          style={{
+            fontFamily: fonts.bodySemi,
+            fontSize: 12,
+            color: "#5A6878",
+            backgroundColor: "rgba(20,32,46,0.08)",
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 14,
+            overflow: "hidden",
+          }}
+        >
+          {mine
+            ? "📸 Aapne is chat ka screenshot liya"
+            : "📸 Dusre ne is chat ka screenshot liya"}
+        </Text>
+      </View>
+    );
+  }
   if (message.deletedForEveryone) return null;
   return (
     <View style={chatStyles.swipeReplyWrap}>

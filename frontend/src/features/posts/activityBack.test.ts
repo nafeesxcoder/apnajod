@@ -32,6 +32,9 @@ describe('The back button closes every popup', () => {
     walk(root);
     const plain = files.filter((file) => {
       if (file.endsWith('BackModal.tsx')) return false;
+      // The Chats three-dot menu opens Settings and Notifications: a back-aware
+      // popup would add and remove a history entry under that navigation.
+      if (file.endsWith('ChatsScreen.tsx')) return false;
       const text = readFileSync(file, 'utf8');
       return /import\s*\{[^}]*\bModal\b[^}]*\}\s*from\s*['"]react-native['"]/.test(text);
     });

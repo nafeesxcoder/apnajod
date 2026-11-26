@@ -56,6 +56,8 @@ export type ChatMessage = {
   forwarded?: boolean;
   /** A reply (or emoji reaction) to the other person's story. Only this label is kept, never the story. */
   storyReply?: { reaction?: boolean };
+  /** "You took a screenshot of this chat" (shown as a line in the middle, not a bubble). */
+  screenshotNotice?: boolean;
   reactions?: Record<string,string>;
   starredByMe?: boolean;
   hiddenForMe?: boolean;
