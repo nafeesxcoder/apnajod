@@ -31,6 +31,7 @@ import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../componen
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
 import { useLayout } from '../../../layout/useLayout';
 import type { Screen } from '../../../app/navigation/types';
+import { Modal } from '../../../components/BackModal';
 import { palette } from '../../../theme';
 
 const ROW_HEIGHT = 76;
@@ -238,6 +239,7 @@ export function ChatsScreen({
   const [error, setError] = useState('');
   // Archived chats sit in their own folder at the top of the list.
   const [showArchived, setShowArchived] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Green dots: who is online among the shown chats, checked every 30 seconds.
   const [onlineIds, setOnlineIds] = useState<Record<string, boolean>>({});
@@ -337,9 +339,53 @@ export function ChatsScreen({
   const archived = archivedCount(items ?? []);
   const header = (
     <View>
-      <View style={styles.titleRow}>
+      <View style={[styles.titleRow, styles.titleBar]}>
         <Text style={styles.title}>Chats</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Chat list options"
+          hitSlop={8}
+          onPress={() => setMenuOpen(true)}
+          style={styles.moreButton}
+        >
+          <Ionicons name="ellipsis-horizontal" size={22} color={palette.ink} />
+        </Pressable>
       </View>
+      {menuOpen && (
+        <Modal visible transparent animationType="slide" onRequestClose={() => setMenuOpen(false)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close chat list options"
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }}
+            onPress={() => setMenuOpen(false)}
+          />
+          <View style={styles.menuSheet}>
+            <View style={styles.menuHandle} />
+            {(
+              [
+                { label: 'Archived chats', icon: 'archive-outline', run: () => setShowArchived(true) },
+                { label: 'Notifications', icon: 'notifications-outline', run: () => navigate('likes') },
+                { label: 'Find people', icon: 'search-outline', run: () => onFind() },
+                { label: 'Settings', icon: 'settings-outline', run: () => navigate('settings') },
+              ] as const
+            ).map((item) => (
+              <Pressable
+                key={item.label}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                onPress={() => {
+                  setMenuOpen(false);
+                  item.run();
+                }}
+                style={styles.menuRow}
+              >
+                <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={palette.ink} />
+                <Text style={styles.menuText}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Modal>
+      )}
       <View style={styles.searchWrap}>
         <View style={styles.search}>
           <Ionicons name="search" size={18} color={MUTED} />
@@ -471,6 +517,44 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
+    color: palette.ink,
+  },
+  titleBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  moreButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuSheet: {
+    backgroundColor: palette.paper,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 30,
+  },
+  menuHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.rule,
+    marginBottom: 12,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+  },
+  menuText: {
+    fontSize: 16,
     color: palette.ink,
   },
   searchWrap: {

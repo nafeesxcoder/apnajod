@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   type ImageStyle,
+  Pressable,
   ScrollView,
   type StyleProp,
   Text,
@@ -26,6 +27,9 @@ import { colors, fonts, palette, radius, typeScale } from "../../../theme";
 import { serverMs } from "../../../domain/serverTime";
 import { ActivityRow, loadActivity } from "../../posts/ActivityList";
 import type { ActivityItem } from "../../../api/postApi";
+import { Modal } from "../../../components/BackModal";
+import { SwipeRow } from "../../../components/SwipeRow";
+import { hideNotification, loadHiddenNotifications } from "../hiddenNotifications";
 
 type IncomingLike = {
   id: string;
@@ -374,11 +378,22 @@ export function LikesScreen({
   const [error, setError] = useState<string | null>(null);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [newMatches, setNewMatches] = useState<MutualMatchSummary[]>([]);
+  // Notifications this phone has deleted, or marked "not interested".
+  const [hidden, setHidden] = useState<string[]>([]);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  useEffect(() => {
+    void loadHiddenNotifications().then(setHidden);
+  }, []);
+  const hide = async (key: string) => {
+    setMenuFor(null);
+    setHidden(await hideNotification(hidden, key));
+  };
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const feed = [
     ...likes.map((like) => ({ key: `like-${like.id}`, at: serverMs(like.likedAt ?? "") || 0, like, item: null as ActivityItem | null })),
-    ...activity.map((item, index) => ({ key: `act-${index}`, at: serverMs(item.at) || 0, like: null, item })),
+    ...activity.map((item) => ({ key: `act-${item.kind}-${item.at}-${item.actor.username}`, at: serverMs(item.at) || 0, like: null, item })),
   ].sort((x, y) => y.at - x.at);
+  const visibleFeed = feed.filter((row) => !hidden.includes(row.key));
 
   // Opening this page is reading the notifications: the bell goes back to 0.
   // New matches load on their own so a slow list never holds up the likes.
@@ -615,7 +630,7 @@ export function LikesScreen({
           )}
 
           {/* Empty — unboxed */}
-          {!loading && !error && feed.length === 0 && (
+          {!loading && !error && visibleFeed.length === 0 && (
             <View
               style={{
                 alignItems: "center",
@@ -655,27 +670,73 @@ export function LikesScreen({
             </View>
           )}
 
-          {!loading && !error && feed.length > 0 && (
+          {!loading && !error && visibleFeed.length > 0 && (
             <View style={{ paddingHorizontal: 16 }}>
-              {feed.map((row) =>
-                row.like ? (
-                  <LikeRow
-                    key={row.key}
-                    like={row.like}
-                    busy={deciding === row.like.userId}
-                    onAccept={() => void decide(row.like!, "interested")}
-                    onPass={() => void decide(row.like!, "pass")}
-                    onOpen={() => openDetail(matchFromLike(row.like!))}
-                  />
-                ) : (
-                  <ActivityRow key={row.key} item={row.item!} />
-                ),
-              )}
+              {visibleFeed.map((row) => (
+                <SwipeRow
+                  key={row.key}
+                  onMore={() => setMenuFor(row.key)}
+                  onDelete={() => void hide(row.key)}
+                >
+                  {row.like ? (
+                    <LikeRow
+                      like={row.like}
+                      busy={deciding === row.like.userId}
+                      onAccept={() => void decide(row.like!, "interested")}
+                      onPass={() => void decide(row.like!, "pass")}
+                      onOpen={() => openDetail(matchFromLike(row.like!))}
+                    />
+                  ) : (
+                    <ActivityRow item={row.item!} />
+                  )}
+                </SwipeRow>
+              ))}
             </View>
           )}
           </>
         </ScrollView>
 
+        {!!menuFor && (
+          <Modal visible transparent animationType="slide" onRequestClose={() => setMenuFor(null)}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close options"
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)" }}
+              onPress={() => setMenuFor(null)}
+            />
+            <View
+              style={{
+                backgroundColor: palette.paper,
+                borderTopLeftRadius: 22,
+                borderTopRightRadius: 22,
+                paddingHorizontal: 20,
+                paddingTop: 10,
+                paddingBottom: 30,
+              }}
+            >
+              <View
+                style={{
+                  alignSelf: "center",
+                  width: 40,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: palette.rule,
+                  marginBottom: 14,
+                }}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Not interested"
+                onPress={() => void hide(menuFor)}
+                style={{ paddingVertical: 14 }}
+              >
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: palette.ink }}>
+                  Not interested
+                </Text>
+              </Pressable>
+            </View>
+          </Modal>
+        )}
         <BottomNav active="home" navigate={navigate} />
       </SafeAreaView>
     </AppCanvas>

@@ -17,7 +17,9 @@ describe("Activity", () => {
     expect(home).toContain("const timer = setInterval(check, 60_000);");
     // No tabs: likes, matches and activity share one scroll.
     expect(likes).not.toContain('accessibilityRole="tablist"');
-    expect(likes).toContain('<ActivityRow key={row.key} item={row.item!} />');
+    expect(likes).toContain('<ActivityRow item={row.item!} />');
+    // Every row slides to show its ••• and delete buttons.
+    expect(likes).toContain('<SwipeRow');
   });
 
   it("lists post likes and comments, story likes, answers and mentions, and clears the count when opened", () => {
