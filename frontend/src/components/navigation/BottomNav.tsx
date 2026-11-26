@@ -1,29 +1,43 @@
 /**
  * The app's main navigation.
  *
- * A bottom bar on a phone, a left rail on anything wider. Both are the
- * same five destinations and the same component, because two components
- * would drift: a tab added to one and forgotten in the other is the
- * ordinary way a responsive app ends up with different navigation
- * depending on the window.
+ * On a phone it is a floating "liquid glass" bar: a translucent pill with a
+ * soft sheen, and a bright lens that sits under the chosen tab. You can tap a
+ * tab, or slide the lens along the bar with a finger and let go on the tab you
+ * want. On a laptop it is a left rail with the same five destinations.
  *
  * It positions itself absolutely inside whichever screen renders it, so a
  * screen only has to leave room on the correct edge - useNavInset() gives
  * it that padding without each screen inventing its own number.
- *
- * A chosen tab's icon bounces and a ring spreads out from it. Each tab
- * animates itself, so only the tab that changes moves.
  */
-import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  PanResponder,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { palette } from "../../theme";
 import { RAIL_WIDTH } from "../../layout/breakpoints";
 import { useLayout } from "../../layout/useLayout";
 
 export function handleBottomNavScroll(_event?: any) {
   return;
 }
+
+/** Space the bar takes above the bottom edge, plus its own height. */
+const BAR_HEIGHT = 64;
+const BAR_GAP = 10;
+/** Padding inside the bar on each side, and the lens's inset from its slot. */
+const PAD = 6;
+const LENS_INSET = 4;
 
 /**
  * The padding a screen needs so the nav does not sit on top of it: on the
@@ -33,7 +47,7 @@ export function useNavInset() {
   const { isWide } = useLayout();
   return isWide
     ? { paddingLeft: RAIL_WIDTH, paddingBottom: 0 }
-    : { paddingLeft: 0, paddingBottom: 72 };
+    : { paddingLeft: 0, paddingBottom: BAR_HEIGHT + BAR_GAP + 8 };
 }
 
 const DESTINATIONS = [
@@ -43,6 +57,11 @@ const DESTINATIONS = [
   { icon: "chatbubble-outline", activeIcon: "chatbubble", label: "Chats", screen: "chats" },
   { icon: "person-outline", activeIcon: "person", label: "Profile", screen: "profile" },
 ] as const;
+
+/** Left edge of the lens for a tab, given the width of one tab's slot. */
+function lensLeft(index: number, slot: number) {
+  return PAD + index * slot + LENS_INSET;
+}
 
 function NavItem({
   icon,
@@ -73,20 +92,20 @@ function NavItem({
         { alignItems: "center", justifyContent: "center" },
         // In a bar the items share the width. In a rail they are a
         // stack of fixed-height targets, not stretched down the screen.
-        isWide ? styles.railItem : { flex: 1 },
+        isWide ? styles.railItem : { flex: 1, height: "100%" },
       ]}
     >
       <View style={styles.iconBox}>
         <Ionicons
           name={(isActive ? activeIcon : icon) as any}
-          size={24}
+          size={isWide ? 24 : 22}
           color={isActive ? activeColor : inactiveColor}
         />
       </View>
       <Text
         style={{
           fontSize: isWide ? 11 : 10,
-          marginTop: 3,
+          marginTop: isWide ? 3 : 1,
           color: isActive ? activeColor : inactiveColor,
           fontWeight: isActive ? "600" : "400",
         }}
@@ -109,56 +128,210 @@ export function BottomNav({
   const insets = useSafeAreaInsets();
   const { isWide } = useLayout();
 
-  const activeColor = light ? "#FFFFFF" : "#151719";
-  const inactiveColor = light ? "rgba(255,255,255,0.6)" : "#9AA4AF";
+  const activeIdx = DESTINATIONS.findIndex((destination) => destination.screen === active);
+  const activeColor = light ? "#FFFFFF" : palette.navy;
+  const inactiveColor = light ? "rgba(255,255,255,0.6)" : palette.slate;
+
+  // ---- liquid bar: the lens and the slide gesture -----------------------
+  const [width, setWidth] = useState(0);
+  const slot = width ? (width - PAD * 2) / DESTINATIONS.length : 0;
+  const lens = useRef(new Animated.Value(0)).current;
+  const lensValue = useRef(0);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const [preview, setPreview] = useState<number | null>(null);
+
+  useEffect(() => {
+    const id = lens.addListener(({ value }) => {
+      lensValue.current = value;
+    });
+    return () => lens.removeListener(id);
+  }, [lens]);
+
+  // Latest values for the gesture handlers, which are created once.
+  const latest = useRef({ slot, activeIdx, navigate });
+  latest.current = { slot, activeIdx, navigate };
+
+  const snapTo = (index: number) => {
+    const { slot: s } = latest.current;
+    if (!s || index < 0) return;
+    Animated.spring(lens, {
+      toValue: lensLeft(index, s),
+      useNativeDriver: Platform.OS !== "web",
+      friction: 9,
+      tension: 110,
+    }).start();
+  };
+
+  // Keep the lens on the chosen tab (after a tap, a slide, or a change elsewhere).
+  useEffect(() => {
+    if (!slot || dragging.current || activeIdx < 0) return;
+    snapTo(activeIdx);
+  }, [slot, activeIdx]);
+
+  const pan = useRef(
+    PanResponder.create({
+      // Only a clearly horizontal drag takes the gesture; a tap still reaches the tab.
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderGrant: () => {
+        dragging.current = true;
+        startX.current = lensValue.current;
+        lens.stopAnimation();
+      },
+      onPanResponderMove: (_, g) => {
+        const { slot: s } = latest.current;
+        if (!s) return;
+        const min = lensLeft(0, s);
+        const max = lensLeft(DESTINATIONS.length - 1, s);
+        const next = Math.min(max, Math.max(min, startX.current + g.dx));
+        lens.setValue(next);
+        const index = Math.round((next - min) / s);
+        setPreview((current) => (current === index ? current : index));
+      },
+      onPanResponderRelease: (_, g) => {
+        const { slot: s, activeIdx: current, navigate: go } = latest.current;
+        dragging.current = false;
+        setPreview(null);
+        if (!s) return;
+        const min = lensLeft(0, s);
+        const max = lensLeft(DESTINATIONS.length - 1, s);
+        const next = Math.min(max, Math.max(min, startX.current + g.dx));
+        const index = Math.round((next - min) / s);
+        snapTo(index);
+        const target = DESTINATIONS[index];
+        if (target && index !== current) go(target.screen);
+      },
+      onPanResponderTerminate: () => {
+        dragging.current = false;
+        setPreview(null);
+        snapTo(latest.current.activeIdx);
+      },
+    }),
+  ).current;
+
+  if (isWide) {
+    return (
+      <View style={[styles.rail, { paddingTop: insets.top + 16 }, light && { backgroundColor: "rgba(0,0,0,0.5)", borderRightColor: "transparent" }]}>
+        {DESTINATIONS.map((destination, index) => (
+          <NavItem
+            key={destination.screen}
+            icon={destination.icon}
+            activeIcon={destination.activeIcon}
+            label={destination.label}
+            isActive={index === activeIdx}
+            isWide
+            activeColor={activeColor}
+            inactiveColor={inactiveColor}
+            onPress={() => navigate(destination.screen)}
+          />
+        ))}
+      </View>
+    );
+  }
+
+  // While a finger slides the lens, the tab under it shows as selected.
+  const highlight = preview ?? activeIdx;
 
   return (
     <View
-      style={[
-        isWide ? styles.rail : styles.container,
-        isWide ? null : { paddingBottom: insets.bottom || 10 },
-        isWide ? { paddingTop: insets.top + 16 } : null,
-        light &&
-          (isWide
-            ? { backgroundColor: "rgba(0,0,0,0.5)", borderRightColor: "transparent" }
-            : { backgroundColor: "rgba(0,0,0,0.5)", borderTopColor: "transparent" }),
-      ]}
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      {...pan.panHandlers}
+      style={[styles.bar, light && styles.barLight, { bottom: Math.max(insets.bottom, 0) + BAR_GAP }]}
     >
-      {DESTINATIONS.map((destination) => (
-        <NavItem
-          key={destination.screen}
-          icon={destination.icon}
-          activeIcon={destination.activeIcon}
-          label={destination.label}
-          isActive={active === destination.screen}
-          isWide={isWide}
-          activeColor={activeColor}
-          inactiveColor={inactiveColor}
-          onPress={() => navigate(destination.screen)}
+      <LinearGradient
+        pointerEvents="none"
+        colors={light ? ["rgba(255,255,255,0.18)", "rgba(255,255,255,0)"] : ["rgba(255,255,255,0.9)", "rgba(255,255,255,0.1)"]}
+        style={styles.sheen}
+      />
+      {slot > 0 && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.lens,
+            light && styles.lensLight,
+            {
+              width: slot - LENS_INSET * 2,
+              opacity: activeIdx < 0 && preview === null ? 0 : 1,
+              transform: [{ translateX: lens }],
+            },
+          ]}
         />
-      ))}
+      )}
+      <View style={styles.items}>
+        {DESTINATIONS.map((destination, index) => (
+          <NavItem
+            key={destination.screen}
+            icon={destination.icon}
+            activeIcon={destination.activeIcon}
+            label={destination.label}
+            isActive={index === highlight}
+            isWide={false}
+            activeColor={activeColor}
+            inactiveColor={inactiveColor}
+            onPress={() => navigate(destination.screen)}
+          />
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#D3D6DA",
-    paddingTop: 8,
+  // The floating glass bar: translucent, rounded, with a soft shadow.
+  bar: {
     position: "absolute",
-    bottom: 0,
+    left: 14,
+    right: 14,
+    height: BAR_HEIGHT,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.92)",
+    shadowColor: "#3A1A5E",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  barLight: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  // The highlight along the top of the glass, which gives it the liquid look.
+  sheen: {
+    position: "absolute",
+    top: 1,
+    left: 1,
+    right: 1,
+    height: 30,
+    borderTopLeftRadius: 31,
+    borderTopRightRadius: 31,
+  },
+  // The bright lens that slides under the chosen tab.
+  lens: {
+    position: "absolute",
+    top: 7,
+    bottom: 7,
     left: 0,
-    right: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    shadowColor: "#B0245F",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  lensLight: {
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderColor: "rgba(255,255,255,0.4)",
+  },
+  items: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: PAD,
   },
   rail: {
     flexDirection: "column",
@@ -180,7 +353,7 @@ const styles = StyleSheet.create({
   },
   iconBox: {
     width: 44,
-    height: 36,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
   },
