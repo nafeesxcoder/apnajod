@@ -38,6 +38,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FDF7F4"
       },
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ],
       "blockedPermissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.SYSTEM_ALERT_WINDOW",
