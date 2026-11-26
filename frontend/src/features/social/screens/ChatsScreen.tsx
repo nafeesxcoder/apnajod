@@ -10,6 +10,9 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  // The React Native Modal, not the back-aware one: that one adds and removes a
+  // browser history entry, which sent Settings and Notifications straight back here.
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -31,7 +34,6 @@ import { BottomNav, handleBottomNavScroll, useNavInset } from '../../../componen
 import { CHAT_LIST_WIDTH, RAIL_WIDTH } from '../../../layout/breakpoints';
 import { useLayout } from '../../../layout/useLayout';
 import type { Screen } from '../../../app/navigation/types';
-import { Modal } from '../../../components/BackModal';
 import { palette } from '../../../theme';
 
 const ROW_HEIGHT = 76;
