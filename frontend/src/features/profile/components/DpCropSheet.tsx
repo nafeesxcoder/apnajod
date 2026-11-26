@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, PanResponder, Platform, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Modal } from "../../../components/BackModal";
 import { whiteCard } from "../../../components/brand";
 import { PressScale } from "../../../components/motion";
@@ -35,6 +36,8 @@ export function DpCropSheet({
   onCancel: () => void;
   onDone: (croppedUri: string) => void;
 }) {
+  // The top bar sits below the status bar on every phone (Android 15+ draws under it).
+  const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const side = Math.round(Math.max(200, Math.min(windowWidth - 32, 420, windowHeight * 0.55)));
   const frame: Size = useMemo(() => ({ width: side, height: side }), [side]);
@@ -143,7 +146,7 @@ export function DpCropSheet({
             flexDirection: "row",
             alignItems: "center",
             paddingHorizontal: 8,
-            paddingTop: Platform.OS === "ios" ? 48 : 8,
+            paddingTop: Math.max(insets.top, Platform.OS === "android" ? 24 : 0) + 8,
             minHeight: 56,
             borderBottomWidth: 1,
             borderBottomColor: palette.rule,

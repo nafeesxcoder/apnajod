@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Image, PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Modal } from "../../../components/BackModal";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
@@ -247,6 +248,8 @@ export function NewPostSheet({
   };
 
   const title = step === "crop" ? "New post" : "Caption";
+  // The top bar sits below the status bar on every phone (Android 15+ draws under it).
+  const insets = useSafeAreaInsets();
   const canNext = !!photo && !busy;
 
   return (
@@ -258,7 +261,7 @@ export function NewPostSheet({
             flexDirection: "row",
             alignItems: "center",
             paddingHorizontal: 8,
-            paddingTop: Platform.OS === "ios" ? 48 : 8,
+            paddingTop: Math.max(insets.top, Platform.OS === "android" ? 24 : 0) + 8,
             minHeight: 56,
             borderBottomWidth: 1,
             borderBottomColor: palette.rule,

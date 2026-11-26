@@ -410,7 +410,15 @@ export function StoryViewer({
                   accessibilityRole="button"
                   accessibilityLabel="Story options"
                   onPress={() => setMenu(true)}
-                  style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    // A dark disc behind the dots, so they show on any picture or colour.
+                    backgroundColor: "rgba(0,0,0,0.38)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
                   <Ionicons name="ellipsis-horizontal" size={22} color="#FFFFFF" />
                 </Pressable>
