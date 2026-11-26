@@ -75,6 +75,7 @@ function NavItem({
   inactiveColor,
   onPress,
   photo,
+  ring = false,
 }: {
   icon: string;
   activeIcon: string;
@@ -86,6 +87,8 @@ function NavItem({
   onPress: () => void;
   /** The member's own photo, shown instead of the icon on the Profile tab. */
   photo?: string | null;
+  /** The Profile tab always shows a round circle: the photo, or an icon until there is one. */
+  ring?: boolean;
 }) {
   return (
     <TouchableOpacity
@@ -100,9 +103,17 @@ function NavItem({
         isWide ? styles.railItem : { flex: 1, height: "100%" },
       ]}
     >
-      {photo && !isWide ? (
-        <View style={[styles.photoRing, { borderColor: isActive ? activeColor : "transparent" }]}>
-          <Image source={{ uri: photo }} style={styles.photo} />
+      {ring && !isWide ? (
+        <View style={[styles.photoRing, { borderColor: isActive ? activeColor : "rgba(176,36,95,0.35)" }]}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.photo} />
+          ) : (
+            <Ionicons
+              name={(isActive ? "person" : "person-outline") as any}
+              size={16}
+              color={isActive ? activeColor : inactiveColor}
+            />
+          )}
         </View>
       ) : (
         <View style={styles.iconBox}>
@@ -282,6 +293,7 @@ export function BottomNav({
             isActive={index === highlight}
             isWide={false}
             photo={destination.screen === "profile" ? photo : null}
+            ring={destination.screen === "profile"}
             activeColor={activeColor}
             inactiveColor={inactiveColor}
             onPress={() => navigate(destination.screen)}
@@ -385,6 +397,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
+    backgroundColor: "#F3E8FF",
     alignItems: "center",
     justifyContent: "center",
   },
