@@ -29,6 +29,7 @@ import { profileApi } from "../../../api/profileApi";
 import { socialApi, type MutedPerson } from "../../../api/socialApi";
 import { storyApi } from "../../../api/storyApi";
 import { matchApi } from "../../../api/matchApi";
+import { openSavedTabNext } from "../components/PostsSection";
 
 const MAX_WIDTH = 720;
 const SIDE_PADDING = 16;
@@ -624,7 +625,14 @@ export function SettingsScreen({
               <SettingsRow icon="chatbubble-ellipses-outline" label="Messages" onPress={openMessages} />
               <SettingsRow icon="volume-mute-outline" label="Muted accounts" onPress={openMuted} />
               <SettingsRow icon="eye-off-outline" label="Hide story from" onPress={openHide} />
-              <SettingsRow icon="bookmark-outline" label="Saved" onPress={() => navigate("profile")} />
+              <SettingsRow
+                icon="bookmark-outline"
+                label="Saved"
+                onPress={() => {
+                  openSavedTabNext.on = true;
+                  navigate("profile");
+                }}
+              />
               <SettingsRow icon="ban-outline" label="Blocked accounts" onPress={() => navigate("safety")} />
               <SettingsRow icon="download-outline" label="Download your data" onPress={() => navigate("safety")} />
               <SettingsRow

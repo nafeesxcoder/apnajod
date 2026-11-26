@@ -26,6 +26,9 @@ const DANGER = "#B3261E";
  * Read-only when looking at somebody else: the menu, the editor and the add
  * button only exist on your own profile.
  */
+/** Set by Settings' "Saved" so the profile opens on its saved posts, not its own. */
+export const openSavedTabNext = { on: false };
+
 export function PostsSection({
   accessToken,
   userId,
@@ -44,7 +47,14 @@ export function PostsSection({
   const [locked, setLocked] = useState(false);
   // Your own profile has two tabs, like Instagram: your posts, and the
   // posts you saved (only you see those).
-  const [tab, setTab] = useState<"posts" | "saved">("posts");
+  const [tab, setTab] = useState<"posts" | "saved">(() => {
+    // Opened from Settings' "Saved": start on the saved tab, once.
+    if (openSavedTabNext.on) {
+      openSavedTabNext.on = false;
+      return "saved";
+    }
+    return "posts";
+  });
   const [savedPosts, setSavedPosts] = useState<Post[] | null>(null);
   const showSaved = isOwner && !userId && tab === "saved";
   const shown = showSaved ? savedPosts ?? [] : posts;
