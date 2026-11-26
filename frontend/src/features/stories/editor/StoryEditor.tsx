@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Animated, Image, PanResponder, Platform, Pressable, ScrollView, Text, View, useWindowDimensions, type GestureResponderEvent } from "react-native";
+import { Animated, Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { Modal } from "../../../components/BackModal";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -63,14 +64,6 @@ export type PickedStoryPhoto = { uri: string; width: number; height: number; tex
 type Mode = "idle" | "text" | "draw" | "filters" | "live";
 type Tool = "pen" | "marker" | "eraser";
 type Pose = { x: number; y: number; scale: number; rotation: number };
-/** A touch on the photo: a pinch (zoom), a drag (move it) or a plain swipe (the next filter). */
-type PhotoGesture = { kind: "pinch" | "pan" | "swipe"; crop: Crop; span: number; ax: number; ay: number; moved: boolean };
-const touchCount = (event: GestureResponderEvent) => event.nativeEvent.touches?.length ?? 0;
-/** The distance between the first two fingers, or 0 with fewer than two. */
-const touchSpan = (event: GestureResponderEvent) => {
-  const [a, b] = event.nativeEvent.touches ?? [];
-  return a && b ? Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY) : 0;
-};
 
 const filterStyle = (id: string): object => {
   const steps = filterById(id).steps;
@@ -238,72 +231,69 @@ export function StoryEditor({
   stepRef.current = stepFilter;
 
   // The photo: pinch it to zoom, drag it to move it once it is zoomed in, and swipe left or right for the next filter.
+  // The gestures come from react-native-gesture-handler, which reads two fingers from the phone's own touch system.
   const modeRef = useRef<Mode>(mode);
   modeRef.current = mode;
   const photoSizeRef = useRef<{ w: number; h: number } | null>(null);
   photoSizeRef.current = photo && !photo.text ? { w: photo.width, h: photo.height } : null;
   const frameSizeRef = useRef({ w: fw, h: fh });
   frameSizeRef.current = { w: fw, h: fh };
-  const gestureRef = useRef<PhotoGesture | null>(null);
-  const swipe = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (e, g) => {
-          if (photoSizeRef.current && touchCount(e) >= 2) return true;
-          if (stateRef.current.crop.zoom > 1 && modeRef.current === "idle") return Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4;
-          return Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy);
-        },
-        onPanResponderGrant: () => {
-          // The kind is set on each move, from how many fingers are down now.
-          gestureRef.current = { kind: "swipe", crop: stateRef.current.crop, span: 0, ax: 0, ay: 0, moved: false };
-        },
-        onPanResponderMove: (e, g) => {
-          const gesture = gestureRef.current;
-          const size = photoSizeRef.current;
-          if (!gesture || !size) return;
-          // Two fingers pinch. One finger drags a zoomed photo, and swipes for the filter when the photo is whole.
-          const next: PhotoGesture["kind"] =
-            touchCount(e) >= 2 ? "pinch" : stateRef.current.crop.zoom > 1 && modeRef.current === "idle" ? "pan" : "swipe";
-          // When the fingers change, the new part starts from where the photo is now.
-          if (next !== gesture.kind) {
-            gesture.kind = next;
-            gesture.crop = stateRef.current.crop;
-            gesture.span = touchSpan(e);
-            gesture.ax = g.dx;
-            gesture.ay = g.dy;
-          }
-          if (gesture.kind === "swipe") return;
-          // The first change keeps the photo as it was before the gesture, for undo.
-          if (!gesture.moved) {
-            remember();
-            gesture.moved = true;
-          }
-          const frame = frameSizeRef.current;
-          const span = touchSpan(e);
-          const crop =
-            gesture.kind === "pinch"
-              ? clampCrop(size.w, size.h, { ...gesture.crop, zoom: gesture.crop.zoom * (gesture.span && span ? span / gesture.span : 1) })
-              : clampCrop(size.w, size.h, {
-                  zoom: gesture.crop.zoom,
-                  x: gesture.crop.x + (g.dx - gesture.ax) / frame.w,
-                  y: gesture.crop.y + (g.dy - gesture.ay) / frame.h,
-                });
-          stateRef.current = { ...stateRef.current, crop };
-          setState(stateRef.current);
-        },
-        onPanResponderRelease: (_e, g) => {
-          const gesture = gestureRef.current;
-          gestureRef.current = null;
-          // Only a plain swipe changes the filter: a pinch or a drag moves the photo.
-          if (gesture?.kind !== "pinch" && gesture?.kind !== "pan" && Math.abs(g.dx) > 50) stepRef.current(g.dx < 0 ? 1 : -1);
-        },
-        onPanResponderTerminate: () => {
-          gestureRef.current = null;
-        },
-      }),
-    [],
-  );
+  const photoStart = useRef<Crop>(NO_CROP);
+  const photoChanged = useRef(false);
+  const photoFingers = useRef(1);
+  const photoGesture = useMemo(() => {
+    // Only on the photo itself: while drawing or typing, the touches belong to those.
+    const live = mode === "idle" || mode === "filters";
+    // The first change keeps the photo as it was before the gesture, for undo.
+    const beginChange = () => {
+      if (!photoChanged.current) {
+        remember();
+        photoChanged.current = true;
+      }
+    };
+    const pinch = Gesture.Pinch()
+      .enabled(live)
+      .onStart(() => {
+        photoStart.current = stateRef.current.crop;
+        photoChanged.current = false;
+      })
+      .onUpdate((e) => {
+        const size = photoSizeRef.current;
+        if (!size) return;
+        beginChange();
+        const start = photoStart.current;
+        const crop = clampCrop(size.w, size.h, { ...start, zoom: start.zoom * e.scale });
+        stateRef.current = { ...stateRef.current, crop };
+        setState(stateRef.current);
+      });
+    const pan = Gesture.Pan()
+      .enabled(live)
+      .minDistance(8)
+      .onStart(() => {
+        photoStart.current = stateRef.current.crop;
+        photoChanged.current = false;
+        photoFingers.current = 1;
+      })
+      .onUpdate((e) => {
+        photoFingers.current = Math.max(photoFingers.current, e.numberOfPointers);
+        const size = photoSizeRef.current;
+        // Once it is zoomed in, a drag moves the photo. When it is whole, the swipe below changes the filter.
+        if (!size || stateRef.current.crop.zoom <= 1) return;
+        beginChange();
+        const frame = frameSizeRef.current;
+        const start = photoStart.current;
+        const crop = clampCrop(size.w, size.h, { zoom: start.zoom, x: start.x + e.translationX / frame.w, y: start.y + e.translationY / frame.h });
+        stateRef.current = { ...stateRef.current, crop };
+        setState(stateRef.current);
+      })
+      .onEnd((e) => {
+        // A plain swipe with one finger, on a whole photo, changes the filter.
+        if (photoFingers.current === 1 && photoSizeRef.current && stateRef.current.crop.zoom <= 1 && Math.abs(e.translationX) > 50) {
+          stepRef.current(e.translationX < 0 ? 1 : -1);
+        }
+      });
+    return Gesture.Simultaneous(pinch, pan);
+  }, [mode]);
 
   // Fill the frame with the photo, or give back the whole photo.
   const fillFrame = () => {
@@ -481,11 +471,13 @@ export function StoryEditor({
 
   return (
     <Modal visible={!!photo} animationType="fade" onRequestClose={close}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={{ height: screenHeight, backgroundColor: "#000", alignItems: "center", justifyContent: "flex-start" }}>
         <View style={{ width: fw, height: screenHeight }}>
           {/* Everything inside this frame is the story; the buttons are outside it. */}
           <View ref={frameRef} collapsable={false} style={{ width: fw, height: fh, overflow: "hidden", backgroundColor: backdrop[1] }}>
-            <View {...(mode === "idle" || mode === "filters" ? swipe.panHandlers : {})} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+            <GestureDetector gesture={photoGesture}>
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
               <LinearGradient colors={backdrop} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
               {/* A text story with nothing on it yet: tap anywhere to type. */}
               {textStory && mode === "idle" && !state.items.length && (
@@ -522,6 +514,7 @@ export function StoryEditor({
                 </View>
               )}
             </View>
+            </GestureDetector>
             {state.strokes.map((stroke) => (
               <StrokeView key={stroke.id} stroke={stroke} frame={frame} />
             ))}
@@ -871,6 +864,7 @@ export function StoryEditor({
           </Pressable>
         </View>
       </Sheet>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

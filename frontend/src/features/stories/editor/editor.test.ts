@@ -102,8 +102,9 @@ describe("story editor", () => {
     const editor = read("StoryEditor.tsx");
     expect(editor).toContain("const rect = photo ? cropRect(photo.width, photo.height, state.crop)");
     expect(editor).toContain('"Fill the story"');
-    expect(editor).toContain("touchCount(e) >= 2");
-    expect(editor).toContain("if (gesture?.kind !== \"pinch\" && gesture?.kind !== \"pan\" && Math.abs(g.dx) > 50)");
+    expect(editor).toContain("Gesture.Simultaneous(pinch, pan)");
+    expect(editor).toContain("<GestureDetector gesture={photoGesture}>");
+    expect(editor).toContain("<GestureHandlerRootView");
   });
 
   it("has ten filters whose saved colours match the CSS preview", () => {
