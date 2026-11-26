@@ -25,6 +25,8 @@ import { useOnlineIds } from "../useOnlineIds";
 import { inviteLink, shareInvite } from "../../profile/components/InviteCard";
 import { contactInviteText, matchesQuery, type BookContact, type ContactInvite } from "../contactBook";
 
+import { BottomNav, useNavInset } from "../../../components/navigation/BottomNav";
+
 const MAX_WIDTH = 720;
 // How many members show before the "More" button.
 const INITIAL_SHOWN = 12;
@@ -112,8 +114,10 @@ export function FindPeopleScreen({
   discoverUsers = [],
   onLoadFiltered,
   accessToken,
-}: FindPeopleProps) {
+  navigate,
+}: FindPeopleProps & { navigate?: (screen: any) => void }) {
   const contactsSupported = contactsMode !== "none";
+  const navInset = useNavInset();
   // Search inside your contacts (they can be hundreds).
   const [contactQuery, setContactQuery] = useState("");
   const [shareNote, setShareNote] = useState("");
@@ -279,7 +283,7 @@ export function FindPeopleScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.paperBase }}>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, ...navInset }}>
         <ScrollView
           contentContainerStyle={{
             paddingTop: 12,
@@ -917,6 +921,7 @@ export function FindPeopleScreen({
             )}
           </View>
         </ScrollView>
+        {navigate && <BottomNav active="find" navigate={navigate} />}
       </SafeAreaView>
     </View>
   );

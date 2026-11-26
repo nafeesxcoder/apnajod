@@ -32,20 +32,31 @@ export function ProfileStrengthCard({
       <View
         accessibilityLabel="Profile strength 100 percent, complete"
         style={{
-          ...whiteCard,
+          backgroundColor: "#F3E8FF",
+          borderRadius: 18,
+          borderWidth: 1.5,
+          borderColor: "#FFFFFF",
           marginBottom: 16,
           paddingHorizontal: 14,
-          paddingVertical: 10,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
+          paddingVertical: 12,
+          gap: 9,
         }}
       >
-        <Ionicons name="checkmark-circle" size={18} color={palette.emerald} />
-        <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>
-          Profile strength 100%
-        </Text>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.emerald }}>Complete</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Ionicons name="checkmark-circle" size={18} color={palette.emerald} />
+          <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 13, color: palette.ink }}>
+            Profile strength 100%
+          </Text>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: palette.navyDeep }}>Complete</Text>
+        </View>
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: "rgba(176,36,95,0.14)", overflow: "hidden" }}>
+          <LinearGradient
+            colors={["#F2B6CF", "#B0245F"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ width: "100%", height: "100%" }}
+          />
+        </View>
       </View>
     );
   }

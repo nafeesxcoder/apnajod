@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { brand, cardShadow, whiteCard } from "../../../components/brand";
+import { brand, cardShadow } from "../../../components/brand";
 import { PressScale } from "../../../components/motion";
 import {
   dailyQuestionApi,
@@ -78,7 +78,10 @@ export function DailyQuestionCard({
       <View
         accessibilityLabel="Today's question answered"
         style={{
-          ...whiteCard,
+          backgroundColor: palette.crimsonTint,
+          borderRadius: 18,
+          borderWidth: 1.5,
+          borderColor: palette.crimsonSoft,
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
@@ -93,7 +96,7 @@ export function DailyQuestionCard({
             flex: 1,
             fontFamily: fonts.body,
             fontSize: typeScale.label,
-            color: palette.ink,
+            color: palette.navyDeep,
           }}
         >
           {justRewarded
