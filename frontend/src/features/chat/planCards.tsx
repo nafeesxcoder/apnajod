@@ -283,7 +283,7 @@ export function PollCard({ message, onVote }: { message: ChatMessage; onVote?: (
             onPress={() => onVote?.(i)}
             style={{ borderRadius: radius.md, borderWidth: 1, borderColor: mine ? palette.crimson : palette.rule, overflow: "hidden", minHeight: 40, justifyContent: "center" }}
           >
-            <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.round(share * 100)}%`, backgroundColor: mine ? "rgba(163,41,60,0.16)" : "rgba(31,77,122,0.08)" }} />
+            <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.round(share * 100)}%`, backgroundColor: mine ? "rgba(163,41,60,0.16)" : "rgba(176,36,95,0.08)" }} />
             <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 8 }}>
               {mine && <Ionicons name="checkmark-circle" size={16} color={palette.crimson} />}
               <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 14, color: palette.ink }}>{option}</Text>

@@ -94,7 +94,7 @@ function CircleButton({
       <Ionicons
         name={icon}
         size={danger ? 28 : 24}
-        color={danger ? "#FDFDFD" : active ? "#D49AA6" : "#FDFDFD"}
+        color={danger ? "#FFFFFF" : active ? "#D49AA6" : "#FFFFFF"}
       />
     </Pressable>
   );
@@ -223,7 +223,7 @@ function MinimizedCallPill({
           onPress={onEnd}
           style={callStyles.minimizedCallEnd}
         >
-          <Ionicons name="close" size={14} color="#141618" />
+          <Ionicons name="close" size={14} color="#14102E" />
         </Pressable>
       </Pressable>
     </Animated.View>
@@ -602,7 +602,7 @@ export function CallModal({
           </View>
         ) : (
           <LinearGradient
-            colors={["#121315", "#0F1011", "#0D0E0F"]}
+            colors={["#121315", "#14102E", "#0D0E0F"]}
             style={StyleSheet.absoluteFill}
           />
         )}
@@ -650,16 +650,16 @@ export function CallModal({
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: "#4D5156", fontSize: 11 }}>
+              <Text style={{ color: "#3A3358", fontSize: 11 }}>
                 {`BT debug · bluetoothAvailable=${bluetoothAvailable} · android=${IS_ANDROID}`}
               </Text>
               {deviceDebugLines.length === 0 ? (
-                <Text style={{ color: "#141618", fontSize: 11 }}>
+                <Text style={{ color: "#14102E", fontSize: 11 }}>
                   no audio devices reported
                 </Text>
               ) : (
                 deviceDebugLines.map((line, index) => (
-                  <Text key={index} style={{ color: "#141618", fontSize: 11 }}>
+                  <Text key={index} style={{ color: "#14102E", fontSize: 11 }}>
                     {line}
                   </Text>
                 ))
@@ -721,7 +721,7 @@ export function CallModal({
                   <Ionicons
                     name="lock-closed-outline"
                     size={18}
-                    color="#D8DBDE"
+                    color="#E7D8EE"
                   />
                   <Text style={callStyles.permissionText}>
                     {engine.error || "Calling is unavailable right now."}
@@ -760,7 +760,7 @@ export function CallModal({
                   zOrder={1}
                 />
               ) : (
-                <Ionicons name="person" size={28} color="#FDFDFD" />
+                <Ionicons name="person" size={28} color="#FFFFFF" />
               )}
             </Pressable>
           )}

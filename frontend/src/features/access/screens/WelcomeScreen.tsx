@@ -19,7 +19,7 @@ const NAVY = "#B0245F";
 const NAVY_DARK = "#8A1A47";
 const WHITE = "#FFFFFF";
 
-const DARK = "#151719";
+const DARK = "#14102E";
 
 const MAX_WIDTH = 480;
 

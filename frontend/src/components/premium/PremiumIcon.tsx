@@ -28,11 +28,11 @@ export type PremiumIconTone = 'ruby' | 'gold' | 'plum' | 'rose' | 'dark';
  *   dark  — neutral slate
  */
 const tones: Record<PremiumIconTone, { wash: string; ink: string; edge: string }> = {
-  ruby: { wash: '#E8EAEC', ink: palette.indigo, edge: '#D6D9DD' },
+  ruby: { wash: '#E8EAEC', ink: palette.indigo, edge: '#E7D8EE' },
   gold: { wash: '#DEE0E3', ink: palette.brass, edge: '#D5A0AA' },
-  plum: { wash: '#E4E6E8', ink: palette.indigoDeep, edge: '#D3D6DA' },
+  plum: { wash: '#E4E6E8', ink: palette.indigoDeep, edge: '#E7D8EE' },
   rose: { wash: '#F1F2F3', ink: palette.rose, edge: '#DEE0E3' },
-  dark: { wash: '#E5E7EA', ink: palette.slate, edge: '#D8DBDE' },
+  dark: { wash: '#E5E7EA', ink: palette.slate, edge: '#E7D8EE' },
 };
 
 type PremiumIconProps = {

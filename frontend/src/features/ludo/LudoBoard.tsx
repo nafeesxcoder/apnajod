@@ -234,7 +234,7 @@ export function LudoBoard({
           return (
             <LinearGradient
               key={`yard-${seat}`}
-              colors={on ? [SEAT_LIGHT[seat]!, SEAT_COLORS[seat]!, SEAT_DARK[seat]!] : ["#9CA3AF", "#6B7280", "#4B5563"]}
+              colors={on ? [SEAT_LIGHT[seat]!, SEAT_COLORS[seat]!, SEAT_DARK[seat]!] : ["#9CA3AF", "#5B5478", "#4B5563"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ position: "absolute", top: yard.r * cell, left: yard.c * cell, width: cell * 6, height: cell * 6, padding: cell * 0.75 }}

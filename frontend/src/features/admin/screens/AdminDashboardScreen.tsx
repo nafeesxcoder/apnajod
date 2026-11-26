@@ -86,7 +86,7 @@ const COLORS = {
   sidebar: "#FFFFFF",
   card: "#FFFFFF",
   textMain: "#111827",
-  textMuted: "#6B7280",
+  textMuted: "#5B5478",
   border: "#E5E7EB",
   primary: "#1E3A8A",
   primaryLight: "#EFF6FF",

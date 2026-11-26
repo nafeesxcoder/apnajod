@@ -50,7 +50,7 @@ export function Button({
           end={{ x: 1, y: 1 }}
           style={styles.buttonIconBadge}
         >
-          <Ionicons name={icon} size={14} color="#FDFDFD" />
+          <Ionicons name={icon} size={14} color="#FFFFFF" />
         </LinearGradient>
       )}
       <Text
@@ -58,7 +58,7 @@ export function Button({
         style={[
           styles.buttonText,
           variant === "primary" && { color: "#FFFFFF" },
-          variant === "gold" && { color: "#111315" },
+          variant === "gold" && { color: "#14102E" },
           variant === "ghost" && { color: colors.muted },
         ]}
       >
@@ -81,7 +81,7 @@ export function Button({
     >
       {variant === "primary" ? (
         <LinearGradient
-          colors={["#20558B", colors.pink, "#133557"]}
+          colors={["#20558B", colors.pink, "#B0245F"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.button, styles.primary]}
@@ -151,7 +151,7 @@ export function Chip({
     >
       <Text
         maxFontSizeMultiplier={1.3}
-        style={[styles.chipText, gold && { color: "#111315" }]}
+        style={[styles.chipText, gold && { color: "#14102E" }]}
       >
         {label}
       </Text>
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   ghost: { backgroundColor: "transparent" },
   gold: {
-    backgroundColor: "#E1C8CD",
+    backgroundColor: "#F2D6E0",
     borderWidth: 1,
     borderColor: colors.gold,
   },
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#D3D6DA",
+    borderColor: "#E7D8EE",
     shadowColor: colors.pink,
     shadowOpacity: 0.18,
     shadowRadius: 8,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: "#FDFDFD",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.selectedSurface,
     borderColor: colors.selectedBorder,
   },
-  chipGold: { backgroundColor: "#E1C8CD", borderColor: colors.gold },
+  chipGold: { backgroundColor: "#F2D6E0", borderColor: colors.gold },
   chipText: {
     color: colors.text,
     fontFamily: "Mukta_600SemiBold",
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#D3D6DA",
+    borderColor: "#E7D8EE",
     shadowColor: colors.gold,
     shadowOpacity: 0.18,
     shadowRadius: 8,

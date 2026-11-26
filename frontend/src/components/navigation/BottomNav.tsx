@@ -1,8 +1,8 @@
 /**
  * The app's main navigation.
  *
- * On a phone it is a floating "liquid glass" bar: a translucent pill with a
- * soft sheen, and a bright lens that sits under the chosen tab. You can tap a
+ * On a phone it is a floating glassmorphism bar: a frosted, blurred pill with
+ * a soft glass lens that sits under the chosen tab. You can tap a
  * tab, or slide the lens along the bar with a finger and let go on the tab you
  * want. On a laptop it is a left rail with the same five destinations.
  *
@@ -21,7 +21,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { palette } from "../../theme";
@@ -236,13 +236,13 @@ export function BottomNav({
     <View
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       {...pan.panHandlers}
-      style={[styles.bar, light && styles.barLight, { bottom: Math.max(insets.bottom, 0) + BAR_GAP }]}
+      style={[styles.bar, { bottom: Math.max(insets.bottom, 0) + BAR_GAP }]}
     >
-      <LinearGradient
-        pointerEvents="none"
-        colors={light ? ["rgba(255,255,255,0.18)", "rgba(255,255,255,0)"] : ["rgba(255,255,255,0.9)", "rgba(255,255,255,0.1)"]}
-        style={styles.sheen}
-      />
+      {/* Frosted glass: a real blur on the phone and on the web. */}
+      <View style={styles.glass}>
+        <BlurView intensity={light ? 45 : 70} tint={light ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, light ? styles.tintLight : styles.tint]} />
+      </View>
       {slot > 0 && (
         <Animated.View
           pointerEvents="none"
@@ -284,9 +284,9 @@ const styles = StyleSheet.create({
     right: 14,
     height: BAR_HEIGHT,
     borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.6)",
+    backgroundColor: "rgba(255,255,255,0.35)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.92)",
+    borderColor: "rgba(255,255,255,0.75)",
     shadowColor: "#3A1A5E",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
@@ -307,14 +307,26 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 31,
     borderTopRightRadius: 31,
   },
-  // The bright lens that slides under the chosen tab.
+  // The frosted glass behind the bar, clipped to its rounded shape.
+  glass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 32,
+    overflow: "hidden",
+  },
+  tint: {
+    backgroundColor: "rgba(255,255,255,0.28)",
+  },
+  tintLight: {
+    backgroundColor: "rgba(20,16,46,0.35)",
+  },
+  // The glass lens that slides under the chosen tab.
   lens: {
     position: "absolute",
     top: 7,
     bottom: 7,
     left: 0,
     borderRadius: 25,
-    backgroundColor: "rgba(255,255,255,0.94)",
+    backgroundColor: "rgba(255,255,255,0.45)",
     borderWidth: 1,
     borderColor: "#FFFFFF",
     shadowColor: "#B0245F",
@@ -340,7 +352,7 @@ const styles = StyleSheet.create({
     width: RAIL_WIDTH,
     backgroundColor: "#FFFFFF",
     borderRightWidth: 1,
-    borderRightColor: "#D3D6DA",
+    borderRightColor: "#E7D8EE",
     paddingHorizontal: 8,
     position: "absolute",
     top: 0,

@@ -49,7 +49,7 @@ export const BACKGROUND_CHOICES: ChatBackground[] = [
   {
     id: PLAIN_BACKGROUND_ID,
     name: "Plain cream",
-    colors: ["#FBF4FF", "#F4E9E4"],
+    colors: ["#FBF4FF", "#FBF4FF"],
     decor: { glyph: "", color: "", count: 0, size: 0, opacity: 0 },
   },
   ...CHAT_BACKGROUNDS,

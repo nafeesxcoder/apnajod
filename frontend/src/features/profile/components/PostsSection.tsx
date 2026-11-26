@@ -10,9 +10,9 @@ import { PostCard } from "../../posts/PostCard";
 import { primePostSizes } from "./PostImage";
 
 const PINK = "#5087BE";
-const DARK = "#151719";
+const DARK = "#14102E";
 const MUTED = "#5A5E63";
-const LINE = "#D3D6DA";
+const LINE = "#E7D8EE";
 const DANGER = "#B3261E";
 
 /**

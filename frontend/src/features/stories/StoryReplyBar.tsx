@@ -22,8 +22,8 @@ export function StoryReplyLabel({ mine, reaction, plain = false }: { mine: boole
       : "Replied to your story";
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 3 }}>
-      <Ionicons name={reaction ? "heart" : "arrow-undo"} size={12} color={light ? "rgba(255,255,255,0.8)" : "#6B7280"} />
-      <Text style={{ fontFamily: fonts.body, fontSize: 12, color: light ? "rgba(255,255,255,0.85)" : "#6B7280" }}>{text}</Text>
+      <Ionicons name={reaction ? "heart" : "arrow-undo"} size={12} color={light ? "rgba(255,255,255,0.8)" : "#5B5478"} />
+      <Text style={{ fontFamily: fonts.body, fontSize: 12, color: light ? "rgba(255,255,255,0.85)" : "#5B5478" }}>{text}</Text>
     </View>
   );
 }

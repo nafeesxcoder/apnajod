@@ -195,8 +195,8 @@ export function WebSelfieCamera({
               backgroundColor: ready && !error ? "#FFFFFF" : "#555",
             }}
           >
-            <Ionicons name="camera" size={18} color="#151719" />
-            <Text style={{ color: "#151719", fontWeight: "700" }}>Capture</Text>
+            <Ionicons name="camera" size={18} color="#14102E" />
+            <Text style={{ color: "#14102E", fontWeight: "700" }}>Capture</Text>
           </Pressable>
         </View>
       </View>

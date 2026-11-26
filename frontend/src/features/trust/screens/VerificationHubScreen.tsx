@@ -114,7 +114,7 @@ export function VerificationHubScreen({
         <View style={{ padding: 22, flex: 1 }}>
           {/* Back Button */}
           <TouchableOpacity onPress={onBack} style={{ marginBottom: 24 }}>
-            <Ionicons name="arrow-back" size={24} color="#151719" />
+            <Ionicons name="arrow-back" size={24} color="#14102E" />
           </TouchableOpacity>
 
           {/* Title Section */}
@@ -122,7 +122,7 @@ export function VerificationHubScreen({
             style={{
               fontSize: 12,
               fontWeight: "600",
-              color: "#8A2237",
+              color: "#8A1A47",
               letterSpacing: 1,
               textTransform: "uppercase",
               marginBottom: 8,
@@ -134,7 +134,7 @@ export function VerificationHubScreen({
             style={{
               fontSize: 28,
               fontWeight: "700",
-              color: "#151719",
+              color: "#14102E",
               marginBottom: 12,
             }}
           >
@@ -192,7 +192,7 @@ export function VerificationHubScreen({
                   style={{
                     fontSize: 16,
                     fontWeight: "700",
-                    color: "#151719",
+                    color: "#14102E",
                     marginTop: 2,
                   }}
                 >
@@ -224,7 +224,7 @@ export function VerificationHubScreen({
               padding: 24,
               alignItems: "center",
               borderWidth: 1,
-              borderColor: "#D3D6DA",
+              borderColor: "#E7D8EE",
             }}
           >
             {/* Selfie Preview or Placeholder */}
@@ -263,7 +263,7 @@ export function VerificationHubScreen({
                   opacity: !pose || poseLoading ? 0.5 : 1,
                   backgroundColor: "#FFF",
                   borderWidth: 1,
-                  borderColor: "#151719",
+                  borderColor: "#14102E",
                   width: "100%",
                   padding: 14,
                   borderRadius: 12,
@@ -272,7 +272,7 @@ export function VerificationHubScreen({
                 }}
               >
                 <Text
-                  style={{ color: "#151719", fontWeight: "600", fontSize: 15 }}
+                  style={{ color: "#14102E", fontWeight: "600", fontSize: 15 }}
                 >
                   {pickedUri ? "Retake Selfie" : "Take Selfie"}
                 </Text>
@@ -347,7 +347,7 @@ export function VerificationHubScreen({
                   onPress={handleSubmit}
                   disabled={!pickedUri || isSubmitting}
                   style={{
-                    backgroundColor: pickedUri ? "#151719" : "#C7CED6",
+                    backgroundColor: pickedUri ? "#14102E" : "#C7CED6",
                     width: "100%",
                     padding: 16,
                     borderRadius: 12,

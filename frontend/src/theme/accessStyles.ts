@@ -108,7 +108,7 @@ export const access = StyleSheet.create({
     gap: 10,
   },
   inputNarrow: { width: 104 },
-  inputBad: { borderColor: colors.danger, backgroundColor: '#F9F9FA' },
+  inputBad: { borderColor: colors.danger, backgroundColor: '#FFFFFF' },
   input: {
     flex: 1,
     minWidth: 0,

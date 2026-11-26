@@ -756,16 +756,16 @@ const coupleGames: CoupleGame[] = [
  * take the theme's colour. Every colour is dark enough for white text.
  */
 const coupleThemes = [
-  { name: "Ruby Velvet", accent: "#B0245F", soft: "rgba(31,77,122,0.12)", wash: "rgba(31,77,122,0.05)", panel: "#0F1011", border: "rgba(31,77,122,0.35)" },
-  { name: "Champagne Night", accent: "#A3293C", soft: "rgba(163,41,60,0.12)", wash: "rgba(163,41,60,0.05)", panel: "#0F1011", border: "rgba(163,41,60,0.35)" },
-  { name: "Royal Plum", accent: "#6B3FA0", soft: "rgba(107,63,160,0.12)", wash: "rgba(107,63,160,0.05)", panel: "#0F1011", border: "rgba(107,63,160,0.35)" },
-  { name: "Moonlit Noir", accent: "#23262B", soft: "rgba(35,38,43,0.12)", wash: "rgba(35,38,43,0.05)", panel: "#0F1011", border: "rgba(35,38,43,0.35)" },
-  { name: "Rose Gold", accent: "#B0606D", soft: "rgba(176,96,109,0.12)", wash: "rgba(176,96,109,0.05)", panel: "#0F1011", border: "rgba(176,96,109,0.35)" },
-  { name: "Emerald Promise", accent: "#2E7D5B", soft: "rgba(46,125,91,0.12)", wash: "rgba(46,125,91,0.05)", panel: "#0F1011", border: "rgba(46,125,91,0.35)" },
-  { name: "Desert Chai", accent: "#9A5230", soft: "rgba(154,82,48,0.12)", wash: "rgba(154,82,48,0.05)", panel: "#0F1011", border: "rgba(154,82,48,0.35)" },
-  { name: "Bollywood Glow", accent: "#D9480F", soft: "rgba(217,72,15,0.12)", wash: "rgba(217,72,15,0.05)", panel: "#0F1011", border: "rgba(217,72,15,0.35)" },
-  { name: "Ocean Drive", accent: "#1C6FB8", soft: "rgba(28,111,184,0.12)", wash: "rgba(28,111,184,0.05)", panel: "#0F1011", border: "rgba(28,111,184,0.35)" },
-  { name: "Ivory Calm", accent: "#5C6670", soft: "rgba(92,102,112,0.12)", wash: "rgba(92,102,112,0.05)", panel: "#0F1011", border: "rgba(92,102,112,0.35)" },
+  { name: "Ruby Velvet", accent: "#B0245F", soft: "rgba(176,36,95,0.12)", wash: "rgba(176,36,95,0.05)", panel: "#14102E", border: "rgba(176,36,95,0.35)" },
+  { name: "Champagne Night", accent: "#A3293C", soft: "rgba(163,41,60,0.12)", wash: "rgba(163,41,60,0.05)", panel: "#14102E", border: "rgba(163,41,60,0.35)" },
+  { name: "Royal Plum", accent: "#6B3FA0", soft: "rgba(107,63,160,0.12)", wash: "rgba(107,63,160,0.05)", panel: "#14102E", border: "rgba(107,63,160,0.35)" },
+  { name: "Moonlit Noir", accent: "#23262B", soft: "rgba(35,38,43,0.12)", wash: "rgba(35,38,43,0.05)", panel: "#14102E", border: "rgba(35,38,43,0.35)" },
+  { name: "Rose Gold", accent: "#B0606D", soft: "rgba(176,96,109,0.12)", wash: "rgba(176,96,109,0.05)", panel: "#14102E", border: "rgba(176,96,109,0.35)" },
+  { name: "Emerald Promise", accent: "#2E7D5B", soft: "rgba(46,125,91,0.12)", wash: "rgba(46,125,91,0.05)", panel: "#14102E", border: "rgba(46,125,91,0.35)" },
+  { name: "Desert Chai", accent: "#9A5230", soft: "rgba(154,82,48,0.12)", wash: "rgba(154,82,48,0.05)", panel: "#14102E", border: "rgba(154,82,48,0.35)" },
+  { name: "Bollywood Glow", accent: "#D9480F", soft: "rgba(217,72,15,0.12)", wash: "rgba(217,72,15,0.05)", panel: "#14102E", border: "rgba(217,72,15,0.35)" },
+  { name: "Ocean Drive", accent: "#1C6FB8", soft: "rgba(28,111,184,0.12)", wash: "rgba(28,111,184,0.05)", panel: "#14102E", border: "rgba(28,111,184,0.35)" },
+  { name: "Ivory Calm", accent: "#5C6670", soft: "rgba(92,102,112,0.12)", wash: "rgba(92,102,112,0.05)", panel: "#14102E", border: "rgba(92,102,112,0.35)" },
 ];
 
 // Cancel handlers for media that is still uploading, keyed by the local
@@ -2712,7 +2712,7 @@ export function ChatScreen({
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search this conversation"
-                placeholderTextColor="#1F5286"
+                placeholderTextColor="#B0245F"
                 style={chatStyles.searchInput}
               />
               <Text
@@ -2751,7 +2751,7 @@ export function ChatScreen({
                     style={[
                       coachStyles.suggestionChip,
                       {
-                        borderColor: "#D3D6DA",
+                        borderColor: "#E7D8EE",
                         backgroundColor: "rgba(255,255,255,.045)",
                       },
                     ]}
@@ -3010,7 +3010,7 @@ export function ChatScreen({
                     style={{
                       fontFamily: "Mukta_700Bold",
                       fontSize: 15,
-                      color: "#151719",
+                      color: "#14102E",
                     }}
                   >
                     👋 Say something better than "Hi"
@@ -3043,7 +3043,7 @@ export function ChatScreen({
                       style={{
                         fontFamily: "Mukta_600SemiBold",
                         fontSize: 14,
-                        color: "#1D4F81",
+                        color: "#B0245F",
                       }}
                     >
                       Or start with a quick game
@@ -3058,7 +3058,7 @@ export function ChatScreen({
                       style={({ pressed }) => ({
                         borderRadius: 12,
                         borderWidth: 1,
-                        borderColor: "#1D4F81",
+                        borderColor: "#B0245F",
                         backgroundColor: pressed ? "#EEF2F6" : "#F8FAFC",
                         paddingHorizontal: 12,
                         paddingVertical: 10,
@@ -3068,7 +3068,7 @@ export function ChatScreen({
                         style={{
                           fontFamily: "Mukta_500Medium",
                           fontSize: 14,
-                          color: "#1D4F81",
+                          color: "#B0245F",
                         }}
                       >
                         {line}
@@ -3519,7 +3519,7 @@ export function ChatScreen({
                       }}
                       style={chatStyles.floatReactMoreButton}
                     >
-                      <Ionicons name="add" size={20} color="#163C63" />
+                      <Ionicons name="add" size={20} color="#B0245F" />
                     </Pressable>
                   </View>
                 </Modal>
@@ -4100,7 +4100,7 @@ function ChatBubble({
               <Ionicons
                 name="arrow-redo-outline"
                 size={10}
-                color={mine ? "#DFE1E4" : "#245C95"}
+                color={mine ? "#E7D8EE" : "#245C95"}
               />
               <Text
                 style={[
@@ -4161,7 +4161,7 @@ function ChatBubble({
               <Ionicons
                 name="arrow-up"
                 size={13}
-                color={mine ? "#CE7486" : "#163C63"}
+                color={mine ? "#CE7486" : "#B0245F"}
               />
             </Pressable>
           )}
@@ -4531,7 +4531,7 @@ function LinkPreviewCard({
         <Ionicons
           name={risky ? "warning-outline" : "link-outline"}
           size={17}
-          color={risky ? "#174069" : mine ? "#163C63" : "#FFFFFF"}
+          color={risky ? "#B0245F" : mine ? "#B0245F" : "#FFFFFF"}
         />
       </View>
       <View style={{ flex: 1 }}>
@@ -4562,7 +4562,7 @@ function LinkPreviewCard({
       <Ionicons
         name={confirmOpen ? "shield-outline" : "open-outline"}
         size={16}
-        color={risky ? "#174069" : mine ? "#CE7788" : "#163C63"}
+        color={risky ? "#B0245F" : mine ? "#E8A1BE" : "#B0245F"}
       />
     </Pressable>
   );
@@ -4880,7 +4880,7 @@ function CatalogGifMessage({ gif }: { gif: ChatGifCatalogItem }) {
         height: 200,
         borderRadius: 12,
         overflow: "hidden",
-        backgroundColor: "#ECEDEF",
+        backgroundColor: "#F3EBF8",
       }}
     >
       {/* Catalog GIFs have an in-app id (milaan-gif:...), not an image URL,
@@ -4930,7 +4930,7 @@ function GameChatCard({
           <Ionicons
             name="game-controller"
             size={16}
-            color={mine ? "#FFFFFF" : "#153B61"}
+            color={mine ? "#FFFFFF" : "#B0245F"}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -5041,7 +5041,7 @@ function GameChatCard({
           <Ionicons
             name="chatbubble-ellipses-outline"
             size={12}
-            color={mine ? "#CE7788" : "#153B61"}
+            color={mine ? "#E8A1BE" : "#B0245F"}
           />
           <Text
             style={[
@@ -5149,7 +5149,7 @@ function MediaCaptionPreview({
                   numberOfLines={1}
                   style={[
                     chatStyles.documentFine,
-                    { color: "#141618", marginTop: 8 },
+                    { color: "#14102E", marginTop: 8 },
                   ]}
                 >
                   {fallbackName}
@@ -5719,7 +5719,7 @@ function VoiceNote({
               <Ionicons
                 name="text-outline"
                 size={11}
-                color={mine ? "#CE7788" : "#174069"}
+                color={mine ? "#E8A1BE" : "#B0245F"}
               />
             </Pressable>
           </View>
@@ -5807,7 +5807,7 @@ function VoiceRecordingComposer({
         onPress={onCancel}
         style={chatStyles.recordingCancel}
       >
-        <Ionicons name="trash-outline" size={18} color="#163C63" />
+        <Ionicons name="trash-outline" size={18} color="#B0245F" />
       </Pressable>
       <View style={chatStyles.recordingMain}>
         <View style={chatStyles.recordingTop}>
@@ -6164,7 +6164,7 @@ const optionsUi = StyleSheet.create({
     width: 42,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#D3D6DA",
+    backgroundColor: "#E7D8EE",
     marginBottom: 12,
   },
   hero: {
@@ -6209,7 +6209,7 @@ const optionsUi = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
     overflow: "hidden",
-    shadowColor: "#133557",
+    shadowColor: "#B0245F",
     shadowOpacity: 0.06,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
@@ -6583,7 +6583,7 @@ function GifResultTile({
           <Ionicons
             name={favourite ? "star" : "star-outline"}
             size={14}
-            color={favourite ? "#CE7788" : "#FFFFFF"}
+            color={favourite ? "#E8A1BE" : "#FFFFFF"}
           />
         </Pressable>
       )}
@@ -6784,7 +6784,7 @@ function CatalogGifTile({
           <Ionicons
             name={favourite ? "star" : "star-outline"}
             size={14}
-            color={favourite ? "#CE7788" : "#FFFFFF"}
+            color={favourite ? "#E8A1BE" : "#FFFFFF"}
           />
         </Pressable>
       )}
@@ -6833,7 +6833,7 @@ function CatalogGifPager({
           offset === 0 && chatStyles.catalogGifPageButtonDisabled,
         ]}
       >
-        <Ionicons name="chevron-back" size={15} color="#163C63" />
+        <Ionicons name="chevron-back" size={15} color="#B0245F" />
       </Pressable>
       <Text style={chatStyles.catalogGifPageText}>
         {offset + 1}–{end} of {total.toLocaleString()}
@@ -6848,7 +6848,7 @@ function CatalogGifPager({
           end >= total && chatStyles.catalogGifPageButtonDisabled,
         ]}
       >
-        <Ionicons name="chevron-forward" size={15} color="#163C63" />
+        <Ionicons name="chevron-forward" size={15} color="#B0245F" />
       </Pressable>
     </View>
   );
@@ -6868,7 +6868,7 @@ function GifProviderLine({ live, error }: { live: boolean; error?: string }) {
           error ? "cloud-offline-outline" : live ? "flash" : "sparkles-outline"
         }
         size={13}
-        color={error ? "#174069" : live ? "#6F1B2C" : "#163C63"}
+        color={error ? "#B0245F" : live ? "#6F1B2C" : "#B0245F"}
       />
       <Text
         style={[
@@ -7048,7 +7048,7 @@ function GifPicker({
         {libraryMode === "all" && (
           <>
             <View style={chatStyles.gifSearchWrap}>
-              <Ionicons name="search-outline" size={17} color="#1F5286" />
+              <Ionicons name="search-outline" size={17} color="#B0245F" />
               <TextInput
                 accessibilityLabel="Search GIF catalog"
                 autoFocus
@@ -7145,7 +7145,7 @@ function GifPicker({
               onPress={() => void provider.loadMore()}
               style={chatStyles.gifLoadMore}
             >
-              <Ionicons name="add-circle-outline" size={17} color="#174069" />
+              <Ionicons name="add-circle-outline" size={17} color="#B0245F" />
               <Text style={chatStyles.gifLoadMoreText}>
                 {provider.loadingMore ? "Loading…" : "Load 36 more"}
               </Text>
@@ -7277,14 +7277,14 @@ function EmojiMediaPanel({
           height: panelHeight,
           borderTopWidth: 1,
           borderTopColor: "#DBDEE1",
-          backgroundColor: "#FDFDFD",
+          backgroundColor: "#FFFFFF",
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
         },
       ]}
     >
       <View style={chatStyles.emojiSearchWrap}>
-        <Ionicons name="search-outline" size={17} color="#1F5286" />
+        <Ionicons name="search-outline" size={17} color="#B0245F" />
         <TextInput
           accessibilityLabel={modeLabel}
           value={query}
@@ -7329,7 +7329,7 @@ function EmojiMediaPanel({
               <Ionicons
                 name={item.icon as keyof typeof Ionicons.glyphMap}
                 size={17}
-                color={category === item.id ? "#174069" : "#1C4B7B"}
+                color={category === item.id ? "#B0245F" : "#1C4B7B"}
               />
             </Pressable>
           ))}
@@ -7491,12 +7491,12 @@ function EmojiMediaPanel({
                 <LinearGradient
                   colors={
                     sticker.tone === "gold"
-                      ? ["#EEEFF1", "#D7A5AF"]
+                      ? ["#F3EBF8", "#D7A5AF"]
                       : sticker.tone === "plum"
-                        ? ["#F4F5F6", "#DFE1E4"]
+                        ? ["#F3EBF8", "#E7D8EE"]
                         : sticker.tone === "cocoa"
-                          ? ["#EEEFF1", "#D7A6B0"]
-                          : ["#F9F9FA", "#E3E5E7"]
+                          ? ["#F3EBF8", "#D7A6B0"]
+                          : ["#FFFFFF", "#E3E5E7"]
                   }
                   style={chatStyles.customStickerInner}
                 >
@@ -7777,7 +7777,7 @@ function MessageActionSheet({
               style={chatStyles.actionRow}
             >
               <View style={chatStyles.actionIcon}>
-                <Ionicons name={action.icon} size={18} color="#163C63" />
+                <Ionicons name={action.icon} size={18} color="#B0245F" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={chatStyles.actionTitle}>{action.label}</Text>
@@ -8073,7 +8073,7 @@ function ForwardSelectorSheet({
           onClose={onClose}
         />
         <View style={chatStyles.gifSearchWrap}>
-          <Ionicons name="search-outline" size={17} color="#1F5286" />
+          <Ionicons name="search-outline" size={17} color="#B0245F" />
           <TextInput
             accessibilityLabel="Search forwarding recipients"
             value={query}
@@ -8189,7 +8189,7 @@ function PinnedMessagesSheet({
                 onPress={() => onUnpin(message.id)}
                 style={chatStyles.unpinButton}
               >
-                <Ionicons name="pin-outline" size={16} color="#163C63" />
+                <Ionicons name="pin-outline" size={16} color="#B0245F" />
               </Pressable>
             </View>
           ))}
@@ -8271,11 +8271,11 @@ function GameSheet({
               onPress={() => setSelectedId(null)}
               style={gameStyles.backButton}
             >
-              <Ionicons name="arrow-back" size={16} color="#153B61" />
+              <Ionicons name="arrow-back" size={16} color="#B0245F" />
               <Text style={gameStyles.backText}>All games</Text>
             </Pressable>
             <LinearGradient
-              colors={["#F3F4F5", "#E1C7CC"]}
+              colors={["#F3EBF8", "#E1C7CC"]}
               style={gameStyles.detailHero}
             >
               <PremiumIcon
@@ -8325,7 +8325,7 @@ function GameSheet({
                 onPress={nextPrompt}
                 style={gameStyles.secondaryButton}
               >
-                <Ionicons name="refresh" size={17} color="#153B61" />
+                <Ionicons name="refresh" size={17} color="#B0245F" />
                 <Text style={gameStyles.secondaryText}>New prompt</Text>
               </Pressable>
               <Pressable
@@ -8677,7 +8677,7 @@ function CoupleSettingsSheet({
                 onChangeText={setNickname}
                 placeholder={`Nickname for ${match.name}`}
                 accessibilityLabel={`Nickname for ${match.name}`}
-                placeholderTextColor="#1F5286"
+                placeholderTextColor="#B0245F"
                 style={coupleStyles.nicknameInput}
               />
               <Pressable accessibilityRole="button" accessibilityLabel="Save nickname" onPress={saveNickname} style={coupleStyles.saveButton}>
@@ -9046,7 +9046,7 @@ function CoupleSettingsSheet({
                     }}
                     style={[
                       coupleStyles.themeCard,
-                      chosen && { borderColor: palette.navy, backgroundColor: "rgba(31,77,122,0.08)" },
+                      chosen && { borderColor: palette.navy, backgroundColor: "rgba(176,36,95,0.08)" },
                     ]}
                   >
                     <LinearGradient colors={background.colors} style={coupleStyles.themeDot} />
@@ -9683,7 +9683,7 @@ const selectBar = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#D3D6DA",
+    backgroundColor: "#E7D8EE",
     marginBottom: 10,
   },
   pickerGrid: {

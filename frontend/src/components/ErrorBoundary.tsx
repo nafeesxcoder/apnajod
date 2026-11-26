@@ -58,7 +58,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
 const styles=StyleSheet.create({
   screen:{flex:1,backgroundColor:colors.black,alignItems:'center',justifyContent:'center',padding:28,gap:18},
-  mark:{width:72,height:72,borderRadius:18,borderWidth:1,borderColor:'#D3D6DA',shadowColor:colors.pink,shadowOpacity:.5,shadowRadius:12},
+  mark:{width:72,height:72,borderRadius:18,borderWidth:1,borderColor:'#E7D8EE',shadowColor:colors.pink,shadowOpacity:.5,shadowRadius:12},
   title:{color:colors.ivory,fontSize:26,fontWeight:'700',textAlign:'center'},
   body:{color:colors.muted,fontSize:15,lineHeight:23,textAlign:'center',maxWidth:380},
   button:{marginTop:8,minHeight:52,minWidth:180,borderRadius:radius.pill,backgroundColor:colors.pink,alignItems:'center',justifyContent:'center',paddingHorizontal:24},

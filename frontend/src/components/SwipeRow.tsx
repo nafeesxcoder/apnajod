@@ -128,6 +128,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   action: { flex: 1, alignItems: "center", justifyContent: "center" },
-  more: { backgroundColor: "#6B7280" },
+  more: { backgroundColor: "#5B5478" },
   delete: { backgroundColor: "#E53E3E" },
 });

@@ -190,7 +190,7 @@ export function PlayerCard({
         <Avatar member={member} size={ring - 16} ring={SEAT_COLORS[seat]} />
         {turn && <ClockRing deadline={game.turnDeadline} seconds={game.turnSeconds} size={ring} color={SEAT_LIGHT[seat]!} />}
         {inVoice && (
-          <View style={{ position: "absolute", right: 0, bottom: 0, width: 19, height: 19, borderRadius: 10, backgroundColor: inVoice.muted ? "#6B7280" : L.green, borderWidth: 2, borderColor: L.bgMid, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ position: "absolute", right: 0, bottom: 0, width: 19, height: 19, borderRadius: 10, backgroundColor: inVoice.muted ? "#5B5478" : L.green, borderWidth: 2, borderColor: L.bgMid, alignItems: "center", justifyContent: "center" }}>
             <Ionicons name={inVoice.muted ? "mic-off" : "mic"} size={10} color="#FFFFFF" />
           </View>
         )}
@@ -329,7 +329,7 @@ const BANNER_COLORS: Record<LudoBanner["kind"], [string, string]> = {
   home: ["#5EE38B", "#138A46"],
   six: ["#FFE07A", "#E59A00"],
   lost: ["#C4B5FD", "#6D28D9"],
-  none: ["#E5E7EB", "#6B7280"],
+  none: ["#E5E7EB", "#5B5478"],
 };
 
 /** How long a SIX / CUT / HOME toast stays up, in total: about a second and a half. */

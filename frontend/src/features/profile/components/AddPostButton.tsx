@@ -22,7 +22,7 @@ export function AddPostButton({
   onPosted,
   size = 36,
   iconSize = 24,
-  color = "#151719",
+  color = "#14102E",
   background = "rgba(255,255,255,0.9)",
   withStory = false,
 }: {

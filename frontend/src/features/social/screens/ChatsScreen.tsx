@@ -168,7 +168,7 @@ const ChatRow = function ChatRow({
       accessibilityRole="button"
       accessibilityLabel={`Chat with ${conversation.user.name}${unread ? `, ${conversation.unread} unread` : ''}`}
       onPress={onPress}
-      android_ripple={{ color: 'rgba(31,77,122,0.08)' }}
+      android_ripple={{ color: 'rgba(176,36,95,0.08)' }}
       style={[styles.row, active && styles.rowActive]}
     >
       <Avatar name={conversation.user.name} url={conversation.user.avatarUrl} online={online} waiting={waiting} />
