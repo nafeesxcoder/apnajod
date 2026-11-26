@@ -4013,8 +4013,8 @@ function ChatBubble({
           }}
         >
           {mine
-            ? "📸 Aapne is chat ka screenshot liya"
-            : "📸 Dusre ne is chat ka screenshot liya"}
+            ? "📸 You took a screenshot of this chat"
+            : "📸 They took a screenshot of this chat"}
         </Text>
       </View>
     );
