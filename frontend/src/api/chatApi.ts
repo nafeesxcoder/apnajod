@@ -283,11 +283,11 @@ export const chatApi = {
     accessToken: string,
     conversationId: string,
     settings: CoupleChatSettings,
-  ): Promise<PersistenceResult<{ ok: boolean }>> {
+  ): Promise<PersistenceResult<{ ok: boolean; settings?: CoupleChatSettings }>> {
     return authFetch(`/chat/${conversationId}/settings`, accessToken, {
       method: "PUT",
       body: JSON.stringify(settings),
-    }) as Promise<PersistenceResult<{ ok: boolean }>>;
+    }) as Promise<PersistenceResult<{ ok: boolean; settings?: CoupleChatSettings }>>;
   },
 
   async uploadMedia(

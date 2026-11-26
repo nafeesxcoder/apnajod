@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { archivedCount, listOrder } from "../social/chatListOrder";
+import { archivedCount, isArchivedNow, listOrder } from "../social/chatListOrder";
 
 const read = (p: string) => readFileSync(join(__dirname, "..", "..", "..", p), "utf8");
 const chat = read("src/features/chat/ChatFeature.tsx");
@@ -40,6 +40,17 @@ describe("chat settings that work", () => {
     expect(read("src/features/chat/screenshotWatch.native.ts")).toContain("ScreenCapture.addScreenshotListener(onScreenshot)");
     expect(chat).toContain("void chatApi.screenshot(accessToken, conversationId)");
     expect(chat).toContain("{screenshotDetection && (");
+  });
+
+  it("a newer message undoes an archive, so the Archive toggle shows it as restored", () => {
+    const messages = [{ createdAt: 150 }];
+    expect(isArchivedNow({ conversationArchived: true, archivedAt: 100 }, messages)).toBe(false);
+    expect(isArchivedNow({ conversationArchived: true, archivedAt: 200 }, messages)).toBe(true);
+    expect(isArchivedNow({ conversationArchived: true }, messages)).toBe(true);
+    expect(isArchivedNow({ conversationArchived: false, archivedAt: 200 }, messages)).toBe(false);
+    expect(isArchivedNow(undefined, messages)).toBe(false);
+    // A deleted message does not bring the chat back.
+    expect(isArchivedNow({ conversationArchived: true, archivedAt: 100 }, [{ createdAt: 150, deletedForEveryone: true }])).toBe(true);
   });
 
   it("the Share in chat tray closes on the back button, not the chat", () => {

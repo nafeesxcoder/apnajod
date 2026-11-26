@@ -810,6 +810,27 @@ async function onlineFor(userId, ids) {
   return out;
 }
 
+/** The newest message in a chat (0 when there is none), by the server's clock. */
+async function lastMessageAt(conversationId) {
+  const [row] = await query(
+    "SELECT MAX(created_at_ms) AS last_at FROM chat_messages WHERE conversation_id = ? AND deleted_for_everyone = 0",
+    [conversationId],
+  );
+  return Number(row?.last_at) || 0;
+}
+
+/**
+ * Your saved settings as the list sees them. An archive that a newer message has
+ * already undone reads as not archived, so the next archive starts fresh.
+ */
+function effectiveSettings(settings, lastAt) {
+  if (!settings || !settings.conversationArchived) return settings;
+  if (listFlags(settings, lastAt).archived) return settings;
+  const next = { ...settings, conversationArchived: false };
+  delete next.archivedAt;
+  return next;
+}
+
 async function getSettings(peerId, userId) {
   const conversationId = storageKey(userId, peerId);
   await assertParticipant(peerId, userId);
@@ -818,7 +839,7 @@ async function getSettings(peerId, userId) {
     [conversationId, userId],
   );
   if (!rows.length) return null;
-  return parseJsonColumn(rows[0].settings, null);
+  return effectiveSettings(parseJsonColumn(rows[0].settings, null), await lastMessageAt(conversationId));
 }
 
 /** The chat background: a short id from the app's list (letters, digits, dashes). Anything else is dropped. */
@@ -850,7 +871,9 @@ async function saveSettings(peerId, userId, settings) {
       "SELECT settings FROM chat_conversation_settings WHERE conversation_id = ? AND user_id = ?",
       [conversationId, userId],
     );
-    settings = stampArchive(previous ? parseJsonColumn(previous.settings, {}) : {}, settings);
+    const lastAt = await lastMessageAt(conversationId);
+    const before = previous ? effectiveSettings(parseJsonColumn(previous.settings, {}), lastAt) : {};
+    settings = stampArchive(before, settings);
   }
   await query(
     `INSERT INTO chat_conversation_settings (conversation_id, user_id, settings)
@@ -858,7 +881,8 @@ async function saveSettings(peerId, userId, settings) {
      ON DUPLICATE KEY UPDATE settings = VALUES(settings)`,
     [conversationId, userId, JSON.stringify(settings)],
   );
-  return { ok: true };
+  // The saved settings come back, with the archive time the server stamped.
+  return { ok: true, settings };
 }
 
 /** Screenshot notices already sent: one per chat every 30 seconds. */
@@ -987,6 +1011,7 @@ module.exports = {
   listConversations,
   listFlags,
   stampArchive,
+  effectiveSettings,
   screenshotNotice,
   assertParticipant,
   assertParticipantByConversationId,

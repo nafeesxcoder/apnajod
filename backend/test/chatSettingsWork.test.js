@@ -7,7 +7,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const read = (p) => fs.readFileSync(path.join(__dirname, "..", p), "utf8");
-const { listFlags, stampArchive } = require("../src/services/chatService");
+const { listFlags, stampArchive, effectiveSettings } = require("../src/services/chatService");
 const chat = read("src/services/chatService.js");
 
 test("pinned, archived until a newer message, muted until the time chosen", () => {
@@ -27,6 +27,20 @@ test("the archive time is the server's clock: archiving stamps it, keeping keeps
   // Restoring clears it.
   assert.equal("archivedAt" in stampArchive({ conversationArchived: true, archivedAt: 100 }, { conversationArchived: false, archivedAt: 9 }, 500), false);
   assert.match(chat, /settings = stampArchive\(/);
+});
+
+test("a newer message undoes an archive; archiving again starts fresh", () => {
+  const undone = { conversationArchived: true, archivedAt: 100 };
+  // Still archived before the message: the same settings come back.
+  assert.equal(effectiveSettings(undone, 50), undone);
+  // A message after the archive: not archived, and the old time is gone.
+  const fresh = effectiveSettings(undone, 150);
+  assert.equal(fresh.conversationArchived, false);
+  assert.equal("archivedAt" in fresh, false);
+  // Archiving again stamps a new time, not the old one.
+  assert.equal(stampArchive(fresh, { conversationArchived: true }, 500).archivedAt, 500);
+  assert.match(chat, /effectiveSettings\(parseJsonColumn\(previous\.settings/);
+  assert.match(chat, /return \{ ok: true, settings \};/);
 });
 
 test("a mute that has run out lets notifications through again", () => {

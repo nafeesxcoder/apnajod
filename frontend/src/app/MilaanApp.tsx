@@ -204,6 +204,7 @@ import {
 } from "../components/feedback/AppNoticeSheet";
 import { setPostTools, setProfileOpener, userIdFromToken } from "../features/posts/profileLink";
 import { loadChatsAndMatches } from "../features/social/chatTargets";
+import { isArchivedNow } from "../features/social/chatListOrder";
 import { postApi } from "../api/postApi";
 import { SharedPostModal, readPostParam } from "../features/posts/SharedPostModal";
 import { StoryHost } from "../features/stories/StoryHost";
@@ -2697,9 +2698,12 @@ function MilaanApp() {
       )
     )
       return;
+    // The server's copy: it stamps the archive time with its own clock.
+    const saved =
+      (result.data as { settings?: CoupleChatSettings } | undefined)?.settings ?? settings;
     setChatSettings((current) => ({
       ...current,
-      [conversationPartner.id]: settings,
+      [conversationPartner.id]: saved,
     }));
   };
   const completeOnboarding = async () => {
@@ -3892,6 +3896,11 @@ function MilaanApp() {
               settings={{
                 ...defaultCoupleChatSettings,
                 ...chatSettings[conversationPartner.id],
+                // A newer message brings an archived chat back, as the Chats list shows it.
+                conversationArchived: isArchivedNow(
+                  chatSettings[conversationPartner.id],
+                  chatMessages[conversationPartner.id] ?? [],
+                ),
               }}
               conversationSettings={chatSettings}
               initialDraft={chatDrafts[conversationPartner.id] ?? ""}
