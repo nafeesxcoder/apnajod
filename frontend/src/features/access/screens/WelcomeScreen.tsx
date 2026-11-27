@@ -17,7 +17,6 @@ const brandLogo = require("../../../../assets/apnajoda-logo.png");
 // Brand navy and its pressed step, from the mark.
 const NAVY = "#B0245F";
 const NAVY_DARK = "#8A1A47";
-const WHITE = "#FFFFFF";
 
 const DARK = "#14102E";
 
@@ -134,14 +133,14 @@ export function AccessWelcomeScreen({
                     onPress={onSignUp}
                     accessibilityRole="button"
                     style={{
-                      backgroundColor: NAVY,
+                      backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                       paddingVertical: 14,
                       borderRadius: 25,
                       alignItems: "center",
                     }}
                   >
                     <Text
-                      style={{ color: WHITE, fontSize: 15, fontWeight: "700" }}
+                      style={{ color: NAVY, fontSize: 15, fontWeight: "700" }}
                     >
                       Create account
                     </Text>
@@ -150,9 +149,9 @@ export function AccessWelcomeScreen({
                     onPress={onLogIn}
                     accessibilityRole="button"
                     style={{
-                      backgroundColor: "transparent",
+                      backgroundColor: 'rgba(255,255,255,0.92)',
                       borderWidth: 1.5,
-                      borderColor: NAVY,
+                      borderColor: 'rgba(30,27,75,0.14)',
                       paddingVertical: 14,
                       borderRadius: 25,
                       alignItems: "center",

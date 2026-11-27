@@ -114,14 +114,14 @@ export function ProfileStrengthCard({
             accessibilityLabel={next.label}
             onPress={() => onGo(next.screen)}
             style={{
-              backgroundColor: palette.navy,
+              backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
               borderRadius: radius.pill,
               paddingHorizontal: 16,
               minHeight: 40,
               justifyContent: "center",
             }}
           >
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Do it</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>Do it</Text>
           </PressScale>
         </View>
       )}
