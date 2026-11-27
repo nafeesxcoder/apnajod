@@ -105,7 +105,7 @@ const FILL: ViewStyle = { position: "absolute", top: 0, right: 0, bottom: 0, lef
  * A button made of glass: it has depth (darker at the bottom, a gloss on top,
  * a bright rim and a streak of light), a colored glow under it, and a shine
  * that slides across every few seconds. Under the finger it swells, a white
- * flash runs through it and a ring ripples out. It keeps the colors you give
+ * flash runs through it. It keeps the colors you give
  * it, so it is the same button, only glassy.
  */
 export function LiquidPress({
@@ -129,7 +129,6 @@ export function LiquidPress({
 }) {
   const reduced = useReducedMotion();
   const swell = useRef(new Animated.Value(1)).current;
-  const ring = useRef(new Animated.Value(1)).current;
   const flash = useRef(new Animated.Value(0)).current;
   const sweep = useRef(new Animated.Value(0)).current;
   const [width, setWidth] = useState(0);
@@ -171,8 +170,6 @@ export function LiquidPress({
         if (!reduced) {
           Animated.spring(swell, { toValue: bulge, friction: 5, tension: 140, useNativeDriver: nativeDriver }).start();
           Animated.timing(flash, { toValue: 1, duration: 140, useNativeDriver: nativeDriver }).start();
-          ring.setValue(0);
-          Animated.timing(ring, { toValue: 1, duration: 520, useNativeDriver: nativeDriver }).start();
         }
         props.onPressIn?.(event);
       }}
@@ -243,19 +240,6 @@ export function LiquidPress({
         <View
           pointerEvents="none"
           style={[FILL, { margin: 1, borderRadius: radius, borderWidth: 1, borderColor: "rgba(255,255,255,0.55)" }]}
-        />
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            FILL,
-            {
-              borderRadius: radius,
-              borderWidth: 2,
-              borderColor: "rgba(255,255,255,0.9)",
-              opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
-              transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1.08] }) }],
-            },
-          ]}
         />
       </Animated.View>
     </Pressable>
