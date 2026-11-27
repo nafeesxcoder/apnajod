@@ -152,7 +152,7 @@ export function DailyPicksRow({
               {!!pick.gun && (
                 <Text
                   accessibilityLabel={`Gun ${pick.gun.score} of ${pick.gun.max}`}
-                  style={{ fontFamily: fonts.bodySemi, fontSize: 10, color: "#92400E", marginTop: 1 }}
+                  style={{ fontFamily: fonts.bodySemi, fontSize: 10, color: palette.navyDeep, marginTop: 1 }}
                 >
                   🪐 {pick.gun.score}/{pick.gun.max}
                 </Text>
