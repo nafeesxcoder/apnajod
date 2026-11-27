@@ -27,7 +27,7 @@ import { authApi } from "../../../api/authApi";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { brand, cardShadow } from "../../../components/brand";
 import { ZoomPhoto } from "../../../components/ZoomPhoto";
-import { PressScale, Reveal } from "../../../components/motion";
+import { LiquidPress, Reveal } from "../../../components/motion";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 
 const MAX_WIDTH = 720;
@@ -267,16 +267,19 @@ export function ProfileScreen({
               </View>
 
               <View style={{ flexDirection: "row", gap: 8, marginTop: 18 }}>
-                <TouchableOpacity
+                <LiquidPress
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit profile"
                   onPress={() => navigate("profileSetup")}
-                  style={{
-                    flex: 1,
+                  colors={[palette.navy, palette.navy]}
+                  radius={radius.pill}
+                  bulge={1.05}
+                  style={{ flex: 1 }}
+                  contentStyle={{
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: palette.navy,
                     paddingVertical: 10,
-                    borderRadius: radius.pill,
                     gap: 6,
                     minHeight: 44,
                   }}
@@ -291,7 +294,7 @@ export function ProfileScreen({
                   >
                     Edit profile
                   </Text>
-                </TouchableOpacity>
+                </LiquidPress>
                 {family.available && (
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -392,18 +395,16 @@ export function ProfileScreen({
 
               {/* Premium is this screen's one navy "hero" card. */}
               <Reveal delay={180} style={{ marginTop: 16 }}>
-                <PressScale
+                <LiquidPress
                   accessibilityRole="button"
                   accessibilityLabel="See Premium"
                   onPress={() => navigate("premium")}
-                  style={{ borderRadius: 18, overflow: "hidden", ...cardShadow }}
+                  colors={brand.heroGradient}
+                  radius={18}
+                  bulge={1.03}
+                  style={cardShadow}
+                  contentStyle={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}
                 >
-                  <LinearGradient
-                    colors={brand.heroGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}
-                  >
                     <View
                       style={{
                         width: 38,
@@ -425,8 +426,7 @@ export function ProfileScreen({
                     <View style={{ backgroundColor: palette.crimson, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 }}>
                       <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: "#FFFFFF" }}>See plans</Text>
                     </View>
-                  </LinearGradient>
-                </PressScale>
+                </LiquidPress>
               </Reveal>
 
               <View style={{ marginTop: 24 }}>

@@ -12,7 +12,7 @@ describe('Navy x Crimson look and motion', () => {
     // Reveal is plain now: cards just appear, so it has nothing to move.
     const reveal = motion.slice(motion.indexOf('export function Reveal'), motion.indexOf('/**', motion.indexOf('export function Reveal')));
     expect(reveal).not.toContain('Animated');
-    for (const piece of ['export function PressScale', 'export function SpinRing', 'export function HeartBeat', 'export function GlowPulse']) {
+    for (const piece of ['export function PressScale', 'export function LiquidPress', 'export function SpinRing', 'export function HeartBeat', 'export function GlowPulse']) {
       const body = motion.slice(motion.indexOf(piece), motion.indexOf('\nexport function', motion.indexOf(piece) + 10) >>> 0 || undefined);
       expect(body, piece).toContain('useReducedMotion()');
     }

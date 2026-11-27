@@ -99,6 +99,84 @@ export function PressScale({
   );
 }
 
+const FILL: ViewStyle = { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 };
+
+/**
+ * A button that feels like water, like the bottom bar's lens: it swells under
+ * the finger, a ring ripples out from the touch, and a soft gloss sits on top.
+ * It keeps the colors you give it, so it is the same button, only wet.
+ */
+export function LiquidPress({
+  colors,
+  children,
+  style,
+  contentStyle,
+  radius = 18,
+  bulge = 1.05,
+  ...props
+}: PressableProps & {
+  colors: readonly [string, string, ...string[]];
+  children: ReactNode;
+  /** The place and shadow of the button (width in a row, margins, shadow). */
+  style?: StyleProp<ViewStyle>;
+  /** The layout of what is inside (row, padding, gap). */
+  contentStyle?: StyleProp<ViewStyle>;
+  radius?: number;
+  /** How much it swells under the finger. */
+  bulge?: number;
+}) {
+  const reduced = useReducedMotion();
+  const swell = useRef(new Animated.Value(1)).current;
+  const ring = useRef(new Animated.Value(1)).current;
+
+  return (
+    <Pressable
+      {...props}
+      style={style}
+      onPressIn={(event) => {
+        if (!reduced) {
+          Animated.spring(swell, { toValue: bulge, friction: 5, tension: 140, useNativeDriver: nativeDriver }).start();
+          ring.setValue(0);
+          Animated.timing(ring, { toValue: 1, duration: 520, useNativeDriver: nativeDriver }).start();
+        }
+        props.onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        if (!reduced) {
+          Animated.spring(swell, { toValue: 1, friction: 6, tension: 110, useNativeDriver: nativeDriver }).start();
+        }
+        props.onPressOut?.(event);
+      }}
+    >
+      <Animated.View style={{ borderRadius: radius, overflow: "hidden", transform: [{ scale: swell }] }}>
+        <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={contentStyle}>
+          {children}
+        </LinearGradient>
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.42)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ position: "absolute", top: 0, right: 0, left: 0, height: "55%" }}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            FILL,
+            {
+              borderRadius: radius,
+              borderWidth: 2,
+              borderColor: "rgba(255,255,255,0.9)",
+              opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
+              transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1.08] }) }],
+            },
+          ]}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 /** Repeats an animation for as long as the component is on screen. */
 function useLoop(make: (value: Animated.Value) => Animated.CompositeAnimation, reduced: boolean) {
   const value = useRef(new Animated.Value(0)).current;
