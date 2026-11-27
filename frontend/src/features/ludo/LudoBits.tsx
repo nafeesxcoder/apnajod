@@ -4,7 +4,7 @@
  * word, the sound button with its volume, the voice bar and buttons.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Easing, Image, Platform, Pressable, Text, View, useWindowDimensions, type ViewStyle } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, Pressable, Text, View, useWindowDimensions, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -487,11 +487,6 @@ export function VoiceBar({ room, users, onJoin, onLeave, busy }: { room: VoiceRo
       <Pressable accessibilityRole="button" accessibilityLabel={room.muted ? "Unmute" : "Mute"} onPress={() => room.setMuted(!room.muted)} style={[round, { backgroundColor: room.muted ? L.red : L.glassStrong }]}>
         <Ionicons name={room.muted ? "mic-off" : "mic"} size={19} color="#FFFFFF" />
       </Pressable>
-      {Platform.OS !== "web" && (
-        <Pressable accessibilityRole="button" accessibilityLabel={room.speaker ? "Speaker off" : "Speaker on"} onPress={() => room.setSpeaker(!room.speaker)} style={[round, { backgroundColor: room.speaker ? "#3B82F6" : L.glassStrong }]}>
-          <Ionicons name="volume-high" size={19} color="#FFFFFF" />
-        </Pressable>
-      )}
       <Pressable accessibilityRole="button" accessibilityLabel="Turn off mic" onPress={onLeave} style={[round, { backgroundColor: "rgba(244,63,94,0.18)" }]}>
         <Ionicons name="call" size={18} color={L.red} style={{ transform: [{ rotate: "135deg" }] }} />
       </Pressable>

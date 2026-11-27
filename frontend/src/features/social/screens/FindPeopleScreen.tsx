@@ -104,7 +104,6 @@ function inviteBySms(phone: string, message: string) {
 }
 
 export function FindPeopleScreen({
-  onBack,
   onSearch,
   onMatchContacts,
   onOpenPerson,
@@ -302,25 +301,8 @@ export function FindPeopleScreen({
               paddingVertical: 20,
             }}
           >
-            {/* Header: back, and the title on one line */}
+            {/* Header: the title (the bottom menu moves between screens) */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <PressScale
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                hitSlop={8}
-                onPress={onBack}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: palette.paper,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  ...cardShadow,
-                }}
-              >
-                <Ionicons name="arrow-back" size={20} color={palette.ink} />
-              </PressScale>
               <Text style={{ flex: 1, fontFamily: fonts.display, fontSize: typeScale.title, color: palette.ink }}>
                 Find people
               </Text>

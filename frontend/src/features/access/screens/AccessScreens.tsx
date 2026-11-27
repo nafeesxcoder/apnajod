@@ -1035,7 +1035,7 @@ export function QuickProfileScreen({
               onChangeText={(firstName) => onChange({ ...value, firstName })}
               autoComplete="given-name"
               maxLength={40}
-              placeholder="Riya"
+              placeholder="Nafees Ahmad"
               placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
               style={[access.input, noWebOutline]}

@@ -24,7 +24,7 @@ describe("Find people look (Navy x Crimson)", () => {
     expect(source).not.toContain("palette.clay");
   });
 
-  it("gives the back button a 44px target", () => {
-    expect(source).toMatch(/accessibilityLabel="Go back"[\s\S]{0,200}width: 44,\s+height: 44/);
+  it("has no back arrow in the header: the bottom menu moves between screens", () => {
+    expect(source).not.toContain('accessibilityLabel="Go back"');
   });
 });
