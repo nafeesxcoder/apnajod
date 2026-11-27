@@ -17,6 +17,7 @@ import {
   type DailyQuestionToday,
 } from "../../../api/dailyQuestionApi";
 import { Modal } from "../../../components/BackModal";
+import { LiquidChip } from "../../../components/motion";
 import { fonts, palette } from "../../../theme";
 
 /**
@@ -145,14 +146,16 @@ export function DailyQuestionPopup({
               <Text style={styles.question}>{question.text}</Text>
               <View style={styles.options}>
                 {question.options.map((option) => (
-                  <LiquidOption
+                  <LiquidChip
                     key={option}
-                    label={option}
+                    accessibilityLabel={`Answer: ${option}`}
                     picked={sending === option}
                     dim={!!sending && sending !== option}
                     disabled={!!sending}
                     onPress={() => void choose(option)}
-                  />
+                  >
+                    <Text style={[styles.optionText, sending === option && styles.optionTextPicked]}>{option}</Text>
+                  </LiquidChip>
                 ))}
               </View>
               {!!error && <Text style={styles.error}>{error}</Text>}
@@ -169,70 +172,6 @@ export function DailyQuestionPopup({
         </GlassCard>
       </View>
     </Modal>
-  );
-}
-
-/**
- * An answer as a water drop, like the bottom bar's lens: it bulges under your
- * finger, a ring ripples out, and it has the same gloss. Picked = navy.
- */
-function LiquidOption({
-  label,
-  picked,
-  dim,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  picked: boolean;
-  dim: boolean;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const bulge = useRef(new Animated.Value(1)).current;
-  const ring = useRef(new Animated.Value(1)).current;
-  const native = Platform.OS !== "web";
-
-  const pressIn = () => {
-    Animated.spring(bulge, { toValue: 1.1, friction: 5, tension: 140, useNativeDriver: native }).start();
-    ring.setValue(0);
-    Animated.timing(ring, { toValue: 1, duration: 520, useNativeDriver: native }).start();
-  };
-  const pressOut = () => {
-    Animated.spring(bulge, { toValue: 1, friction: 6, tension: 110, useNativeDriver: native }).start();
-  };
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Answer: ${label}`}
-      accessibilityState={{ selected: picked, disabled }}
-      disabled={disabled}
-      onPressIn={pressIn}
-      onPressOut={pressOut}
-      onPress={onPress}
-      style={{ opacity: dim ? 0.5 : 1 }}
-    >
-      <Animated.View style={[styles.option, picked && styles.optionPicked, { transform: [{ scale: bulge }] }]}>
-        <LinearGradient
-          colors={picked ? ["rgba(255,255,255,0.3)", "rgba(255,255,255,0)"] : ["rgba(255,255,255,0.95)", "rgba(255,255,255,0.1)"]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.ringMark,
-            {
-              opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
-              transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) }],
-            },
-          ]}
-        />
-        <Text style={[styles.optionText, picked && styles.optionTextPicked]}>{label}</Text>
-      </Animated.View>
-    </Pressable>
   );
 }
 
@@ -360,26 +299,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  option: {
-    minHeight: 38,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.95)",
-    backgroundColor: "rgba(255,255,255,0.6)",
-    paddingHorizontal: 14,
-    shadowColor: palette.navy,
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  optionPicked: {
-    backgroundColor: palette.navy,
-    borderColor: palette.navy,
-  },
   optionText: {
     fontFamily: fonts.bodySemi,
     fontSize: 14,
@@ -387,12 +306,6 @@ const styles = StyleSheet.create({
   },
   optionTextPicked: {
     color: "#FFFFFF",
-  },
-  ringMark: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.9)",
   },
   error: {
     fontFamily: fonts.body,

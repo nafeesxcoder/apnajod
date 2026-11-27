@@ -10,7 +10,6 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { brand } from "./brand";
 import { palette } from "../theme";
@@ -104,12 +103,39 @@ export function PressScale({
 const FILL: ViewStyle = { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 };
 
 /**
- * A button of white frosted glass: a real blur over a milky surface, a bright
- * sheen across the top and a faint navy shade at the bottom, with a soft
- * shadow. No border and no moving light. Under the finger it bounces a little.
- * Put navy text on it.
+ * A faint arc in a corner. The circle mostly sits outside the button, so only
+ * its edge shows, in the corner, and never under the text.
+ */
+function CornerArc({
+  corner,
+  size,
+  reach,
+  opacity,
+}: {
+  corner: "topRight" | "bottomLeft";
+  size: number;
+  /** How far the arc reaches into the button from its corner. */
+  reach: number;
+  opacity: number;
+}) {
+  const outside = -(size - reach);
+  const place = corner === "topRight" ? { top: outside, right: outside } : { bottom: outside, left: outside };
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: "absolute", width: size, height: size, borderRadius: size / 2, backgroundColor: `rgba(255,255,255,${opacity})`, ...place }}
+    />
+  );
+}
+
+/**
+ * A colored button with a faint white design in its corners, like a soft
+ * watermark: a large circle at the top right and a smaller one at the bottom
+ * left. No border and no moving light. Under the finger it bounces a little.
+ * It keeps the colors you give it.
  */
 export function LiquidPress({
+  colors,
   children,
   style,
   contentStyle,
@@ -117,6 +143,7 @@ export function LiquidPress({
   bulge = 1.05,
   ...props
 }: PressableProps & {
+  colors: readonly [string, string, ...string[]];
   children: ReactNode;
   /** The place and shadow of the button (width in a row, margins, shadow). */
   style?: StyleProp<ViewStyle>;
@@ -128,6 +155,7 @@ export function LiquidPress({
 }) {
   const reduced = useReducedMotion();
   const swell = useRef(new Animated.Value(1)).current;
+  const glow = colors[0];
 
   return (
     <Pressable
@@ -135,12 +163,12 @@ export function LiquidPress({
       style={[
         {
           borderRadius: radius,
-          backgroundColor: "rgba(255,255,255,0.8)",
-          shadowColor: palette.navy,
-          shadowOpacity: 0.16,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 6,
+          backgroundColor: glow,
+          shadowColor: glow,
+          shadowOpacity: 0.4,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 8,
         },
         style,
       ]}
@@ -158,30 +186,108 @@ export function LiquidPress({
       }}
     >
       <Animated.View style={{ borderRadius: radius, overflow: "hidden", transform: [{ scale: swell }] }}>
-        {/* The frosted blur, then the milky surface, then the sheen and the faint shade. */}
-        <BlurView pointerEvents="none" intensity={60} tint="light" style={FILL} />
+        <LinearGradient pointerEvents="none" colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={FILL} />
+        {/* Faint white arcs in the corners only, so they never sit under the text. */}
+        <CornerArc corner="topRight" size={120} reach={40} opacity={0.07} />
+        <CornerArc corner="topRight" size={80} reach={24} opacity={0.14} />
+        <CornerArc corner="bottomLeft" size={100} reach={34} opacity={0.06} />
+        <CornerArc corner="bottomLeft" size={64} reach={20} opacity={0.12} />
+        <View style={contentStyle}>{children}</View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+const chipOption: ViewStyle = {
+  minHeight: 38,
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: "rgba(255,255,255,0.95)",
+  backgroundColor: "rgba(255,255,255,0.6)",
+  paddingHorizontal: 14,
+  shadowColor: palette.navy,
+  shadowOpacity: 0.12,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
+};
+const chipPicked: ViewStyle = { backgroundColor: palette.navy, borderColor: palette.navy };
+const chipRing: ViewStyle = { ...FILL, borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" };
+
+/**
+ * A pill that feels like a water drop, like the daily question answers: it
+ * bulges under the finger, a ring ripples out from the touch, and it has a
+ * gloss. Picked = navy. Put the text (or icon and text) inside.
+ */
+export function LiquidChip({
+  children,
+  picked = false,
+  dim = false,
+  disabled = false,
+  onPress,
+  accessibilityLabel,
+  containerStyle,
+  style,
+}: {
+  children: ReactNode;
+  picked?: boolean;
+  dim?: boolean;
+  disabled?: boolean;
+  onPress?: () => void;
+  accessibilityLabel?: string;
+  /** The place in the layout (flex, width, margins). */
+  containerStyle?: StyleProp<ViewStyle>;
+  /** The look of the pill (padding, row layout, gap, height). */
+  style?: StyleProp<ViewStyle>;
+}) {
+  const reduced = useReducedMotion();
+  const bulge = useRef(new Animated.Value(1)).current;
+  const ring = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () => {
+    if (reduced) return;
+    Animated.spring(bulge, { toValue: 1.1, friction: 5, tension: 140, useNativeDriver: nativeDriver }).start();
+    ring.setValue(0);
+    Animated.timing(ring, { toValue: 1, duration: 520, useNativeDriver: nativeDriver }).start();
+  };
+  const pressOut = () => {
+    if (reduced) return;
+    Animated.spring(bulge, { toValue: 1, friction: 6, tension: 110, useNativeDriver: nativeDriver }).start();
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: picked, disabled }}
+      disabled={disabled}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      onPress={onPress}
+      style={[{ opacity: dim ? 0.5 : 1 }, containerStyle]}
+    >
+      <Animated.View style={[chipOption, picked && chipPicked, style, { transform: [{ scale: bulge }] }]}>
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(255,255,255,0.94)", "rgba(255,255,255,0.7)"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={FILL}
-        />
-        <LinearGradient
-          pointerEvents="none"
-          colors={["rgba(255,255,255,1)", "rgba(255,255,255,0)"]}
+          colors={picked ? ["rgba(255,255,255,0.3)", "rgba(255,255,255,0)"] : ["rgba(255,255,255,0.95)", "rgba(255,255,255,0.1)"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={{ position: "absolute", top: 0, right: 0, left: 0, height: "55%" }}
-        />
-        <LinearGradient
-          pointerEvents="none"
-          colors={["rgba(30,27,75,0)", "rgba(30,27,75,0.08)"]}
-          start={{ x: 0.5, y: 0.5 }}
-          end={{ x: 0.5, y: 1 }}
           style={FILL}
         />
-        <View style={contentStyle}>{children}</View>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            chipRing,
+            {
+              opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
+              transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) }],
+            },
+          ]}
+        />
+        {children}
       </Animated.View>
     </Pressable>
   );

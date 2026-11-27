@@ -25,9 +25,9 @@ import { shareInvite } from "../components/InviteCard";
 import { Sheet } from "../../posts/PostSheets";
 import { authApi } from "../../../api/authApi";
 import { TrustBadge } from "../../../components/TrustBadge";
-import { cardShadow } from "../../../components/brand";
+import { brand, cardShadow } from "../../../components/brand";
 import { ZoomPhoto } from "../../../components/ZoomPhoto";
-import { LiquidPress, Reveal } from "../../../components/motion";
+import { LiquidChip, LiquidPress, Reveal } from "../../../components/motion";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
 
 const MAX_WIDTH = 720;
@@ -271,6 +271,7 @@ export function ProfileScreen({
                   accessibilityRole="button"
                   accessibilityLabel="Edit profile"
                   onPress={() => navigate("profileSetup")}
+                  colors={[palette.navy, palette.navy]}
                   radius={radius.pill}
                   bulge={1.05}
                   style={{ flex: 1 }}
@@ -283,10 +284,10 @@ export function ProfileScreen({
                     minHeight: 44,
                   }}
                 >
-                  <Ionicons name="create-outline" size={16} color={palette.navy} />
+                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
                   <Text
                     style={{
-                      color: palette.navy,
+                      color: "#FFFFFF",
                       fontFamily: fonts.bodySemi,
                       fontSize: 14,
                     }}
@@ -295,40 +296,23 @@ export function ProfileScreen({
                   </Text>
                 </LiquidPress>
                 {family.available && (
-                <TouchableOpacity
-                  accessibilityRole="button"
+                <LiquidChip
                   accessibilityLabel="Share my profile"
                   disabled={family.busy}
                   onPress={() => setShareChooser(true)}
+                  containerStyle={{ flex: 1 }}
                   style={{
-                    flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: palette.paper,
-                    borderWidth: 1.5,
-                    borderColor: palette.navy,
                     paddingVertical: 10,
-                    borderRadius: radius.pill,
                     gap: 6,
                     minHeight: 44,
                   }}
                 >
-                  <Ionicons
-                    name="people"
-                    size={16}
-                    color={palette.navy}
-                  />
-                  <Text
-                    style={{
-                      color: palette.navy,
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 13,
-                    }}
-                  >
-                    Share profile
-                  </Text>
-                </TouchableOpacity>
+                  <Ionicons name="people" size={16} color={palette.navy} />
+                  <Text style={{ color: palette.navy, fontFamily: fonts.bodySemi, fontSize: 13 }}>Share profile</Text>
+                </LiquidChip>
                 )}
               </View>
 
@@ -398,6 +382,7 @@ export function ProfileScreen({
                   accessibilityRole="button"
                   accessibilityLabel="See Premium"
                   onPress={() => navigate("premium")}
+                  colors={brand.heroGradient}
                   radius={26}
                   bulge={1.03}
                   style={cardShadow}
@@ -408,16 +393,16 @@ export function ProfileScreen({
                         width: 38,
                         height: 38,
                         borderRadius: 12,
-                        backgroundColor: "rgba(138,26,71,0.1)",
+                        backgroundColor: "rgba(255,255,255,0.14)",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Ionicons name="sparkles" size={18} color={palette.crimson} />
+                      <Ionicons name="sparkles" size={18} color={palette.marigold} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: palette.navy }}>Premium</Text>
-                      <Text style={{ fontSize: 12, color: palette.slate, marginTop: 1, fontFamily: fonts.body }}>
+                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: brand.onHero, textShadowColor: "rgba(0,0,0,0.25)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>Premium</Text>
+                      <Text style={{ fontSize: 12, color: brand.onHeroSoft, marginTop: 1, fontFamily: fonts.body }}>
                         Unlimited likes, see who liked you, blue tick with Pro
                       </Text>
                     </View>
