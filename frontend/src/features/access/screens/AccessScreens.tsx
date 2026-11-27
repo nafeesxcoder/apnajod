@@ -426,7 +426,7 @@ export function SignUpScreen({
               autoCorrect={false}
               autoComplete="username-new"
               maxLength={20}
-              placeholder="riya_07"
+              placeholder="Nafees Ahmad"
               placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
               style={[access.input, noWebOutline]}
@@ -689,7 +689,7 @@ export function LogInScreen({
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="username"
-              placeholder="riya_07"
+              placeholder="Nafees Ahmad"
               placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
               style={[access.input, noWebOutline]}
@@ -826,7 +826,7 @@ export function ForgotPasswordScreen({
               onChangeText={setIdentifier}
               autoCapitalize="none"
               autoCorrect={false}
-              placeholder="riya_07"
+              placeholder="Nafees Ahmad"
               placeholderTextColor={colors.muted}
               selectionColor={colors.accent}
               style={[access.input, noWebOutline]}

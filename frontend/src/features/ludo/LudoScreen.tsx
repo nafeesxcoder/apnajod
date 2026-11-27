@@ -21,7 +21,7 @@ import { getChatSocket } from "../../api/chatSocket";
 import { fonts } from "../../theme";
 import { SEAT_COLORS } from "./board";
 import { LudoBoard } from "./LudoBoard";
-import { Avatar, Banner, Confetti, Dice, GoldButton, NightBackground, PlayerCard, SoundButton, SoundPanel, VoiceBar } from "./LudoBits";
+import { Avatar, Banner, Confetti, Dice, GoldButton, NightBackground, PlayerCard, SoundPanel, VoiceBar } from "./LudoBits";
 import { type LudoBanner, ludoChange } from "./ludoEvents";
 import { ludoSound } from "./ludoSound";
 import { filterInvitees } from "./ludoText";
@@ -284,7 +284,6 @@ export function LudoScreen({
       <Pressable accessibilityRole="button" accessibilityLabel="Ludo settings and store" onPress={() => setStoreOpen(true)} hitSlop={8} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: L.glassStrong, alignItems: "center", justifyContent: "center" }}>
         <Ionicons name="settings-sharp" size={18} color={L.text} />
       </Pressable>
-      <SoundButton onPress={() => setSoundOpen((v) => !v)} />
       {game && game.status !== "finished" && game.status !== "cancelled" && game.members.some((m) => m.userId === myId && m.status === "joined") && (
         <Pressable
           accessibilityRole="button"
