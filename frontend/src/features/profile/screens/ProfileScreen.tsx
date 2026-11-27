@@ -308,10 +308,14 @@ export function ProfileScreen({
                     paddingVertical: 10,
                     gap: 6,
                     minHeight: 44,
+                    backgroundColor: "rgba(255,255,255,0.92)",
+                    borderColor: "rgba(30,27,75,0.14)",
+                    shadowOpacity: 0.18,
+                    shadowRadius: 10,
                   }}
                 >
                   <Ionicons name="people" size={16} color={palette.navy} />
-                  <Text style={{ color: palette.navy, fontFamily: fonts.bodySemi, fontSize: 13 }}>Share profile</Text>
+                  <Text style={{ color: palette.navy, fontFamily: fonts.bodySemi, fontSize: 14 }}>Share profile</Text>
                 </LiquidChip>
                 )}
               </View>
