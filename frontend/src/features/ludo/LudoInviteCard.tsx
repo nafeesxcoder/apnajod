@@ -5,11 +5,12 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { PressScale } from "../../components/motion";
+import { LiquidChip, LiquidSurface } from "../../components/motion";
+import { brand } from "../../components/brand";
 
 import { type LudoGame, ludoApi } from "../../api/ludoApi";
 import { getChatSocket } from "../../api/chatSocket";
-import { fonts } from "../../theme";
+import { fonts, palette } from "../../theme";
 import { SEAT_COLORS } from "./board";
 import { ludoInviteState } from "./ludoText";
 
@@ -53,9 +54,11 @@ export function LudoInviteCard({
   const canOpen = !!onOpen && state.action !== null;
 
   return (
-    <View
+    <LiquidSurface
       accessibilityLabel={`Ludo invite, ${invite.maxPlayers} players. ${state.line}`}
-      style={{ width: 236, borderRadius: 20, overflow: "hidden", backgroundColor: "#1B1145" }}
+      colors={brand.heroGradient}
+      radius={20}
+      style={{ width: 236 }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14 }}>
         <View style={{ width: 52, height: 52, borderRadius: 14, overflow: "hidden", flexDirection: "row", flexWrap: "wrap", transform: [{ rotate: "-8deg" }] }}>
@@ -67,7 +70,7 @@ export function LudoInviteCard({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: fonts.display, fontSize: 19, color: "#FFFFFF" }}>Let's play Ludo!</Text>
-          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: "#C4B5FD", marginTop: 2 }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: brand.onHeroSoft, marginTop: 2 }}>
             {invite.maxPlayers} players · talk live on mic 🎙️
           </Text>
         </View>
@@ -75,17 +78,15 @@ export function LudoInviteCard({
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingBottom: 14 }}>
         <Text style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 12.5, color: state.live ? "#86EFAC" : "#E9D5FF" }}>{state.line}</Text>
         {canOpen && (
-          <PressScale
-            accessibilityRole="button"
+          <LiquidChip
             accessibilityLabel={state.action === "Join" ? "Join Ludo game" : "Open Ludo game"}
             onPress={() => onOpen?.(invite.gameId)}
-            scaleTo={0.95}
-            style={{ backgroundColor: state.action === "Join" ? "#22C55E" : "#FACC15", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 }}
+            style={{ paddingHorizontal: 16, paddingVertical: 8 }}
           >
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#14092E" }}>{state.action}</Text>
-          </PressScale>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>{state.action}</Text>
+          </LiquidChip>
         )}
       </View>
-    </View>
+    </LiquidSurface>
   );
 }

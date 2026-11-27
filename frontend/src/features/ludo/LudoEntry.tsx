@@ -8,8 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { type LudoGame, ludoApi } from "../../api/ludoApi";
 import { getChatSocket } from "../../api/chatSocket";
-import { whiteCard } from "../../components/brand";
-import { PressScale } from "../../components/motion";
+import { brand, cardShadow, whiteCard } from "../../components/brand";
+import { LiquidPress, PressScale } from "../../components/motion";
 import { colors, fonts, palette, radius, typeScale } from "../../theme";
 import { SEAT_COLORS } from "./board";
 import { ludoRoomLabel } from "./ludoText";
@@ -51,11 +51,15 @@ export function LudoEntry({
   return (
     <View style={{ paddingHorizontal: 20, gap: 10, marginBottom: 14 }}>
       {canCreate && (
-        <PressScale
+        <LiquidPress
           accessibilityRole="button"
           accessibilityLabel="Play Ludo with 2 to 4 players and live voice"
           onPress={() => onOpen(null)}
-          style={{ borderRadius: radius.lg, overflow: "hidden", backgroundColor: "#8A1A47", padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}
+          colors={brand.heroGradient}
+          radius={26}
+          bulge={1.03}
+          style={cardShadow}
+          contentStyle={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}
         >
           <View style={{ width: 56, height: 56, borderRadius: 14, overflow: "hidden", flexDirection: "row", flexWrap: "wrap" }}>
             {SEAT_COLORS.map((c) => (
@@ -65,8 +69,8 @@ export function LudoEntry({
             ))}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: fonts.display, fontSize: 20, color: "#FFFFFF" }}>Ludo 🎲</Text>
-            <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: "#D1D5DB", marginTop: 2 }}>2, 3 or 4 players · talk live on mic</Text>
+            <Text style={{ fontFamily: fonts.display, fontSize: 20, color: brand.onHero }}>Ludo 🎲</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12.5, color: brand.onHeroSoft, marginTop: 2 }}>2, 3 or 4 players · talk live on mic</Text>
             {!!wallet && (
               <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12.5, color: "#F6C445", marginTop: 3 }}>
                 {wallet.coins} coins · {wallet.level}
@@ -74,10 +78,10 @@ export function LudoEntry({
               </Text>
             )}
           </View>
-          <View style={{ backgroundColor: "#16A34A", borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 }}>
+          <View style={{ backgroundColor: palette.crimson, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 }}>
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Play</Text>
           </View>
-        </PressScale>
+        </LiquidPress>
       )}
       {games.map((g) => {
         const label = ludoRoomLabel(g, myId);

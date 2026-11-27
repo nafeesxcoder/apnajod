@@ -302,6 +302,37 @@ export function LiquidChip({
   );
 }
 
+/**
+ * The Premium card's look for a card that is not a button: a colour, faint
+ * white corner arcs, and the content on top.
+ */
+export function LiquidSurface({
+  colors,
+  children,
+  style,
+  contentStyle,
+  radius = 18,
+  accessibilityLabel,
+}: {
+  colors: readonly [string, string, ...string[]];
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
+  radius?: number;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <View accessibilityLabel={accessibilityLabel} style={[{ borderRadius: radius, overflow: "hidden" }, style]}>
+      <LinearGradient pointerEvents="none" colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={FILL} />
+      <CornerArc corner="topRight" size={120} reach={40} opacity={0.07} />
+      <CornerArc corner="topRight" size={80} reach={24} opacity={0.14} />
+      <CornerArc corner="bottomLeft" size={100} reach={34} opacity={0.06} />
+      <CornerArc corner="bottomLeft" size={64} reach={20} opacity={0.12} />
+      <View style={contentStyle}>{children}</View>
+    </View>
+  );
+}
+
 /** Repeats an animation for as long as the component is on screen. */
 function useLoop(make: (value: Animated.Value) => Animated.CompositeAnimation, reduced: boolean) {
   const value = useRef(new Animated.Value(0)).current;
