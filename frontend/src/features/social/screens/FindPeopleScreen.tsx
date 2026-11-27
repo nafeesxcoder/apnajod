@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -782,7 +782,7 @@ export function FindPeopleScreen({
                           accessibilityLabel="Share my invite link"
                           onPress={() => void shareLink()}
                           style={{
-                            backgroundColor: palette.crimson,
+                            backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                             minHeight: 44,
                             paddingHorizontal: 24,
                             borderRadius: radius.pill,
@@ -791,8 +791,8 @@ export function FindPeopleScreen({
                             gap: 8,
                           }}
                         >
-                          <Ionicons name="share-social-outline" size={18} color="#FFFFFF" />
-                          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 14 }}>
+                          <Ionicons name="share-social-outline" size={18} color={palette.navy} />
+                          <Text style={{ color: palette.navy, fontFamily: fonts.bodySemi, fontSize: 14 }}>
                             Share my invite link
                           </Text>
                         </PressScale>
@@ -864,7 +864,7 @@ export function FindPeopleScreen({
                           accessibilityLabel={contactsMode === "picker" ? "Choose contacts" : "Check my contacts"}
                           onPress={() => void loadContacts()}
                           style={{
-                            backgroundColor: palette.crimson,
+                            backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                             minHeight: 44,
                             paddingHorizontal: 24,
                             borderRadius: radius.pill,
@@ -873,10 +873,10 @@ export function FindPeopleScreen({
                             gap: 8,
                           }}
                         >
-                          <Ionicons name="sync" size={18} color="#FFFFFF" />
+                          <Ionicons name="sync" size={18} color={palette.navy} />
                           <Text
                             style={{
-                              color: "#FFFFFF",
+                              color: palette.navy,
                               fontFamily: fonts.bodySemi,
                               fontSize: 14,
                             }}

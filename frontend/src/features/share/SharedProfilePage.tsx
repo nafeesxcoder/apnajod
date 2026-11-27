@@ -109,7 +109,7 @@ export function SharedProfilePage({ token }: { token: string }) {
           accessibilityLabel="Go to Apnajoda"
           onPress={home}
           style={{
-            backgroundColor: palette.crimson,
+            backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
             borderRadius: radius.pill,
             paddingHorizontal: 20,
             paddingVertical: 12,
@@ -117,7 +117,7 @@ export function SharedProfilePage({ token }: { token: string }) {
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+          <Text style={{ color: palette.navy, fontWeight: "700" }}>
             Go to Apnajoda
           </Text>
         </PressScale>
@@ -298,7 +298,7 @@ export function SharedProfilePage({ token }: { token: string }) {
         onPress={home}
         style={{
           alignSelf: "center",
-          backgroundColor: palette.crimson,
+          backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
           borderRadius: radius.pill,
           paddingHorizontal: 22,
           paddingVertical: 12,
@@ -308,7 +308,7 @@ export function SharedProfilePage({ token }: { token: string }) {
         }}
       >
         <GlowPulse color={palette.crimson} radius={radius.pill} spread={1.12} />
-        <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+        <Text style={{ color: palette.navy, fontWeight: "700" }}>
           Find your match on Apnajoda
         </Text>
       </PressScale>

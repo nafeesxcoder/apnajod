@@ -268,9 +268,9 @@ export function KundliEditor({
             onPress={() => void save()}
             disabled={busy}
             containerStyle={{ marginTop: 8 }}
-            style={{ backgroundColor: palette.crimson, borderRadius: radius.pill, paddingVertical: 14, alignItems: "center" }}
+            style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)', borderRadius: radius.pill, paddingVertical: 14, alignItems: "center" }}
           >
-            {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: "#FFFFFF" }}>Save</Text>}
+            {busy ? <ActivityIndicator color={palette.navy} /> : <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: palette.navy }}>Save</Text>}
           </PressScale>
           {(mine.rashi || mine.manglik) && (
             <Pressable

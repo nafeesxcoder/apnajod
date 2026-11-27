@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -1013,14 +1013,14 @@ function BlueTickNote({
           onPress={onVerify}
           containerStyle={{ alignSelf: "flex-start" }}
           style={{
-            backgroundColor: palette.crimson,
+            backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
             borderRadius: radius.pill,
             paddingHorizontal: 18,
             minHeight: 40,
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: 13 }}>
+          <Text style={{ color: palette.navy, fontFamily: fonts.bodySemi, fontSize: 13 }}>
             Verify my selfie
           </Text>
         </PressScale>

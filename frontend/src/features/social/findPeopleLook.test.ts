@@ -17,9 +17,9 @@ describe("Find people look (Navy x Crimson)", () => {
   });
 
   it("keeps text readable on coloured buttons", () => {
-    // Navy/crimson and WhatsApp green buttons carry white text, never ink.
-    expect(source).toMatch(/backgroundColor: palette\.crimson,\s+minHeight: 44/);
-    expect(source).toMatch(/color: "#FFFFFF",[\s\S]{0,400}Check my contacts/);
+    // Buttons are the white chip with navy text (the Share profile look), never ink on navy.
+    expect(source).toMatch(/backgroundColor: 'rgba\(255,255,255,0\.92\)',[\s\S]{0,160}minHeight: 44/);
+    expect(source).toMatch(/color: palette\.navy,[\s\S]{0,400}Check my contacts/);
     expect(source).toMatch(/color: "#FFFFFF", fontFamily: fonts\.bodySemi, fontSize: 13 \}\}>Invite</);
     expect(source).not.toContain("palette.clay");
   });

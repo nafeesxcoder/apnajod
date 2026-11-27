@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import {
   ScrollView,
   Text,
@@ -435,7 +435,7 @@ export function DiscoveryCenterScreen({
                       if (cityInput.trim()) addCity(cityInput.trim());
                     }}
                     style={{
-                      backgroundColor: palette.crimson,
+                      backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                       paddingHorizontal: 20,
                       justifyContent: "center",
                       borderRadius: radius.md,
@@ -444,7 +444,7 @@ export function DiscoveryCenterScreen({
                   >
                     <Text
                       style={{
-                        color: "#FFFFFF",
+                        color: palette.navy,
                         fontFamily: fonts.bodySemi,
                         fontSize: 14,
                       }}

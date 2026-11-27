@@ -91,9 +91,9 @@ export function TwoStepScreen({ accessToken, onBack }: { accessToken: string; on
             accessibilityLabel={enabled ? "Turn off two-step verification" : "Turn on two-step verification"}
             disabled={busy}
             onPress={() => void sendCode()}
-            style={{ backgroundColor: palette.navy, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
+            style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)', borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
           >
-            <Text style={{ fontFamily: fonts.body, fontSize: 15, color: "#FFFFFF" }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 15, color: palette.navy }}>
               {busy ? "Sending…" : enabled ? "Turn off" : "Turn on"}
             </Text>
           </Pressable>
@@ -118,9 +118,9 @@ export function TwoStepScreen({ accessToken, onBack }: { accessToken: string; on
               accessibilityLabel="Confirm code"
               disabled={busy || code.length !== 6}
               onPress={() => void confirm()}
-              style={{ backgroundColor: palette.navy, borderRadius: 14, paddingVertical: 14, alignItems: "center", opacity: busy || code.length !== 6 ? 0.5 : 1 }}
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)', borderRadius: 14, paddingVertical: 14, alignItems: "center", opacity: busy || code.length !== 6 ? 0.5 : 1 }}
             >
-              <Text style={{ fontFamily: fonts.body, fontSize: 15, color: "#FFFFFF" }}>
+              <Text style={{ fontFamily: fonts.body, fontSize: 15, color: palette.navy }}>
                 {busy ? "Checking…" : "Confirm"}
               </Text>
             </Pressable>

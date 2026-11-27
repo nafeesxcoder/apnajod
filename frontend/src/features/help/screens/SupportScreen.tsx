@@ -366,11 +366,11 @@ export function SupportScreen({ onBack }: { onBack: () => void }) {
                   minHeight: 40,
                   paddingHorizontal: 16,
                   borderRadius: radius.pill,
-                  backgroundColor: palette.crimson,
+                  backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>Email</Text>
+                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>Email</Text>
               </PressScale>
             </Reveal>
 

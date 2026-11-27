@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, ScrollView, Text, Pressable, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, radius } from '../../../theme';
+import { colors, fonts, radius, palette} from '../../../theme';
 import { matchApi } from '../../../api/matchApi';
 
 export const RecommendationsScreen = ({ accessToken }: { accessToken: string }) => {
@@ -43,8 +43,8 @@ export const RecommendationsScreen = ({ accessToken }: { accessToken: string }) 
               <Pressable style={styles.actionBtn}>
                 <Ionicons name="close" size={20} color={colors.muted} />
               </Pressable>
-              <Pressable style={[styles.actionBtn, { backgroundColor: colors.accent }]}>
-                <Ionicons name="heart" size={20} color={colors.textInverse} />
+              <Pressable style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)' }]}>
+                <Ionicons name="heart" size={20} color={palette.navy} />
               </Pressable>
             </View>
           </Pressable>

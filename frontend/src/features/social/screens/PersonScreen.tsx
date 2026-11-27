@@ -356,10 +356,10 @@ export function PersonScreen({
                   accessibilityRole="button"
                   accessibilityLabel={`Message ${user.username}`}
                   onPress={() => onMessage(page)}
-                  style={[actionButton, { backgroundColor: palette.navy }]}
+                  style={[actionButton, { backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)' }]}
                 >
-                  <Ionicons name="chatbubble" size={16} color="#FFFFFF" />
-                  <Text style={[actionText, { color: "#FFFFFF" }]}>Message</Text>
+                  <Ionicons name="chatbubble" size={16} color={palette.navy} />
+                  <Text style={[actionText, { color: palette.navy }]}>Message</Text>
                 </Pressable>
               ) : likeStatus === "pending" ? (
                 <View style={[actionButton, { backgroundColor: palette.paperSand }]}>
@@ -400,10 +400,10 @@ export function PersonScreen({
                   accessibilityRole="button"
                   accessibilityLabel={`Message ${user.username}`}
                   onPress={() => onMessage(page)}
-                  style={[actionButton, { backgroundColor: palette.navy }]}
+                  style={[actionButton, { backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)' }]}
                 >
-                  <Ionicons name="chatbubble" size={16} color="#FFFFFF" />
-                  <Text style={[actionText, { color: "#FFFFFF" }]}>Message</Text>
+                  <Ionicons name="chatbubble" size={16} color={palette.navy} />
+                  <Text style={[actionText, { color: palette.navy }]}>Message</Text>
                 </Pressable>
               )}
 
