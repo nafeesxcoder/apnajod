@@ -20,6 +20,12 @@ import { Modal } from "../../../components/BackModal";
 import { fonts, palette } from "../../../theme";
 
 /**
+ * Question ids the popup has already opened for in this app run. Home is
+ * mounted again on every visit, so without this it would pop up each time.
+ */
+let openedFor: string | null = null;
+
+/**
  * Today's question, as a glass popup over Home.
  *
  * It opens by itself when the member has not answered yet. The glass is a
@@ -51,8 +57,12 @@ export function DailyQuestionPopup({
       .then((loaded) => {
         if (!live) return;
         setToday(loaded);
-        // Opens on Home whether or not today's question is answered yet; answered shows its done state.
-        if (loaded?.question) setOpen(true);
+        // Opens only while today's question is unanswered, and only once per app run.
+        // Once answered, it never opens on Home again today.
+        if (loaded?.question && !loaded.answered && openedFor !== String(loaded.question.id)) {
+          openedFor = String(loaded.question.id);
+          setOpen(true);
+        }
       })
       .catch(() => undefined);
     return () => {
