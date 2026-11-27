@@ -414,7 +414,7 @@ export function ChatsScreen({
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No chats match “{query.trim()}”.</Text>
         <Pressable accessibilityRole="button" onPress={onFind} style={styles.emptyButton}>
-          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
+          <Ionicons name="person-add-outline" size={18} color={palette.navy} />
           <Text style={styles.emptyButtonText}>Find “{query.trim()}” on Apnajoda</Text>
         </Pressable>
       </View>
@@ -424,7 +424,7 @@ export function ChatsScreen({
         <Text style={styles.emptyTitle}>No chats yet</Text>
         <Text style={styles.emptyText}>Find someone by their username and say hello.</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Find people" onPress={onFind} style={styles.emptyButton}>
-          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
+          <Ionicons name="person-add-outline" size={18} color={palette.navy} />
           <Text style={styles.emptyButtonText}>Find people</Text>
         </Pressable>
       </View>
@@ -732,12 +732,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 24,
-    backgroundColor: palette.navy,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(30,27,75,0.14)',
   },
   emptyButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: palette.navy,
   },
   fab: {
     position: 'absolute',

@@ -167,10 +167,12 @@ export function GamesScreen({
                   paddingVertical: 13,
                   paddingHorizontal: 28,
                   borderRadius: radius.pill,
-                  backgroundColor: palette.navy,
+                  backgroundColor: "rgba(255,255,255,0.92)",
+                  borderWidth: 1,
+                  borderColor: "rgba(30,27,75,0.14)",
                 }}
               >
-                <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodySemi, fontSize: typeScale.body }}>
+                <Text style={{ color: palette.navy, fontFamily: fonts.bodySemi, fontSize: typeScale.body }}>
                   Find people
                 </Text>
               </TouchableOpacity>
