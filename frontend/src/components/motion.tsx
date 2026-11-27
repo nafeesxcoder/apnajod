@@ -198,24 +198,32 @@ export function LiquidPress({
   );
 }
 
-const chipOption: ViewStyle = {
-  minHeight: 38,
-  alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden",
-  borderRadius: 999,
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.95)",
-  backgroundColor: "rgba(255,255,255,0.6)",
-  paddingHorizontal: 14,
-  shadowColor: palette.navy,
-  shadowOpacity: 0.12,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 3,
-};
-const chipPicked: ViewStyle = { backgroundColor: palette.navy, borderColor: palette.navy };
-const chipRing: ViewStyle = { ...FILL, borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" };
+/**
+ * The pill's look. It is read when a chip renders, not when this file loads,
+ * because the palette may not be ready yet at load time.
+ */
+function chipLook() {
+  const navy = palette.navy;
+  const option: ViewStyle = {
+    minHeight: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(255,255,255,0.6)",
+    paddingHorizontal: 14,
+    shadowColor: navy,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  };
+  const picked: ViewStyle = { backgroundColor: navy, borderColor: navy };
+  const ring: ViewStyle = { ...FILL, borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" };
+  return { option, picked, ring };
+}
 
 /**
  * A pill that feels like a water drop, like the daily question answers: it
@@ -246,6 +254,7 @@ export function LiquidChip({
   const reduced = useReducedMotion();
   const bulge = useRef(new Animated.Value(1)).current;
   const ring = useRef(new Animated.Value(1)).current;
+  const look = chipLook();
 
   const pressIn = () => {
     if (reduced) return;
@@ -269,7 +278,7 @@ export function LiquidChip({
       onPress={onPress}
       style={[{ opacity: dim ? 0.5 : 1 }, containerStyle]}
     >
-      <Animated.View style={[chipOption, picked && chipPicked, style, { transform: [{ scale: bulge }] }]}>
+      <Animated.View style={[look.option, picked && look.picked, style, { transform: [{ scale: bulge }] }]}>
         <LinearGradient
           pointerEvents="none"
           colors={picked ? ["rgba(255,255,255,0.3)", "rgba(255,255,255,0)"] : ["rgba(255,255,255,0.95)", "rgba(255,255,255,0.1)"]}
@@ -280,7 +289,7 @@ export function LiquidChip({
         <Animated.View
           pointerEvents="none"
           style={[
-            chipRing,
+            look.ring,
             {
               opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
               transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) }],
