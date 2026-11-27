@@ -289,7 +289,10 @@ export function ProfileScreen({
                     style={{
                       color: "#FFFFFF",
                       fontFamily: fonts.bodySemi,
-                      fontSize: 13,
+                      fontSize: 14,
+                      textShadowColor: "rgba(0,0,0,0.25)",
+                      textShadowOffset: { width: 0, height: 1 },
+                      textShadowRadius: 3,
                     }}
                   >
                     Edit profile
@@ -418,7 +421,7 @@ export function ProfileScreen({
                       <Ionicons name="sparkles" size={18} color={palette.marigold} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: brand.onHero }}>Premium</Text>
+                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: brand.onHero, textShadowColor: "rgba(0,0,0,0.25)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>Premium</Text>
                       <Text style={{ fontSize: 12, color: brand.onHeroSoft, marginTop: 1, fontFamily: fonts.body }}>
                         Unlimited likes, see who liked you, blue tick with Pro
                       </Text>

@@ -159,10 +159,8 @@ export function LiquidPress({
       }}
     >
       <Animated.View style={{ borderRadius: radius, overflow: "hidden", transform: [{ scale: swell }] }}>
-        <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={contentStyle}>
-          {children}
-        </LinearGradient>
-        {/* Depth: the bottom of the glass is a little darker. */}
+        {/* The color, then the depth and the gloss, then the content on top, so the text stays sharp. */}
+        <LinearGradient pointerEvents="none" colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={FILL} />
         <LinearGradient
           pointerEvents="none"
           colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.2)"]}
@@ -170,14 +168,14 @@ export function LiquidPress({
           end={{ x: 0.5, y: 1 }}
           style={FILL}
         />
-        {/* Gloss on the top half, like light on the surface. */}
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(255,255,255,0.38)", "rgba(255,255,255,0)"]}
+          colors={["rgba(255,255,255,0.28)", "rgba(255,255,255,0)"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={{ position: "absolute", top: 0, right: 0, left: 0, height: "50%" }}
         />
+        <View style={contentStyle}>{children}</View>
       </Animated.View>
     </Pressable>
   );
