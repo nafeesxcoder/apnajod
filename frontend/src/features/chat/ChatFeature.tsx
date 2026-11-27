@@ -5483,9 +5483,11 @@ const viewerStyles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 22,
     borderRadius: 24,
-    backgroundColor: "#B0245F",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(30,27,75,0.14)",
   },
-  fileButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+  fileButtonText: { color: "#B0245F", fontSize: 15, fontWeight: "700" },
 });
 
 const docStyles = StyleSheet.create({
@@ -6270,8 +6272,8 @@ function ChatOptionsSheet({
                       maxLength={40}
                       style={{ flex: 1, borderWidth: 1, borderColor: "#E7D8EE", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: "#14102E", backgroundColor: "#FFFFFF" }}
                     />
-                    <Pressable accessibilityRole="button" accessibilityLabel="Save nickname" onPress={() => onNickname(nicknameDraft.trim())} style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: "#B0245F" }}>
-                      <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>Save</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Save nickname" onPress={() => onNickname(nicknameDraft.trim())} style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.92)", borderWidth: 1, borderColor: "rgba(30,27,75,0.14)" }}>
+                      <Text style={{ color: "#B0245F", fontWeight: "700", fontSize: 13 }}>Save</Text>
                     </Pressable>
                   </View>
                   <Text style={{ color: "#5B5478", fontSize: 12 }}>Only you see this nickname.</Text>
@@ -9719,11 +9721,13 @@ const snapLive = StyleSheet.create({
     height: 44,
     paddingHorizontal: 22,
     borderRadius: 22,
-    backgroundColor: "#B0245F",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(30,27,75,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },
-  allowText: { fontFamily: "Mukta_700Bold", fontSize: 15, color: "#FFFFFF" },
+  allowText: { fontFamily: "Mukta_700Bold", fontSize: 15, color: "#B0245F" },
   top: {
     position: "absolute",
     top: 0,
@@ -9926,12 +9930,14 @@ const snapCamera = StyleSheet.create({
     height: 42,
     paddingHorizontal: 20,
     borderRadius: 21,
-    backgroundColor: "#B0245F",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(30,27,75,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },
   sendPillOff: { opacity: 0.35 },
-  sendPillText: { fontFamily: "Mukta_700Bold", fontSize: 15, color: "#FFFFFF" },
+  sendPillText: { fontFamily: "Mukta_700Bold", fontSize: 15, color: "#B0245F" },
   shutterWrap: {
     flex: 1,
     alignItems: "center",
