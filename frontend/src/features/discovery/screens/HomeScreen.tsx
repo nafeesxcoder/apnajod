@@ -35,13 +35,12 @@ import type { Screen } from "../../../app/navigation/types";
 import { colors, palette, fonts, radius, typeScale } from "../../../theme";
 import { AppCanvas } from "../../../components/AppCanvas";
 
-import { DailyQuestionCard } from "../components/DailyQuestionCard";
+import { DailyQuestionPopup } from "../components/DailyQuestionPopup";
 import { DailyPicksRow } from "../components/DailyPicksRow";
 import { BoostedRow } from "../components/BoostedRow";
 import { whiteCard } from "../../../components/brand";
 import { Reveal } from "../../../components/motion";
 import { ProfileStrengthCard } from "../../profile/components/ProfileStrengthCard";
-import { InviteCard } from "../../profile/components/InviteCard";
 import type { profileStrength } from "../../../domain/profileStrength";
 
 type RoseAvailability = { freeAvailable: boolean; paidCredits: number };
@@ -317,13 +316,12 @@ export function HomeScreen({
             />
 
             {/* Cards arrive one after another (components/motion.tsx). */}
+            {/* Today's question opens as a glass popup over Home (not a card on the page). */}
             {!preview && (
-              <Reveal delay={60}>
-                <DailyQuestionCard
-                  accessToken={accessToken}
-                  onRewarded={onSparkRewarded}
-                />
-              </Reveal>
+              <DailyQuestionPopup
+                accessToken={accessToken}
+                onRewarded={onSparkRewarded}
+              />
             )}
 
             {strength && (
@@ -345,12 +343,6 @@ export function HomeScreen({
             {!preview && (
               <Reveal delay={180}>
                 <DailyPicksRow accessToken={accessToken} onOpen={openDetail} />
-              </Reveal>
-            )}
-
-            {!preview && (
-              <Reveal delay={300}>
-                <InviteCard accessToken={accessToken} />
               </Reveal>
             )}
 

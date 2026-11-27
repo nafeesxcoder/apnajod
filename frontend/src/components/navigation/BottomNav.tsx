@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { palette } from "../../theme";
@@ -162,6 +163,12 @@ export function BottomNav({
   const [width, setWidth] = useState(0);
   const slot = width ? (width - PAD * 2) / DESTINATIONS.length : 0;
   const lens = useRef(new Animated.Value(0)).current;
+  // How much the drop swells: stretched while it moves, a jiggle when it lands (like water).
+  const squash = useRef(new Animated.Value(1)).current;
+  // A touch makes the drop bulge; a water ring pulses out; a ghost trails behind the drop.
+  const bulge = useRef(new Animated.Value(0)).current;
+  const ripple = useRef(new Animated.Value(1)).current;
+  const trail = useRef(new Animated.Value(0)).current;
   const lensValue = useRef(0);
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -170,9 +177,16 @@ export function BottomNav({
   useEffect(() => {
     const id = lens.addListener(({ value }) => {
       lensValue.current = value;
+      // The ghost follows a little behind the drop.
+      Animated.spring(trail, {
+        toValue: value,
+        useNativeDriver: Platform.OS !== "web",
+        friction: 16,
+        tension: 80,
+      }).start();
     });
     return () => lens.removeListener(id);
-  }, [lens]);
+  }, [lens, trail]);
 
   // Latest values for the gesture handlers, which are created once.
   const latest = useRef({ slot, activeIdx, navigate });
@@ -181,11 +195,46 @@ export function BottomNav({
   const snapTo = (index: number) => {
     const { slot: s } = latest.current;
     if (!s || index < 0) return;
+    // The drop swells as it lands, then jiggles back to its round shape.
+    squash.setValue(1.06);
+    Animated.spring(squash, {
+      toValue: 1,
+      useNativeDriver: Platform.OS !== "web",
+      friction: 7,
+      tension: 100,
+    }).start();
     Animated.spring(lens, {
       toValue: lensLeft(index, s),
       useNativeDriver: Platform.OS !== "web",
       friction: 9,
-      tension: 110,
+      tension: 120,
+    }).start();
+  };
+
+  // A touch: the drop bulges and a ring pulses out from it.
+  const press = () => {
+    bulge.stopAnimation();
+    Animated.spring(bulge, {
+      toValue: 1,
+      useNativeDriver: Platform.OS !== "web",
+      friction: 5,
+      tension: 120,
+    }).start();
+    ripple.setValue(0);
+    Animated.timing(ripple, {
+      toValue: 1,
+      duration: 650,
+      useNativeDriver: Platform.OS !== "web",
+    }).start();
+  };
+  // Let go without a slide: the drop jiggles back to its round shape.
+  const unpress = () => {
+    if (dragging.current) return;
+    Animated.spring(bulge, {
+      toValue: 0,
+      useNativeDriver: Platform.OS !== "web",
+      friction: 6,
+      tension: 100,
     }).start();
   };
 
@@ -211,6 +260,8 @@ export function BottomNav({
         const max = lensLeft(DESTINATIONS.length - 1, s);
         const next = Math.min(max, Math.max(min, startX.current + g.dx));
         lens.setValue(next);
+        // Faster drags stretch the drop more.
+        squash.setValue(1 + Math.min(0.35, Math.abs(g.vx) * 0.14));
         const index = Math.round((next - min) / s);
         setPreview((current) => (current === index ? current : index));
       },
@@ -224,6 +275,7 @@ export function BottomNav({
         const next = Math.min(max, Math.max(min, startX.current + g.dx));
         const index = Math.round((next - min) / s);
         snapTo(index);
+        unpress();
         const target = DESTINATIONS[index];
         if (target && index !== current) go(target.screen);
       },
@@ -231,6 +283,7 @@ export function BottomNav({
         dragging.current = false;
         setPreview(null);
         snapTo(latest.current.activeIdx);
+        unpress();
       },
     }),
   ).current;
@@ -261,6 +314,9 @@ export function BottomNav({
   return (
     <View
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      onTouchStart={press}
+      onTouchEnd={unpress}
+      onTouchCancel={unpress}
       {...pan.panHandlers}
       style={[styles.bar, { bottom: Math.max(insets.bottom, 0) + BAR_GAP }]}
     >
@@ -270,18 +326,81 @@ export function BottomNav({
         <View style={[StyleSheet.absoluteFill, light ? styles.tintLight : styles.tint]} />
       </View>
       {slot > 0 && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.lens,
-            light && styles.lensLight,
-            {
-              width: slot - LENS_INSET * 2,
-              opacity: activeIdx < 0 && preview === null ? 0 : 1,
-              transform: [{ translateX: lens }],
-            },
-          ]}
-        />
+        <>
+          {/* A ghost of the drop that trails behind it. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.lens,
+              styles.trailGhost,
+              {
+                width: slot - LENS_INSET * 2,
+                opacity: activeIdx < 0 && preview === null ? 0 : 1,
+                transform: [{ translateX: trail }],
+              },
+            ]}
+          />
+          {/* A water ring that pulses out from the drop when you touch the bar. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.lens,
+              styles.ring,
+              {
+                width: slot - LENS_INSET * 2,
+                opacity: ripple.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
+                transform: [
+                  { translateX: lens },
+                  { scale: ripple.interpolate({ inputRange: [0, 1], outputRange: [1, 1.35] }) },
+                ],
+              },
+            ]}
+          />
+          {/* The drop itself: it bulges when touched, stretches with a fast drag, and jiggles when it lands. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.lens,
+              light && styles.lensLight,
+              {
+                width: slot - LENS_INSET * 2,
+                opacity: activeIdx < 0 && preview === null ? 0 : 1,
+                transform: [
+                  { translateX: lens },
+                  {
+                    scaleX: Animated.multiply(
+                      squash,
+                      bulge.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }),
+                    ),
+                  },
+                  {
+                    scaleY: Animated.multiply(
+                      squash.interpolate({ inputRange: [1, 1.35], outputRange: [1, 0.84] }),
+                      bulge.interpolate({ inputRange: [0, 1], outputRange: [1, 1.16] }),
+                    ),
+                  },
+                ],
+              },
+            ]}
+          >
+            {/* The glossy top of a water drop. */}
+            <LinearGradient
+              colors={light ? ["rgba(255,255,255,0.45)", "rgba(255,255,255,0)"] : ["rgba(255,255,255,0.9)", "rgba(255,255,255,0.05)"]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            {/* A soft pink caustic at the bottom, like light through water. */}
+            <LinearGradient
+              colors={["rgba(176,36,95,0)", "rgba(176,36,95,0.16)"]}
+              start={{ x: 0.5, y: 0.6 }}
+              end={{ x: 0.5, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            {/* The shine: a bright spot in the corner. */}
+            <View style={styles.shine} />
+          </Animated.View>
+        </>
       )}
       <View style={styles.items}>
         {DESTINATIONS.map((destination, index) => (
@@ -354,6 +473,7 @@ const styles = StyleSheet.create({
     bottom: 7,
     left: 0,
     borderRadius: 25,
+    overflow: "hidden",
     backgroundColor: "rgba(255,255,255,0.45)",
     borderWidth: 1,
     borderColor: "#FFFFFF",
@@ -366,6 +486,28 @@ const styles = StyleSheet.create({
   lensLight: {
     backgroundColor: "rgba(255,255,255,0.22)",
     borderColor: "rgba(255,255,255,0.4)",
+  },
+  trailGhost: {
+    backgroundColor: "rgba(255,255,255,0.35)",
+    borderColor: "transparent",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  ring: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.9)",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  shine: {
+    position: "absolute",
+    top: 7,
+    left: 12,
+    width: 14,
+    height: 8,
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.95)",
   },
   items: {
     flex: 1,

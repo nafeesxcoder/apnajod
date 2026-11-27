@@ -21,9 +21,9 @@ describe('Navy x Crimson look and motion', () => {
   it('Home cards arrive one after another and use the shared look', () => {
     const home = read('src/features/discovery/screens/HomeScreen.tsx');
     const delays = [...home.matchAll(/<Reveal delay=\{(\d+)\}/g)].map((m) => Number(m[1]));
-    expect(delays.length).toBeGreaterThanOrEqual(4);
+    expect(delays.length).toBeGreaterThanOrEqual(3);
     expect([...delays].sort((a, b) => a - b)).toEqual(delays);
-    expect(read('src/features/discovery/components/DailyQuestionCard.tsx')).toContain('colors={brand.heroGradient}');
+    expect(read('src/features/discovery/components/DailyQuestionPopup.tsx')).toContain('<BlurView');
     expect(read('src/features/discovery/components/DailyPicksRow.tsx')).toContain('<SpinRing');
   });
 

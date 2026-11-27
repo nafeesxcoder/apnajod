@@ -32,15 +32,16 @@ describe('Sparks and Super Likes', () => {
 });
 
 describe('the Daily Question', () => {
-  it('sits on Home for signed-in members and refreshes the Spark count after a reward', () => {
+  it('opens as a glass popup on Home for signed-in members and refreshes the Spark count after a reward', () => {
     const home = read('src/features/discovery/screens/HomeScreen.tsx');
-    expect(home).toContain('<DailyQuestionCard');
+    expect(home).toContain('<DailyQuestionPopup');
+    expect(home).not.toContain('<DailyQuestionCard');
     expect(read('src/app/MilaanApp.tsx')).toContain('onSparkRewarded={() => void refreshSparkWallet()}');
   });
 
   it('never breaks Home when the question cannot load', () => {
-    const card = compact(read('src/features/discovery/components/DailyQuestionCard.tsx'));
-    expect(card).toContain('if(!accessToken||!today?.question)returnnull;');
+    const popup = compact(read('src/features/discovery/components/DailyQuestionPopup.tsx'));
+    expect(popup).toContain('if(!accessToken||!today?.question)returnnull;');
   });
 
   it('can be managed from the admin panel', () => {

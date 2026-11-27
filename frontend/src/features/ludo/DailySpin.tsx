@@ -1,7 +1,7 @@
 /**
- * The daily spinner: once every 24 hours it pops up when the app opens.
- * Spin it for coins, a Spark, or now and then something from the Ludo
- * store for free. The server picks the prize; the wheel shows it.
+ * The daily spinner. It opens only from the Ludo screen, when you tap the
+ * Spin tile there (never on its own). Spin it for coins, a Spark, or now and
+ * then something from the Ludo store for free. The server picks the prize.
  */
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Easing, Pressable, Text, View } from "react-native";
@@ -27,14 +27,13 @@ function prizeText(prize: SpinPrize) {
   return { big: "🎁 Free unlock!", small: `${prize.name} (${prize.itemKind}) is yours in the Ludo store` };
 }
 
-export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto: boolean }) {
+export function DailySpinHost({ accessToken }: { accessToken: string }) {
   const [open, setOpen] = useState(false);
   const [slices, setSlices] = useState<string[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [prize, setPrize] = useState<SpinPrize | null>(null);
   const [error, setError] = useState("");
   const angle = useRef(new Animated.Value(0)).current;
-  const asked = useRef(false);
 
   useEffect(() => {
     openSpin = () => {
@@ -48,20 +47,6 @@ export function DailySpinHost({ accessToken, auto }: { accessToken: string; auto
       openSpin = null;
     };
   }, []);
-
-  // Once per app open, a little after Home shows: if a spin is ready, offer it.
-  useEffect(() => {
-    if (!auto || asked.current) return;
-    asked.current = true;
-    const timer = setTimeout(async () => {
-      const wallet = await walletStore.refresh(accessToken);
-      if (wallet?.canSpin) {
-        setSlices(wallet.spinSlices);
-        setOpen(true);
-      }
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [auto, accessToken]);
 
   const spin = async () => {
     if (spinning) return;

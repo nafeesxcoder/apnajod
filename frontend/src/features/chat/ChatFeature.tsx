@@ -41,7 +41,7 @@ import { MediaViewer } from "./MediaViewer";
 import { openSaved, readSaved, saveFile, type SavedFile } from "./chatDownloads";
 import { mimeTypeFor, type ConversationSummary } from "../../api/chatApi";
 import { socialApi, type SocialUser } from "../../api/socialApi";
-import { BACKGROUND_CHOICES } from "./chatBackgrounds";
+import { BACKGROUND_CHOICES, PLAIN_BACKGROUND_ID } from "./chatBackgrounds";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -86,6 +86,7 @@ import {
 import { useFestival } from "../festival/festivalStore";
 import { alreadyWished, FestivalWishCard, FestivalWishChip } from "../festival/FestivalWish";
 import { LudoInviteCard } from "../ludo/LudoInviteCard";
+import { LudoEntry } from "../ludo/LudoEntry";
 import { userIdFromToken } from "../posts/profileLink";
 import {
   chatApi,
@@ -945,9 +946,12 @@ export function ChatScreen({
   livePartnerTyping,
   onTypingChange,
   onOpenLudo,
+  onPlayLudo,
 }: {
   /** A Ludo invite card was tapped: open that game room. */
   onOpenLudo?: (gameId: string) => void;
+  /** "Ludo" in the share tray: open the Ludo screen to start a new game. */
+  onPlayLudo?: () => void;
   runtimePorts: ChatRuntimePorts;
   previewState?: PreviewState;
   showcaseDateStatus?: DatePlanStatus;
@@ -2529,7 +2533,7 @@ export function ChatScreen({
       <AppCanvas>
         <SafeAreaView
           // The header reaches up under the status bar itself, so the top is left out here.
-          edges={["left", "right", "bottom"]}
+          edges={["left", "right"]}
           style={[
             chatPremiumStyles.safeArea,
             { backgroundColor: "transparent" },
@@ -3267,7 +3271,9 @@ export function ChatScreen({
                   flexDirection: "row",
                   alignItems: "center",
                   paddingHorizontal: 12,
-                  paddingVertical: 10,
+                  paddingTop: 10,
+                  // The bar runs down to the bottom of the screen, so the phone's bottom bar sits on it, not on a strip.
+                  paddingBottom: insets.bottom + 10,
                   backgroundColor: palette.paperBase,
                   borderTopWidth: 1,
                   borderTopColor: palette.rule,
@@ -3665,6 +3671,17 @@ export function ChatScreen({
             onPickLive={
               accessToken && !isCoupleMode ? (kind) => void startLiveGame(kind) : undefined
             }
+            accessToken={accessToken}
+            myId={accessToken ? userIdFromToken(accessToken) || undefined : undefined}
+            onPlayLudo={
+              onPlayLudo
+                ? (gameId) => {
+                    setGamesOpen(false);
+                    if (gameId) onOpenLudo?.(gameId);
+                    else onPlayLudo();
+                  }
+                : undefined
+            }
           />
           {!!accessToken && !isCoupleMode && (
             <>
@@ -3725,6 +3742,25 @@ export function ChatScreen({
             visible={optionsOpen}
             retentionLabel={retentionShort}
             screenshotAlerts={settings.screenshotAlerts}
+            muted={isConversationMuted(settings)}
+            onToggleMute={() =>
+              onSettingsChange({
+                ...settings,
+                notificationMode: isConversationMuted(settings) ? "all" : "muted",
+                mutedUntil: undefined,
+              })
+            }
+            retentionMode={settings.retentionMode}
+            onRetention={(retentionMode) => onSettingsChange({ ...settings, retentionMode })}
+            background={settings.background}
+            onBackground={(id) => onSettingsChange({ ...settings, background: id })}
+            nickname={settings.nickname}
+            onNickname={(name) => onSettingsChange({ ...settings, nickname: name })}
+            theme={settings.theme || coupleThemes[0]!.name}
+            onTheme={(name) => onSettingsChange({ ...settings, theme: name })}
+            onToggleScreenshots={() =>
+              onSettingsChange({ ...settings, screenshotAlerts: !settings.screenshotAlerts })
+            }
             onClose={() => setOptionsOpen(false)}
             onSearch={() => {
               setOptionsOpen(false);
@@ -6018,27 +6054,58 @@ function ChatOptionsSheet({
   visible,
   retentionLabel,
   screenshotAlerts,
+  muted,
   onClose,
   onSearch,
-  onSettings,
   onSafety,
   onSelectMessages,
+  onToggleMute,
+  onToggleScreenshots,
+  retentionMode,
+  onRetention,
+  background,
+  onBackground,
+  nickname,
+  onNickname,
+  theme,
+  onTheme,
 }: {
   visible: boolean;
   retentionLabel: string;
   screenshotAlerts: boolean;
+  muted: boolean;
+  retentionMode: CoupleChatSettings["retentionMode"];
+  onRetention: (mode: CoupleChatSettings["retentionMode"]) => void;
+  background?: string;
+  onBackground: (id: string) => void;
+  nickname: string;
+  onNickname: (name: string) => void;
+  theme: string;
+  onTheme: (name: string) => void;
   onClose: () => void;
   onSearch: () => void;
   onSettings: () => void;
   onSafety: () => void;
   onSelectMessages: () => void;
+  onToggleMute: () => void;
+  onToggleScreenshots: () => void;
 }) {
+  // Which row is open inline: the timer choices, or the background choices.
+  const [openRow, setOpenRow] = useState<"retention" | "background" | null>(null);
+  const RETENTION_CHOICES: { value: CoupleChatSettings["retentionMode"]; label: string; body: string }[] = [
+    { value: "keep", label: "Keep messages", body: "Messages stay until someone deletes them." },
+    { value: "after_seen", label: "Delete after seen", body: "New messages disappear once the recipient has seen them." },
+    { value: "24_hours", label: "24 hours", body: "New messages disappear 24 hours after sending." },
+    { value: "7_days", label: "7 days", body: "New messages disappear after one week." },
+  ];
+  const [nicknameDraft, setNicknameDraft] = useState(nickname);
+  // Each row has its own look: plain, a tile with the current value, a switch, colour dots, or a status pill.
   const rows = [
-    { title: "Search", sub: "Find a message in this chat", icon: "search-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSearch },
-    { title: "Select messages", sub: "Forward, copy or delete several", icon: "checkmark-done-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSelectMessages },
-    { title: "Disappearing messages", sub: retentionLabel, icon: "timer-outline" as const, tint: "#FBEAEE", color: "#B0245F", onPress: onSettings },
-    { title: "Mute notifications", sub: "Silence this chat", icon: "notifications-off-outline" as const, tint: "#F1EEF9", color: "#5B4B8A", onPress: onSettings },
-    { title: "Chat appearance", sub: "Background and theme", icon: "color-palette-outline" as const, tint: "#FFF4E5", color: "#B26A00", onPress: onSettings },
+    { title: "Search", sub: "Find a message in this chat", icon: "search-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSearch, variant: "plain" as const },
+    { title: "Select messages", sub: "Forward, copy or delete several", icon: "checkmark-done-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSelectMessages, variant: "plain" as const },
+    { title: "Disappearing messages", sub: "Messages vanish after the time you choose", icon: "timer-outline" as const, tint: "#FBEAEE", color: "#B0245F", onPress: () => setOpenRow(openRow === "retention" ? null : "retention"), variant: "tile" as const },
+    { title: "Mute notifications", sub: muted ? "Muted: no alerts from this chat" : "Notifications are on", icon: "notifications-off-outline" as const, tint: "#F1EEF9", color: "#5B4B8A", onPress: onToggleMute, variant: "toggle" as const },
+    { title: "Chat appearance", sub: "Background and theme", icon: "color-palette-outline" as const, tint: "#FFF4E5", color: "#B26A00", onPress: () => setOpenRow(openRow === "background" ? null : "background"), variant: "swatches" as const },
   ];
   const privacyRows = screenshotDetection
     ? [
@@ -6048,7 +6115,8 @@ function ChatOptionsSheet({
           icon: "scan-outline" as const,
           tint: "#E7F6EE",
           color: "#1E7A4C",
-          onPress: onSettings,
+          onPress: onToggleScreenshots,
+          variant: "status" as const,
         },
       ]
     : [];
@@ -6060,6 +6128,7 @@ function ChatOptionsSheet({
       tint: "#FDECEC",
       color: "#B0245F",
       onPress: onSafety,
+      variant: "plain" as const,
     },
   ];
   const sections = [
@@ -6135,10 +6204,122 @@ function ChatOptionsSheet({
                       <Text style={optionsUi.rowTitle}>{row.title}</Text>
                       <Text style={optionsUi.rowSub}>{row.sub}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#B0B7C0" />
+                    {row.variant === "tile" && (
+                      <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: "#B0245F" }}>
+                        <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "700" }}>{retentionLabel}</Text>
+                      </View>
+                    )}
+                    {row.variant === "toggle" && (
+                      <View style={{ width: 46, height: 28, borderRadius: 14, backgroundColor: muted ? "#B0245F" : "#DCD3E3", justifyContent: "center", paddingHorizontal: 3, alignItems: muted ? "flex-end" : "flex-start" }}>
+                        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF" }} />
+                      </View>
+                    )}
+                    {row.variant === "swatches" && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        {["#FBE3EE", "#F3E8FF", "#FFF4E5", "#E7F6EE"].map((c) => (
+                          <View key={c} style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: c, borderWidth: 1, borderColor: "#E7D8EE" }} />
+                        ))}
+                        <Ionicons name="chevron-forward" size={16} color="#B0B7C0" />
+                      </View>
+                    )}
+                    {row.variant === "status" && (
+                      <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: screenshotAlerts ? "#E7F6EE" : "#EEE9F2" }}>
+                        <Text style={{ color: screenshotAlerts ? "#1E7A4C" : "#5B5478", fontSize: 12, fontWeight: "700" }}>{screenshotAlerts ? "On" : "Off"}</Text>
+                      </View>
+                    )}
+                    {row.variant === "plain" && <Ionicons name="chevron-forward" size={16} color="#B0B7C0" />}
                   </Pressable>
                 ))}
               </View>
+              {section.label === "CONVERSATION" && openRow === "retention" && (
+                <View style={optionsUi.innerPanel}>
+                  <Text style={optionsUi.innerTitle}>Disappearing messages</Text>
+                  {RETENTION_CHOICES.map((choice) => {
+                    const on = retentionMode === choice.value;
+                    return (
+                      <Pressable
+                        key={choice.value}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Disappear: ${choice.label}`}
+                        accessibilityState={{ selected: on }}
+                        onPress={() => onRetention(choice.value)}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 }}
+                      >
+                        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: on ? "#B0245F" : "#CFC3DB", alignItems: "center", justifyContent: "center" }}>
+                          {on && <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: "#B0245F" }} />}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: "700", color: "#14102E", fontSize: 14 }}>{choice.label}</Text>
+                          <Text style={{ color: "#5B5478", fontSize: 12 }}>{choice.body}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+              {section.label === "CONVERSATION" && openRow === "background" && (
+                <View style={optionsUi.innerPanel}>
+                  <Text style={optionsUi.innerTitle}>Nickname</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <TextInput
+                      value={nicknameDraft}
+                      onChangeText={setNicknameDraft}
+                      placeholder="Nickname for this chat"
+                      placeholderTextColor="#8A7A9A"
+                      accessibilityLabel="Chat nickname"
+                      maxLength={40}
+                      style={{ flex: 1, borderWidth: 1, borderColor: "#E7D8EE", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: "#14102E", backgroundColor: "#FFFFFF" }}
+                    />
+                    <Pressable accessibilityRole="button" accessibilityLabel="Save nickname" onPress={() => onNickname(nicknameDraft.trim())} style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: "#B0245F" }}>
+                      <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>Save</Text>
+                    </Pressable>
+                  </View>
+                  <Text style={{ color: "#5B5478", fontSize: 12 }}>Only you see this nickname.</Text>
+                  <Text style={optionsUi.innerTitle}>Theme</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    {coupleThemes.map((t) => {
+                      const on = theme === t.name;
+                      return (
+                        <Pressable
+                          key={t.name}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Theme: ${t.name}`}
+                          accessibilityState={{ selected: on }}
+                          onPress={() => onTheme(t.name)}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: on ? t.accent : "#E7D8EE", backgroundColor: on ? t.soft : "#FFFFFF" }}
+                        >
+                          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.accent }} />
+                          <Text style={{ fontSize: 13, fontWeight: "700", color: "#14102E" }}>{t.name}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <Text style={optionsUi.innerTitle}>Chat background</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                    {BACKGROUND_CHOICES.map((bg) => {
+                      const on = (background ?? PLAIN_BACKGROUND_ID) === bg.id;
+                      return (
+                        <Pressable
+                          key={bg.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Background: ${bg.name}`}
+                          accessibilityState={{ selected: on }}
+                          onPress={() => onBackground(bg.id)}
+                          style={{ alignItems: "center", gap: 6 }}
+                        >
+                          <LinearGradient
+                            colors={bg.colors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 0, y: 1 }}
+                            style={{ width: 58, height: 58, borderRadius: 16, borderWidth: on ? 3 : 1, borderColor: on ? "#B0245F" : "#FFFFFF" }}
+                          />
+                          <Text style={{ fontSize: 11, color: on ? "#B0245F" : "#5B5478", fontWeight: on ? "700" : "500" }}>{bg.name}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
             </View>
           ))}
         </ScrollView>
@@ -6148,6 +6329,8 @@ function ChatOptionsSheet({
 }
 
 const optionsUi = StyleSheet.create({
+  innerPanel: { marginHorizontal: 14, marginTop: 8, padding: 14, borderRadius: 18, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#F3E8FF", gap: 10 },
+  innerTitle: { fontSize: 13, fontWeight: "700", color: "#5B5478" },
   sheet: {
     maxHeight: "88%",
     backgroundColor: "#FBF8F5",
@@ -8203,12 +8386,19 @@ function GameSheet({
   onClose,
   onPlay,
   onPickLive,
+  onPlayLudo,
+  accessToken,
+  myId,
 }: {
   visible: boolean;
   onClose: () => void;
   onPlay: (game: CoupleGame, prompt: string) => void;
   /** The play-together games. Only offered in a real, signed-in chat. */
   onPickLive?: (kind: GameKind) => void;
+  /** Ludo, the same entry as the Games tab: a new game, or one of yours. */
+  onPlayLudo?: (gameId: string | null) => void;
+  accessToken?: string;
+  myId?: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [promptIndex, setPromptIndex] = useState(0);
@@ -8429,6 +8619,13 @@ function GameSheet({
                 </Text>
               </View>
             </View>
+            {/* Ludo sits outside the grid, full width, exactly like the Games tab. */}
+            {/* LudoEntry brings its own 20px side padding; cancel the sheet's so its edges line up with the cards below. */}
+            {!!onPlayLudo && !!accessToken && !!myId && (
+              <View style={{ marginHorizontal: -20 }}>
+                <LudoEntry accessToken={accessToken} myId={myId} canCreate onOpen={onPlayLudo} />
+              </View>
+            )}
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={gameStyles.grid}

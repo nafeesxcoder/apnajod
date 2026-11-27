@@ -13,9 +13,9 @@ describe("Home shows picks, invite and posts only", () => {
     expect(home).not.toContain("Your next introduction is being curated");
   });
 
-  it("keeps today's picks, the invite card and the posts feed", () => {
+  it("keeps today's picks and the posts feed; the invite card lives under Share profile", () => {
     expect(home).toContain("<DailyPicksRow");
-    expect(home).toContain("<InviteCard");
+    expect(home).not.toContain("<InviteCard");
     expect(home).toContain("<PostsFeed");
   });
 });

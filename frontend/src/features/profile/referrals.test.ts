@@ -11,12 +11,15 @@ describe('invite & earn', () => {
     expect(app).toMatch(/registerVerify\(\{[\s\S]*?invite: storedInvite\(\) \|\| undefined,[\s\S]*?\}\);\s*clearInvite\(\);/);
   });
 
-  it('tells the inviter what they get and how many friends joined - on Home, and only there', () => {
+  it('tells the inviter what they get and how many friends joined - inside the Share profile choices, not on Home', () => {
     const card = read('src/features/profile/components/InviteCard.tsx');
     expect(card).toContain('A free Boost for you when a friend joins and adds a photo.');
     expect(card).toContain('referralLine(referrals)');
-    expect(read('src/features/discovery/screens/HomeScreen.tsx')).toContain('<InviteCard accessToken={accessToken} />');
-    expect(read('src/features/profile/screens/ProfileScreen.tsx')).not.toContain('InviteCard');
+    expect(read('src/features/discovery/screens/HomeScreen.tsx')).not.toContain('<InviteCard');
+    const profile = read('src/features/profile/screens/ProfileScreen.tsx');
+    expect(profile).not.toContain('<InviteCard');
+    expect(profile).toContain('shareInvite(');
+    expect(profile).toContain('Invite friends and earn Boosts');
   });
 
   it('counts friends and Boosts in plain words', () => {

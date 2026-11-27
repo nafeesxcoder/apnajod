@@ -10,7 +10,7 @@
  * - Voice: turn the mic on to talk to everyone in the game, mute, speaker.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, TextInput, Vibration, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Animated, Easing, Platform, Pressable, ScrollView, Text, TextInput, Vibration, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,7 +28,7 @@ import { filterInvitees } from "./ludoText";
 import { L, setActiveTheme } from "./ludoTheme";
 import { allowedPrefs, BOARD_THEMES, DEFAULT_PREFS, DICE_SKINS, stepMs, TOKEN_STYLES } from "./ludoLooks";
 import { CoinChip, LudoStore, useLudoPrefs, useWallet } from "./LudoStore";
-import { showDailySpin } from "./DailySpin";
+import { DailySpinHost, showDailySpin } from "./DailySpin";
 import { coinsApi, type LeaderRow } from "../../api/coinsApi";
 import { walletStore } from "./walletStore";
 import { VoiceRoom, type VoiceUser } from "./voiceRoom";
@@ -52,6 +52,71 @@ function lastLine(game: LudoGame, myId: string) {
 
 import { OnlineDot } from "../social/OnlineDot";
 import { useOnlineIds } from "../social/useOnlineIds";
+
+/**
+ * The daily spin, in the Ludo screen. Ready: it glows and pulses so you know
+ * to spin. Done: it is muted with a check, showing you spun today.
+ */
+function SpinTile({ canSpin, nextAt, onPress }: { canSpin: boolean; nextAt: string; onPress: () => void }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+  const native = Platform.OS !== "web";
+
+  useEffect(() => {
+    if (!canSpin) {
+      pulse.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: native }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: native }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [canSpin, pulse, native]);
+
+  const bob = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.04] });
+  const shine = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.6] });
+  const when = new Date(nextAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={canSpin ? "Daily spin is ready. Tap to spin" : "You spun today"}
+      accessibilityState={{ disabled: !canSpin }}
+      disabled={!canSpin}
+      onPress={onPress}
+      style={{ flex: 1 }}
+    >
+      <Animated.View style={{ transform: [{ scale: canSpin ? bob : 1 }] }}>
+        {canSpin ? (
+          <LinearGradient
+            colors={["#FFE9A3", "#F6C445"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 18, padding: 12, gap: 2, borderWidth: 1.5, borderColor: "#FFFFFF", overflow: "hidden" }}
+          >
+            <Animated.View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.75)", opacity: shine }} />
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: "#8A1A47" }}>🎡 Spin!</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Ionicons name="flash" size={13} color="#8A1A47" />
+              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: "#8A1A47" }}>Ready! Tap to spin</Text>
+            </View>
+          </LinearGradient>
+        ) : (
+          <View style={{ padding: 12, borderRadius: 18, gap: 2, borderWidth: 1, borderColor: L.glassBorder, backgroundColor: L.glass }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.textSoft }}>🎡 Spin</Text>
+              <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+            </View>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: L.textSoft }}>Spun today · next at {when}</Text>
+          </View>
+        )}
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export function LudoScreen({
   accessToken,
@@ -362,17 +427,8 @@ export function LudoScreen({
               </Text>
               <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: L.text, marginTop: 4 }}>🛍️ Store & settings ›</Text>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={wallet.canSpin ? "Daily spin is ready" : "Daily spin"}
-              onPress={() => showDailySpin()}
-              style={{ flex: 1, padding: 12, borderRadius: 18, backgroundColor: wallet.canSpin ? "rgba(246,196,69,0.16)" : L.glass, borderWidth: 1, borderColor: wallet.canSpin ? L.gold : L.glassBorder, gap: 2 }}
-            >
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.text }}>🎡 Spin</Text>
-              <Text style={{ fontFamily: fonts.body, fontSize: 12, color: wallet.canSpin ? L.gold : L.textSoft }}>
-                {wallet.canSpin ? "Ready! Tap to spin" : `Next at ${new Date(wallet.spinReadyAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
-              </Text>
-            </Pressable>
+            <SpinTile canSpin={wallet.canSpin} nextAt={wallet.spinReadyAt} onPress={() => showDailySpin()} />
+            <DailySpinHost accessToken={accessToken} />
           </View>
         )}
 

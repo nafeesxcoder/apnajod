@@ -43,6 +43,6 @@ describe('the empty deck', () => {
   it('has no second Invite button: the Invite card above it is the one', () => {
     expect(home).not.toContain('label="Invite friends"');
     expect(home).not.toContain('label="Find someone"');
-    expect(home).toContain('<InviteCard accessToken={accessToken} />');
+    expect(home).not.toContain('<InviteCard accessToken={accessToken} />');
   });
 });

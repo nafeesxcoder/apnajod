@@ -219,7 +219,8 @@ describe("Ludo settings, store and the daily spin", () => {
     expect(screen).toContain('getChatSocket()?.emit("ludo:react"');
     expect(screen).toContain("state.rewards?.[myId]");
     expect(screen).toContain("tokenStyle={TOKEN_STYLES[prefs.token]!}");
-    expect(read("src/app/MilaanApp.tsx")).toContain('<DailySpinHost accessToken={accessToken} auto={screen === "home"} />');
+    expect(read("src/app/MilaanApp.tsx")).not.toContain("DailySpinHost");
+    expect(read("src/features/ludo/LudoScreen.tsx")).toContain("<DailySpinHost accessToken={accessToken} />");
     expect(read("src/features/ludo/LudoStore.tsx")).toContain("coinsApi.unlock(accessToken, item.key)");
   });
 });

@@ -21,6 +21,9 @@ import { Linking } from "react-native";
 import { useFamilyShare } from "../../../components/FamilyShareButton";
 import { PostsSection } from "../components/PostsSection";
 import { AddPostButton } from "../components/AddPostButton";
+import { shareInvite } from "../components/InviteCard";
+import { Sheet } from "../../posts/PostSheets";
+import { authApi } from "../../../api/authApi";
 import { TrustBadge } from "../../../components/TrustBadge";
 import { brand, cardShadow } from "../../../components/brand";
 import { ZoomPhoto } from "../../../components/ZoomPhoto";
@@ -52,13 +55,23 @@ export function ProfileScreen({
 }) {
   const navInset = useNavInset();
   const [postsReloadKey, setPostsReloadKey] = useState(0);
+  const [shareChooser, setShareChooser] = useState(false);
 
-  // Share sends the profile to family. Inviting friends and Profile
-  // strength live on Home - one place each, not two.
+  // Share opens two choices: send the profile to family, or invite friends (earn Boosts).
   const family = useFamilyShare({
     accessToken,
     name: profile?.firstName || "me",
   });
+  const inviteFriends = async () => {
+    setShareChooser(false);
+    if (!accessToken) return;
+    try {
+      const res: any = await authApi.me(accessToken);
+      await shareInvite(String(res?.user?.username ?? ""));
+    } catch {
+      // Nothing to share if the account could not be read.
+    }
+  };
 
   const hobbies: string[] = Array.isArray(profile?.hobbies)
     ? profile.hobbies
@@ -284,7 +297,7 @@ export function ProfileScreen({
                   accessibilityRole="button"
                   accessibilityLabel="Share my profile"
                   disabled={family.busy}
-                  onPress={() => void family.share()}
+                  onPress={() => setShareChooser(true)}
                   style={{
                     flex: 1,
                     flexDirection: "row",
@@ -316,6 +329,40 @@ export function ProfileScreen({
                 </TouchableOpacity>
                 )}
               </View>
+
+              {/* Share profile opens these two choices: share your profile, or invite friends. */}
+              <Sheet visible={shareChooser} title="Share" onClose={() => setShareChooser(false)}>
+                <View style={{ padding: 14, gap: 10 }}>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Share your profile"
+                    disabled={family.busy}
+                    onPress={() => {
+                      setShareChooser(false);
+                      void family.share();
+                    }}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 18, backgroundColor: palette.paperSand }}
+                  >
+                    <Ionicons name="people-outline" size={22} color={palette.navy} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>Share your profile</Text>
+                      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Send it to your family</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Invite friends and earn Boosts"
+                    onPress={() => void inviteFriends()}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 18, backgroundColor: palette.crimsonTint }}
+                  >
+                    <Ionicons name="gift-outline" size={22} color={palette.crimson} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: palette.ink }}>Invite friends · earn Boosts</Text>
+                      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: palette.slate }}>Boosts come when your friends join</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </Sheet>
 
               <View style={{ marginTop: 24, paddingHorizontal: 4, gap: 8 }}>
                 <Text style={{ fontFamily: fonts.display, fontSize: typeScale.section, color: palette.ink }}>About</Text>
