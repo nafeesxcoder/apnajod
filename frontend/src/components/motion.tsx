@@ -10,8 +10,10 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { brand } from "./brand";
+import { palette } from "../theme";
 
 /**
  * The app's motion, built on React Native's own Animated (no extra
@@ -102,13 +104,12 @@ export function PressScale({
 const FILL: ViewStyle = { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 };
 
 /**
- * A button made of glass: a soft gloss on top, a little depth at the bottom and
- * a colored glow under it. No moving shine and no border. Under the finger it
- * swells a little. It keeps the colors you give it, so it is the same button,
- * only glassy.
+ * A button of white frosted glass: a real blur over a milky surface, a bright
+ * sheen across the top and a faint navy shade at the bottom, with a soft
+ * shadow. No border and no moving light. Under the finger it bounces a little.
+ * Put navy text on it.
  */
 export function LiquidPress({
-  colors,
   children,
   style,
   contentStyle,
@@ -116,7 +117,6 @@ export function LiquidPress({
   bulge = 1.05,
   ...props
 }: PressableProps & {
-  colors: readonly [string, string, ...string[]];
   children: ReactNode;
   /** The place and shadow of the button (width in a row, margins, shadow). */
   style?: StyleProp<ViewStyle>;
@@ -128,7 +128,6 @@ export function LiquidPress({
 }) {
   const reduced = useReducedMotion();
   const swell = useRef(new Animated.Value(1)).current;
-  const glow = colors[0];
 
   return (
     <Pressable
@@ -136,12 +135,12 @@ export function LiquidPress({
       style={[
         {
           borderRadius: radius,
-          backgroundColor: glow,
-          shadowColor: glow,
-          shadowOpacity: 0.4,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 8,
+          backgroundColor: "rgba(255,255,255,0.8)",
+          shadowColor: palette.navy,
+          shadowOpacity: 0.16,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 6,
         },
         style,
       ]}
@@ -159,21 +158,28 @@ export function LiquidPress({
       }}
     >
       <Animated.View style={{ borderRadius: radius, overflow: "hidden", transform: [{ scale: swell }] }}>
-        {/* The color, then the depth and the gloss, then the content on top, so the text stays sharp. */}
-        <LinearGradient pointerEvents="none" colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={FILL} />
+        {/* The frosted blur, then the milky surface, then the sheen and the faint shade. */}
+        <BlurView pointerEvents="none" intensity={60} tint="light" style={FILL} />
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.2)"]}
-          start={{ x: 0.5, y: 0.4 }}
-          end={{ x: 0.5, y: 1 }}
+          colors={["rgba(255,255,255,0.94)", "rgba(255,255,255,0.7)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={FILL}
         />
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(255,255,255,0.28)", "rgba(255,255,255,0)"]}
+          colors={["rgba(255,255,255,1)", "rgba(255,255,255,0)"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={{ position: "absolute", top: 0, right: 0, left: 0, height: "50%" }}
+          style={{ position: "absolute", top: 0, right: 0, left: 0, height: "55%" }}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(30,27,75,0)", "rgba(30,27,75,0.08)"]}
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 0.5, y: 1 }}
+          style={FILL}
         />
         <View style={contentStyle}>{children}</View>
       </Animated.View>

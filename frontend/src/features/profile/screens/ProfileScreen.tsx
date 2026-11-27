@@ -25,7 +25,7 @@ import { shareInvite } from "../components/InviteCard";
 import { Sheet } from "../../posts/PostSheets";
 import { authApi } from "../../../api/authApi";
 import { TrustBadge } from "../../../components/TrustBadge";
-import { brand, cardShadow } from "../../../components/brand";
+import { cardShadow } from "../../../components/brand";
 import { ZoomPhoto } from "../../../components/ZoomPhoto";
 import { LiquidPress, Reveal } from "../../../components/motion";
 import type { IntentBadgeInput } from "../../../domain/intentBadges";
@@ -271,7 +271,6 @@ export function ProfileScreen({
                   accessibilityRole="button"
                   accessibilityLabel="Edit profile"
                   onPress={() => navigate("profileSetup")}
-                  colors={[palette.navy, palette.navy]}
                   radius={radius.pill}
                   bulge={1.05}
                   style={{ flex: 1 }}
@@ -284,15 +283,12 @@ export function ProfileScreen({
                     minHeight: 44,
                   }}
                 >
-                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
+                  <Ionicons name="create-outline" size={16} color={palette.navy} />
                   <Text
                     style={{
-                      color: "#FFFFFF",
+                      color: palette.navy,
                       fontFamily: fonts.bodySemi,
                       fontSize: 14,
-                      textShadowColor: "rgba(0,0,0,0.25)",
-                      textShadowOffset: { width: 0, height: 1 },
-                      textShadowRadius: 3,
                     }}
                   >
                     Edit profile
@@ -402,8 +398,7 @@ export function ProfileScreen({
                   accessibilityRole="button"
                   accessibilityLabel="See Premium"
                   onPress={() => navigate("premium")}
-                  colors={brand.heroGradient}
-                  radius={18}
+                  radius={26}
                   bulge={1.03}
                   style={cardShadow}
                   contentStyle={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}
@@ -413,16 +408,16 @@ export function ProfileScreen({
                         width: 38,
                         height: 38,
                         borderRadius: 12,
-                        backgroundColor: "rgba(255,255,255,0.14)",
+                        backgroundColor: "rgba(138,26,71,0.1)",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Ionicons name="sparkles" size={18} color={palette.marigold} />
+                      <Ionicons name="sparkles" size={18} color={palette.crimson} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: brand.onHero, textShadowColor: "rgba(0,0,0,0.25)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>Premium</Text>
-                      <Text style={{ fontSize: 12, color: brand.onHeroSoft, marginTop: 1, fontFamily: fonts.body }}>
+                      <Text style={{ fontFamily: fonts.display, fontSize: 17, color: palette.navy }}>Premium</Text>
+                      <Text style={{ fontSize: 12, color: palette.slate, marginTop: 1, fontFamily: fonts.body }}>
                         Unlimited likes, see who liked you, blue tick with Pro
                       </Text>
                     </View>
