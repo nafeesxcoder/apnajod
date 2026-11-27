@@ -473,7 +473,7 @@ export function ChatsScreen({
           onPress={onFind}
           style={[styles.fab, { bottom: isWide ? 28 : 100 }]}
         >
-          <Ionicons name="add" size={30} color="#FFFFFF" />
+          <Ionicons name="add" size={30} color={palette.navy} />
         </Pressable>
 
         <BottomNav active="chats" navigate={navigate} />
@@ -747,7 +747,9 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: palette.crimson,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(30,27,75,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
