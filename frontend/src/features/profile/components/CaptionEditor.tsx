@@ -1,7 +1,7 @@
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Modal } from "../../../components/BackModal";
 
-const PINK = "#5087BE";
+const PINK = "#BE507E";
 const DARK = "#14102E";
 const MUTED = "#5A5E63";
 const LINE = "#E7D8EE";

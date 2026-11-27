@@ -309,7 +309,7 @@ export function ProfileScreen({
                     gap: 6,
                     minHeight: 44,
                     backgroundColor: "rgba(255,255,255,0.92)",
-                    borderColor: "rgba(30,27,75,0.14)",
+                    borderColor: "rgba(75,27,47,0.14)",
                     shadowOpacity: 0.18,
                     shadowRadius: 10,
                   }}

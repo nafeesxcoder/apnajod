@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   createContext,
   useContext,
   useEffect,
@@ -538,28 +538,28 @@ const isAnimatedEmojiText = (value = "") => {
   );
 };
 const snapFilters = [
-  { name: "Ruby Glow", color: "rgba(31,82,134,.24)" },
+  { name: "Ruby Glow", color: "rgba(134,31,74,.24)" },
   { name: "Golden Hour", color: "rgba(170,42,68,.18)" },
   { name: "Noir", color: "rgba(0,0,0,.38)" },
-  { name: "Rose Film", color: "rgba(163,185,207,.18)" },
-  { name: "Cool Date", color: "rgba(32,84,136,.18)" },
-  { name: "Velvet Crush", color: "rgba(19,53,87,.32)" },
-  { name: "Bollywood Sparkle", color: "rgba(113,153,194,.22)" },
+  { name: "Rose Film", color: "rgba(207,163,181,.18)" },
+  { name: "Cool Date", color: "rgba(136,32,75,.18)" },
+  { name: "Velvet Crush", color: "rgba(87,19,47,.32)" },
+  { name: "Bollywood Sparkle", color: "rgba(194,113,147,.22)" },
   { name: "Chai Warmth", color: "rgba(132,33,53,.22)" },
   { name: "Dream Home", color: "rgba(238,239,241,.13)" },
-  { name: "Moonlit Date", color: "rgba(28,76,125,.25)" },
-  { name: "Rose Petal", color: "rgba(131,164,198,.28)" },
+  { name: "Moonlit Date", color: "rgba(125,28,68,.25)" },
+  { name: "Rose Petal", color: "rgba(198,131,159,.28)" },
   { name: "Cinema Night", color: "rgba(15,17,19,.48)" },
   { name: "Soft Blush", color: "rgba(209,212,216,.22)" },
-  { name: "Royal Ruby", color: "rgba(24,65,106,.3)" },
+  { name: "Royal Ruby", color: "rgba(106,24,58,.3)" },
   { name: "Shaadi Glow", color: "rgba(205,105,125,.2)" },
   { name: "Meme Pop", color: "rgba(51,114,93,.16)" },
   { name: "Funny Face", color: "rgba(255,255,255,.18)" },
   { name: "Desi Drama", color: "rgba(161,40,64,.20)" },
   { name: "Puppy Mood", color: "rgba(108,26,42,.18)" },
   { name: "Cartoon Crush", color: "rgba(125,130,137,.18)" },
-  { name: "Retro VHS", color: "rgba(35,90,146,.16)" },
-  { name: "Neon Club", color: "rgba(35,90,146,.22)" },
+  { name: "Retro VHS", color: "rgba(146,35,81,.16)" },
+  { name: "Neon Club", color: "rgba(146,35,81,.22)" },
   { name: "Soft Focus", color: "rgba(224,226,229,.18)" },
   { name: "Laugh Track", color: "rgba(161,40,64,.16)" },
   { name: "Crown Mode", color: "rgba(170,42,68,.22)" },
@@ -759,13 +759,13 @@ const coupleGames: CoupleGame[] = [
 const coupleThemes = [
   { name: "Ruby Velvet", accent: "#B0245F", soft: "rgba(176,36,95,0.12)", wash: "rgba(176,36,95,0.05)", panel: "#14102E", border: "rgba(176,36,95,0.35)" },
   { name: "Champagne Night", accent: "#A3293C", soft: "rgba(163,41,60,0.12)", wash: "rgba(163,41,60,0.05)", panel: "#14102E", border: "rgba(163,41,60,0.35)" },
-  { name: "Royal Plum", accent: "#6B3FA0", soft: "rgba(107,63,160,0.12)", wash: "rgba(107,63,160,0.05)", panel: "#14102E", border: "rgba(107,63,160,0.35)" },
+  { name: "Royal Plum", accent: "#A03F67", soft: "rgba(160,63,103,0.12)", wash: "rgba(160,63,103,0.05)", panel: "#14102E", border: "rgba(160,63,103,0.35)" },
   { name: "Moonlit Noir", accent: "#23262B", soft: "rgba(35,38,43,0.12)", wash: "rgba(35,38,43,0.05)", panel: "#14102E", border: "rgba(35,38,43,0.35)" },
   { name: "Rose Gold", accent: "#B0606D", soft: "rgba(176,96,109,0.12)", wash: "rgba(176,96,109,0.05)", panel: "#14102E", border: "rgba(176,96,109,0.35)" },
   { name: "Emerald Promise", accent: "#2E7D5B", soft: "rgba(46,125,91,0.12)", wash: "rgba(46,125,91,0.05)", panel: "#14102E", border: "rgba(46,125,91,0.35)" },
   { name: "Desert Chai", accent: "#9A5230", soft: "rgba(154,82,48,0.12)", wash: "rgba(154,82,48,0.05)", panel: "#14102E", border: "rgba(154,82,48,0.35)" },
   { name: "Bollywood Glow", accent: "#D9480F", soft: "rgba(217,72,15,0.12)", wash: "rgba(217,72,15,0.05)", panel: "#14102E", border: "rgba(217,72,15,0.35)" },
-  { name: "Ocean Drive", accent: "#1C6FB8", soft: "rgba(28,111,184,0.12)", wash: "rgba(28,111,184,0.05)", panel: "#14102E", border: "rgba(28,111,184,0.35)" },
+  { name: "Ocean Drive", accent: "#B81C5D", soft: "rgba(184,28,93,0.12)", wash: "rgba(184,28,93,0.05)", panel: "#14102E", border: "rgba(184,28,93,0.35)" },
   { name: "Ivory Calm", accent: "#5C6670", soft: "rgba(92,102,112,0.12)", wash: "rgba(92,102,112,0.05)", panel: "#14102E", border: "rgba(92,102,112,0.35)" },
 ];
 
@@ -2809,7 +2809,7 @@ export function ChatScreen({
                 onPress={stopMultiSelect}
                 style={chatStyles.multiSelectButton}
               >
-                <Ionicons name="close" size={18} color="#194470" />
+                <Ionicons name="close" size={18} color="#70193D" />
               </Pressable>
               <Text
                 accessibilityLiveRegion="polite"
@@ -2835,7 +2835,7 @@ export function ChatScreen({
           )}
           {!!pendingDelete && (
             <View accessibilityRole="alert" style={chatStyles.undoBanner}>
-              <Ionicons name="trash-outline" size={17} color="#163D65" />
+              <Ionicons name="trash-outline" size={17} color="#651637" />
               <Text style={chatStyles.undoText}>Message deleted</Text>
               <Pressable
                 accessibilityRole="button"
@@ -4132,7 +4132,7 @@ function ChatBubble({
               <Ionicons
                 name="arrow-redo-outline"
                 size={10}
-                color={mine ? "#E7D8EE" : "#245C95"}
+                color={mine ? "#E7D8EE" : "#952453"}
               />
               <Text
                 style={[
@@ -5011,7 +5011,7 @@ function GameChatCard({
               <Ionicons
                 name={replyMine ? "person" : "heart"}
                 size={11}
-                color={replyMine ? "#14395E" : "#761D2F"}
+                color={replyMine ? "#5E1433" : "#761D2F"}
               />
               <Text style={chatStyles.gameNestedName}>
                 {replyMine ? "You" : "Your match"} answered
@@ -5041,7 +5041,7 @@ function GameChatCard({
             onSubmitEditing={send}
             returnKeyType="send"
             placeholder="Type your answer inside this round…"
-            placeholderTextColor={mine ? "rgba(255,255,255,.65)" : "#28619B"}
+            placeholderTextColor={mine ? "rgba(255,255,255,.65)" : "#9B2858"}
             style={[
               chatStyles.gameReplyInput,
               !mine && chatStyles.gameReplyInputTheirs,
@@ -5681,7 +5681,7 @@ function VoiceNote({
           <Ionicons
             name={status.playing ? "pause" : "play"}
             size={17}
-            color={mine ? "#153A60" : "#FFFFFF"}
+            color={mine ? "#601534" : "#FFFFFF"}
           />
         </Pressable>
         <View style={chatStyles.voiceTrack}>
@@ -5918,7 +5918,7 @@ function LiveLocationCard({
     <View style={{ gap: 8 }}>
       <Pressable onPress={openMap} style={chatStyles.locationCard}>
         <LinearGradient
-          colors={["rgba(170,42,68,.24)", "rgba(21,59,97,.52)"]}
+          colors={["rgba(170,42,68,.24)", "rgba(97,21,53,.52)"]}
           style={chatStyles.locationMap}
         >
           <View style={chatStyles.locationGrid} />
@@ -6104,7 +6104,7 @@ function ChatOptionsSheet({
     { title: "Search", sub: "Find a message in this chat", icon: "search-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSearch, variant: "plain" as const },
     { title: "Select messages", sub: "Forward, copy or delete several", icon: "checkmark-done-outline" as const, tint: "#E6EEF7", color: "#B0245F", onPress: onSelectMessages, variant: "plain" as const },
     { title: "Disappearing messages", sub: "Messages vanish after the time you choose", icon: "timer-outline" as const, tint: "#FBEAEE", color: "#B0245F", onPress: () => setOpenRow(openRow === "retention" ? null : "retention"), variant: "tile" as const },
-    { title: "Mute notifications", sub: muted ? "Muted: no alerts from this chat" : "Notifications are on", icon: "notifications-off-outline" as const, tint: "#F1EEF9", color: "#5B4B8A", onPress: onToggleMute, variant: "toggle" as const },
+    { title: "Mute notifications", sub: muted ? "Muted: no alerts from this chat" : "Notifications are on", icon: "notifications-off-outline" as const, tint: "#F1EEF9", color: "#8A4B65", onPress: onToggleMute, variant: "toggle" as const },
     { title: "Chat appearance", sub: "Background and theme", icon: "color-palette-outline" as const, tint: "#FFF4E5", color: "#B26A00", onPress: () => setOpenRow(openRow === "background" ? null : "background"), variant: "swatches" as const },
   ];
   const privacyRows = screenshotDetection
@@ -6827,11 +6827,11 @@ function CatalogGifArtwork({
   const tone = catalogGifTone(gif);
   const palette: Record<CustomChatSticker["tone"], readonly [string, string]> =
     {
-      ruby: ["#133558", "#5187BD"],
+      ruby: ["#581330", "#BD517E"],
       rose: ["#DADDE0", "#F6F7F8"],
       gold: ["#7A1E30", "#CE7486"],
-      plum: ["#123252", "#3A74AF"],
-      cocoa: ["#15395E", "#C43B56"],
+      plum: ["#52122D", "#AF3A6B"],
+      cocoa: ["#5E1533", "#C43B56"],
     };
   const scale = motion.interpolate({
     inputRange: [0, 1],
@@ -7211,7 +7211,7 @@ function GifPicker({
               <Ionicons
                 name={item.icon}
                 size={14}
-                color={libraryMode === item.id ? "#FFFFFF" : "#1C4A79"}
+                color={libraryMode === item.id ? "#FFFFFF" : "#791C43"}
               />
               <Text
                 style={[
@@ -7243,7 +7243,7 @@ function GifPicker({
                   accessibilityLabel="Clear GIF search"
                   onPress={() => setQuery("")}
                 >
-                  <Ionicons name="close-circle" size={18} color="#3C76B1" />
+                  <Ionicons name="close-circle" size={18} color="#B13C6D" />
                 </Pressable>
               )}
             </View>
@@ -7479,7 +7479,7 @@ function EmojiMediaPanel({
             hitSlop={accessibilityHitSlop}
             onPress={() => setQuery("")}
           >
-            <Ionicons name="close-circle" size={18} color="#3C76B1" />
+            <Ionicons name="close-circle" size={18} color="#B13C6D" />
           </Pressable>
         )}
       </View>
@@ -7508,7 +7508,7 @@ function EmojiMediaPanel({
               <Ionicons
                 name={item.icon as keyof typeof Ionicons.glyphMap}
                 size={17}
-                color={category === item.id ? "#B0245F" : "#1C4B7B"}
+                color={category === item.id ? "#B0245F" : "#7B1C44"}
               />
             </Pressable>
           ))}
@@ -7730,7 +7730,7 @@ function EmojiMediaPanel({
             <Ionicons
               name={item.icon}
               size={16}
-              color={mode === item.id ? "#FFFFFF" : "#1B4977"}
+              color={mode === item.id ? "#FFFFFF" : "#771B41"}
             />
             <Text
               style={[
@@ -7907,7 +7907,7 @@ function MessageActionSheet({
             hitSlop={accessibilityHitSlop}
             onPress={onClose}
           >
-            <Ionicons name="close" size={20} color="#1C4B7A" />
+            <Ionicons name="close" size={20} color="#7A1C43" />
           </Pressable>
         </View>
         <View style={chatStyles.quickReactionRow}>
@@ -8002,7 +8002,7 @@ function MessageActionSheet({
                 style={[chatStyles.actionRow, chatStyles.deleteAction]}
               >
                 <View style={[chatStyles.actionIcon, chatStyles.deleteIcon]}>
-                  <Ionicons name="trash-outline" size={18} color="#19446F" />
+                  <Ionicons name="trash-outline" size={18} color="#6F193D" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={chatStyles.deleteTitle}>
@@ -8021,7 +8021,7 @@ function MessageActionSheet({
             style={[chatStyles.actionRow, chatStyles.deleteAction]}
           >
             <View style={[chatStyles.actionIcon, chatStyles.deleteIcon]}>
-              <Ionicons name="trash-outline" size={18} color="#19446F" />
+              <Ionicons name="trash-outline" size={18} color="#6F193D" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={chatStyles.deleteTitle}>Delete for me</Text>
@@ -8091,7 +8091,7 @@ function EditMessageSheet({
             onChangeText={setValue}
             maxLength={2000}
             placeholder="Update your message"
-            placeholderTextColor="#235A92"
+            placeholderTextColor="#922351"
             style={chatStyles.editMessageInput}
           />
           <Text style={chatStyles.editMessageCount}>{value.length}/2,000</Text>
@@ -8551,7 +8551,7 @@ function GameSheet({
               <Ionicons
                 name={customOpen ? "chevron-up" : "chevron-down"}
                 size={17}
-                color="#173F67"
+                color="#671738"
               />
             </Pressable>
             {customOpen && (
@@ -8574,7 +8574,7 @@ function GameSheet({
                   multiline
                   maxLength={220}
                   placeholder="Example: What tiny tradition would you love us to create together?"
-                  placeholderTextColor="#2D67A1"
+                  placeholderTextColor="#A12D5D"
                   style={gameStyles.customInput}
                 />
                 <Pressable
@@ -8969,7 +8969,7 @@ function CoupleSettingsSheet({
                     color={
                       settings.notificationMode === item.id
                         ? "#FFFFFF"
-                        : "#1B4A79"
+                        : "#791B42"
                     }
                   />
                   <Text
@@ -9039,7 +9039,7 @@ function CoupleSettingsSheet({
                     }}
                     style={[chatStyles.soundChoice, on && chatStyles.soundChoiceOn]}
                   >
-                    <Ionicons name={icon} size={14} color={on ? "#FFFFFF" : "#1B4A79"} />
+                    <Ionicons name={icon} size={14} color={on ? "#FFFFFF" : "#791B42"} />
                     <Text style={[chatStyles.soundChoiceText, on && chatStyles.soundChoiceTextOn]}>{label}</Text>
                   </Pressable>
                 );
@@ -9329,12 +9329,12 @@ type SnapLens = {
 
 const snapLenses: SnapLens[] = [
   { name: "Original", emoji: "📷", gradient: ["#3A3F46", "#15171A"], kind: "none" },
-  { name: "Neon Club", emoji: "🌃", gradient: ["#1F4F7E", "#0E2238"], kind: "tint", color: "rgba(35,90,146,0.24)" },
+  { name: "Neon Club", emoji: "🌃", gradient: ["#7E1F47", "#380E1F"], kind: "tint", color: "rgba(146,35,81,0.24)" },
   { name: "Royal Ruby", emoji: "💎", gradient: ["#B0245F", "#4A0F1A"], kind: "tint", color: "rgba(161,40,64,0.26)" },
   { name: "Golden Hour", emoji: "🌅", gradient: ["#F0A060", "#7A3A1C"], kind: "leak", color: "rgba(255,170,90,0.38)" },
   { name: "Polaroid", emoji: "🎞️", gradient: ["#F4F4F4", "#9AA0A6"], kind: "polaroid" },
   { name: "Heart Rain", emoji: "💖", gradient: ["#E0557F", "#7A1B3A"], kind: "hearts" },
-  { name: "Neon Frame", emoji: "✨", gradient: ["#3B3F9C", "#101238"], kind: "frame", color: "#7CF5FF" },
+  { name: "Neon Frame", emoji: "✨", gradient: ["#9C3B63", "#381021"], kind: "frame", color: "#FF7CB3" },
   { name: "Noir", emoji: "🖤", gradient: ["#4A4D52", "#050505"], kind: "tint", color: "rgba(0,0,0,0.38)" },
 ];
 
@@ -9430,7 +9430,7 @@ function SnapLensLayer({ lens }: { lens: SnapLens | null | undefined }) {
     return (
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, snapLensStyles.frame, { borderColor: lens.color ?? "#7CF5FF" }]}
+        style={[StyleSheet.absoluteFill, snapLensStyles.frame, { borderColor: lens.color ?? "#FF7CB3" }]}
       />
     );
   }

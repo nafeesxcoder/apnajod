@@ -73,7 +73,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
 
   return (
     <View style={{ gap: 16 }}>
-      <Text style={{ fontSize: 13, lineHeight: 19, color: "#5B6B7A" }}>
+      <Text style={{ fontSize: 13, lineHeight: 19, color: "#7A5B68" }}>
         A demo account is a real account with a username and password, and no phone number. Use it
         for a store review or a partner check. It works like any member's account, so delete it when
         you are done.
@@ -121,7 +121,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
       {users === null ? (
         <ActivityIndicator color="#B0245F" />
       ) : users.length === 0 ? (
-        <Text style={{ color: "#5B6B7A" }}>No demo accounts yet.</Text>
+        <Text style={{ color: "#7A5B68" }}>No demo accounts yet.</Text>
       ) : (
         users.map((user) => (
           <View
@@ -130,7 +130,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
           >
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: "700" }}>@{user.username}</Text>
-              <Text style={{ fontSize: 12, color: "#5B6B7A" }}>{user.fullName}</Text>
+              <Text style={{ fontSize: 12, color: "#7A5B68" }}>{user.fullName}</Text>
             </View>
             {confirmId === user.id ? (
               <>
@@ -138,7 +138,7 @@ export function DemoAccountsTab({ accessToken }: { accessToken: string }) {
                   <Text style={{ color: "#B0245F", fontWeight: "700" }}>Delete for good</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => setConfirmId(null)}>
-                  <Text style={{ color: "#5B6B7A" }}>Cancel</Text>
+                  <Text style={{ color: "#7A5B68" }}>Cancel</Text>
                 </Pressable>
               </>
             ) : (

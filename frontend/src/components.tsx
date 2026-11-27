@@ -1,4 +1,4 @@
-﻿import { Image, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, StyleSheet, Text, TextInput, View } from "react-native";
 import { Pressable } from "./components/Pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,7 +44,7 @@ export function Button({
           colors={
             variant === "gold"
               ? ["#DAB3BB", colors.gold, "#651827"]
-              : ["#6693C1", colors.pink, "#133456"]
+              : ["#C1668C", colors.pink, "#56132F"]
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -81,7 +81,7 @@ export function Button({
     >
       {variant === "primary" ? (
         <LinearGradient
-          colors={["#20558B", colors.pink, "#B0245F"]}
+          colors={["#8B204D", colors.pink, "#B0245F"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.button, styles.primary]}

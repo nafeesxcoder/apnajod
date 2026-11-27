@@ -15,14 +15,14 @@ export type PromoStyle = {
 };
 
 export const PROMO_STYLES: Record<string, PromoStyle> = {
-  classic: { key: "classic", name: "Apnajoda", colors: ["#7A1630", "#1F3A68"], ink: "#FFFFFF", accent: "#FFD166", accentInk: "#3A1A00", burst: ["✨", "💖", "⭐"] },
+  classic: { key: "classic", name: "Apnajoda", colors: ["#7A1630", "#681F3D"], ink: "#FFFFFF", accent: "#FFD166", accentInk: "#3A1A00", burst: ["✨", "💖", "⭐"] },
   gold: { key: "gold", name: "Black & Gold", colors: ["#111111", "#3B2A06"], ink: "#FDE68A", accent: "#F5C542", accentInk: "#1A1200", burst: ["✨", "⭐", "💛"] },
-  midnight: { key: "midnight", name: "Midnight", colors: ["#0B1023", "#4338CA"], ink: "#E0E7FF", accent: "#A5B4FC", accentInk: "#0B1023", burst: ["⭐", "✨", "🌙"] },
+  midnight: { key: "midnight", name: "Midnight", colors: ["#0B1023", "#CA3875"], ink: "#FFE0ED", accent: "#FCA5C9", accentInk: "#0B1023", burst: ["⭐", "✨", "🌙"] },
   sunset: { key: "sunset", name: "Sunset", colors: ["#F97316", "#DB2777"], ink: "#FFFFFF", accent: "#FFFFFF", accentInk: "#9D174D", burst: ["🔥", "✨", "🧡"] },
   love: { key: "love", name: "Love", colors: ["#881337", "#F43F5E"], ink: "#FFF1F2", accent: "#FFFFFF", accentInk: "#9F1239", burst: ["💖", "💕", "🌹"] },
   diwali: { key: "diwali", name: "Diwali", colors: ["#4A1209", "#D9771A"], ink: "#FFF7E6", accent: "#FCD34D", accentInk: "#4A1209", burst: ["🪔", "✨", "🎆"] },
   eid: { key: "eid", name: "Eid", colors: ["#053B2F", "#0F766E"], ink: "#FEF3C7", accent: "#FCD34D", accentInk: "#053B2F", burst: ["🌙", "⭐", "✨"] },
-  holi: { key: "holi", name: "Holi", colors: ["#DB2777", "#7C3AED"], ink: "#FFFFFF", accent: "#FDE047", accentInk: "#581C87", burst: ["🎨", "💦", "🌈"] },
+  holi: { key: "holi", name: "Holi", colors: ["#DB2777", "#ED3A85"], ink: "#FFFFFF", accent: "#FDE047", accentInk: "#871C49", burst: ["🎨", "💦", "🌈"] },
 };
 
 export type Promo = {

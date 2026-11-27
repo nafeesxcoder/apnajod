@@ -650,7 +650,7 @@ export function CallModal({
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: "#3A3358", fontSize: 11 }}>
+              <Text style={{ color: "#583342", fontSize: 11 }}>
                 {`BT debug · bluetoothAvailable=${bluetoothAvailable} · android=${IS_ANDROID}`}
               </Text>
               {deviceDebugLines.length === 0 ? (

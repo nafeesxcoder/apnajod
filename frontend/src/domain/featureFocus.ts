@@ -19,24 +19,24 @@ export type FeatureSurface='primary_navigation'|'home'|'chat_toolbar'|'chat_atta
 
 export const chatPrimaryAttachments=[
   {id:'camera',label:'Camera',icon:'camera',color:'#B0245F'},
-  {id:'gallery',label:'Photo',icon:'images',color:'#194571'},
+  {id:'gallery',label:'Photo',icon:'images',color:'#71193E'},
   // Games sit on the first page: two taps from a chat. They start real
   // conversation, which documents in a dating chat rarely do.
-  {id:'games',label:'Games',icon:'game-controller',color:'#235A92'},
+  {id:'games',label:'Games',icon:'game-controller',color:'#922351'},
   // Planning to meet is what the chat is for. "Meet up" with a cup, not
   // "Date" with a calendar, which reads as picking a day.
   {id:'date',label:'Meet up',icon:'cafe',color:'#AA2A44'},
-  {id:'more',label:'More',icon:'ellipsis-horizontal',color:'#235A92'},
+  {id:'more',label:'More',icon:'ellipsis-horizontal',color:'#922351'},
 ] as const;
 
 export const chatMoreAttachments=[
   {id:'contact',label:'Contact',icon:'person',color:'#275C4A'},
   {id:'poll',label:'Poll',icon:'stats-chart',color:'#AA2A44'},
   {id:'gif',label:'GIF',icon:'happy',color:'#B0245F'},
-  {id:'document',label:'Document',icon:'document-text',color:'#235A92'},
+  {id:'document',label:'Document',icon:'document-text',color:'#922351'},
   {id:'location',label:'Location',icon:'location',color:'#AA2A44'},
   {id:'spark',label:'Spark',icon:'sparkles',color:'#AA2A44'},
-  {id:'back',label:'Back',icon:'arrow-back',color:'#235A92'},
+  {id:'back',label:'Back',icon:'arrow-back',color:'#922351'},
 ] as const;
 
 export const featureSurfaceBudgets:Record<FeatureSurface,number>={

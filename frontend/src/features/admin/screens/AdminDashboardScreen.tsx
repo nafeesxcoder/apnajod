@@ -88,7 +88,7 @@ const COLORS = {
   textMain: "#111827",
   textMuted: "#5B5478",
   border: "#E5E7EB",
-  primary: "#1E3A8A",
+  primary: "#8A1E4B",
   primaryLight: "#EFF6FF",
   danger: "#EF4444",
   success: "#10B981",
@@ -1497,7 +1497,7 @@ function Badge({ text, danger }: { text: string; danger?: boolean }) {
   return (
     <View
       style={{
-        backgroundColor: danger ? "#FEE2E2" : "#E0E7FF",
+        backgroundColor: danger ? "#FEE2E2" : "#FFE0ED",
         borderRadius: 999,
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -1629,7 +1629,7 @@ function VerificationsTab({ accessToken }: { accessToken: string }) {
                   style={{
                     fontFamily: fonts.bodySemi,
                     fontSize: 11,
-                    color: "#0B6BB3",
+                    color: "#B30B51",
                     textTransform: "uppercase",
                   }}
                 >

@@ -18,8 +18,8 @@ const C = {
   border: "#E5E7EB",
   textMain: "#111827",
   textMuted: "#5B5478",
-  primary: "#1E3A8A", // the picked day (10.4:1 on white)
-  bar: "#6B83C4", // other days (3.7:1 on white)
+  primary: "#8A1E4B", // the picked day (10.4:1 on white)
+  bar: "#C46B90", // other days (3.7:1 on white)
   primaryLight: "#EFF6FF",
 };
 

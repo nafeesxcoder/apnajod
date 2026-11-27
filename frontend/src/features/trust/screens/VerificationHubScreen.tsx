@@ -181,7 +181,7 @@ export function VerificationHubScreen({
                   style={{
                     fontSize: 12,
                     fontWeight: "700",
-                    color: "#0B6BB3",
+                    color: "#B30B51",
                     letterSpacing: 0.6,
                     textTransform: "uppercase",
                   }}
@@ -210,7 +210,7 @@ export function VerificationHubScreen({
                   onPress={() => void loadPose()}
                   hitSlop={8}
                 >
-                  <Ionicons name="refresh" size={20} color="#0B6BB3" />
+                  <Ionicons name="refresh" size={20} color="#B30B51" />
                 </TouchableOpacity>
               )}
             </View>

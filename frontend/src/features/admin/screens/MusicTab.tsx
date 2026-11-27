@@ -13,7 +13,7 @@ const C = {
   border: "#E5E7EB",
   text: "#111827",
   muted: "#5B5478",
-  primary: "#1E3A8A",
+  primary: "#8A1E4B",
   danger: "#EF4444",
 };
 

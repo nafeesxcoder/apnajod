@@ -111,34 +111,34 @@ export function TwoStepSection({ accessToken }: { accessToken: string }) {
         <ActivityIndicator color="#B0245F" />
       ) : enabled ? (
         <>
-          <Text style={{ color: "#1B2A3A", lineHeight: 20 }}>
+          <Text style={{ color: "#3A1B28", lineHeight: 20 }}>
             On. Each sign-in asks for the 6-digit code from your authenticator app.
           </Text>
-          <Text style={{ fontSize: 12, color: "#5B6B7A" }}>To turn it off, enter a current code from the app.</Text>
+          <Text style={{ fontSize: 12, color: "#7A5B68" }}>To turn it off, enter a current code from the app.</Text>
           {input("Code to turn off")}
           {button("Turn off", () => void turnOff(), code.length !== 6, true)}
         </>
       ) : setup ? (
         <>
-          <Text style={{ color: "#1B2A3A", lineHeight: 20 }}>
+          <Text style={{ color: "#3A1B28", lineHeight: 20 }}>
             Open Microsoft Authenticator (or Google Authenticator), tap + and scan this QR code.
           </Text>
           <View style={{ alignItems: "center" }}>
             <Image source={{ uri: setup.qrDataUrl }} style={{ width: 220, height: 220, backgroundColor: "#FFFFFF" }} />
           </View>
-          <Text style={{ fontSize: 12, color: "#5B6B7A", lineHeight: 18 }}>
+          <Text style={{ fontSize: 12, color: "#7A5B68", lineHeight: 18 }}>
             Can not scan? Choose "enter a setup key" in the app and type this key, then keep it somewhere safe:
           </Text>
-          <Text selectable style={{ fontFamily: "monospace", fontSize: 14, color: "#1B2A3A" }}>{setup.secret}</Text>
+          <Text selectable style={{ fontFamily: "monospace", fontSize: 14, color: "#3A1B28" }}>{setup.secret}</Text>
           {input("Code from the app")}
           {button("Turn on", () => void confirm(), code.length !== 6)}
           <Pressable accessibilityRole="button" onPress={() => setSetup(null)}>
-            <Text style={{ textAlign: "center", color: "#5B6B7A" }}>Cancel</Text>
+            <Text style={{ textAlign: "center", color: "#7A5B68" }}>Cancel</Text>
           </Pressable>
         </>
       ) : (
         <>
-          <Text style={{ color: "#1B2A3A", lineHeight: 20 }}>
+          <Text style={{ color: "#3A1B28", lineHeight: 20 }}>
             Off. Turn it on to ask for a code from an authenticator app every time you sign in to the admin panel.
           </Text>
           {button("Set up authenticator app", () => void start())}

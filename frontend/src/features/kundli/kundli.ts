@@ -132,7 +132,7 @@ export function gunBand(score: number, max: number) {
   const share = score / max;
   if (share >= 33 / 36) return { label: "Excellent match", hindi: "उत्तम", color: "#B45309", emoji: "💫" };
   if (share >= 25 / 36) return { label: "Very good match", hindi: "बहुत अच्छा", color: "#047857", emoji: "✨" };
-  if (share >= 18 / 36) return { label: "Good match", hindi: "अच्छा", color: "#1D4ED8", emoji: "🙂" };
+  if (share >= 18 / 36) return { label: "Good match", hindi: "अच्छा", color: "#D81D6B", emoji: "🙂" };
   return { label: "Low match", hindi: "कम", color: "#5B5478", emoji: "🌙" };
 }
 
