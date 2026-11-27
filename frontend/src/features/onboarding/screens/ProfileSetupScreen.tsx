@@ -252,13 +252,13 @@ export function ProfileSetupScreen({
                 width: 44,
                 height: 44,
                 borderRadius: 22,
-                backgroundColor: palette.navy,
+                backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: photoBusy ? 0.5 : 1,
               }}
             >
-              <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+              <Ionicons name="checkmark" size={24} color={palette.navy} />
             </TouchableOpacity>
           </View>
         </View>
@@ -443,11 +443,11 @@ export function ProfileSetupScreen({
                       minHeight: 40,
                       paddingHorizontal: 16,
                       borderRadius: radius.pill,
-                      backgroundColor: palette.crimson,
+                      backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: "#FFFFFF" }}>
+                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.navy }}>
                       {verificationStatus === "rejected" ? "Try again" : "Verify"}
                     </Text>
                   </PressScale>
@@ -491,9 +491,9 @@ export function ProfileSetupScreen({
                         accessibilityLabel="Save username"
                         disabled={accountBusy}
                         onPress={() => void saveUsername()}
-                        style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: palette.crimson }}
+                        style={{ paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)' }}
                       >
-                        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: "#FFFFFF" }}>Save username</Text>
+                        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: palette.navy }}>Save username</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         accessibilityRole="button"
@@ -744,15 +744,15 @@ export function ProfileSetupScreen({
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 8,
-                    backgroundColor: palette.navy,
+                    backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                     paddingVertical: 12,
                     borderRadius: radius.pill,
                   }}
                 >
-                  <Ionicons name="add-circle-outline" size={20} color="#FFF" />
+                  <Ionicons name="add-circle-outline" size={20} color={palette.navy} />
                   <Text
                     style={{
-                      color: "#FFF",
+                      color: palette.navy,
                       fontFamily: fonts.bodySemi,
                       fontSize: 15,
                     }}
@@ -766,7 +766,7 @@ export function ProfileSetupScreen({
             <TouchableOpacity
               onPress={handleSave}
               style={{
-                backgroundColor: palette.navy,
+                backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                 paddingVertical: 14,
                 borderRadius: radius.pill,
                 alignItems: "center",
@@ -775,7 +775,7 @@ export function ProfileSetupScreen({
             >
               <Text
                 style={{
-                  color: "#FFFFFF",
+                  color: palette.navy,
                   fontFamily: fonts.bodySemi,
                   fontSize: 15,
                 }}
@@ -939,7 +939,7 @@ export function ProfileSetupScreen({
                 <TouchableOpacity
                   onPress={() => setShowHobbyPicker(false)}
                   style={{
-                    backgroundColor: palette.navy,
+                    backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(30,27,75,0.14)',
                     paddingVertical: 14,
                     borderRadius: radius.pill,
                     alignItems: "center",
@@ -947,7 +947,7 @@ export function ProfileSetupScreen({
                 >
                   <Text
                     style={{
-                      color: "#FFF",
+                      color: palette.navy,
                       fontFamily: fonts.bodySemi,
                       fontSize: 15,
                     }}
