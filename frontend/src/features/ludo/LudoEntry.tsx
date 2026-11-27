@@ -8,9 +8,9 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { type LudoGame, ludoApi } from "../../api/ludoApi";
 import { getChatSocket } from "../../api/chatSocket";
-import { brand, cardShadow, whiteCard } from "../../components/brand";
-import { LiquidPress, PressScale } from "../../components/motion";
-import { colors, fonts, palette, radius, typeScale } from "../../theme";
+import { brand, cardShadow } from "../../components/brand";
+import { LiquidPress } from "../../components/motion";
+import { fonts, palette, radius, typeScale } from "../../theme";
 import { SEAT_COLORS } from "./board";
 import { ludoRoomLabel } from "./ludoText";
 import { useWallet } from "./LudoStore";
@@ -86,26 +86,30 @@ export function LudoEntry({
       {games.map((g) => {
         const label = ludoRoomLabel(g, myId);
         return (
-          <PressScale
+          <LiquidPress
             key={g.id}
             accessibilityRole="button"
             accessibilityLabel={`${label.title}. ${label.action}`}
             onPress={() => onOpen(g.id)}
-            style={[whiteCard, { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: radius.md }]}
+            colors={brand.heroGradient}
+            radius={22}
+            bulge={1.03}
+            style={cardShadow}
+            contentStyle={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}
           >
-            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: label.urgent ? "#FEE2E2" : "#F3F4F6", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name={label.urgent ? "notifications" : "dice-outline"} size={20} color={label.urgent ? palette.crimson : colors.text} />
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: label.urgent ? "rgba(246,196,69,0.28)" : "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name={label.urgent ? "notifications" : "dice-outline"} size={20} color={brand.onHero} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: typeScale.body, color: colors.text }}>
+              <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: typeScale.body, color: brand.onHero }}>
                 {label.title}
               </Text>
-              <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: typeScale.label, color: colors.muted }}>
+              <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: typeScale.label, color: brand.onHeroSoft }}>
                 {label.detail}
               </Text>
             </View>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: palette.crimson }}>{label.action}</Text>
-          </PressScale>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: brand.onHero }}>{label.action}</Text>
+          </LiquidPress>
         );
       })}
     </View>
