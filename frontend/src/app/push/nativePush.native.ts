@@ -42,7 +42,6 @@ export function startNativePush(accessToken: string, targets: PushTargets): () =
           importance: Notifications.AndroidImportance.HIGH,
           vibrationPattern: [0, 250, 200, 250],
           lightColor: "#B81C3C",
-          sound: "default",
         });
         // A chat set to Silent: shows like any other, without a sound.
         await Notifications.setNotificationChannelAsync("quiet", {
