@@ -102,9 +102,11 @@ export function PressScale({
 const FILL: ViewStyle = { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 };
 
 /**
- * A button that feels like water, like the bottom bar's lens: it swells under
- * the finger, a ring ripples out from the touch, and a soft gloss sits on top.
- * It keeps the colors you give it, so it is the same button, only wet.
+ * A button made of glass: it has depth (darker at the bottom, a gloss on top,
+ * a bright rim and a streak of light), a colored glow under it, and a shine
+ * that slides across every few seconds. Under the finger it swells, a white
+ * flash runs through it and a ring ripples out. It keeps the colors you give
+ * it, so it is the same button, only glassy.
  */
 export function LiquidPress({
   colors,
@@ -128,14 +130,47 @@ export function LiquidPress({
   const reduced = useReducedMotion();
   const swell = useRef(new Animated.Value(1)).current;
   const ring = useRef(new Animated.Value(1)).current;
+  const flash = useRef(new Animated.Value(0)).current;
+  const sweep = useRef(new Animated.Value(0)).current;
+  const [width, setWidth] = useState(0);
+  const glow = colors[0];
+
+  useEffect(() => {
+    if (reduced) {
+      sweep.setValue(0);
+      return;
+    }
+    // A shine that slides across the glass every few seconds.
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sweep, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: nativeDriver }),
+        Animated.delay(2600),
+        Animated.timing(sweep, { toValue: 0, duration: 0, useNativeDriver: nativeDriver }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reduced, sweep]);
 
   return (
     <Pressable
       {...props}
-      style={style}
+      style={[
+        {
+          borderRadius: radius,
+          backgroundColor: glow,
+          shadowColor: glow,
+          shadowOpacity: 0.4,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 8,
+        },
+        style,
+      ]}
       onPressIn={(event) => {
         if (!reduced) {
           Animated.spring(swell, { toValue: bulge, friction: 5, tension: 140, useNativeDriver: nativeDriver }).start();
+          Animated.timing(flash, { toValue: 1, duration: 140, useNativeDriver: nativeDriver }).start();
           ring.setValue(0);
           Animated.timing(ring, { toValue: 1, duration: 520, useNativeDriver: nativeDriver }).start();
         }
@@ -144,20 +179,70 @@ export function LiquidPress({
       onPressOut={(event) => {
         if (!reduced) {
           Animated.spring(swell, { toValue: 1, friction: 6, tension: 110, useNativeDriver: nativeDriver }).start();
+          Animated.timing(flash, { toValue: 0, duration: 260, useNativeDriver: nativeDriver }).start();
         }
         props.onPressOut?.(event);
       }}
     >
-      <Animated.View style={{ borderRadius: radius, overflow: "hidden", transform: [{ scale: swell }] }}>
+      <Animated.View
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+        style={{ borderRadius: radius, overflow: "hidden", transform: [{ scale: swell }] }}
+      >
         <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={contentStyle}>
           {children}
         </LinearGradient>
+        {/* Depth: the bottom of the glass is thicker and a little darker. */}
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(255,255,255,0.42)", "rgba(255,255,255,0)"]}
+          colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.22)"]}
+          start={{ x: 0.5, y: 0.45 }}
+          end={{ x: 0.5, y: 1 }}
+          style={FILL}
+        />
+        {/* Gloss on the top half, like light on the surface. */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.5)", "rgba(255,255,255,0)"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={{ position: "absolute", top: 0, right: 0, left: 0, height: "55%" }}
+          style={{ position: "absolute", top: 0, right: 0, left: 0, height: "52%" }}
+        />
+        {/* A bright streak near the top edge. */}
+        <View
+          pointerEvents="none"
+          style={{ position: "absolute", top: 5, left: 12, width: "42%", height: 7, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.6)" }}
+        />
+        {/* The shine that slides across. */}
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: -12,
+            bottom: -12,
+            left: 0,
+            width: width * 0.4,
+            transform: [
+              { translateX: sweep.interpolate({ inputRange: [0, 1], outputRange: [-width * 0.5, width * 1.3] }) },
+              { rotate: "18deg" },
+            ],
+          }}
+        >
+          <LinearGradient
+            colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.55)", "rgba(255,255,255,0)"]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ flex: 1 }}
+          />
+        </Animated.View>
+        {/* A white flash while it is held. */}
+        <Animated.View
+          pointerEvents="none"
+          style={[FILL, { backgroundColor: "#FFFFFF", opacity: flash.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] }) }]}
+        />
+        {/* A thin bright rim, like the edge of a glass. */}
+        <View
+          pointerEvents="none"
+          style={[FILL, { margin: 1, borderRadius: radius, borderWidth: 1, borderColor: "rgba(255,255,255,0.55)" }]}
         />
         <Animated.View
           pointerEvents="none"
