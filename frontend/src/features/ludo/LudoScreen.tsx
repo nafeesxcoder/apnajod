@@ -83,7 +83,7 @@ function SpinTile({ canSpin, nextAt, onPress }: { canSpin: boolean; nextAt: stri
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={canSpin ? "Daily spin is ready. Tap to spin" : "You spun today"}
+      accessibilityLabel={canSpin ? "Daily spin is ready. Tap to spin" : "Daily spin is done for today"}
       accessibilityState={{ disabled: !canSpin }}
       disabled={!canSpin}
       onPress={onPress}
@@ -110,7 +110,7 @@ function SpinTile({ canSpin, nextAt, onPress }: { canSpin: boolean; nextAt: stri
               <Text style={{ fontFamily: fonts.bodyBold, fontSize: 20, color: L.textSoft }}>🎡 Spin</Text>
               <Ionicons name="checkmark-circle" size={18} color="#34D399" />
             </View>
-            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: L.textSoft }}>Spun today · next at {when}</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: L.textSoft }}>Done for today · next spin at {when}</Text>
           </View>
         )}
       </Animated.View>
